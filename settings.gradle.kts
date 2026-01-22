@@ -1,3 +1,5 @@
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 pluginManagement {
     repositories {
         google {
@@ -22,3 +24,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "AppDump"
 include(":app")
+include(":commons")
+include(":wallmatic")
+include(":jest")
+include(":dev-butler")

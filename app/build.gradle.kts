@@ -55,6 +55,12 @@ android {
 }
 
 dependencies {
+    // Local project modules
+    implementation(projects.wallmatic)
+    implementation(projects.jest)
+    implementation(projects.devButler)
+    implementation(projects.commons)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
