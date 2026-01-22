@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BrainDump"
+rootProject.name = "AppDump"
 include(":app")

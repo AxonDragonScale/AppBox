@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.axondragonscale.braindump"
+    namespace = "com.axondragonscale.appdump"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.axondragonscale.braindump"
+        applicationId = "com.axondragonscale.appdump"
         minSdk = 31
         targetSdk = 36
         versionCode = 1

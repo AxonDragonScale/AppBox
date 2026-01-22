@@ -1,4 +1,4 @@
-package com.axondragonscale.braindump.ui.theme
+package com.axondragonscale.appdump.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

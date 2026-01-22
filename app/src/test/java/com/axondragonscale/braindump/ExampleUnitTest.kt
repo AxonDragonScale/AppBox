@@ -1,4 +1,4 @@
-package com.axondragonscale.braindump
+package com.axondragonscale.appdump
 
 import org.junit.Test
 
