@@ -21,25 +21,26 @@ object Logger {
 /**
  * Log methods to be used on class/object instances or on TAG strings.
  * ```
- * this.logE("Something went wrong") // where this is the enclosing class or object (not String)
- * TAG.logE("Something went wrong")  // where const val TAG = "MyTag"
+ * this.logE { "Something went wrong" } // where this is the enclosing class or object (not String)
+ * TAG.logE { "Something went wrong" }  // where const val TAG = "MyTag"
  * ```
  * Using `this.logX` may not work properly inside lambdas. Prefer `TAG.logX` inside lambdas.
  */
 
-fun Any.logD(msg: String) = this.log(Log.DEBUG, msg)
-fun Any.logE(msg: String) = this.log(Log.ERROR, msg)
-fun Any.logI(msg: String) = this.log(Log.INFO, msg)
-fun Any.logW(msg: String) = this.log(Log.WARN, msg)
-fun Any.logV(msg: String) = this.log(Log.VERBOSE, msg)
-fun Any.logA(msg: String) = this.log(Log.ASSERT, msg)
+fun Any.logD(msg: MsgProvider) = this.log(Log.DEBUG, msg)
+fun Any.logE(msg: MsgProvider) = this.log(Log.ERROR, msg)
+fun Any.logI(msg: MsgProvider) = this.log(Log.INFO, msg)
+fun Any.logW(msg: MsgProvider) = this.log(Log.WARN, msg)
+fun Any.logV(msg: MsgProvider) = this.log(Log.VERBOSE, msg)
+fun Any.logA(msg: MsgProvider) = this.log(Log.ASSERT, msg)
 
 // -------------------- Private Helper Functions --------------------
 
-private fun Any.log(priority: Int, msg: String) {
+private fun Any.log(priority: Int, msg: MsgProvider) {
     if (!Logger.isLoggingEnabled) return
-    if (Logger.usePrintlnLogs) println("#${this.getTag()}: $msg")
-    else Log.println(priority, "#${this.getTag()}", msg)
+    val message = msg()
+    if (Logger.usePrintlnLogs) println("#${this.getTag()}: $message")
+    else Log.println(priority, "#${this.getTag()}", message)
 }
 
 private fun Any.getTag() = when {
@@ -47,3 +48,5 @@ private fun Any.getTag() = when {
     this.javaClass.simpleName == "Companion" -> this.javaClass.enclosingClass.simpleName
     else -> this.javaClass.simpleName
 }
+
+private typealias MsgProvider = () -> String
