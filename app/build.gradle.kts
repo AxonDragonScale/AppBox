@@ -60,6 +60,7 @@ dependencies {
     implementation(projects.wallmatic)
     implementation(projects.jest)
     implementation(projects.devButler)
+    implementation(projects.topty)
     implementation(projects.commons)
 
     implementation(libs.androidx.core.ktx)
