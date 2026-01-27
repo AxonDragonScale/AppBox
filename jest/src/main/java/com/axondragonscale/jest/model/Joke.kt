@@ -1,7 +1,7 @@
 package com.axondragonscale.jest.model
 
 import android.content.Intent
-import com.axondragonscale.appdump.jest.model.serialization.JokeSerializer
+import com.axondragonscale.jest.model.serialization.JokeSerializer
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration.Companion.days
 

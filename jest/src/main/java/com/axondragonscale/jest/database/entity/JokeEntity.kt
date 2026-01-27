@@ -5,10 +5,10 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.Index.Order
 import androidx.room.PrimaryKey
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.Flags
-import com.axondragonscale.appdump.jest.model.JokeType
-import com.axondragonscale.appdump.jest.model.Language
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.Flags
+import com.axondragonscale.jest.model.JokeType
+import com.axondragonscale.jest.model.Language
 
 /**
  * Created by Ronak Harkhani on 03/04/24

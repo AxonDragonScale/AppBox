@@ -20,10 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.appdump.jest.model.BlacklistFlag
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.JokeType
-import com.axondragonscale.appdump.jest.ui.theme.JestTheme
+import com.axondragonscale.jest.model.BlacklistFlag
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.JokeType
+import com.axondragonscale.jest.ui.theme.JestTheme
 
 data class MultiSelectorOption(
     val displayText: String,

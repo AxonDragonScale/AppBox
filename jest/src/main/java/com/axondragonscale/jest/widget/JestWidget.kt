@@ -29,11 +29,11 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.axondragonscale.appdump.jest.JestActivity
-import com.axondragonscale.appdump.jest.R
-import com.axondragonscale.appdump.jest.model.IJoke
-import com.axondragonscale.appdump.jest.model.getFirstLine
-import com.axondragonscale.appdump.jest.model.getSecondLine
+import com.axondragonscale.jest.JestActivity
+import com.axondragonscale.jest.R
+import com.axondragonscale.jest.model.IJoke
+import com.axondragonscale.jest.model.getFirstLine
+import com.axondragonscale.jest.model.getSecondLine
 
 /**
  * Created by Ronak Harkhani on 20/04/24

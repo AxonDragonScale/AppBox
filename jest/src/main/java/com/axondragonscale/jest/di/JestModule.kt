@@ -1,25 +1,20 @@
 package com.axondragonscale.jest.di
 
-import com.axondragonscale.appdump.jest.database.JestDatabase
-import com.axondragonscale.appdump.jest.database.JestDatabaseClient
-import com.axondragonscale.appdump.jest.network.JokeApiClient
-import com.axondragonscale.appdump.jest.repository.JokeRepository
-import com.axondragonscale.appdump.jest.repository.PrefsRepository
-import com.axondragonscale.appdump.jest.ui.home.HomeVM
-import com.axondragonscale.appdump.jest.ui.list.FavoritesVM
-import com.axondragonscale.appdump.jest.ui.list.HistoryVM
-import com.axondragonscale.appdump.jest.ui.tune.PrefsVM
+import com.axondragonscale.jest.database.JestDatabase
+import com.axondragonscale.jest.database.JestDatabaseClient
+import com.axondragonscale.jest.network.JokeApiClient
+import com.axondragonscale.jest.repository.JokeRepository
+import com.axondragonscale.jest.repository.PrefsRepository
+import com.axondragonscale.jest.ui.home.HomeVM
+import com.axondragonscale.jest.ui.list.FavoritesVM
+import com.axondragonscale.jest.ui.list.HistoryVM
+import com.axondragonscale.jest.ui.tune.PrefsVM
 import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val JestModule = module {
-
-    single {
-        Json {
-            ignoreUnknownKeys = true
-        }
-    }
+    single { Json { ignoreUnknownKeys = true } }
 
     single { JestDatabase.create(get()) }
     single { get<JestDatabase>().getJokeDao() }

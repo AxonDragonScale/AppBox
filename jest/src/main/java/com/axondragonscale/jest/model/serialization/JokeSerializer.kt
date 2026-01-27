@@ -1,8 +1,8 @@
 package com.axondragonscale.jest.model.serialization
 
-import com.axondragonscale.appdump.jest.model.IJoke
-import com.axondragonscale.appdump.jest.model.OnePartJoke
-import com.axondragonscale.appdump.jest.model.TwoPartJoke
+import com.axondragonscale.jest.model.IJoke
+import com.axondragonscale.jest.model.OnePartJoke
+import com.axondragonscale.jest.model.TwoPartJoke
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement

@@ -1,8 +1,8 @@
 package com.axondragonscale.jest.ui.tune
 
-import com.axondragonscale.appdump.jest.model.BlacklistFlag
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.JokeType
+import com.axondragonscale.jest.model.BlacklistFlag
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.JokeType
 
 /**
  * Created by Ronak Harkhani on 10/04/24

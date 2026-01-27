@@ -1,12 +1,12 @@
 package com.axondragonscale.jest.repository
 
-import com.axondragonscale.appdump.jest.database.JestDatabaseClient
-import com.axondragonscale.appdump.jest.database.entity.JokeEntity
-import com.axondragonscale.appdump.jest.database.mapper.toModel
-import com.axondragonscale.appdump.jest.model.IJoke
-import com.axondragonscale.appdump.jest.model.isOld
-import com.axondragonscale.appdump.jest.network.JokeApiClient
-import com.axondragonscale.appdump.jest.network.mapper.toEntity
+import com.axondragonscale.jest.database.JestDatabaseClient
+import com.axondragonscale.jest.database.entity.JokeEntity
+import com.axondragonscale.jest.database.mapper.toModel
+import com.axondragonscale.jest.model.IJoke
+import com.axondragonscale.jest.model.isOld
+import com.axondragonscale.jest.network.JokeApiClient
+import com.axondragonscale.jest.network.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map

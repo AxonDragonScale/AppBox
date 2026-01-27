@@ -1,7 +1,7 @@
 package com.axondragonscale.jest.network
 
-import com.axondragonscale.appdump.jest.network.response.JokeApiResponse
-import com.axondragonscale.appdump.jest.network.response.JokeListApiResponse
+import com.axondragonscale.jest.network.response.JokeApiResponse
+import com.axondragonscale.jest.network.response.JokeListApiResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query

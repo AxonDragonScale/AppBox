@@ -8,8 +8,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
-import com.axondragonscale.appdump.jest.repository.JokeRepository
-import kotlinx.coroutines.runBlocking
+import com.axondragonscale.jest.repository.JokeRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -24,11 +23,11 @@ class JestAppWidget : GlanceAppWidget(), KoinComponent {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repository: JokeRepository by inject()
+        val joke = repository.getCurrentJoke()
 
         provideContent {
             GlanceTheme {
                 currentState<Preferences>() // Widget is not updated unless currentState is called
-                val joke = runBlocking { repository.getCurrentJoke() }
                 JestWidget(joke)
             }
         }

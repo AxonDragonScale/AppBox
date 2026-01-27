@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.appdump.jest.ui.theme.JestTheme
+import com.axondragonscale.jest.ui.theme.JestTheme
 
 @Composable
 fun JestTag(tag: String) {

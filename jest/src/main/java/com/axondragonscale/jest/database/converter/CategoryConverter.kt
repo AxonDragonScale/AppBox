@@ -1,7 +1,7 @@
 package com.axondragonscale.jest.database.converter
 
 import androidx.room.TypeConverter
-import com.axondragonscale.appdump.jest.model.Category
+import com.axondragonscale.jest.model.Category
 
 /**
  * Created by Ronak Harkhani on 03/04/24

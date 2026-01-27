@@ -27,15 +27,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.Flags
-import com.axondragonscale.appdump.jest.model.JokeType
-import com.axondragonscale.appdump.jest.model.Language
-import com.axondragonscale.appdump.jest.model.OnePartJoke
-import com.axondragonscale.appdump.jest.ui.common.JokeCard
-import com.axondragonscale.appdump.jest.ui.component.JestIconButton
-import com.axondragonscale.appdump.jest.ui.theme.JestTheme
-import com.axondragonscale.appdump.jest.ui.tune.PrefsBottomSheet
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.Flags
+import com.axondragonscale.jest.model.JokeType
+import com.axondragonscale.jest.model.Language
+import com.axondragonscale.jest.model.OnePartJoke
+import com.axondragonscale.jest.ui.common.JokeCard
+import com.axondragonscale.jest.ui.component.JestIconButton
+import com.axondragonscale.jest.ui.theme.JestTheme
+import com.axondragonscale.jest.ui.tune.PrefsBottomSheet
 import org.koin.androidx.compose.koinViewModel
 
 /**

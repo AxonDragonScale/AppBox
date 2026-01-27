@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.appdump.jest.ui.theme.JestTheme
+import com.axondragonscale.jest.ui.theme.JestTheme
 
 @Composable
 fun JestIconButton(

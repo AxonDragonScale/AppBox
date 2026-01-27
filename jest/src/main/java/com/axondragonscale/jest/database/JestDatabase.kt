@@ -5,12 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.axondragonscale.appdump.jest.database.JestDatabase.Companion.DB_VERSION
-import com.axondragonscale.appdump.jest.database.converter.CategoryConverter
-import com.axondragonscale.appdump.jest.database.converter.JokeTypeConverter
-import com.axondragonscale.appdump.jest.database.converter.LanguageConverter
-import com.axondragonscale.appdump.jest.database.dao.JokeDao
-import com.axondragonscale.appdump.jest.database.entity.JokeEntity
+import com.axondragonscale.jest.database.JestDatabase.Companion.DB_VERSION
+import com.axondragonscale.jest.database.converter.CategoryConverter
+import com.axondragonscale.jest.database.converter.JokeTypeConverter
+import com.axondragonscale.jest.database.converter.LanguageConverter
+import com.axondragonscale.jest.database.dao.JokeDao
+import com.axondragonscale.jest.database.entity.JokeEntity
 
 /**
  * Created by Ronak Harkhani on 03/04/24

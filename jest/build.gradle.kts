@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -45,12 +47,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
 
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation(libs.bundles.compose)
+    debugImplementation(libs.bundles.compose.debug)
 
     // Glance (For App Widgets)
     implementation(libs.bundles.glance)
@@ -58,4 +56,15 @@ dependencies {
     // Koin
     implementation(platform(libs.koin.bom))
     implementation(libs.bundles.koin)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Ktor
+    implementation(libs.bundles.ktor)
 }

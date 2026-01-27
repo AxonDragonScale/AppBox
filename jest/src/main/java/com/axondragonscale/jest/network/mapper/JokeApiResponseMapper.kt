@@ -1,7 +1,7 @@
 package com.axondragonscale.jest.network.mapper
 
-import com.axondragonscale.appdump.jest.database.entity.JokeEntity
-import com.axondragonscale.appdump.jest.network.response.JokeApiResponse
+import com.axondragonscale.jest.database.entity.JokeEntity
+import com.axondragonscale.jest.network.response.JokeApiResponse
 
 /**
  * Created by Ronak Harkhani on 05/04/24

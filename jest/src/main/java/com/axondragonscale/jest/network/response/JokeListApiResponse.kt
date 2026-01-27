@@ -1,6 +1,6 @@
 package com.axondragonscale.jest.network.response
 
-import com.axondragonscale.appdump.jest.model.IJoke
+import com.axondragonscale.jest.model.IJoke
 import kotlinx.serialization.Serializable
 
 /**

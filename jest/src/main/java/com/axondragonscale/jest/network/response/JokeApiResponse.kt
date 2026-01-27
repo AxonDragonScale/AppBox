@@ -1,9 +1,9 @@
 package com.axondragonscale.jest.network.response
 
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.Flags
-import com.axondragonscale.appdump.jest.model.JokeType
-import com.axondragonscale.appdump.jest.model.Language
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.Flags
+import com.axondragonscale.jest.model.JokeType
+import com.axondragonscale.jest.model.Language
 import kotlinx.serialization.Serializable
 
 /**

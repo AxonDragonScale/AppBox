@@ -13,11 +13,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.appdump.jest.ui.bottombar.BottomTabBar
-import com.axondragonscale.appdump.jest.ui.bottombar.Tab
-import com.axondragonscale.appdump.jest.ui.home.Home
-import com.axondragonscale.appdump.jest.ui.list.Favorites
-import com.axondragonscale.appdump.jest.ui.list.History
+import com.axondragonscale.jest.ui.bottombar.BottomTabBar
+import com.axondragonscale.jest.ui.bottombar.Tab
+import com.axondragonscale.jest.ui.home.Home
+import com.axondragonscale.jest.ui.list.Favorites
+import com.axondragonscale.jest.ui.list.History
 import kotlinx.coroutines.launch
 
 /**

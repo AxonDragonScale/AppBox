@@ -2,9 +2,9 @@ package com.axondragonscale.jest.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.appdump.jest.model.OnePartJoke
-import com.axondragonscale.appdump.jest.model.TwoPartJoke
-import com.axondragonscale.appdump.jest.repository.JokeRepository
+import com.axondragonscale.jest.model.OnePartJoke
+import com.axondragonscale.jest.model.TwoPartJoke
+import com.axondragonscale.jest.repository.JokeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update

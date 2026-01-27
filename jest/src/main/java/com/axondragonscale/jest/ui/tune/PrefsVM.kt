@@ -2,10 +2,10 @@ package com.axondragonscale.jest.ui.tune
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.appdump.jest.model.BlacklistFlag
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.JokeType
-import com.axondragonscale.appdump.jest.repository.PrefsRepository
+import com.axondragonscale.jest.model.BlacklistFlag
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.JokeType
+import com.axondragonscale.jest.repository.PrefsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted

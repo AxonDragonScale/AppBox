@@ -6,9 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.axondragonscale.appdump.jest.model.BlacklistFlag
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.JokeType
+import com.axondragonscale.jest.model.BlacklistFlag
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.JokeType
 import kotlinx.coroutines.flow.map
 
 /**

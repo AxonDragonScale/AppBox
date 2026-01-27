@@ -22,12 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.appdump.jest.model.BlacklistFlag
-import com.axondragonscale.appdump.jest.model.Category
-import com.axondragonscale.appdump.jest.model.JokeType
-import com.axondragonscale.appdump.jest.ui.component.MultiSelector
-import com.axondragonscale.appdump.jest.ui.component.createMultiSelectorOptions
-import com.axondragonscale.appdump.jest.ui.theme.JestTheme
+import com.axondragonscale.jest.model.BlacklistFlag
+import com.axondragonscale.jest.model.Category
+import com.axondragonscale.jest.model.JokeType
+import com.axondragonscale.jest.ui.component.MultiSelector
+import com.axondragonscale.jest.ui.component.createMultiSelectorOptions
+import com.axondragonscale.jest.ui.theme.JestTheme
 import org.koin.androidx.compose.koinViewModel
 
 /**

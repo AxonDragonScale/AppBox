@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.axondragonscale.appdump.jest.database.entity.JokeEntity
+import com.axondragonscale.jest.database.entity.JokeEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
