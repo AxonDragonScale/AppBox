@@ -1,6 +1,7 @@
 [versions]
 agp = "8.13.2"
 kotlin = "2.3.0"
+protobufPlugin = "0.9.6"
 
 # Android
 coreKtx = "1.17.0"
@@ -11,6 +12,7 @@ appcompat = "1.7.1"
 androidxGlance = "1.1.1"
 room = "2.8.4"
 ksp = "2.3.4"
+datastore = "1.2.0"
 
 # Kotlin
 kotlinx-coroutines = "1.10.2"
@@ -20,6 +22,8 @@ kotlinx-serialization = "1.10.0"
 koin-bom = "4.1.1"
 ktor = "3.4.0"
 chucker = "4.3.0"
+coil = "3.3.0"
+protobuf = "3.25.4" # Update carefully
 
 [libraries]
 # Plugins
@@ -41,6 +45,13 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version = "2.8.0" }
+
+# Datastore
+datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
+datastore-prefs = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin-lite", version.ref = "protobuf" }
+protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 
 # Glance
 androidx-glance-widget = { module = "androidx.glance:glance-appwidget", version.ref = "androidxGlance" }
@@ -74,6 +85,10 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 chucker = { module = "com.github.chuckerteam.chucker:library", version.ref = "chucker" }
 chucker-noop = { module = "com.github.chuckerteam.chucker:library-no-op", version.ref = "chucker" }
 
+# Coil
+coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
@@ -82,6 +97,7 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 
 [bundles]
 compose = [
@@ -117,4 +133,12 @@ koin = [
     "koin-androidx-compose",
     "koin-androidx-compose-navigation",
     "koin-ktor",
+]
+coil = [
+    "coil",
+    "coil-network",
+]
+datastore = [
+    "datastore",
+    "datastore-prefs",
 ]

@@ -4,6 +4,7 @@ import android.app.Application
 import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.commons.logD
 import com.axondragonscale.jest.di.JestModule
+import com.axondragonscale.wallmatic.di.WallmaticModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -30,6 +31,7 @@ class MainApplication: Application() {
             modules(
                 CommonsModule,
                 JestModule,
+                WallmaticModule,
             )
         }
     }
