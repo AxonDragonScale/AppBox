@@ -2,7 +2,7 @@ package com.axondragonscale.appdump
 
 import android.app.Application
 import com.axondragonscale.appdump.commons.logD
-import com.axondragonscale.appdump.jest.di.jestModule
+import com.axondragonscale.appdump.jest.di.JestModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -23,7 +23,7 @@ class MainApplication: Application() {
         startKoin {
             androidLogger()
             androidContext(this@MainApplication)
-            modules(jestModule)
+            modules(JestModule)
         }
 
     }

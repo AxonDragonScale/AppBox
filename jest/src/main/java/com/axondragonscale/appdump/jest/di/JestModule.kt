@@ -13,7 +13,7 @@ import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-val jestModule = module {
+val JestModule = module {
 
     single {
         Json {
