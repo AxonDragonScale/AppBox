@@ -1,6 +1,8 @@
 package com.axondragonscale.jest
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -11,6 +13,15 @@ import com.axondragonscale.jest.ui.JestApp
 import com.axondragonscale.jest.ui.theme.JestTheme
 
 class JestActivity : ComponentActivity() {
+
+    companion object {
+        private const val TAG = "JestActivity"
+
+        fun start(activity: Activity) {
+            val intent = Intent(activity, JestActivity::class.java)
+            activity.startActivity(intent)
+        }
+    }
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}

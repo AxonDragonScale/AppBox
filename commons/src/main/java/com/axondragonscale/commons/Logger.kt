@@ -1,4 +1,4 @@
-package com.axondragonscale.appdump.commons
+package com.axondragonscale.commons
 
 import android.util.Log
 

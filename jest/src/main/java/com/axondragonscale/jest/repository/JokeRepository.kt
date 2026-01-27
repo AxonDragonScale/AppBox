@@ -1,6 +1,6 @@
 package com.axondragonscale.jest.repository
 
-import com.axondragonscale.jest.database.JestDatabaseClient
+import com.axondragonscale.jest.database.JestDbClient
 import com.axondragonscale.jest.database.entity.JokeEntity
 import com.axondragonscale.jest.database.mapper.toModel
 import com.axondragonscale.jest.model.IJoke
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.map
 class JokeRepository(
     private val prefsRepository: PrefsRepository,
     private val apiClient: JokeApiClient,
-    private val dbClient: JestDatabaseClient,
+    private val dbClient: JestDbClient,
 ) {
 
     suspend fun getCurrentJoke(): IJoke {

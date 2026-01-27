@@ -19,6 +19,7 @@ kotlinx-serialization = "1.10.0"
 # Third party
 koin-bom = "4.1.1"
 ktor = "3.4.0"
+chucker = "4.3.0"
 
 [libraries]
 # Plugins
@@ -39,6 +40,7 @@ androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 
 # Glance
 androidx-glance-widget = { module = "androidx.glance:glance-appwidget", version.ref = "androidxGlance" }
@@ -67,6 +69,10 @@ koin-ktor = { module = "io.insert-koin:koin-ktor" }
 # Ktor
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+chucker = { module = "com.github.chuckerteam.chucker:library", version.ref = "chucker" }
+chucker-noop = { module = "com.github.chuckerteam.chucker:library-no-op", version.ref = "chucker" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -82,7 +88,8 @@ compose = [
     "androidx-compose-ui",
     "androidx-compose-ui-graphics",
     "androidx-compose-ui-tooling-preview",
-    "androidx-compose-material3"
+    "androidx-compose-material3",
+    "androidx-compose-material-icons-extended",
 ]
 compose-debug = [
     "androidx-compose-ui-tooling",
@@ -90,15 +97,18 @@ compose-debug = [
 ]
 glance = [
     "androidx-glance-widget",
-    "androidx-glance-material3"
+    "androidx-glance-material3",
 ]
 ktor = [
     "ktor-client-core",
-    "ktor-client-okhttp"
+    "ktor-client-okhttp",
+    "ktor-client-content-negotiation",
+    "ktor-serialization-kotlinx-json",
+    "chucker",
 ]
 coroutines = [
     "kotlinx-coroutines-core",
-    "kotlinx-coroutines-android"
+    "kotlinx-coroutines-android",
 ]
 koin = [
     "koin-core",
@@ -106,5 +116,5 @@ koin = [
     "koin-androidx-workmanager",
     "koin-androidx-compose",
     "koin-androidx-compose-navigation",
-    "koin-ktor"
+    "koin-ktor",
 ]

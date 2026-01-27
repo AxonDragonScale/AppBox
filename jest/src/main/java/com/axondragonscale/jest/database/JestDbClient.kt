@@ -5,6 +5,6 @@ import com.axondragonscale.jest.database.dao.JokeDao
 /**
  * Created by Ronak Harkhani on 09/04/24
  */
-class JestDatabaseClient(
+class JestDbClient(
     private val dao: JokeDao
 ): JokeDao by dao

@@ -1,7 +1,7 @@
 package com.axondragonscale.jest.di
 
 import com.axondragonscale.jest.database.JestDatabase
-import com.axondragonscale.jest.database.JestDatabaseClient
+import com.axondragonscale.jest.database.JestDbClient
 import com.axondragonscale.jest.network.JokeApiClient
 import com.axondragonscale.jest.repository.JokeRepository
 import com.axondragonscale.jest.repository.PrefsRepository
@@ -19,8 +19,8 @@ val JestModule = module {
     single { JestDatabase.create(get()) }
     single { get<JestDatabase>().getJokeDao() }
 
-    single { JestDatabaseClient(get()) }
-    single { JokeApiClient(get(), get()) }
+    single { JestDbClient(get()) }
+    single { JokeApiClient(get()) }
 
     single { PrefsRepository(get()) }
     single { JokeRepository(get(), get(), get()) }

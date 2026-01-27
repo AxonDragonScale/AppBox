@@ -1,7 +1,8 @@
 package com.axondragonscale.appdump
 
 import android.app.Application
-import com.axondragonscale.appdump.commons.logD
+import com.axondragonscale.commons.di.CommonsModule
+import com.axondragonscale.commons.logD
 import com.axondragonscale.jest.di.JestModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -19,13 +20,18 @@ class MainApplication: Application() {
     override fun onCreate() {
         super.onCreate()
         TAG.logD { "onCreate" }
+        initKoin()
+    }
 
+    private fun initKoin() {
         startKoin {
             androidLogger()
             androidContext(this@MainApplication)
-            modules(JestModule)
+            modules(
+                CommonsModule,
+                JestModule,
+            )
         }
-
     }
 
 }
