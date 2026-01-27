@@ -30,8 +30,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import coil3.compose.AsyncImage
-import org.koin.androidx.compose.koinViewModel
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
@@ -40,6 +38,7 @@ import com.axondragonscale.wallmatic.ui.common.TopBar
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.SystemBars
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 17/09/24

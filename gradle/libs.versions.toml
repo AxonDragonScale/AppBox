@@ -13,6 +13,7 @@ androidxGlance = "1.1.1"
 room = "2.8.4"
 ksp = "2.3.4"
 datastore = "1.2.0"
+documentfile = "1.1.0"
 
 # Kotlin
 kotlinx-coroutines = "1.10.2"
@@ -35,6 +36,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 
 # Compose
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

@@ -77,7 +77,7 @@ class SyncManager(
         val validFolders = mutableListOf<FullFolder>()
         folders.forEach { folder ->
             // Remove folder from DB if it doesn't exist anymore
-            if (!FileUtil.isValidFolder(context, Uri.parse(folder.folderUri))) {
+            if (!FileUtil.isValidFolder(context, folder.folderUri.toUri())) {
                 repository.deleteFolders(listOf(folder.id))
                 return@forEach
             }

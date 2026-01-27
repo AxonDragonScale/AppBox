@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.appdump.ui.theme.AppDumpTheme
 import com.axondragonscale.jest.JestActivity
+import com.axondragonscale.wallmatic.WallmaticActivity
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +56,7 @@ val subApps = listOf(
     SubApp(
         name = "Wallmatic",
         description = "Automatically changes your wallpaper with time",
-        activityClass = null
+        activityClass = WallmaticActivity::class.java
     ),
     SubApp(
         name = "Topty",

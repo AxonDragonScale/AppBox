@@ -68,12 +68,12 @@ class WallpaperUpdater(
         this.logD { "Wallpaper update start. target: $target" }
 
         val config = appPrefsRepository.configFlow.firstOrNull() ?: run {
-            this.logE("Wallpaper update failed. Config is null")
+            this.logD { "Wallpaper update failed. Config is null" }
             return
         }
 
         if (!config.isInit) {
-            this.logE("Wallpaper update skipped. isInit: ${config.isInit}")
+            this.logD { "Wallpaper update skipped. isInit: ${config.isInit}" }
             return
         }
 
@@ -85,7 +85,7 @@ class WallpaperUpdater(
                         else repository.getFullAlbum(lockAlbumId)
 
         if (homeAlbum == null || lockAlbum == null) {
-            this.logE("Albums not found. home: $homeAlbumId, lock: $lockAlbumId")
+            this.logD { "Albums not found. home: $homeAlbumId, lock: $lockAlbumId" }
             return
         }
 
