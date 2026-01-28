@@ -1,7 +1,7 @@
 package com.axondragonscale.jest
 
 import android.Manifest
-import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -17,9 +17,10 @@ class JestActivity : ComponentActivity() {
     companion object {
         private const val TAG = "JestActivity"
 
-        fun start(activity: Activity) {
-            val intent = Intent(activity, JestActivity::class.java)
-            activity.startActivity(intent)
+        fun start(context: Context) {
+            val intent = Intent(context, JestActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
         }
     }
 
@@ -46,4 +47,3 @@ class JestActivity : ComponentActivity() {
     }
 
 }
-

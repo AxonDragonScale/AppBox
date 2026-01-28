@@ -1,5 +1,7 @@
 package com.axondragonscale.wallmatic
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +24,14 @@ import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
 class WallmaticActivity : ComponentActivity() {
+
+    companion object {
+        fun start(context: Context) {
+            val intent = Intent(context, WallmaticActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
+    }
 
     private val appPrefsRepository: AppPrefsRepository by inject()
     private val syncManager: SyncManager by inject()
