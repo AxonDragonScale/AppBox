@@ -11,6 +11,7 @@
 
         <activity
             android:name=".WallmaticActivity"
+            android:taskAffinity=".WallmaticTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
