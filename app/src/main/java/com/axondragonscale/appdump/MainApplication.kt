@@ -1,6 +1,7 @@
 package com.axondragonscale.appdump
 
 import android.app.Application
+import com.axondragonscale.appdump.di.AppModule
 import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.commons.logD
 import com.axondragonscale.jest.di.JestModule
@@ -29,6 +30,7 @@ class MainApplication: Application() {
             androidLogger()
             androidContext(this@MainApplication)
             modules(
+                AppModule,
                 CommonsModule,
                 JestModule,
                 WallmaticModule,
