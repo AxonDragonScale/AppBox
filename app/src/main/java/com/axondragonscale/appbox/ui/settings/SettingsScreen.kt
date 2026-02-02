@@ -43,7 +43,9 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.foundation.border
 import androidx.compose.material3.Card
+import com.axondragonscale.commons.compose.thenIf
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -231,8 +233,16 @@ private fun ThemeModeCard(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val primaryColor = MaterialTheme.colorScheme.primary
     Card(
-        modifier = modifier,
+        modifier = modifier
+            .thenIf(selected) {
+                border(
+                    width = 2.dp,
+                    color = primaryColor,
+                    shape = RoundedCornerShape(16.dp)
+                )
+            },
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
