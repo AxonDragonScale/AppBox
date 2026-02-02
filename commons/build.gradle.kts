@@ -56,6 +56,9 @@ dependencies {
     implementation(libs.bundles.coroutines)
     implementation(libs.kotlinx.serialization.json)
 
+    // Datastore
+    implementation(libs.datastore.prefs)
+
     // Ktor
     implementation(libs.bundles.ktor)
 }

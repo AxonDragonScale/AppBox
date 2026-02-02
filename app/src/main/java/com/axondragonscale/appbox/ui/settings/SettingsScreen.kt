@@ -1,9 +1,6 @@
 package com.axondragonscale.appbox.ui.settings
 
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -16,14 +13,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.axondragonscale.appbox.BuildConfig
-import com.axondragonscale.appbox.data.AppThemeMode
+import com.axondragonscale.appbox.model.AppThemeMode
+import com.axondragonscale.commons.PermissionState
+import com.axondragonscale.commons.getDangerousPermissions
+import com.axondragonscale.commons.getMissingPermissions
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel(),
@@ -31,6 +30,22 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    SettingsScreenContent(
+        uiState = uiState,
+        onThemeModeChange = viewModel::setThemeMode,
+        onDynamicThemeChange = viewModel::setDynamicTheme,
+        onClearData = { viewModel.clearData(context) },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsScreenContent(
+    uiState: SettingsUiState,
+    onThemeModeChange: (AppThemeMode) -> Unit,
+    onDynamicThemeChange: (Boolean) -> Unit,
+    onClearData: () -> Unit,
+) {
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -49,14 +64,14 @@ fun SettingsScreen(
                 AppearanceSection(
                     themeMode = uiState.themeMode,
                     isDynamicTheme = uiState.isDynamicTheme,
-                    onThemeModeChange = viewModel::setThemeMode,
-                    onDynamicThemeChange = viewModel::setDynamicTheme
+                    onThemeModeChange = onThemeModeChange,
+                    onDynamicThemeChange = onDynamicThemeChange
                 )
             }
 
             item {
                 DevToolsSection(
-                    onClearData = { viewModel.clearData(context) }
+                    onClearData = onClearData
                 )
             }
 
@@ -69,7 +84,7 @@ fun SettingsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppearanceSection(
+private fun AppearanceSection(
     themeMode: AppThemeMode,
     isDynamicTheme: Boolean,
     onThemeModeChange: (AppThemeMode) -> Unit,
@@ -126,20 +141,20 @@ fun AppearanceSection(
 }
 
 @Composable
-fun DevToolsSection(
+private fun DevToolsSection(
     onClearData: () -> Unit
 ) {
     val context = LocalContext.current
-    var permissions by remember { mutableStateOf<List<PermissionInfo>>(emptyList()) }
+    var permissions by remember { mutableStateOf<List<PermissionState>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        permissions = getPermissions(context)
+        permissions = context.getDangerousPermissions()
     }
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
-        permissions = getPermissions(context)
+        permissions = context.getDangerousPermissions()
     }
 
     SettingsSection("Dev Tools") {
@@ -151,7 +166,11 @@ fun DevToolsSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Clear App Data", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "Clear App Data",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -161,7 +180,11 @@ fun DevToolsSection(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (permissions.isEmpty()) {
-                Text("No dangerous permissions requested.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                Text(
+                    "No dangerous permissions requested.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
             } else {
                 permissions.forEach { perm ->
                     Row(
@@ -171,7 +194,11 @@ fun DevToolsSection(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(perm.name.substringAfterLast("."), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            perm.name.substringAfterLast("."),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f)
+                        )
                         Text(
                             if (perm.granted) "Granted" else "Denied",
                             color = if (perm.granted) Color.Green else Color.Red,
@@ -180,11 +207,13 @@ fun DevToolsSection(
                     }
                 }
 
-                val missingPermissions = permissions.filter { !it.granted }.map { it.name }.toTypedArray()
+                val missingPermissions = permissions.getMissingPermissions()
                 if (missingPermissions.isNotEmpty()) {
                     Button(
                         onClick = { launcher.launch(missingPermissions) },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
                     ) {
                         Text("Request All Missing")
                     }
@@ -195,7 +224,7 @@ fun DevToolsSection(
 }
 
 @Composable
-fun AboutSection() {
+private fun AboutSection() {
     SettingsSection("About") {
         InfoRow("Version", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -229,7 +258,7 @@ private fun SettingsSection(
 }
 
 @Composable
-fun InfoRow(label: String, value: String) {
+private fun InfoRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -242,7 +271,7 @@ fun InfoRow(label: String, value: String) {
 }
 
 @Composable
-fun LinkRow(label: String, url: String) {
+private fun LinkRow(label: String, url: String) {
     val context = LocalContext.current
     Row(
         modifier = Modifier
@@ -259,32 +288,18 @@ fun LinkRow(label: String, url: String) {
     }
 }
 
-data class PermissionInfo(val name: String, val granted: Boolean)
-
-fun getPermissions(context: Context): List<PermissionInfo> {
-    val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()))
-    } else {
-        context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS)
-    }
-
-    val declaredPermissions = packageInfo.requestedPermissions ?: return emptyList()
-
-    return declaredPermissions.mapNotNull { permission ->
-        try {
-            val permissionInfo = context.packageManager.getPermissionInfo(permission, 0)
-            // Filter for dangerous permissions only (runtime permissions)
-            @Suppress("DEPRECATION")
-            if ((permissionInfo.protectionLevel and android.content.pm.PermissionInfo.PROTECTION_DANGEROUS) != 0) {
-                PermissionInfo(
-                    name = permission,
-                    granted = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-                )
-            } else {
-                null
-            }
-        } catch (_: PackageManager.NameNotFoundException) {
-            null
-        }
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview() {
+    MaterialTheme {
+        SettingsScreenContent(
+            uiState = SettingsUiState(
+                themeMode = AppThemeMode.SYSTEM,
+                isDynamicTheme = true
+            ),
+            onThemeModeChange = {},
+            onDynamicThemeChange = {},
+            onClearData = {},
+        )
     }
 }

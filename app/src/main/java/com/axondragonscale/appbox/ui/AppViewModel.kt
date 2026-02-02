@@ -3,24 +3,18 @@ package com.axondragonscale.appbox.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.appbox.data.AppSettings
-import com.axondragonscale.appbox.data.AppThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-
-data class AppUiState(
-    val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
-    val isDynamicTheme: Boolean = true
-)
 
 class AppViewModel(
     appSettings: AppSettings,
 ) : ViewModel() {
 
     val uiState: StateFlow<AppUiState> = combine(
-        appSettings.themeMode,
-        appSettings.isDynamicTheme
+        appSettings.themeMode.flow,
+        appSettings.isDynamicTheme.flow
     ) { themeMode, isDynamicTheme ->
         AppUiState(
             themeMode = themeMode,

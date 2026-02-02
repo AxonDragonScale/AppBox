@@ -1,11 +1,11 @@
 package com.axondragonscale.appbox.ui.settings
 
-import android.app.ActivityManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.appbox.data.AppSettings
-import com.axondragonscale.appbox.data.AppThemeMode
+import com.axondragonscale.appbox.model.AppThemeMode
+import com.axondragonscale.commons.clearAppData
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -22,8 +22,8 @@ class SettingsViewModel(
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        appSettings.themeMode,
-        appSettings.isDynamicTheme
+        appSettings.themeMode.flow,
+        appSettings.isDynamicTheme.flow
     ) { themeMode, isDynamicTheme ->
         SettingsUiState(
             themeMode = themeMode,
@@ -35,26 +35,15 @@ class SettingsViewModel(
         initialValue = SettingsUiState()
     )
 
-    fun setThemeMode(mode: AppThemeMode) {
-        viewModelScope.launch {
-            appSettings.setThemeMode(mode)
-        }
+    fun setThemeMode(mode: AppThemeMode) = viewModelScope.launch {
+        appSettings.themeMode.set(mode)
     }
 
-    fun setDynamicTheme(enabled: Boolean) {
-        viewModelScope.launch {
-            appSettings.setDynamicTheme(enabled)
-        }
+    fun setDynamicTheme(enabled: Boolean) = viewModelScope.launch {
+        appSettings.isDynamicTheme.set(enabled)
     }
 
-    fun clearData(context: Context) {
-        viewModelScope.launch {
-            // Clear settings
-            appSettings.clear()
-
-            // Clear app data and kill process
-            (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager)
-                .clearApplicationUserData()
-        }
+    fun clearData(context: Context) = viewModelScope.launch {
+        context.clearAppData()
     }
 }

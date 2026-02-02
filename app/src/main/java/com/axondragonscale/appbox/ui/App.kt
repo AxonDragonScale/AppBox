@@ -21,7 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.axondragonscale.appbox.data.AppThemeMode
+import com.axondragonscale.appbox.model.AppThemeMode
 import com.axondragonscale.appbox.ui.home.HomeScreen
 import com.axondragonscale.appbox.ui.settings.SettingsScreen
 import com.axondragonscale.appbox.ui.theme.AppBoxTheme
