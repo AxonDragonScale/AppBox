@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.axondragonscale.appdump"
+    namespace = "com.axondragonscale.appbox"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.axondragonscale.appdump"
+        applicationId = "com.axondragonscale.appbox"
         minSdk = 31
         targetSdk = 36
         versionCode = 1
@@ -22,22 +22,22 @@ android {
     }
 
     signingConfigs {
-        create("AppDumpSigningConfig") {
-            storeFile = file("$rootDir/keystore/AppDumpKeystore.jks")
-            storePassword = "AppDumpStorePass"
-            keyAlias = "AppDumpKey"
-            keyPassword = "AppDumpKeyPass"
+        create("AppBoxSigningConfig") {
+            storeFile = file("$rootDir/keystore/AppBoxKeystore.jks")
+            storePassword = "AppBoxStorePass"
+            keyAlias = "AppBoxKey"
+            keyPassword = "AppBoxKeyPass"
         }
     }
 
     buildTypes {
         debug {
-            signingConfig = signingConfigs.getByName("AppDumpSigningConfig")
+            signingConfig = signingConfigs.getByName("AppBoxSigningConfig")
             applicationIdSuffix = ".debug"
         }
 
         release {
-            signingConfig = signingConfigs.getByName("AppDumpSigningConfig")
+            signingConfig = signingConfigs.getByName("AppBoxSigningConfig")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

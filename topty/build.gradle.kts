@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.axondragonscale.appdump.topty"
+    namespace = "com.axondragonscale.appbox.topty"
     compileSdk {
         version = release(36)
     }

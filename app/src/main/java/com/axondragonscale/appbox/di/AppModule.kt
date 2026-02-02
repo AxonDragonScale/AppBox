@@ -1,8 +1,8 @@
-package com.axondragonscale.appdump.di
+package com.axondragonscale.appbox.di
 
-import com.axondragonscale.appdump.data.AppSettings
-import com.axondragonscale.appdump.ui.AppViewModel
-import com.axondragonscale.appdump.ui.settings.SettingsViewModel
+import com.axondragonscale.appbox.data.AppSettings
+import com.axondragonscale.appbox.ui.AppViewModel
+import com.axondragonscale.appbox.ui.settings.SettingsViewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module

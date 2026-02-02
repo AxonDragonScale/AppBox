@@ -1,7 +1,7 @@
-package com.axondragonscale.appdump
+package com.axondragonscale.appbox
 
 import android.app.Application
-import com.axondragonscale.appdump.di.AppModule
+import com.axondragonscale.appbox.di.AppModule
 import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.commons.logD
 import com.axondragonscale.jest.di.JestModule

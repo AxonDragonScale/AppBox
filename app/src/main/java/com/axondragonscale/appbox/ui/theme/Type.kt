@@ -1,4 +1,4 @@
-package com.axondragonscale.appdump.ui.theme
+package com.axondragonscale.appbox.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

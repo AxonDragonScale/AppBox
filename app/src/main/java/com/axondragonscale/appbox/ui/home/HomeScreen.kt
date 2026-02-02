@@ -1,4 +1,4 @@
-package com.axondragonscale.appdump.ui.home
+package com.axondragonscale.appbox.ui.home
 
 import android.content.Context
 import android.content.res.Configuration
@@ -25,7 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.appdump.ui.theme.AppDumpTheme
+import com.axondragonscale.appbox.ui.theme.AppBoxTheme
 import com.axondragonscale.jest.JestActivity
 import com.axondragonscale.wallmatic.WallmaticActivity
 
@@ -39,7 +39,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("AppDump") },
+                title = { Text("AppBox") },
                 scrollBehavior = scrollBehavior
             )
         }
@@ -115,7 +115,7 @@ private val subApps = listOf(
 @Preview(name = "Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
 @Composable
 private fun HomeScreenPreview() {
-    AppDumpTheme {
+    AppBoxTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             HomeScreen()
         }

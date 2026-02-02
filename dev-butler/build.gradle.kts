@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.axondragonscale.appdump.dev.butler"
+    namespace = "com.axondragonscale.appbox.dev.butler"
     compileSdk {
         version = release(36)
     }

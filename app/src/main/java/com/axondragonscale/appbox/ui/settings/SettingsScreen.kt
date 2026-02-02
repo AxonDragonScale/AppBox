@@ -1,4 +1,4 @@
-package com.axondragonscale.appdump.ui.settings
+package com.axondragonscale.appbox.ui.settings
 
 import android.content.Context
 import android.content.Intent
@@ -19,8 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import com.axondragonscale.appdump.BuildConfig
-import com.axondragonscale.appdump.data.AppThemeMode
+import com.axondragonscale.appbox.BuildConfig
+import com.axondragonscale.appbox.data.AppThemeMode
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -203,7 +203,7 @@ fun AboutSection() {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         LinkRow("GitHub Profile", "https://github.com/AxonDragonScale/")
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        LinkRow("Source Code", "https://github.com/AxonDragonScale/AppDump")
+        LinkRow("Source Code", "https://github.com/AxonDragonScale/AppBox")
     }
 }
 

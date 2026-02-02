@@ -22,7 +22,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AppDump"
+rootProject.name = "AppBox"
 include(":app")
 include(":commons")
 include(":wallmatic")

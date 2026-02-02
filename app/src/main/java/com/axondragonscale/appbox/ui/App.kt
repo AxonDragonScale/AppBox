@@ -1,4 +1,4 @@
-package com.axondragonscale.appdump.ui
+package com.axondragonscale.appbox.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,10 +21,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.axondragonscale.appdump.data.AppThemeMode
-import com.axondragonscale.appdump.ui.home.HomeScreen
-import com.axondragonscale.appdump.ui.settings.SettingsScreen
-import com.axondragonscale.appdump.ui.theme.AppDumpTheme
+import com.axondragonscale.appbox.data.AppThemeMode
+import com.axondragonscale.appbox.ui.home.HomeScreen
+import com.axondragonscale.appbox.ui.settings.SettingsScreen
+import com.axondragonscale.appbox.ui.theme.AppBoxTheme
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -37,7 +37,7 @@ fun App(viewModel: AppViewModel = koinViewModel()) {
         AppThemeMode.DARK -> true
     }
 
-    AppDumpTheme(
+    AppBoxTheme(
         darkTheme = darkTheme,
         dynamicColor = uiState.isDynamicTheme
     ) {

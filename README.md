@@ -1,7 +1,7 @@
-# AppDump
+# AppBox
 
 Tired of maintaining multiple side projects and personal tools? Yeah, me too! \
-AppDump is basically a super-app where I dump all my small applications and utilities for easy access and management.
+AppBox is basically a super-app where I dump all my small applications and utilities for easy access and management.
 
 ## Sub Apps
 

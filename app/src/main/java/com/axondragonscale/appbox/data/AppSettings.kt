@@ -1,4 +1,4 @@
-package com.axondragonscale.appdump.data
+package com.axondragonscale.appbox.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore

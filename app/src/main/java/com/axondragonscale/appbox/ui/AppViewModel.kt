@@ -1,9 +1,9 @@
-package com.axondragonscale.appdump.ui
+package com.axondragonscale.appbox.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.appdump.data.AppSettings
-import com.axondragonscale.appdump.data.AppThemeMode
+import com.axondragonscale.appbox.data.AppSettings
+import com.axondragonscale.appbox.data.AppThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
