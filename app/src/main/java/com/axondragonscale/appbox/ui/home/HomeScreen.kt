@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import com.axondragonscale.appbox.ui.theme.AppBoxTheme
 import com.axondragonscale.jest.JestActivity
 import com.axondragonscale.jest.R as JestR
+import com.axondragonscale.topty.R as ToptyR
+import com.axondragonscale.topty.ToptyActivity
 import com.axondragonscale.wallmatic.R as WallmaticR
 import com.axondragonscale.wallmatic.WallmaticActivity
 
@@ -221,7 +223,7 @@ private fun SubAppCard(app: SubApp, onClick: () -> Unit) {
                             Image(
                                 painter = painterResource(id = icon.resId),
                                 contentDescription = null,
-                                modifier = Modifier.size(36.dp),
+                                modifier = Modifier.size(52.dp),
                                 colorFilter = if (!app.enabled) {
                                     ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                                 } else null
@@ -310,9 +312,9 @@ private val subApps = listOf(
     SubApp(
         name = "Topty",
         description = "Lightweight 2FA authenticator",
-        icon = SubAppIcon.Vector(Icons.Rounded.Key),
+        icon = SubAppIcon.Drawable(ToptyR.drawable.topty_icon_foreground),
         accentColor = Color(0xFF2196F3),
-        enabled = false,
+        onClick = { ToptyActivity.start(it) }
     ),
     SubApp(
         name = "2048",

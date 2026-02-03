@@ -1,5 +1,7 @@
 package com.axondragonscale.topty
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +20,14 @@ import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
 class ToptyActivity : ComponentActivity() {
+
+    companion object {
+        fun start(context: Context) {
+            val intent = Intent(context, ToptyActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
+    }
 
     private val appPrefsRepository: AppPrefsRepository by inject()
 
@@ -63,4 +73,3 @@ class ToptyActivity : ComponentActivity() {
         UIMode.AUTO -> isSystemInDarkTheme()
     }
 }
-
