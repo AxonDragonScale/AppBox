@@ -2,7 +2,9 @@ package com.axondragonscale.appbox.ui.home
 
 import android.content.Context
 import android.content.res.Configuration
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,21 +21,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.StickyNote2
 import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.Construction
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Mood
-import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -46,15 +43,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.appbox.ui.theme.AppBoxTheme
 import com.axondragonscale.jest.JestActivity
+import com.axondragonscale.jest.R as JestR
+import com.axondragonscale.wallmatic.R as WallmaticR
 import com.axondragonscale.wallmatic.WallmaticActivity
 
 @Composable
@@ -200,23 +202,37 @@ private fun SubAppCard(app: SubApp, onClick: () -> Unit) {
                         .clip(RoundedCornerShape(16.dp))
                         .background(
                             if (app.enabled) {
-                                app.accentColor.copy(alpha = 0.15f)
+                                MaterialTheme.colorScheme.surface
                             } else {
                                 MaterialTheme.colorScheme.surfaceContainerHighest
                             }
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = app.icon,
-                        contentDescription = null,
-                        tint = if (app.enabled) {
-                            app.accentColor
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        },
-                        modifier = Modifier.size(28.dp)
-                    )
+                    when (val icon = app.icon) {
+                        is SubAppIcon.Vector -> {
+                            Icon(
+                                imageVector = icon.imageVector,
+                                contentDescription = null,
+                                tint = if (app.enabled) {
+                                    app.accentColor
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                },
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        is SubAppIcon.Drawable -> {
+                            Image(
+                                painter = painterResource(id = icon.resId),
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                colorFilter = if (!app.enabled) {
+                                    ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                                } else null
+                            )
+                        }
+                    }
                 }
 
                 Column {
@@ -267,10 +283,15 @@ private fun SubAppCard(app: SubApp, onClick: () -> Unit) {
     }
 }
 
+sealed interface SubAppIcon {
+    data class Vector(val imageVector: ImageVector) : SubAppIcon
+    data class Drawable(@DrawableRes val resId: Int) : SubAppIcon
+}
+
 private data class SubApp(
     val name: String,
     val description: String,
-    val icon: ImageVector,
+    val icon: SubAppIcon,
     val accentColor: Color,
     val enabled: Boolean = true,
     val onClick: (Context) -> Unit = {}
@@ -280,28 +301,28 @@ private val subApps = listOf(
     SubApp(
         name = "Jest",
         description = "Get your daily dose of humor",
-        icon = Icons.Rounded.Mood,
-        accentColor = Color(0xFFFF9800),
+        icon = SubAppIcon.Drawable(JestR.drawable.jest_icon_foreground),
+        accentColor = Color(0xFFFFD248),
         onClick = { JestActivity.start(it) }
     ),
     SubApp(
         name = "Wallmatic",
         description = "Auto-change wallpapers on schedule",
-        icon = Icons.Rounded.Wallpaper,
-        accentColor = Color(0xFF4CAF50),
+        icon = SubAppIcon.Drawable(WallmaticR.drawable.wallmatic_icon_foreground),
+        accentColor = Color(0xFF4B46C0),
         onClick = { WallmaticActivity.start(it) }
     ),
     SubApp(
         name = "Topty",
         description = "Lightweight 2FA authenticator",
-        icon = Icons.Rounded.Key,
+        icon = SubAppIcon.Vector(Icons.Rounded.Key),
         accentColor = Color(0xFF2196F3),
         enabled = false,
     ),
     SubApp(
         name = "2048",
         description = "Classic puzzle game",
-        icon = Icons.Rounded.GridView,
+        icon = SubAppIcon.Vector(Icons.Rounded.GridView),
         accentColor = Color(0xFFE91E63),
         enabled = false,
     )

@@ -11,12 +11,16 @@
 
         <activity
             android:name=".WallmaticActivity"
+            android:label="Wallmatic"
+            android:icon="@mipmap/wallmatic_icon"
+            android:roundIcon="@mipmap/wallmatic_icon_round"
             android:taskAffinity=".WallmaticTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 

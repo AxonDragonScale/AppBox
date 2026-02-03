@@ -7,12 +7,16 @@
 
         <activity
             android:name=".JestActivity"
+            android:label="Jest"
+            android:icon="@mipmap/jest_icon"
+            android:roundIcon="@mipmap/jest_icon_round"
             android:taskAffinity=".JestTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
