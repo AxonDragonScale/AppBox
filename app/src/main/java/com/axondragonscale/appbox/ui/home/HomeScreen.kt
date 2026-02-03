@@ -25,9 +25,9 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import com.axondragonscale.appbox.R
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
@@ -105,21 +105,16 @@ private fun HeaderSection() {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Apps,
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_background),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.fillMaxSize()
+                )
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             Column {
