@@ -32,19 +32,19 @@ class PrefsVM(
     fun onEvent(event: PrefsUiEvent) = viewModelScope.launch(Dispatchers.IO) {
         when (event) {
             is PrefsUiEvent.CategorySelectionChanged -> {
-                prefsRepository.setJokeCategories(
+                prefsRepository.jokeCategories.set(
                     event.selectedCategories.map { Category.fromOrdinal(it) }
                 )
             }
 
             is PrefsUiEvent.JokeTypeSelectionChanged -> {
-                prefsRepository.setJokeTypes(
+                prefsRepository.jokeTypes.set(
                     event.selectedJokeTypes.map { JokeType.fromOrdinal(it) }
                 )
             }
 
             is PrefsUiEvent.BlacklistFlagSelectionChanged -> {
-                prefsRepository.setBlacklistFlags(
+                prefsRepository.blacklistFlags.set(
                     event.selectedBlacklistFlags.map { BlacklistFlag.fromOrdinal(it) }
                 )
             }
@@ -53,9 +53,9 @@ class PrefsVM(
 
     private fun prefsUiStateFlow(): Flow<PrefsUiState> =
         combine(
-            prefsRepository.jokeCategoriesFlow,
-            prefsRepository.jokeTypesFlow,
-            prefsRepository.blacklistFlagsFlow
+            prefsRepository.jokeCategories.flow,
+            prefsRepository.jokeTypes.flow,
+            prefsRepository.blacklistFlags.flow
         ) { jokeCategories, jokeTypes, blacklistFlags ->
             PrefsUiState(
                 selectedCategories = jokeCategories,

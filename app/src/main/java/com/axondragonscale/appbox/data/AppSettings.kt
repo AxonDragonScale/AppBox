@@ -11,7 +11,7 @@ import com.axondragonscale.appbox.model.AppThemeMode
 import com.axondragonscale.commons.enumSetting
 import com.axondragonscale.commons.setting
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("appbox_settings")
 
 class AppSettings(context: Context) {
 

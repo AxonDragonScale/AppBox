@@ -28,14 +28,12 @@ object ConfigSerializer: Serializer<Config> {
     override suspend fun writeTo(t: Config, output: OutputStream) = t.writeTo(output)
 }
 
-private const val CONFIG_STORE = "config_store"
 private val Context.configStore: DataStore<Config> by dataStore(
-    fileName = CONFIG_STORE,
+    fileName = "wallmatic_config_store",
     serializer = ConfigSerializer,
 )
 
-private const val APP_PREFS_STORE = "app_prefs_store"
-private val Context.appPrefs: DataStore<Preferences> by preferencesDataStore(APP_PREFS_STORE)
+private val Context.appPrefs: DataStore<Preferences> by preferencesDataStore("wallmatic_app_prefs")
 
 class AppPrefsRepository(
     val context: Context,

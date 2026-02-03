@@ -28,17 +28,17 @@ class JokeRepository(
     }
 
     suspend fun getNewJoke(): IJoke {
-        val categories = prefsRepository.jokeCategoriesFlow
+        val categories = prefsRepository.jokeCategories.flow
             .firstOrNull()
             .toCommaSeparatedString()
             .ifNullOrBlank("Any")!!
 
-        val jokeTypes = prefsRepository.jokeTypesFlow
+        val jokeTypes = prefsRepository.jokeTypes.flow
             .firstOrNull()
             .toCommaSeparatedString()
             .ifNullOrBlank(null)
 
-        val blacklistFlags = prefsRepository.blacklistFlagsFlow
+        val blacklistFlags = prefsRepository.blacklistFlags.flow
             .firstOrNull()
             .toCommaSeparatedString()
             .ifNullOrBlank(null)
