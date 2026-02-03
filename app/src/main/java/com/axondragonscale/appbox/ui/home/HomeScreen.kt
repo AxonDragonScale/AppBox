@@ -197,7 +197,7 @@ private fun SubAppCard(app: SubApp, onClick: () -> Unit) {
                         .clip(RoundedCornerShape(16.dp))
                         .background(
                             if (app.enabled) {
-                                MaterialTheme.colorScheme.surface
+                                Color.White.copy(alpha = 0.9f)
                             } else {
                                 MaterialTheme.colorScheme.surfaceContainerHighest
                             }

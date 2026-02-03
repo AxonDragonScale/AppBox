@@ -67,6 +67,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -77,6 +79,7 @@ import com.axondragonscale.appbox.ui.theme.AppBoxTheme
 import com.axondragonscale.commons.PermissionState
 import com.axondragonscale.commons.getDangerousPermissions
 import com.axondragonscale.commons.getMissingPermissions
+import com.axondragonscale.appbox.R
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -440,7 +443,7 @@ private fun AboutSection() {
         val context = LocalContext.current
 
         SettingsLinkItem(
-            icon = Icons.Rounded.Person,
+            icon = ImageVector.vectorResource(com.axondragonscale.wallmatic.R.drawable.ic_github),
             title = "GitHub Profile",
             onClick = {
                 val intent = Intent(Intent.ACTION_VIEW, "https://github.com/AxonDragonScale/".toUri())
