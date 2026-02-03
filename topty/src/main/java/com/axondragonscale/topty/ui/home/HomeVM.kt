@@ -37,8 +37,8 @@ class HomeVM(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             combine(
-                appPrefsRepository.codeDesignFlow,
-                appPrefsRepository.speakOutOnTapFlow,
+                appPrefsRepository.codeDesign.flow,
+                appPrefsRepository.speakOutOnTap.flow,
                 repository.getTokens(),
             ) { codeDesign, speakOutOnTap, tokens ->
                 val codes = tokens.map { token -> token.generateCode() }

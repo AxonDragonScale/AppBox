@@ -41,19 +41,19 @@ class ToptyActivity : ComponentActivity() {
 
         val (initialUiMode, initialDynamicTheme, initialUiFont) = runBlocking {
             Triple(
-                appPrefsRepository.uiModeFlow.first(),
-                appPrefsRepository.dynamicThemeFlow.first(),
-                appPrefsRepository.uiFontFlow.first(),
+                appPrefsRepository.uiMode.flow.first(),
+                appPrefsRepository.dynamicTheme.flow.first(),
+                appPrefsRepository.uiFont.flow.first(),
             )
         }
         keepSplashScreen = false
 
         setContent {
-            val uiMode by appPrefsRepository.uiModeFlow
+            val uiMode by appPrefsRepository.uiMode.flow
                 .collectAsStateWithLifecycle(initialValue = initialUiMode)
-            val dynamicTheme by appPrefsRepository.dynamicThemeFlow
+            val dynamicTheme by appPrefsRepository.dynamicTheme.flow
                 .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
-            val uiFont by appPrefsRepository.uiFontFlow
+            val uiFont by appPrefsRepository.uiFont.flow
                 .collectAsStateWithLifecycle(initialValue = initialUiFont)
 
             ToptyTheme(

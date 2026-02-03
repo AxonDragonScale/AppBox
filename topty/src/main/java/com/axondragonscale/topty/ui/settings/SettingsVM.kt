@@ -24,11 +24,11 @@ class SettingsVM(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             combine(
-                appPrefsRepository.uiModeFlow,
-                appPrefsRepository.dynamicThemeFlow,
-                appPrefsRepository.uiFontFlow,
-                appPrefsRepository.codeDesignFlow,
-                appPrefsRepository.speakOutOnTapFlow,
+                appPrefsRepository.uiMode.flow,
+                appPrefsRepository.dynamicTheme.flow,
+                appPrefsRepository.uiFont.flow,
+                appPrefsRepository.codeDesign.flow,
+                appPrefsRepository.speakOutOnTap.flow,
             ) { uiMode, dynamicTheme, uiFont, codeDesign, speakOutOnTap ->
                 uiState.update {
                     it.copy(
@@ -46,22 +46,22 @@ class SettingsVM(
     fun onEvent(event: SettingsUiEvent) = viewModelScope.launch(Dispatchers.IO) {
         when (event) {
             is SettingsUiEvent.UIModeUpdated ->
-                appPrefsRepository.setUiMode(event.uiMode)
+                appPrefsRepository.uiMode.set(event.uiMode)
 
             is SettingsUiEvent.DynamicThemeToggled ->
-                appPrefsRepository.setDynamicTheme(event.dynamicTheme)
+                appPrefsRepository.dynamicTheme.set(event.dynamicTheme)
 
             is SettingsUiEvent.UIFontUpdated ->
-                appPrefsRepository.setUIFont(event.uiFont)
+                appPrefsRepository.uiFont.set(event.uiFont)
 
             is SettingsUiEvent.ClearData ->
                 devTools.clearData()
 
             is SettingsUiEvent.CodeDesignUpdated ->
-                appPrefsRepository.setCodeDesign(event.codeDesign)
+                appPrefsRepository.codeDesign.set(event.codeDesign)
 
             is SettingsUiEvent.SpeakOutOnTapToggled ->
-                appPrefsRepository.setSpeakOutOnTap(event.speakOutOnTap)
+                appPrefsRepository.speakOutOnTap.set(event.speakOutOnTap)
 
             // Handled in Compose
             SettingsUiEvent.NavigateBack -> Unit
