@@ -6,14 +6,17 @@ protobufPlugin = "0.9.6"
 # Android
 coreKtx = "1.17.0"
 lifecycleRuntimeKtx = "2.10.0"
-activityCompose = "1.12.2"
-composeBom = "2026.01.00"
+activityCompose = "1.12.3"
+composeBom = "2026.01.01"
 appcompat = "1.7.1"
 androidxGlance = "1.1.1"
 room = "2.8.4"
 ksp = "2.3.4"
 datastore = "1.2.0"
 documentfile = "1.1.0"
+androidxSplashscreen = "1.2.0"
+camerax = "1.5.3"
+mlkitBarcodeScanner = "17.3.0"
 
 # Kotlin
 kotlinx-coroutines = "1.10.2"
@@ -25,6 +28,8 @@ ktor = "3.4.0"
 chucker = "4.3.0"
 coil = "3.3.0"
 protobuf = "3.25.4" # Update carefully
+guava = "33.5.0-android"
+accompanist = "0.36.0"
 
 [libraries]
 # Plugins
@@ -36,7 +41,16 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidxSplashscreen" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
+
+# Camera
+camerax-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+camerax-extenstions = { module = "androidx.camera:camera-extenstions", version.ref = "camerax" }
+camerax-mlkit-vision = { module = "androidx.camera:camera-mlkit-vision", version.ref = "camerax" }
+mlkit-barcode-scanner = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanner" }
 
 # Compose
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -91,6 +105,9 @@ chucker-noop = { module = "com.github.chuckerteam.chucker:library-no-op", versio
 coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
@@ -144,3 +161,10 @@ datastore = [
     "datastore",
     "datastore-prefs",
 ]
+camerax = [
+    "camerax-camera2",
+    "camerax-lifecycle",
+    "camerax-view",
+    "camerax-mlkit-vision"
+]
+

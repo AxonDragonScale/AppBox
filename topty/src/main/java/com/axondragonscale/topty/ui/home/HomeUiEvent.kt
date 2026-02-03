@@ -1,0 +1,18 @@
+package com.axondragonscale.topty.ui.home
+
+import android.content.Context
+import android.net.Uri
+import com.axondragonscale.topty.model.Code
+
+/**
+ * Created by Ronak Harkhani on 22/09/24
+ */
+sealed interface HomeUiEvent {
+    data object NavigateToQRScanner: HomeUiEvent
+    data object NavigateToAddToken: HomeUiEvent
+    data object NavigateToSettings: HomeUiEvent
+    data class ScanImage(val context: Context, val uri: Uri): HomeUiEvent
+    data class NavigateToEditToken(val tokenId: Long): HomeUiEvent
+    data class RefreshCode(val index: Int, val code: Code): HomeUiEvent
+    data class SpeakOut(val code: Code): HomeUiEvent
+}

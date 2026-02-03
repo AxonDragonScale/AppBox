@@ -5,6 +5,7 @@ import com.axondragonscale.appbox.di.AppModule
 import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.commons.logD
 import com.axondragonscale.jest.di.JestModule
+import com.axondragonscale.topty.di.ToptyModule
 import com.axondragonscale.wallmatic.di.WallmaticModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -34,6 +35,7 @@ class MainApplication: Application() {
                 CommonsModule,
                 JestModule,
                 WallmaticModule,
+                ToptyModule,
             )
         }
     }
