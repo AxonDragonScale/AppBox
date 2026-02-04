@@ -1,6 +1,7 @@
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             content {
@@ -23,9 +24,11 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AppBox"
-include(":app")
-include(":commons")
-include(":wallmatic")
-include(":jest")
-include(":dev-butler")
-include(":topty")
+
+// Core modules (libraries)
+include(":core:commons")
+
+// App modules (applications)
+include(":apps:jest")
+include(":apps:wallmatic")
+include(":apps:topty")

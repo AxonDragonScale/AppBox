@@ -2,7 +2,7 @@
 
 ## Overview
 
-AppBox is a multi-module Android "super-app" that consolidates multiple small applications and utilities into a single codebase. The project follows a modular architecture where each sub-app is an independent Android library module.
+AppBox is a monorepo containing multiple standalone Android applications that share common utilities and build configuration. Each app is independently installable and publishable while benefiting from shared code and consistent architecture.
 
 ## Tech Stack
 
@@ -18,64 +18,99 @@ AppBox is a multi-module Android "super-app" that consolidates multiple small ap
 | DataStore | Preferences + Proto DataStore |
 | Image Loading | Coil 3 |
 | Widgets | Jetpack Glance |
-| Build System | Gradle (Kotlin DSL) with Version Catalogs |
+| Build System | Gradle (Kotlin DSL) with Version Catalogs + Convention Plugins |
 
 ## Project Structure
 
 ```
 AppBox/
-├── app/                    # Main application module (shell app)
-├── commons/                # Shared utilities, network, DI setup
-├── wallmatic/              # Wallpaper auto-changer sub-app
-├── jest/                   # Jokes/humor sub-app with widget support
-├── topty/                  # 2FA authenticator sub-app
-├── dev-butler/             # Developer utilities (internal)
-├── build-logic/            # Convention plugins for build configuration
-├── gradle/                 # Version catalog (libs.versions.toml)
-└── keystore/               # Signing configuration
+├── apps/                   # Standalone Android applications
+│   ├── jest/              # Jokes/humor app with widget support
+│   ├── wallmatic/         # Wallpaper auto-changer app
+│   └── topty/             # 2FA authenticator app
+├── core/                   # Shared library modules
+│   └── commons/           # Shared utilities, network, DI setup
+├── build-logic/           # Convention plugins for build configuration
+│   └── src/main/kotlin/
+│       ├── app-convention.gradle.kts      # For app modules
+│       └── library-convention.gradle.kts  # For library modules
+├── gradle/                # Version catalog (libs.versions.toml)
+└── keystore/              # Signing configuration
 ```
 
-## Module Details
+## App Modules
 
-### `:app` (Main Shell)
-- **Package**: `com.axondragonscale.appbox`
-- **Purpose**: Entry point, navigation hub, integrates all sub-apps
-- **Key Dependencies**: All feature modules, Navigation Compose, DataStore Prefs
-
-### `:commons` (Shared Library)
-- **Package**: `com.axondragonscale.commons`
-- **Purpose**: Shared utilities across all modules
-- **Contains**: Logger, Result wrapper, Serialization helpers, Network setup, DI modules
-
-### `:wallmatic` (Wallpaper Manager)
-- **Package**: `com.axondragonscale.wallmatic`
-- **Purpose**: Auto-change wallpapers on schedule
-- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), Coil (images)
-
-### `:jest` (Jokes App)
+### `:apps:jest` (Jokes App)
 - **Package**: `com.axondragonscale.jest`
-- **Purpose**: Daily jokes/humor content
-- **Key Tech**: Ktor (API calls), Room (caching), Glance (home screen widget)
+- **Application Class**: `JestApplication`
+- **Purpose**: Daily jokes/humor content with home screen widget
+- **Key Tech**: Ktor (API calls), Room (caching), Glance (widget)
 
-### `:topty` (Authenticator)
+### `:apps:wallmatic` (Wallpaper Manager)
+- **Package**: `com.axondragonscale.wallmatic`
+- **Application Class**: `WallmaticApplication`
+- **Purpose**: Auto-change wallpapers on schedule
+- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), Quick Settings Tiles
+
+### `:apps:topty` (Authenticator)
 - **Package**: `com.axondragonscale.topty`
+- **Application Class**: `ToptyApplication`
 - **Purpose**: TOTP-based 2FA code manager
-- **Status**: Minimal setup (early development)
+- **Key Tech**: Room (storage), CameraX + ML Kit (QR scanning)
 
-### `:dev-butler` (Developer Tools)
-- **Package**: `com.axondragonscale.dev.butler`
-- **Purpose**: Internal developer utilities
-- **Status**: Minimal setup
+## Core Modules
 
-### `:build-logic` (Build Conventions)
-- **Purpose**: Shared Gradle convention plugins
-- **Contains**: Reusable build configuration
-- **Status**: ⚠️ Currently NOT in use due to issues with accessing `libs.versions.toml` from convention plugins
+### `:core:commons` (Shared Library)
+- **Package**: `com.axondragonscale.commons`
+- **Purpose**: Shared utilities across all apps
+- **Contains**: 
+  - Logger utilities
+  - Result wrapper
+  - Serialization helpers
+  - Network setup (Ktor client)
+  - Common Compose utilities
+  - CommonsModule (Koin DI module)
+
+## Build Configuration
+
+### Convention Plugins
+
+**`app-convention`** - Applied to all app modules:
+- Android Application plugin
+- Kotlin Android + Compose
+- Signing configuration (shared keystore)
+- Common SDK versions and compile options
+- BuildConfig and Compose features enabled
+
+**`library-convention`** - Applied to library modules:
+- Android Library plugin
+- Kotlin Android
+- Common SDK versions and compile options
+
+### Dependency Injection Setup
+
+Each app has its own `Application` class that initializes Koin:
+
+```kotlin
+class JestApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        startKoin {
+            androidLogger()
+            androidContext(this@JestApplication)
+            modules(
+                CommonsModule,  // From :core:commons
+                JestModule,     // App-specific module
+            )
+        }
+    }
+}
+```
 
 ## Architecture Patterns
 
 - **UI Layer**: Jetpack Compose with Material 3
-- **State Management**: Compose State + ViewModels
+- **State Management**: ViewModel + StateFlow
 - **Dependency Injection**: Koin (not Hilt/Dagger)
 - **Navigation**: Navigation Compose
 - **Async**: Kotlin Coroutines + Flow
@@ -96,21 +131,37 @@ AppBox/
 - Follow slot-based API patterns for reusable components
 
 ### Module Guidelines
-- Each sub-app should be self-contained
-- Shared code goes in `:commons`
-- Feature modules depend on `:commons`, not on each other
-- Use typesafe project accessors (`projects.commons` instead of `":commons"`)
+- Each app is fully self-contained with its own Application class
+- Shared code goes in `:core:commons`
+- App modules depend on `:core:commons`, not on each other
+- Use typesafe project accessors (`projects.core.commons`)
 
-## Build Configuration
+## Building
 
-- **Compile SDK**: 36 (release)
-- **Java/Kotlin Target**: 21
-- **Version Catalog**: `gradle/libs.versions.toml`
-- **Feature Preview**: `TYPESAFE_PROJECT_ACCESSORS`
+```bash
+# Build all apps
+./gradlew assembleDebug
+
+# Build specific app
+./gradlew :apps:jest:assembleDebug
+./gradlew :apps:wallmatic:assembleDebug
+./gradlew :apps:topty:assembleDebug
+
+# Run tests
+./gradlew test
+
+# Install specific app
+./gradlew :apps:jest:installDebug
+```
 
 ## Key Dependencies Reference
 
 ```kotlin
+// Convention plugin (for apps)
+plugins {
+    id("app-convention")
+}
+
 // DI
 implementation(platform(libs.koin.bom))
 implementation(libs.bundles.koin)
@@ -132,7 +183,23 @@ implementation(libs.bundles.coil)
 
 // Widgets
 implementation(libs.bundles.glance)
+
+// Core module
+implementation(projects.core.commons)
 ```
+
+## Splash Screen Configuration
+
+Each app has its own splash screen theme defined in `res/values/themes.xml`:
+
+```xml
+<style name="Theme.AppName" parent="android:Theme.Material.Light.NoActionBar">
+    <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+    <item name="android:windowSplashScreenAnimatedIcon">@drawable/app_icon_foreground</item>
+</style>
+```
+
+Activities call `installSplashScreen()` before `super.onCreate()`.
 
 ## Notes for AI Assistance
 
@@ -142,6 +209,8 @@ implementation(libs.bundles.glance)
 4. **Target JVM 21** - modern Kotlin features are available
 5. **Room with KSP** - not KAPT
 6. **Proto DataStore** is used in wallmatic for typed settings
-7. When creating new features, check if similar patterns exist in other modules
-8. The app uses **Compose BOM** - don't specify individual Compose versions
-9. Debug builds have `.debug` application ID suffix
+7. When creating new features, check if similar patterns exist in other apps
+8. The project uses **Compose BOM** - don't specify individual Compose versions
+9. Each app is independent - no shared Application class
+10. Use convention plugins (`app-convention`, `library-convention`) for new modules
+11. Apps are in `apps/` directory, libraries are in `core/` directory
