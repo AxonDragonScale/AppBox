@@ -11,6 +11,7 @@
             android:icon="@mipmap/jest_icon"
             android:roundIcon="@mipmap/jest_icon_round"
             android:taskAffinity=".JestTask"
+            android:theme="@style/Theme.Jest"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

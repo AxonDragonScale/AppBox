@@ -15,6 +15,7 @@
             android:icon="@mipmap/wallmatic_icon"
             android:roundIcon="@mipmap/wallmatic_icon_round"
             android:taskAffinity=".WallmaticTask"
+            android:theme="@style/Theme.Wallmatic"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -12,7 +12,8 @@
             android:icon="@mipmap/topty_icon"
             android:roundIcon="@mipmap/topty_icon_round"
             android:exported="true"
-            android:taskAffinity=".ToptyTask">
+            android:taskAffinity=".ToptyTask"
+            android:theme="@style/Theme.Topty">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

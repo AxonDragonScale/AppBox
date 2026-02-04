@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.datastore.prefs)
+    implementation(libs.androidx.splashscreen)
 
     // Koin
     implementation(platform(libs.koin.bom))
