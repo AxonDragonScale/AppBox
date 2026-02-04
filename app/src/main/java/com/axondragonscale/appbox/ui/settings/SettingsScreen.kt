@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteForever
@@ -403,14 +404,12 @@ private fun PermissionItem(permission: PermissionState) {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            if (permission.granted) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = "Granted",
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(14.dp)
-                )
-            }
+            Icon(
+                imageVector = if (permission.granted) Icons.Rounded.Check else Icons.Rounded.Close,
+                contentDescription = if (permission.granted) "Granted" else "Denied",
+                tint = if (permission.granted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(14.dp)
+            )
         }
     }
 }
