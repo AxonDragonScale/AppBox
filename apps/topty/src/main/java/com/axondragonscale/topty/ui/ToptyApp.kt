@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.axondragonscale.topty.ui.devtools.ToptyDevTools
 import com.axondragonscale.topty.ui.token.Token
 import com.axondragonscale.topty.ui.home.Home
 import com.axondragonscale.topty.ui.qrscanner.QRScanner
@@ -56,6 +57,10 @@ fun ToptyApp(modifier: Modifier = Modifier) {
 
         composable<Route.Settings> {
             Settings(navController = navController)
+        }
+
+        composable<Route.DevTools> {
+            ToptyDevTools()
         }
     }
 }

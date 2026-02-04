@@ -11,6 +11,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
+import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.albums.Albums
 import com.axondragonscale.wallmatic.ui.bottombar.BottomBar
 import com.axondragonscale.wallmatic.ui.bottombar.Tab
@@ -42,7 +43,7 @@ fun Dashboard(
             when (position) {
                 Tab.Home.position -> Home(navController = navController)
                 Tab.Albums.position -> Albums(navController = navController)
-                Tab.Settings.position -> Settings()
+                Tab.Settings.position -> Settings(navController = navController)
             }
         }
 

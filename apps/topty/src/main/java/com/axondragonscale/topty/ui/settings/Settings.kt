@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Campaign
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DesignServices
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Palette
@@ -60,6 +59,7 @@ import com.axondragonscale.topty.ui.common.Dropdown
 import com.axondragonscale.topty.ui.common.DropdownItem
 import com.axondragonscale.topty.ui.common.Switch
 import com.axondragonscale.topty.ui.theme.DefaultShape
+import com.axondragonscale.topty.ui.Route
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 import com.axondragonscale.topty.ui.util.thenIf
 import org.koin.androidx.compose.koinViewModel
@@ -81,6 +81,8 @@ fun Settings(
         onEvent = { event ->
             when (event) {
                 SettingsUiEvent.NavigateBack -> navController.popBackStack()
+
+                SettingsUiEvent.NavigateToDevTools -> navController.navigate(Route.DevTools)
 
                 else -> vm.onEvent(event)
             }
@@ -147,7 +149,7 @@ private fun Settings(
 
             DevToolsSection(
                 modifier = Modifier.padding(top = 16.dp),
-                onClearData = { onEvent(SettingsUiEvent.ClearData) }
+                onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -358,20 +360,27 @@ private fun AboutSection(
 @Composable
 private fun DevToolsSection(
     modifier: Modifier = Modifier,
-    onClearData: () -> Unit,
+    onOpenDevTools: () -> Unit,
 ) = Section(
     modifier = modifier,
     title = "Dev Tools",
 ) {
     SettingsCard(
-        onClick = onClearData,
+        onClick = onOpenDevTools,
         leadingContent = {
             Icon(
-                imageVector = Icons.Filled.DeleteForever,
-                contentDescription = "Clear Data",
+                imageVector = Icons.Filled.Android,
+                contentDescription = "Dev Tools",
             )
         },
-        headlineContent = { Text(text = "Clear Data") },
+        headlineContent = { Text(text = "Open Dev Tools") },
+        supportingContent = { Text(text = "Debug utilities and settings") },
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = null,
+            )
+        }
     )
 }
 

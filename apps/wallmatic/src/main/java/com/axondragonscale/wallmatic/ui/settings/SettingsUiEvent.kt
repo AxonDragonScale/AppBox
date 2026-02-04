@@ -9,7 +9,5 @@ internal sealed interface SettingsUiEvent {
     data class UIModeUpdated(val uiMode: UIMode) : SettingsUiEvent
     data class DynamicThemeToggled(val dynamicTheme: Boolean) : SettingsUiEvent
     data class GridSizedUpdated(val gridSize: Int): SettingsUiEvent
-    data object ClearData : SettingsUiEvent
-    data class FastAutoCycleToggled(val fastAutoCycle: Boolean) : SettingsUiEvent
-    data object SyncAlbums : SettingsUiEvent
+    data object NavigateToDevTools : SettingsUiEvent
 }

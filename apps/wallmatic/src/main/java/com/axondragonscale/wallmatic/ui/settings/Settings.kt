@@ -1,6 +1,7 @@
 package com.axondragonscale.wallmatic.ui.settings
 
 import android.content.res.Configuration
+import androidx.navigation.NavController
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,14 +20,11 @@ import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
@@ -58,6 +56,7 @@ import com.axondragonscale.wallmatic.ui.bottombar.BOTTOM_BAR_HEIGHT
 import com.axondragonscale.wallmatic.ui.common.SettingsCard
 import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.WallmaticCard
+import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 
 /**
@@ -65,13 +64,23 @@ import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
  */
 
 @Composable
-fun Settings(modifier: Modifier = Modifier) {
+fun Settings(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+) {
     val vm: SettingsVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     Settings(
         modifier = modifier,
         uiState = uiState,
-        onEvent = { vm.onEvent(it) }
+        onEvent = { event ->
+            when (event) {
+                is SettingsUiEvent.NavigateToDevTools ->
+                    navController.navigate(Route.DevTools)
+
+                else -> vm.onEvent(event)
+            }
+        },
     )
 }
 
@@ -106,16 +115,13 @@ private fun Settings(
             onGridSizeChanged = { onEvent(SettingsUiEvent.GridSizedUpdated(it)) }
         )
 
-        DevToolsCard(
+        AboutCard(
             modifier = Modifier.padding(top = 16.dp),
-            fastAutoCycle = uiState.fastAutoCycle,
-            onClearData = { onEvent(SettingsUiEvent.ClearData) },
-            onFastAutoCycleToggled = { onEvent(SettingsUiEvent.FastAutoCycleToggled(it)) },
-            onSyncAlbums = { onEvent(SettingsUiEvent.SyncAlbums) }
         )
 
-        AboutCard(
+        DevToolsCard(
             modifier = Modifier.padding(vertical = 16.dp),
+            onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) },
         )
 
         Spacer(modifier = Modifier.height(BOTTOM_BAR_HEIGHT))
@@ -316,113 +322,33 @@ private fun GridSizeCard(
 @Composable
 private fun DevToolsCard(
     modifier: Modifier = Modifier,
-    fastAutoCycle: Boolean,
-    onClearData: () -> Unit,
-    onFastAutoCycleToggled: (Boolean) -> Unit,
-    onSyncAlbums: () -> Unit,
+    onOpenDevTools: () -> Unit,
 ) = WallmaticCard(modifier = modifier, title = "Dev Tools") {
-
-    ClearDataCard(
-        modifier = Modifier.padding(bottom = 8.dp),
-        onClick = onClearData,
-    )
-
-    FastAutoCycleCard(
-        modifier = Modifier.padding(bottom = 8.dp),
-        fastAutoCycle = fastAutoCycle,
-        onToggled = onFastAutoCycleToggled,
-    )
-
-    SyncAlbums(
-        onClick = onSyncAlbums,
-    )
-}
-
-@Composable
-private fun ClearDataCard(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
     SettingsCard(
-        modifier = modifier,
-        onClick = onClick,
+        onClick = onOpenDevTools,
         leadingContent = {
             Icon(
-                imageVector = Icons.Filled.DeleteForever,
-                contentDescription = "Clear Data",
+                imageVector = Icons.Filled.Android,
+                contentDescription = "Dev Tools",
             )
         },
         headlineContent = {
             Text(
-                text = "Clear Data",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    )
-}
-
-@Composable
-private fun FastAutoCycleCard(
-    modifier: Modifier = Modifier,
-    fastAutoCycle: Boolean,
-    onToggled: (Boolean) -> Unit,
-) {
-    SettingsCard(
-        modifier = modifier,
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Filled.Refresh,
-                contentDescription = null,
-            )
-        },
-        headlineContent = {
-            Text(
-                text = "Fast Autocycle",
+                text = "Open Dev Tools",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
             )
         },
         supportingContent = {
             Text(
-                text = "Use one minute Autocycle interval",
+                text = "Debug utilities and settings",
                 style = MaterialTheme.typography.labelSmall
             )
         },
         trailingContent = {
-            Switch(
-                checked = fastAutoCycle,
-                onCheckedChange = onToggled,
-            )
-        }
-    )
-}
-
-@Composable
-private fun SyncAlbums(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    SettingsCard(
-        modifier = modifier,
-        onClick = onClick,
-        leadingContent = {
             Icon(
-                imageVector = Icons.Filled.Sync,
-                contentDescription = "Sync Albums",
-            )
-        },
-        headlineContent = {
-            Text(
-                text = "Sync Albums",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        supportingContent = {
-            Text(
-                text = "Sync Albums with Disk Storage",
-                style = MaterialTheme.typography.labelSmall,
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = null,
             )
         }
     )
@@ -534,7 +460,7 @@ private fun Preview() {
             val uiState = remember { SettingsUiState() }
             Settings(
                 uiState = uiState,
-                onEvent = { }
+                onEvent = { },
             )
         }
     }

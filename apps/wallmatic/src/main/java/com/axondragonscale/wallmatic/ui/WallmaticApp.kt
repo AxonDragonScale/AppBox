@@ -12,6 +12,7 @@ import androidx.navigation.toRoute
 import com.axondragonscale.wallmatic.ui.album.Album
 import com.axondragonscale.wallmatic.ui.bottombar.Tabs
 import com.axondragonscale.wallmatic.ui.dashboard.Dashboard
+import com.axondragonscale.wallmatic.ui.devtools.WallmaticDevTools
 import com.axondragonscale.wallmatic.ui.folder.Folder
 import com.axondragonscale.wallmatic.ui.wallpaper.Wallpaper
 
@@ -62,6 +63,10 @@ fun WallmaticApp(modifier: Modifier = Modifier) {
         composable<Route.Wallpaper> { backStackEntry ->
             val wallpaper: Route.Wallpaper = backStackEntry.toRoute()
             Wallpaper()
+        }
+
+        composable<Route.DevTools> {
+            WallmaticDevTools()
         }
     }
 }

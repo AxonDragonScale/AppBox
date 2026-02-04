@@ -15,7 +15,7 @@ import com.axondragonscale.wallmatic.ui.folder.FolderVM
 import com.axondragonscale.wallmatic.ui.home.HomeVM
 import com.axondragonscale.wallmatic.ui.settings.SettingsVM
 import com.axondragonscale.wallmatic.ui.wallpaper.WallpaperVM
-import com.axondragonscale.wallmatic.util.DevTools
+
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -34,7 +34,7 @@ val WallmaticModule = module {
     singleOf(::WallpaperUpdater)
     singleOf(::AlbumManager)
     singleOf(::FolderManager)
-    singleOf(::DevTools)
+
     singleOf(::WallmaticScheduler)
 
     // ViewModels

@@ -4,7 +4,6 @@ import com.axondragonscale.topty.core.TTS
 import com.axondragonscale.topty.database.ToptyDatabase
 import com.axondragonscale.topty.repository.AppPrefsRepository
 import com.axondragonscale.topty.repository.TokenRepository
-import com.axondragonscale.topty.util.DevTools
 import com.axondragonscale.topty.ui.token.TokenVM
 import com.axondragonscale.topty.ui.home.HomeVM
 import com.axondragonscale.topty.ui.qrscanner.QRScannerVM
@@ -36,7 +35,5 @@ val ToptyModule = module {
     viewModelOf(::QRScannerVM)
     viewModelOf(::SettingsVM)
     viewModelOf(::TokenVM)
-
-    factoryOf(::DevTools)
 
 }

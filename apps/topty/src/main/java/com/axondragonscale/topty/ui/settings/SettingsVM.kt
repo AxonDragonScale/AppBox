@@ -3,7 +3,6 @@ package com.axondragonscale.topty.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.topty.repository.AppPrefsRepository
-import com.axondragonscale.topty.util.DevTools
 import com.axondragonscale.topty.util.collect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +15,6 @@ import kotlinx.coroutines.launch
  */
 class SettingsVM(
     private val appPrefsRepository: AppPrefsRepository,
-    private val devTools: DevTools,
 ): ViewModel() {
 
     val uiState = MutableStateFlow(SettingsUiState())
@@ -54,9 +52,6 @@ class SettingsVM(
             is SettingsUiEvent.UIFontUpdated ->
                 appPrefsRepository.uiFont.set(event.uiFont)
 
-            is SettingsUiEvent.ClearData ->
-                devTools.clearData()
-
             is SettingsUiEvent.CodeDesignUpdated ->
                 appPrefsRepository.codeDesign.set(event.codeDesign)
 
@@ -65,6 +60,7 @@ class SettingsVM(
 
             // Handled in Compose
             SettingsUiEvent.NavigateBack -> Unit
+            SettingsUiEvent.NavigateToDevTools -> Unit
         }
     }
 

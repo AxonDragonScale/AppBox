@@ -20,4 +20,7 @@ object Route {
     @Serializable
     data class Wallpaper(val wallpaperId: Int)
 
+    @Serializable
+    data object DevTools
+
 }

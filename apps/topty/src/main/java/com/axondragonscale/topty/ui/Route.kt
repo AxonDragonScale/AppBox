@@ -22,4 +22,7 @@ object Route {
         @Serializable data class Edit(val id: Long): Token
     }
 
+    @Serializable
+    data object DevTools
+
 }

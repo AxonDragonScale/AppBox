@@ -10,6 +10,11 @@ The `commons` module is a shared Android library that provides common utilities,
 com.axondragonscale.commons/
 ├── compose/
 │   └── ModifierExt.kt       # Compose Modifier extensions
+├── devtools/
+│   ├── DevTool.kt           # DevTool sealed interface definitions
+│   ├── DevToolItems.kt      # Composables for rendering tools
+│   ├── DevToolsBuilder.kt   # Builder DSL for creating tools
+│   └── DevToolsScreen.kt    # Main DevTools screen composable
 ├── di/
 │   └── CommonsModule.kt     # Koin DI module
 ├── network/
@@ -264,6 +269,101 @@ class MyApplication : Application() {
 }
 ```
 
+## Developer Tools (`devtools/`)
+
+A reusable developer tools screen component that provides common debugging utilities.
+
+### DevTool Types (`DevTool.kt`)
+
+```kotlin
+sealed interface DevTool {
+    data class Action(...)    // Clickable action
+    data class Toggle(...)    // Switch/toggle
+    data class Info(...)      // Read-only info display
+    data class Section(...)   // Section header
+    data class Custom(...)    // Custom composable
+}
+```
+
+### Building Tools (`DevToolsBuilder.kt`)
+
+```kotlin
+// Using builder DSL
+val tools = buildDevTools {
+    section("Database", Icons.Rounded.Storage)
+    action("Clear Cache") { clearCache() }
+    toggle("Debug Mode", isDebug) { setDebug(it) }
+    info("Version", "1.0.0")
+}
+
+// Or using builder class
+val tools = DevToolsBuilder()
+    .section("Settings")
+    .action("Reset", destructive = true) { reset() }
+    .build()
+```
+
+### DevToolsScreen (`DevToolsScreen.kt`)
+
+Built-in tools included automatically:
+- **Kill App**: Force stops the application
+- **Clear Data**: Clears all app data and restarts
+- **Permissions**: Shows dangerous permissions with request button
+
+```kotlin
+// Basic usage with custom tools
+DevToolsScreen(
+    title = "My App Dev Tools",
+    customToolsBuilder = {
+        section("App Tools", Icons.Rounded.Build)
+        action("Sync Data") { syncManager.sync() }
+        toggle("Fast Mode", isFastMode) { setFastMode(it) }
+    }
+)
+
+// Or with pre-built list
+DevToolsScreen(
+    customTools = myToolsList,
+    extraContent = {
+        // Additional composable content
+    }
+)
+```
+
+### Integration Example
+
+```kotlin
+// 1. Create app-specific DevTools screen
+@Composable
+fun MyAppDevTools(
+    viewModel: MyViewModel = koinInject()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    
+    DevToolsScreen(
+        title = "MyApp Dev Tools",
+        customToolsBuilder = {
+            section("App Info")
+            info("Version", BuildConfig.VERSION_NAME)
+            
+            section("Debug Tools")
+            action("Clear Cache") { viewModel.clearCache() }
+            toggle("Debug Logging", state.debugLogging) { 
+                viewModel.setDebugLogging(it) 
+            }
+        }
+    )
+}
+
+// 2. Add route
+@Serializable data object DevTools
+
+// 3. Add to navigation
+composable<Route.DevTools> {
+    MyAppDevTools()
+}
+```
+
 ## Best Practices
 
 1. **Logging**: Use lazy message evaluation with lambda syntax `{ }` to avoid string concatenation when logging is disabled
@@ -276,6 +376,8 @@ class MyApplication : Application() {
 
 5. **DI**: Always include `CommonsModule` when setting up Koin in your app
 
+6. **DevTools**: Create an app-specific wrapper around `DevToolsScreen` to add custom tools
+
 ## Notes for AI Assistance
 
 1. This module uses **Ktor** for networking, not Retrofit
@@ -284,3 +386,7 @@ class MyApplication : Application() {
 4. The `Result` type is custom, not `kotlin.Result`
 5. Chucker is included for network debugging in debug builds
 6. All utilities are designed to be used across multiple independent apps
+7. **DevToolsScreen** provides built-in kill app, clear data, and permissions tools
+8. Use `buildDevTools { }` DSL or `DevToolsBuilder()` for creating custom tools
+9. Apps should create their own DevTools screen wrapper that adds app-specific tools
+10. DevTool.Action with `destructive = true` renders in error/red color
