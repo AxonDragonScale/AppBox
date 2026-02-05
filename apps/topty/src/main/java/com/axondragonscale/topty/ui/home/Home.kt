@@ -1,5 +1,6 @@
 package com.axondragonscale.topty.ui.home
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -133,7 +135,7 @@ private fun Home(
 ) {
     val context = LocalContext.current
     Scaffold(
-        modifier = modifier.systemBarsPadding(),
+        modifier = modifier,
         topBar = {
             TopBar(onSettingsClick = { onEvent(HomeUiEvent.NavigateToSettings) })
         },
@@ -144,11 +146,9 @@ private fun Home(
                 onScanQR = { onEvent(HomeUiEvent.NavigateToQRScanner) }
             )
         },
-    ) { paddingValues ->
+    ) { _ ->
         Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
         ) {
             if (uiState.codes.isEmpty()) {
                 EmptyState(modifier = Modifier.fillMaxSize())
@@ -338,6 +338,10 @@ private fun CodeList(
                 CodeDesign.C -> CodeC(codeModifier, code, timeRemaining, onRefresh)
             }
         }
+    }
+
+    item {
+        Spacer(modifier = Modifier.height(96.dp))
     }
 }
 
