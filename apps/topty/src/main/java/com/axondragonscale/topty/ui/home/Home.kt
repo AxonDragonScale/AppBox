@@ -1,6 +1,7 @@
 package com.axondragonscale.topty.ui.home
 
 import android.annotation.SuppressLint
+import android.content.ClipData
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -56,9 +57,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -80,6 +84,7 @@ import com.axondragonscale.topty.ui.common.ExpandingFabItem
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 import com.axondragonscale.topty.ui.util.collectWithLifecycle
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.concurrent.timer
 import kotlin.math.roundToInt
@@ -322,11 +327,16 @@ private fun CodeList(
 
             // TODO: Temporary use of long click to edit token
             // Implement Swipe Actions with Edit and Delete using AnchoredDraggable
-            val clipboardManager = LocalClipboardManager.current
+            val clipboard = LocalClipboard.current
+            val scope = rememberCoroutineScope()
             val codeModifier = Modifier.combinedClickable(
                 onClick = {
-                    clipboardManager.setText(AnnotatedString(code.code))
-                    if (speakOutOnTap) onSpeakOut(code)
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(
+                            ClipData.newPlainText("Topty Code", code.code)
+                        ))
+                        if (speakOutOnTap) onSpeakOut(code)
+                    }
                 },
                 onLongClick = { onEditToken(code.token.id) }
             )
