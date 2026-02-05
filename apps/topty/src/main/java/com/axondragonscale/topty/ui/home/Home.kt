@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Keyboard
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -149,14 +150,18 @@ private fun Home(
                 .padding(paddingValues)
                 .fillMaxSize(),
         ) {
-            CodeList(
-                codeDesign = uiState.codeDesign,
-                codes = uiState.codes,
-                speakOutOnTap = uiState.speakOutOnTap,
-                onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
-                onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
-                onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
-            )
+            if (uiState.codes.isEmpty()) {
+                EmptyState(modifier = Modifier.fillMaxSize())
+            } else {
+                CodeList(
+                    codeDesign = uiState.codeDesign,
+                    codes = uiState.codes,
+                    speakOutOnTap = uiState.speakOutOnTap,
+                    onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
+                    onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
+                    onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
+                )
+            }
         }
     }
 }
@@ -186,6 +191,49 @@ private fun TopBar(
             }
         }
     )
+}
+
+@Composable
+private fun EmptyState(
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Shield,
+            contentDescription = null,
+            modifier = Modifier.size(120.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "No Codes Yet",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Add your first code to get started",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Tap the + button below",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+        )
+    }
 }
 
 @Composable
@@ -654,5 +702,24 @@ private fun PreviewCodes() {
                 CodeC(code = code2, timeRemaining = 10000, onRefresh = {})
             }
         }
+    }
+}
+
+@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewEmptyState() {
+    ToptyTheme {
+        val uiState = remember {
+            HomeUiState(
+                isLoading = false,
+                codeDesign = CodeDesign.C,
+                codes = listOf()
+            )
+        }
+        Home(
+            uiState = uiState,
+            onEvent = { }
+        )
     }
 }
