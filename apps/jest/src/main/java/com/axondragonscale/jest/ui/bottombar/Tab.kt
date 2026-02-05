@@ -5,8 +5,10 @@ import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -21,7 +23,7 @@ sealed class Tab(
 ) {
 
     companion object {
-        val all = listOf(Home, Favorites, History)
+        val all = listOf(Home, Favorites, History, Settings)
     }
 
     data object Home : Tab(
@@ -43,6 +45,13 @@ sealed class Tab(
         position = 2,
         activeIcon = Icons.AutoMirrored.Filled.Article,
         inactiveIcon = Icons.AutoMirrored.Outlined.Article,
+    )
+
+    data object Settings : Tab(
+        name = "SETTINGS",
+        position = 3,
+        activeIcon = Icons.Filled.Settings,
+        inactiveIcon = Icons.Outlined.Settings,
     )
 
 }

@@ -8,6 +8,7 @@ import com.axondragonscale.jest.repository.PrefsRepository
 import com.axondragonscale.jest.ui.home.HomeVM
 import com.axondragonscale.jest.ui.list.FavoritesVM
 import com.axondragonscale.jest.ui.list.HistoryVM
+import com.axondragonscale.jest.ui.settings.SettingsVM
 import com.axondragonscale.jest.ui.tune.PrefsVM
 import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.viewModel
@@ -29,4 +30,5 @@ val JestModule = module {
     viewModel { FavoritesVM(get()) }
     viewModel { HistoryVM(get()) }
     viewModel { PrefsVM(get()) }
+    viewModel { SettingsVM(get()) }
 }

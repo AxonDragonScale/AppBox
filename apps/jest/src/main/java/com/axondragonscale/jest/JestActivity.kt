@@ -8,12 +8,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.jest.model.UIMode
+import com.axondragonscale.jest.repository.PrefsRepository
 import com.axondragonscale.jest.ui.JestApp
 import com.axondragonscale.jest.ui.theme.JestTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.koin.android.ext.android.inject
 
 class JestActivity : ComponentActivity() {
 
+    private val prefsRepository: PrefsRepository by inject()
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -21,8 +31,21 @@ class JestActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val (initialUiMode, initialDynamicTheme) = runBlocking {
+            prefsRepository.uiMode.get() to prefsRepository.dynamicTheme.get()
+        }
+
         setContent {
-            JestTheme {
+            val uiMode by prefsRepository.uiMode.flow
+                .collectAsStateWithLifecycle(initialValue = initialUiMode)
+            val dynamicTheme by prefsRepository.dynamicTheme.flow
+                .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
+
+            JestTheme(
+                darkTheme = isDarkTheme(uiMode),
+                dynamicColor = dynamicTheme,
+            ) {
                 JestApp()
             }
         }
@@ -36,6 +59,13 @@ class JestActivity : ComponentActivity() {
             if (status != PackageManager.PERMISSION_GRANTED)
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    @Composable
+    private fun isDarkTheme(uiMode: UIMode) = when (uiMode) {
+        UIMode.LIGHT -> false
+        UIMode.DARK -> true
+        UIMode.AUTO -> isSystemInDarkTheme()
     }
 
 }
