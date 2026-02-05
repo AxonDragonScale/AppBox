@@ -55,7 +55,7 @@ fun MainScreen(
 
         BottomTabBar(
             modifier = Modifier
-                .padding(horizontal = 56.dp, vertical = 16.dp)
+                .padding(horizontal = 56.dp, vertical = 20.dp)
                 .align(Alignment.BottomCenter),
             tabs = Tab.all,
             activeTab = Tab.all[pagerState.currentPage],

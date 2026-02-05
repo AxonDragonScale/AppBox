@@ -4,14 +4,15 @@ import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -37,6 +40,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
@@ -53,7 +57,7 @@ import com.axondragonscale.jest.ui.theme.JestTheme
 import org.koin.androidx.compose.koinViewModel
 
 private const val LINK_GITHUB = "https://github.com/AxonDragonScale"
-private const val LINK_JEST = "https://github.com/AXonDragonScale/Jest"
+private const val LINK_JEST = "https://github.com/AxonDragonScale/Jest"
 
 /**
  * Created by Ronak Harkhani on 09/06/24
@@ -91,7 +95,11 @@ private fun Settings(
             .padding(horizontal = 16.dp)
             .verticalScroll(scrollState)
     ) {
-        SettingsHeader(modifier = Modifier.padding(top = 32.dp))
+        SettingsHeader(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(top = 16.dp)
+        )
 
         AppearanceSection(
             modifier = Modifier.padding(top = 24.dp),
@@ -116,19 +124,40 @@ private fun Settings(
 
 @Composable
 private fun SettingsHeader(modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.displayLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
         )
-        Text(
-            text = "Customize your experience",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Customize your experience",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
     }
 }
 
@@ -139,170 +168,197 @@ private fun AppearanceSection(
     dynamicTheme: Boolean,
     onUiModeUpdated: (UIMode) -> Unit,
     onDynamicThemeToggled: (Boolean) -> Unit,
-) = Section(
-    modifier = modifier,
-    title = "Appearance"
 ) {
-    SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Filled.Brightness6,
-                contentDescription = "UI Mode",
-            )
-        },
-        headlineContent = { Text(text = "Dark Mode") },
-        supportingContent = { Text(text = "Easy on the eyes") },
-        trailingContent = {
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.size(width = 140.dp, height = 32.dp),
-            ) {
-                UIMode.entries.forEachIndexed { index, mode ->
-                    val isActive = mode == uiMode
-                    SegmentedButton(
-                        selected = isActive,
-                        onClick = { onUiModeUpdated(mode) },
-                        label = {
-                            Icon(
-                                imageVector = mode.icon,
-                                contentDescription = mode.displayName,
-                                tint = if (isActive) MaterialTheme.colorScheme.primary
-                                else LocalContentColor.current
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp),
+            text = "Appearance",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column {
+                SettingsCard(
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.Brightness6,
+                            contentDescription = "UI Mode",
+                        )
+                    },
+                    headlineContent = { Text(text = "Dark Mode") },
+                    supportingContent = { Text(text = "Easy on the eyes") },
+                    trailingContent = {
+                        SingleChoiceSegmentedButtonRow(
+                            modifier = Modifier.size(width = 140.dp, height = 32.dp),
+                        ) {
+                            UIMode.entries.forEachIndexed { index, mode ->
+                                val isActive = mode == uiMode
+                                SegmentedButton(
+                                    selected = isActive,
+                                    onClick = { onUiModeUpdated(mode) },
+                                    label = {
+                                        Icon(
+                                            imageVector = mode.icon,
+                                            contentDescription = mode.displayName,
+                                            tint = if (isActive) MaterialTheme.colorScheme.primary
+                                            else LocalContentColor.current
+                                        )
+                                    },
+                                    icon = { /* Don't show tick */ },
+                                    shape = SegmentedButtonDefaults.itemShape(index, UIMode.entries.size),
+                                    colors = SegmentedButtonDefaults.colors()
+                                )
+                            }
+                        }
+                    }
                             )
-                        },
-                        icon = { /* Don't show tick */ },
-                        shape = SegmentedButtonDefaults.itemShape(index, UIMode.entries.size),
-                        colors = SegmentedButtonDefaults.colors()
-                    )
-                }
+
+                SettingsCard(
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.Palette,
+                            contentDescription = "Dynamic Theme",
+                        )
+                    },
+                    headlineContent = { Text(text = "Dynamic Theme") },
+                    supportingContent = { Text(text = "Use Material You") },
+                    trailingContent = {
+                        Switch(
+                            checked = dynamicTheme,
+                            onCheckedChange = onDynamicThemeToggled,
+                        )
+                    }
+                )
             }
         }
-    )
-
-    SettingsCard(
-        modifier = Modifier,
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Filled.Palette,
-                contentDescription = "Dynamic Theme",
-            )
-        },
-        headlineContent = { Text(text = "Dynamic Theme") },
-        supportingContent = { Text(text = "Use Material You") },
-        trailingContent = {
-            Switch(
-                checked = dynamicTheme,
-                onCheckedChange = onDynamicThemeToggled,
-            )
-        }
-    )
+    }
 }
 
 @Composable
 private fun AboutSection(
     modifier: Modifier = Modifier,
-) = Section(
-    modifier = modifier,
-    title = "About",
 ) {
-    val uriHandler = LocalUriHandler.current
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp),
+            text = "About",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
 
-    SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Filled.Android,
-                contentDescription = "Android",
-            )
-        },
-        headlineContent = { Text(text = "Jest") },
-        supportingContent = { Text(text = "Version ${BuildConfig.VERSION_NAME}") }
-    )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column {
+                val uriHandler = LocalUriHandler.current
 
-    SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = "Author",
-            )
-        },
-        headlineContent = { Text(text = "Developer") },
-        supportingContent = { Text(text = "RONAK HARKHANI") }
-    )
+                SettingsCard(
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.Android,
+                            contentDescription = "Android",
+                        )
+                    },
+                    headlineContent = { Text(text = "Jest") },
+                    supportingContent = { Text(text = "Version ${BuildConfig.VERSION_NAME}") }
+                )
 
-    SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
-        onClick = { uriHandler.openUri(LINK_GITHUB) },
-        leadingContent = {
-            Image(
-                modifier = Modifier.size(24.dp),
-                painter = painterResource(R.drawable.ic_github),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
-            )
-        },
-        headlineContent = { Text(text = "Github") },
-        supportingContent = { Text(text = "AxonDragonScale") },
-    )
+                SettingsCard(
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = "Author",
+                        )
+                    },
+                    headlineContent = { Text(text = "Developer") },
+                    supportingContent = { Text(text = "Ronak Harkhani") }
+                )
 
-    SettingsCard(
-        modifier = Modifier,
-        onClick = { uriHandler.openUri(LINK_JEST) },
-        leadingContent = {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                contentDescription = "Open Source Code",
-            )
-        },
-        headlineContent = { Text(text = "Source Code") },
-    )
+                SettingsCard(
+                    onClick = { uriHandler.openUri(LINK_GITHUB) },
+                    leadingContent = {
+                        Image(
+                            modifier = Modifier.size(24.dp),
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+                        )
+                    },
+                    headlineContent = { Text(text = "Github") },
+                    supportingContent = { Text(text = "AxonDragonScale") },
+                )
+
+
+                SettingsCard(
+                    onClick = { uriHandler.openUri(LINK_JEST) },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                            contentDescription = "Open Source Code",
+                        )
+                    },
+                    headlineContent = { Text(text = "Source Code") },
+                )
+            }
+        }
+    }
 }
 
 @Composable
 private fun DevToolsSection(
     modifier: Modifier = Modifier,
     onOpenDevTools: () -> Unit,
-) = Section(
-    modifier = modifier,
-    title = "Dev Tools",
 ) {
-    SettingsCard(
-        onClick = onOpenDevTools,
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Filled.Android,
-                contentDescription = "Dev Tools",
-            )
-        },
-        headlineContent = { Text(text = "Open Dev Tools") },
-        supportingContent = { Text(text = "Debug utilities and settings") },
-        trailingContent = {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                contentDescription = null,
-            )
-        }
-    )
-}
-
-@Composable
-private fun Section(
-    modifier: Modifier = Modifier,
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth()
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            modifier = Modifier.padding(bottom = 8.dp),
-            text = title,
+            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp),
+            text = "Dev Tools",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
         )
 
-        content()
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            SettingsCard(
+                onClick = onOpenDevTools,
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Filled.Android,
+                        contentDescription = "Dev Tools",
+                    )
+                },
+                headlineContent = { Text(text = "Open Dev Tools") },
+                supportingContent = { Text(text = "Debug utilities and settings") },
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null,
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -334,7 +390,7 @@ private fun SettingsCard(
         },
         trailingContent = trailingContent,
         colors = ListItemDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         )
     )
 }

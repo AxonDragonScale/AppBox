@@ -11,10 +11,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PostAdd
+import androidx.compose.material.icons.outlined.EmojiEmotions
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -74,13 +78,33 @@ fun JokeList(
     ) {
 
         item {
-            Text(
-                modifier = Modifier.padding(vertical = 32.dp),
-                text = listType.name,
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-            )
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(top = 16.dp, bottom = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 2.dp
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = listType.name,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                }
+            }
         }
 
         item {
@@ -108,32 +132,58 @@ fun JokeList(
 
 @Composable
 fun NoJokesMessage(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxWidth().height(600.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Icon(
-            modifier = Modifier.size(100.dp),
-            imageVector = Icons.Default.PostAdd,
-            tint = MaterialTheme.colorScheme.primary,
-            contentDescription = null
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(48.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    modifier = Modifier.size(56.dp),
+                    imageVector = Icons.Outlined.EmojiEmotions,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    contentDescription = null
+                )
+            }
 
-        Text(
-            modifier = Modifier.padding(top = 48.dp),
-            text = "Whoops!!",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-        )
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            modifier = Modifier.padding(top = 8.dp),
-            text = "Looks like you don't have jokes here.",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+            Text(
+                text = "No Jokes Yet!",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Start exploring and add some jokes\nto see them here",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
     }
 }
 
