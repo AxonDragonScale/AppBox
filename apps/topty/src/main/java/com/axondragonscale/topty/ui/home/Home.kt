@@ -1,6 +1,5 @@
 package com.axondragonscale.topty.ui.home
 
-import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.res.Configuration
 import android.net.Uri
@@ -10,7 +9,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,15 +27,16 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
@@ -39,6 +45,7 @@ import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +56,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -61,14 +69,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -139,6 +150,7 @@ private fun Home(
     onEvent: (HomeUiEvent) -> Unit,
 ) {
     val context = LocalContext.current
+    var pendingDeleteTokenId by remember { mutableStateOf<Long?>(null) }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -164,9 +176,45 @@ private fun Home(
                     speakOutOnTap = uiState.speakOutOnTap,
                     onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
                     onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
+                    onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
                     onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
                 )
             }
+        }
+
+        pendingDeleteTokenId?.let { tokenId ->
+            AlertDialog(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                },
+                title = { Text("Delete this token?") },
+                text = { Text("This will permanently remove the token and you won't be able to generate codes for it anymore.") },
+                onDismissRequest = { pendingDeleteTokenId = null },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onEvent(HomeUiEvent.DeleteToken(tokenId))
+                            pendingDeleteTokenId = null
+                        },
+                        shape = DefaultShape,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                        ),
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingDeleteTokenId = null }) {
+                        Text("Cancel")
+                    }
+                },
+            )
         }
     }
 }
@@ -279,6 +327,91 @@ private fun FloatingActionButton(
     )
 }
 
+private enum class SwipeAnchor {
+    Closed,
+    OpenStart,
+    OpenEnd,
+}
+
+@Composable
+private fun SwipeActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    containerColor: Color,
+    contentColor: Color,
+    buttonWidth: Dp,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .width(buttonWidth)
+            .fillMaxHeight()
+            .clip(DefaultShape)
+            .background(containerColor)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = contentColor,
+        )
+    }
+}
+
+@Composable
+private fun SwipeActionsRow(
+    modifier: Modifier = Modifier,
+    buttonWidth: Dp,
+    buttonPadding: Dp,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row(
+        modifier = modifier.fillMaxHeight(),
+        horizontalArrangement = Arrangement.spacedBy(buttonPadding, Alignment.Start),
+    ) {
+        SwipeActionButton(
+            icon = Icons.Default.Delete,
+            contentDescription = "Delete",
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            buttonWidth = buttonWidth,
+            onClick = onDelete,
+        )
+        SwipeActionButton(
+            icon = Icons.Default.Edit,
+            contentDescription = "Edit",
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            buttonWidth = buttonWidth,
+            onClick = onEdit,
+        )
+    }
+
+    Row(
+        modifier = modifier.fillMaxHeight(),
+        horizontalArrangement = Arrangement.spacedBy(buttonPadding, Alignment.End),
+    ) {
+        SwipeActionButton(
+            icon = Icons.Default.Edit,
+            contentDescription = "Edit",
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            buttonWidth = buttonWidth,
+            onClick = onEdit,
+        )
+        SwipeActionButton(
+            icon = Icons.Default.Delete,
+            contentDescription = "Delete",
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            buttonWidth = buttonWidth,
+            onClick = onDelete,
+        )
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CodeList(
@@ -288,6 +421,7 @@ private fun CodeList(
     speakOutOnTap: Boolean,
     onRefreshCode: (Int, Code) -> Unit,
     onEditToken: (Long) -> Unit,
+    onDeleteToken: (Long) -> Unit,
     onSpeakOut: (Code) -> Unit,
 ) = LazyColumn(
     modifier = modifier,
@@ -313,34 +447,61 @@ private fun CodeList(
         }
 
         val density = LocalDensity.current
-        Box(modifier = Modifier) {
-//            val anchorState = remember {
-//                AnchoredDraggableState(
-//                    initialValue = 0,
-//                    anchors = DraggableAnchors {
-//                        (-1) at with(density) { -100.dp.toPx() }
-//                        0 at 0f
-//                        1 at with(density) { 100.dp.toPx() }
-//                    },
-//                )
-//            }
-
-            // TODO: Temporary use of long click to edit token
-            // Implement Swipe Actions with Edit and Delete using AnchoredDraggable
-            val clipboard = LocalClipboard.current
-            val scope = rememberCoroutineScope()
-            val codeModifier = Modifier.combinedClickable(
-                onClick = {
-                    scope.launch {
-                        clipboard.setClipEntry(ClipEntry(
-                            ClipData.newPlainText("Topty Code", code.code)
-                        ))
-                        if (speakOutOnTap) onSpeakOut(code)
-                    }
+        val buttonWidth = 72.dp
+        val buttonPadding = 8.dp
+        val actionWidth = buttonWidth * 2 + buttonPadding * 2
+        val actionWidthPx = with(density) { actionWidth.toPx() }
+        val swipeState = remember(code.token.id, actionWidthPx) {
+            AnchoredDraggableState(
+                initialValue = SwipeAnchor.Closed,
+                anchors = DraggableAnchors {
+                    SwipeAnchor.OpenStart at actionWidthPx
+                    SwipeAnchor.Closed at 0f
+                    SwipeAnchor.OpenEnd at -actionWidthPx
                 },
-                onLongClick = { onEditToken(code.token.id) }
             )
-            val onRefresh = { onRefreshCode(index, code) }
+        }
+
+        val clipboard = LocalClipboard.current
+        val scope = rememberCoroutineScope()
+        val onRefresh = { onRefreshCode(index, code) }
+
+        val onEdit: () -> Unit = {
+            scope.launch { swipeState.animateTo(SwipeAnchor.Closed) }
+            onEditToken(code.token.id)
+        }
+        val onDelete: () -> Unit = {
+            scope.launch { swipeState.animateTo(SwipeAnchor.Closed) }
+            onDeleteToken(code.token.id)
+        }
+
+        Box(modifier = Modifier.fillMaxWidth()) {
+
+            SwipeActionsRow(
+                modifier = Modifier.matchParentSize(),
+                buttonWidth = buttonWidth,
+                buttonPadding = buttonPadding,
+                onEdit = onEdit,
+                onDelete = onDelete,
+            )
+
+            val codeModifier = Modifier
+                .offset { IntOffset(swipeState.requireOffset().roundToInt(), 0) }
+                .anchoredDraggable(
+                    state = swipeState,
+                    orientation = Orientation.Horizontal,
+                )
+                .combinedClickable(
+                    onClick = {
+                        scope.launch {
+                            clipboard.setClipEntry(ClipEntry(
+                                ClipData.newPlainText("Topty Code", code.code)
+                            ))
+                            if (speakOutOnTap) onSpeakOut(code)
+                        }
+                    },
+                    onLongClick = { onEditToken(code.token.id) }
+                )
 
             when (codeDesign) {
                 CodeDesign.A -> CodeA(codeModifier, code, timeRemaining, onRefresh)

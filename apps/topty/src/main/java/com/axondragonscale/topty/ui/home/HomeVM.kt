@@ -58,6 +58,7 @@ class HomeVM(
         is HomeUiEvent.ScanImage -> onScanImage(event)
         is HomeUiEvent.RefreshCode -> onRefreshCode(event)
         is HomeUiEvent.SpeakOut -> onSpeakOut(event)
+        is HomeUiEvent.DeleteToken -> onDeleteToken(event)
 
         // Handled in Compose
         HomeUiEvent.NavigateToAddToken -> Unit
@@ -101,6 +102,12 @@ class HomeVM(
         event: HomeUiEvent.SpeakOut,
     ) = viewModelScope.launch(Dispatchers.IO) {
         tts.speak(code = event.code.code)
+    }
+
+    private fun onDeleteToken(
+        event: HomeUiEvent.DeleteToken,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        repository.deleteToken(event.tokenId)
     }
 
     override fun onCleared() {

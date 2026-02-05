@@ -13,6 +13,7 @@ sealed interface HomeUiEvent {
     data object NavigateToSettings: HomeUiEvent
     data class ScanImage(val context: Context, val uri: Uri): HomeUiEvent
     data class NavigateToEditToken(val tokenId: Long): HomeUiEvent
+    data class DeleteToken(val tokenId: Long): HomeUiEvent
     data class RefreshCode(val index: Int, val code: Code): HomeUiEvent
     data class SpeakOut(val code: Code): HomeUiEvent
 }
