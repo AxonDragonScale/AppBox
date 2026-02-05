@@ -18,6 +18,8 @@ class AppPrefsRepository(context: Context) {
 
     private val dataStore = context.appPrefs
 
+    val prefsFlow = dataStore.data
+
     val uiMode = dataStore.enumSetting(
         key = stringPreferencesKey("uiMode"),
         default = UIMode.DEFAULT,
@@ -40,6 +42,11 @@ class AppPrefsRepository(context: Context) {
 
     val speakOutOnTap = dataStore.setting(
         key = booleanPreferencesKey("speakOutOnTap"),
+        default = false,
+    )
+
+    val biometricLock = dataStore.setting(
+        key = booleanPreferencesKey("biometricLock"),
         default = false,
     )
 

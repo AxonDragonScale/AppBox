@@ -38,7 +38,7 @@ import com.axondragonscale.topty.ui.common.QRCodeAnalyzer
 import com.axondragonscale.topty.ui.common.ScannerOverlay
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
-import com.axondragonscale.topty.ui.util.collectWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState

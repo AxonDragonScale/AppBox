@@ -15,6 +15,7 @@ ksp = "2.3.4"
 datastore = "1.2.0"
 documentfile = "1.1.0"
 androidxSplashscreen = "1.2.0"
+androidxBiometric = "1.1.0"
 camerax = "1.5.3"
 mlkitBarcodeScanner = "17.3.0"
 
@@ -43,6 +44,7 @@ androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecyc
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidxSplashscreen" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidxBiometric" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 
 # Camera

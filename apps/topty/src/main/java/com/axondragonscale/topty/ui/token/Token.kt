@@ -59,7 +59,7 @@ import com.axondragonscale.topty.ui.Route
 import com.axondragonscale.topty.ui.common.TextInput
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
-import com.axondragonscale.topty.ui.util.collectWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import com.google.common.io.BaseEncoding
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -426,4 +426,3 @@ private fun Preview() {
         )
     }
 }
-

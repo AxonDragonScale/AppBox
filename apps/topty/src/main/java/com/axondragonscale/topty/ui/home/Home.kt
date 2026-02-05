@@ -94,7 +94,7 @@ import com.axondragonscale.topty.ui.common.ExpandingFabButton
 import com.axondragonscale.topty.ui.common.ExpandingFabItem
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
-import com.axondragonscale.topty.ui.util.collectWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.concurrent.timer

@@ -14,5 +14,6 @@ sealed interface SettingsUiEvent {
     data class UIFontUpdated(val uiFont: UIFont) : SettingsUiEvent
     data class CodeDesignUpdated(val codeDesign: CodeDesign) : SettingsUiEvent
     data class SpeakOutOnTapToggled(val speakOutOnTap: Boolean) : SettingsUiEvent
+    data class BiometricLockToggled(val biometricLock: Boolean) : SettingsUiEvent
     data object NavigateToDevTools : SettingsUiEvent
 }

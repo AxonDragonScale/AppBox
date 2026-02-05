@@ -6,9 +6,9 @@ import com.axondragonscale.topty.core.QRScanner
 import com.axondragonscale.topty.core.TTS
 import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.model.Protocol
+import com.axondragonscale.commons.collect
 import com.axondragonscale.topty.repository.AppPrefsRepository
 import com.axondragonscale.topty.repository.TokenRepository
-import com.axondragonscale.topty.util.collect
 import com.axondragonscale.topty.util.generateCode
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.Dispatchers

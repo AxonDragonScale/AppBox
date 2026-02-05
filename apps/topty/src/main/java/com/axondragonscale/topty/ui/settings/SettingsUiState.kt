@@ -13,4 +13,5 @@ data class SettingsUiState(
     val uiFont: UIFont = UIFont.DEFAULT,
     val codeDesign: CodeDesign = CodeDesign.DEFAULT,
     val speakOutOnTap: Boolean = false,
+    val biometricLock: Boolean = false,
 )

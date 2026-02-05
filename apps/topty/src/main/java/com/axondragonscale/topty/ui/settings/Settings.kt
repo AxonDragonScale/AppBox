@@ -139,8 +139,10 @@ private fun Settings(
                 modifier = Modifier.padding(top = 16.dp),
                 codeDesign = uiState.codeDesign,
                 speakOutOnTap = uiState.speakOutOnTap,
+                biometricLock = uiState.biometricLock,
                 onCodeDesignUpdated = { onEvent(SettingsUiEvent.CodeDesignUpdated(it)) },
                 onSpeakOutOnTapToggled = { onEvent(SettingsUiEvent.SpeakOutOnTapToggled(it)) },
+                onBiometricLockToggled = { onEvent(SettingsUiEvent.BiometricLockToggled(it)) },
             )
 
             AboutSection(
@@ -234,8 +236,10 @@ private fun BehaviorSection(
     modifier: Modifier = Modifier,
     codeDesign: CodeDesign,
     speakOutOnTap: Boolean,
+    biometricLock: Boolean,
     onCodeDesignUpdated: (CodeDesign) -> Unit,
     onSpeakOutOnTapToggled: (Boolean) -> Unit,
+    onBiometricLockToggled: (Boolean) -> Unit,
 ) = Section(
     modifier = modifier,
     title = "Behavior",
@@ -271,8 +275,8 @@ private fun BehaviorSection(
         supportingContent = { Text(text = "Require Fingerprint to open app") },
         trailingContent = {
             Switch(
-                checked = true,
-                onCheckedChange = { },
+                checked = biometricLock,
+                onCheckedChange = onBiometricLockToggled,
             )
         }
     )

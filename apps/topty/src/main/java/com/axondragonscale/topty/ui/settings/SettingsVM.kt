@@ -2,11 +2,11 @@ package com.axondragonscale.topty.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.commons.collect
+import com.axondragonscale.commons.combine
 import com.axondragonscale.topty.repository.AppPrefsRepository
-import com.axondragonscale.topty.util.collect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,7 +27,8 @@ class SettingsVM(
                 appPrefsRepository.uiFont.flow,
                 appPrefsRepository.codeDesign.flow,
                 appPrefsRepository.speakOutOnTap.flow,
-            ) { uiMode, dynamicTheme, uiFont, codeDesign, speakOutOnTap ->
+                appPrefsRepository.biometricLock.flow,
+            ) { uiMode, dynamicTheme, uiFont, codeDesign, speakOutOnTap, biometricLock ->
                 uiState.update {
                     it.copy(
                         uiMode = uiMode,
@@ -35,6 +36,7 @@ class SettingsVM(
                         uiFont = uiFont,
                         codeDesign = codeDesign,
                         speakOutOnTap = speakOutOnTap,
+                        biometricLock = biometricLock,
                     )
                 }
             }.collect()
@@ -57,6 +59,9 @@ class SettingsVM(
 
             is SettingsUiEvent.SpeakOutOnTapToggled ->
                 appPrefsRepository.speakOutOnTap.set(event.speakOutOnTap)
+
+            is SettingsUiEvent.BiometricLockToggled ->
+                appPrefsRepository.biometricLock.set(event.biometricLock)
 
             // Handled in Compose
             SettingsUiEvent.NavigateBack -> Unit

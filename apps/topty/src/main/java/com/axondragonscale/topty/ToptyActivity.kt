@@ -1,29 +1,62 @@
 package com.axondragonscale.topty
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.biometric.BiometricManager
+import com.axondragonscale.topty.auth.BiometricAuthManager
+import com.axondragonscale.topty.model.UIFont
 import com.axondragonscale.topty.model.UIMode
 import com.axondragonscale.topty.repository.AppPrefsRepository
 import com.axondragonscale.topty.ui.ToptyApp
+import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
-class ToptyActivity : ComponentActivity() {
+class ToptyActivity : FragmentActivity() {
 
     private val appPrefsRepository: AppPrefsRepository by inject()
+    private lateinit var biometricAuthManager: BiometricAuthManager
+    private var isAuthenticated by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        biometricAuthManager = BiometricAuthManager(this)
 
         val splashScreen = installSplashScreen()
         var keepSplashScreen = true
@@ -36,6 +69,28 @@ class ToptyActivity : ComponentActivity() {
                 appPrefsRepository.uiFont.flow.first(),
             )
         }
+
+        val biometricLockEnabled = runBlocking { appPrefsRepository.biometricLock.get() }
+
+        // Check if biometric authentication is required
+        if (biometricLockEnabled) {
+            when (biometricAuthManager.canAuthenticate()) {
+                BiometricManager.BIOMETRIC_SUCCESS -> {
+                    isAuthenticated = false
+                }
+                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                    Toast.makeText(this, "No biometric credentials enrolled", Toast.LENGTH_LONG).show()
+                    isAuthenticated = true
+                }
+                else -> {
+                    Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
+                    isAuthenticated = true
+                }
+            }
+        } else {
+            isAuthenticated = true
+        }
+
         keepSplashScreen = false
 
         setContent {
@@ -45,15 +100,23 @@ class ToptyActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
             val uiFont by appPrefsRepository.uiFont.flow
                 .collectAsStateWithLifecycle(initialValue = initialUiFont)
+            val biometricLock by appPrefsRepository.biometricLock.flow
+                .collectAsStateWithLifecycle(initialValue = biometricLockEnabled)
 
             ToptyTheme(
                 darkTheme = isDarkTheme(uiMode),
                 dynamicColor = dynamicTheme,
                 uiFont = uiFont,
             ) {
-                ToptyApp()
+                if (biometricLock && !isAuthenticated) {
+                    BiometricLockScreen(biometricAuthManager = biometricAuthManager,)
+                } else {
+                    ToptyApp()
+                }
             }
         }
+
+
     }
 
     @Composable
@@ -61,5 +124,70 @@ class ToptyActivity : ComponentActivity() {
         UIMode.LIGHT -> false
         UIMode.DARK -> true
         UIMode.AUTO -> isSystemInDarkTheme()
+    }
+
+    @Composable
+    private fun BiometricLockScreen(
+        biometricAuthManager: BiometricAuthManager,
+    ) {
+        val authenticate = {
+            biometricAuthManager.authenticate(
+                onSuccess = { isAuthenticated = true },
+                onError = { Toast.makeText(this@ToptyActivity, "Authentication error: $it", Toast.LENGTH_SHORT).show() },
+                onFailed = { /* Individual authentication attempts failed, but user can retry */ }
+            )
+        }
+
+        // Auto-trigger authentication on first appearance
+        LaunchedEffect(Unit) {
+            authenticate()
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    imageVector = Icons.Default.Fingerprint,
+                    contentDescription = null,
+                    modifier = Modifier.size(120.dp),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = "Topty is Locked",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Unlock with biometric authentication to access your tokens",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(48.dp))
+
+                Button(
+                    onClick = authenticate,
+                    shape = DefaultShape,
+                ) {
+                    Text("Unlock")
+                }
+            }
+        }
     }
 }

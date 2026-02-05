@@ -52,7 +52,7 @@ import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
 import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
-import com.axondragonscale.wallmatic.ui.util.collectWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.wallmatic.ui.util.countSummary
 
 /**
