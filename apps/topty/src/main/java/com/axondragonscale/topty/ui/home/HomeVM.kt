@@ -100,11 +100,16 @@ class HomeVM(
             token = token.copy(counter = token.counter + 1)
             repository.saveToken(token)
         }
-        uiState.update {
+
+        uiState.update { state ->
             val newCode = token.generateCode()
-            val newCodes = it.codes.toMutableList()
-            newCodes[event.index] = newCode
-            it.copy(codes = newCodes)
+
+            // Find and update the code in the full list by token ID
+            val newCodes = state.codes.map { code -> if (code.token.id == token.id) newCode else code }
+            // Reapply filters to the updated list
+            val newFilteredCodes = newCodes.applyFilters(state.searchQuery, state.selectedGroup)
+
+            state.copy(codes = newCodes, filteredCodes = newFilteredCodes)
         }
     }
 

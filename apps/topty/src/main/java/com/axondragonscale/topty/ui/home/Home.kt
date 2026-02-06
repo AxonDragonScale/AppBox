@@ -243,7 +243,7 @@ private fun Home(
                             codeDesign = uiState.codeDesign,
                             codes = uiState.filteredCodes,
                             speakOutOnTap = uiState.speakOutOnTap,
-                            onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
+                            onRefreshCode = { code -> onEvent(HomeUiEvent.RefreshCode(code)) },
                             onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
                             onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
                             onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
@@ -638,7 +638,7 @@ private fun CodeList(
     codeDesign: CodeDesign,
     codes: List<Code>,
     speakOutOnTap: Boolean,
-    onRefreshCode: (Int, Code) -> Unit,
+    onRefreshCode: (Code) -> Unit,
     onEditToken: (Long) -> Unit,
     onDeleteToken: (Long) -> Unit,
     onSpeakOut: (Code) -> Unit,
@@ -663,7 +663,7 @@ private fun CodeList(
                 period = 1000,
             ) {
                 timeRemaining = code.periodEnd - System.currentTimeMillis()
-                if (timeRemaining < 100) onRefreshCode(index, code)
+                if (timeRemaining < 100) onRefreshCode(code)
             }
 
             onDispose { timer.cancel() }
@@ -687,7 +687,7 @@ private fun CodeList(
 
         val clipboard = LocalClipboard.current
         val scope = rememberCoroutineScope()
-        val onRefresh = { onRefreshCode(index, code) }
+        val onRefresh = { onRefreshCode(code) }
 
         val onEdit: () -> Unit = {
             scope.launch { swipeState.animateTo(SwipeAnchor.Closed) }
@@ -760,7 +760,7 @@ private fun CodeA(
         .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
 ) {
     val color = if (timeRemaining < 5000)
-        MaterialTheme.colorScheme.error else LocalContentColor.current
+        MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
     Row(modifier = Modifier.height(IntrinsicSize.Min)) {
         if (code.token.issuer.isNotBlank()) {
@@ -834,7 +834,7 @@ private fun CodeB(
         .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
 ) {
     val color = if (timeRemaining < 5000)
-        MaterialTheme.colorScheme.error else LocalContentColor.current
+        MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
     Row {
         Text(
@@ -1007,6 +1007,7 @@ private fun CodeC(
                         shape = DefaultShape
                     )
                     .padding(horizontal = 8.dp)
+                    .padding(top = 4.dp)
             ) {
                 Text(
                     text = digit.toString(),
