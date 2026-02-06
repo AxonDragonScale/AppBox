@@ -4,6 +4,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.axondragonscale.commons.Result
 
 /**
  * Created by Ronak Harkhani on 25/01/25
@@ -14,8 +15,17 @@ class BiometricAuthManager(
 
     private val biometricManager = BiometricManager.from(activity)
 
-    fun canAuthenticate(): Int {
-        return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+    fun canAuthenticate(): Result<Unit, String> {
+        return when (val result = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)) {
+            BiometricManager.BIOMETRIC_SUCCESS -> Result.Success(Unit)
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> Result.Failure("No biometric hardware available")
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> Result.Failure("Biometric hardware is currently unavailable")
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> Result.Failure("No biometric credentials enrolled")
+            BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> Result.Failure("Security update required")
+            BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED -> Result.Failure("Biometric authentication is not supported")
+            BiometricManager.BIOMETRIC_STATUS_UNKNOWN -> Result.Failure("Biometric status unknown")
+            else -> Result.Failure("Biometric authentication unavailable (code: $result)")
+        }
     }
 
     fun authenticate(

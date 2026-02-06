@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.biometric.BiometricManager
+import com.axondragonscale.commons.Result
 import com.axondragonscale.topty.auth.BiometricAuthManager
 import com.axondragonscale.topty.model.UIFont
 import com.axondragonscale.topty.model.UIMode
@@ -74,19 +74,10 @@ class ToptyActivity : FragmentActivity() {
 
         // Check if biometric authentication is required
         if (biometricLockEnabled) {
-            when (biometricAuthManager.canAuthenticate()) {
-                BiometricManager.BIOMETRIC_SUCCESS -> {
-                    isAuthenticated = false
-                }
-                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                    Toast.makeText(this, "No biometric credentials enrolled", Toast.LENGTH_LONG).show()
-                    isAuthenticated = true
-                }
-                else -> {
-                    Toast.makeText(this, "Biometric authentication not available", Toast.LENGTH_SHORT).show()
-                    isAuthenticated = true
-                }
+            val result = biometricAuthManager.canAuthenticate().onFailure { errorMessage ->
+                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
             }
+            isAuthenticated = result.isSuccess()
         } else {
             isAuthenticated = true
         }
