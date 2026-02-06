@@ -649,10 +649,13 @@ private fun CodeList(
     verticalArrangement = Arrangement.spacedBy(8.dp),
 ) {
     itemsIndexed(codes) { index, code ->
-        var timeRemaining by remember { mutableLongStateOf(10000) }
+        val isTotp = code is TOTPCode
+        var timeRemaining by remember { mutableLongStateOf(
+            if (isTotp) (System.currentTimeMillis() - code.periodStart) else 0
+        ) }
         DisposableEffect(code) {
             // Don't start timer if code is not time dependent
-            if (code !is TOTPCode) return@DisposableEffect onDispose { }
+            if (!isTotp) return@DisposableEffect onDispose { }
 
             timeRemaining = code.periodEnd - System.currentTimeMillis()
             val timer = timer(
