@@ -247,7 +247,7 @@ private fun AdvancedConfiguration(
     var showSecret by remember { mutableStateOf(true) }
     TextInput(
         value = uiState.token.secret,
-        onValueChange = { onEvent(TokenUiEvent.UpdateToken(uiState.token.copy(secret = it))) },
+        onValueChange = { onEvent(TokenUiEvent.UpdateToken(uiState.token.withSecret(it))) },
         leadingIcon = { Icon(Icons.Outlined.Key, null) },
         label = { Text("Secret") },
         trailingIcon = {

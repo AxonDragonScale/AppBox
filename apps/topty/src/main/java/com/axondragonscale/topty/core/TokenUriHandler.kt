@@ -45,7 +45,6 @@ object TokenUriHandler {
     fun parseTokenUri(uri: String?): Token? {
         if (uri == null) return null
         val uri = uri.toUri()
-        var token = Token.emptyToken()
 
         // Verify Scheme
         if (uri.scheme !in supportedSchemes) return null
@@ -56,62 +55,71 @@ object TokenUriHandler {
             Protocol.HOTP.code -> Protocol.HOTP
             else -> return null
         }
-        token = token.copy(protocol = protocol)
 
         // Verify & set name (and issuer if it exists)
         val label = uri.path?.removePrefix("/") ?: ""
         this.logD { "label = $label" }
+        var tokenName = ""
+        var tokenIssuer = ""
         if (label.contains(":")) {
             val parts = label.split(":")
-            token = token.copy(
-                issuer = parts.getOrElse(0) { "" },
-                name = parts.getOrElse(1) { "" },
-            )
+            tokenIssuer = parts.getOrElse(0) { "" }
+            tokenName = parts.getOrElse(1) { "" }
         } else {
-            token = token.copy(name = label)
+            tokenName = label
         }
 
         // Use explicit issuer if provided
         val issuer = uri.getQueryParameter(UriParam.ISSUER)
         if (!issuer.isNullOrEmpty()) {
-            token = token.copy(issuer = issuer)
+            tokenIssuer = issuer
         }
 
         // Verify & set secret
         val encodedSecret = uri.getQueryParameter(UriParam.SECRET)
         this.logD { "secret = $encodedSecret" }
         if (encodedSecret.isNullOrEmpty()) return null
-        token = token.copy(secret = encodedSecret)
 
         // Verify & set algorithm
         val algorithm = uri.getQueryParameter(UriParam.ALGORITHM)
         this.logD { "algorithm = $algorithm" }
-        if (!algorithm.isNullOrEmpty() && algorithm in supportedAlgorithms) {
-            token = token.copy(hashAlgo = HashAlgo.valueOf(algorithm))
+        val hashAlgo = if (!algorithm.isNullOrEmpty() && algorithm in supportedAlgorithms) {
+            HashAlgo.valueOf(algorithm)
+        } else {
+            HashAlgo.SHA1
         }
 
         // Verify & set digits
         val digits = uri.getQueryParameter(UriParam.DIGITS)?.toIntOrNull()
         this.logD { "digits = $digits" }
-        if (digits != null && digits in 6..8) {
-            token = token.copy(digits = digits)
-        }
+        val tokenDigits = if (digits != null && digits in 6..8) digits else 6
 
         // Verify & set period
         val period = uri.getQueryParameter(UriParam.PERIOD)?.toIntOrNull()
         this.logD { "period = $period" }
-        if (period != null && period in 30..3600) {
-            token = token.copy(period = period)
-        }
+        val tokenPeriod = if (period != null && period in 30..3600) period else 30
 
         // Verify & set counter (Mandatory for HOTP)
-        if (protocol == Protocol.HOTP) {
+        val tokenCounter = if (protocol == Protocol.HOTP) {
             val counter = uri.getQueryParameter(UriParam.COUNTER)?.toLongOrNull()
             this.logD { "counter = $counter" }
-            if (counter != null) token = token.copy(counter = counter)
-            else return null
+            counter ?: return null
+        } else {
+            0L
         }
 
-        return token
+        // Create token with encrypted secret
+        return Token.fromPlaintext(
+            name = tokenName,
+            issuer = tokenIssuer,
+            group = "",
+            note = "",
+            secret = encodedSecret,
+            protocol = protocol,
+            hashAlgo = hashAlgo,
+            period = tokenPeriod,
+            counter = tokenCounter,
+            digits = tokenDigits,
+        )
     }
 }
