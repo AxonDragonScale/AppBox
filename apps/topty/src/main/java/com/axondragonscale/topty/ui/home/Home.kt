@@ -163,60 +163,78 @@ private fun Home(
                 onScanQR = { onEvent(HomeUiEvent.NavigateToQRScanner) }
             )
         },
-    ) { _ ->
+    ) { contentPadding ->
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = contentPadding.calculateTopPadding()),
         ) {
-            if (uiState.codes.isEmpty()) {
-                EmptyState(modifier = Modifier.fillMaxSize())
-            } else {
-                CodeList(
-                    codeDesign = uiState.codeDesign,
-                    codes = uiState.codes,
-                    speakOutOnTap = uiState.speakOutOnTap,
-                    onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
-                    onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
-                    onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
-                    onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
-                )
+            when {
+                uiState.isLoading ->
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                uiState.codes.isEmpty() ->
+                    EmptyState(modifier = Modifier.fillMaxSize())
+                else ->
+                    CodeList(
+                        codeDesign = uiState.codeDesign,
+                        codes = uiState.codes,
+                        speakOutOnTap = uiState.speakOutOnTap,
+                        onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
+                        onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
+                        onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
+                        onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
+                    )
             }
         }
 
         pendingDeleteTokenId?.let { tokenId ->
-            AlertDialog(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                    )
+            DeleteConfirmationDialog(
+                onConfirm = {
+                    onEvent(HomeUiEvent.DeleteToken(tokenId))
+                    pendingDeleteTokenId = null
                 },
-                title = { Text("Delete this token?") },
-                text = { Text("This will permanently remove the token and you won't be able to generate codes for it anymore.") },
-                onDismissRequest = { pendingDeleteTokenId = null },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            onEvent(HomeUiEvent.DeleteToken(tokenId))
-                            pendingDeleteTokenId = null
-                        },
-                        shape = DefaultShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError,
-                        ),
-                    ) {
-                        Text("Delete")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { pendingDeleteTokenId = null }) {
-                        Text("Cancel")
-                    }
-                },
+                onDismiss = { pendingDeleteTokenId = null }
             )
         }
     }
+}
+
+@Composable
+fun DeleteConfirmationDialog(
+    modifier: Modifier = Modifier,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        modifier = modifier,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+            )
+        },
+        title = { Text("Delete this token?") },
+        text = { Text("This will permanently remove the token and you won't be able to generate codes for it anymore.") },
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                shape = DefaultShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
+            ) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -494,9 +512,11 @@ private fun CodeList(
                 .combinedClickable(
                     onClick = {
                         scope.launch {
-                            clipboard.setClipEntry(ClipEntry(
-                                ClipData.newPlainText("Topty Code", code.code)
-                            ))
+                            clipboard.setClipEntry(
+                                ClipEntry(
+                                    ClipData.newPlainText("Topty Code", code.code)
+                                )
+                            )
                             if (speakOutOnTap) onSpeakOut(code)
                         }
                     },
@@ -888,6 +908,25 @@ private fun PreviewEmptyState() {
         val uiState = remember {
             HomeUiState(
                 isLoading = false,
+                codeDesign = CodeDesign.C,
+                codes = listOf()
+            )
+        }
+        Home(
+            uiState = uiState,
+            onEvent = { }
+        )
+    }
+}
+
+@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewLoadingState() {
+    ToptyTheme {
+        val uiState = remember {
+            HomeUiState(
+                isLoading = true,
                 codeDesign = CodeDesign.C,
                 codes = listOf()
             )
