@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.DesignServices
@@ -85,6 +86,8 @@ fun Settings(
 
                 SettingsUiEvent.NavigateToDevTools -> navController.navigate(Route.DevTools)
 
+                SettingsUiEvent.NavigateToBackupRestore -> navController.navigate(Route.BackupRestore)
+
                 else -> vm.onEvent(event)
             }
         }
@@ -146,6 +149,11 @@ private fun Settings(
                 onSpeakOutOnTapToggled = { onEvent(SettingsUiEvent.SpeakOutOnTapToggled(it)) },
                 onBiometricLockToggled = { onEvent(SettingsUiEvent.BiometricLockToggled(it)) },
                 onPreventScreenshotsToggled = { onEvent(SettingsUiEvent.PreventScreenshotsToggled(it)) },
+            )
+
+            DataSection(
+                modifier = Modifier.padding(top = 16.dp),
+                onOpenBackupRestore = { onEvent(SettingsUiEvent.NavigateToBackupRestore) }
             )
 
             AboutSection(
@@ -318,6 +326,33 @@ private fun BehaviorSection(
             Switch(
                 checked = preventScreenshots,
                 onCheckedChange = onPreventScreenshotsToggled,
+            )
+        }
+    )
+}
+
+@Composable
+private fun DataSection(
+    modifier: Modifier = Modifier,
+    onOpenBackupRestore: () -> Unit,
+) = Section(
+    modifier = modifier,
+    title = "Data",
+) {
+    SettingsCard(
+        onClick = onOpenBackupRestore,
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Filled.Backup,
+                contentDescription = "Backup & Restore",
+            )
+        },
+        headlineContent = { Text(text = "Backup & Restore") },
+        supportingContent = { Text(text = "Export or import your tokens") },
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = null,
             )
         }
     )

@@ -16,6 +16,8 @@ class TokenRepository(
 
     suspend fun saveToken(token: Token) = dao.upsert(token)
 
+    suspend fun saveTokens(tokens: List<Token>) = dao.upsert(tokens)
+
     suspend fun deleteToken(tokenId: Long) = dao.delete(tokenId)
 
 }

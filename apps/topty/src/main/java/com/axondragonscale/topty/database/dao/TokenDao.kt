@@ -18,6 +18,9 @@ interface TokenDao {
     @Query("SELECT * FROM token")
     fun getTokens(): Flow<List<Token>>
 
+    @Query("SELECT COUNT(*) FROM token")
+    fun getTokenCount(): Flow<Int>
+
     @Query("SELECT * FROM token")
     suspend fun getAllTokens(): List<Token>
 
@@ -29,6 +32,9 @@ interface TokenDao {
 
     @Upsert
     suspend fun upsert(token: Token): Long
+
+    @Upsert
+    suspend fun upsert(tokens: List<Token>): List<Long>
 
 
     // MARK: Delete --------------------------------------------------------------------------------

@@ -25,4 +25,7 @@ object Route {
     @Serializable
     data object DevTools
 
+    @Serializable
+    data object BackupRestore
+
 }

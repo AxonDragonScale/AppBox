@@ -73,6 +73,7 @@ class SettingsVM(
             // Handled in Compose
             SettingsUiEvent.NavigateBack -> Unit
             SettingsUiEvent.NavigateToDevTools -> Unit
+            SettingsUiEvent.NavigateToBackupRestore -> Unit
         }
     }
 

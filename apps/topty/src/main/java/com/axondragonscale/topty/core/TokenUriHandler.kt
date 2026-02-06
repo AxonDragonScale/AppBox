@@ -7,6 +7,7 @@ import com.axondragonscale.topty.UriParam
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
+import io.ktor.http.encodeURLParameter
 
 /**
  * Created by Ronak Harkhani on 27/10/24
@@ -123,5 +124,44 @@ object TokenUriHandler {
     }.getOrElse { exception ->
         this.logD { "Error parsing token URI: ${exception.message} \n${exception.stackTraceToString()}" }
         null
+    }
+
+    /**
+     * Generate an otpauth:// URI from a token.
+     * Format: otpauth://TYPE/LABEL?PARAMETERS
+     *
+     * @param token Token to convert to URI
+     * @return otpauth:// URI string
+     */
+    fun generateTokenUri(token: Token): String {
+        val protocol = token.protocol.code
+
+        // Build label: issuer:name or just name
+        val label = if (token.issuer.isNotBlank()) "${token.issuer}:${token.name}" else token.name
+        val encodedLabel = label.encodeURLParameter()
+
+        // Build query parameters
+        val params = buildList {
+            add("${UriParam.SECRET}=${token.secret}")
+
+            // Issuer (only if exists)
+            if (token.issuer.isNotBlank()) add("${UriParam.ISSUER}=${token.issuer.encodeURLParameter()}")
+
+            // Algorithm (only if not default SHA1)
+            if (token.hashAlgo != HashAlgo.SHA1) add("${UriParam.ALGORITHM}=${token.hashAlgo.name}")
+
+            // Digits (only if not default 6)
+            if (token.digits != 6) add("${UriParam.DIGITS}=${token.digits}")
+
+            // Period (only for TOTP and if not default 30)
+            if (token.protocol == Protocol.TOTP && token.period != 30) add("${UriParam.PERIOD}=${token.period}")
+
+            // Counter (mandatory for HOTP)
+            if (token.protocol == Protocol.HOTP) add("${UriParam.COUNTER}=${token.counter}")
+        }
+
+        // Build final URI
+        val queryString = params.joinToString("&")
+        return "${Scheme.OTPAUTH}://$protocol/$encodedLabel?$queryString"
     }
 }
