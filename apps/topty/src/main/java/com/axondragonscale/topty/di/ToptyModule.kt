@@ -2,13 +2,12 @@ package com.axondragonscale.topty.di
 
 import com.axondragonscale.topty.core.TTS
 import com.axondragonscale.topty.database.ToptyDatabase
-import com.axondragonscale.topty.repository.AppPrefsRepository
+import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.repository.TokenRepository
 import com.axondragonscale.topty.ui.token.TokenVM
 import com.axondragonscale.topty.ui.home.HomeVM
 import com.axondragonscale.topty.ui.qrscanner.QRScannerVM
 import com.axondragonscale.topty.ui.settings.SettingsVM
-import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -25,7 +24,7 @@ val ToptyModule = module {
 
     // Repository
     singleOf(::TokenRepository)
-    singleOf(::AppPrefsRepository)
+    singleOf(::ToptyPrefsRepository)
 
     // Core
     singleOf(::TTS)

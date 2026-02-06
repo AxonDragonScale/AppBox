@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,11 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.commons.Result
 import com.axondragonscale.topty.auth.BiometricAuthManager
-import com.axondragonscale.topty.model.UIFont
 import com.axondragonscale.topty.model.UIMode
-import com.axondragonscale.topty.repository.AppPrefsRepository
+import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.ui.ToptyApp
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
@@ -48,7 +45,7 @@ import org.koin.android.ext.android.inject
 
 class ToptyActivity : FragmentActivity() {
 
-    private val appPrefsRepository: AppPrefsRepository by inject()
+    private val prefsRepository: ToptyPrefsRepository by inject()
     private lateinit var biometricAuthManager: BiometricAuthManager
     private var isAuthenticated by mutableStateOf(false)
 
@@ -64,13 +61,13 @@ class ToptyActivity : FragmentActivity() {
 
         val (initialUiMode, initialDynamicTheme, initialUiFont) = runBlocking {
             Triple(
-                appPrefsRepository.uiMode.flow.first(),
-                appPrefsRepository.dynamicTheme.flow.first(),
-                appPrefsRepository.uiFont.flow.first(),
+                prefsRepository.uiMode.flow.first(),
+                prefsRepository.dynamicTheme.flow.first(),
+                prefsRepository.uiFont.flow.first(),
             )
         }
 
-        val biometricLockEnabled = runBlocking { appPrefsRepository.biometricLock.get() }
+        val biometricLockEnabled = runBlocking { prefsRepository.biometricLock.get() }
 
         // Check if biometric authentication is required
         if (biometricLockEnabled) {
@@ -85,13 +82,13 @@ class ToptyActivity : FragmentActivity() {
         keepSplashScreen = false
 
         setContent {
-            val uiMode by appPrefsRepository.uiMode.flow
+            val uiMode by prefsRepository.uiMode.flow
                 .collectAsStateWithLifecycle(initialValue = initialUiMode)
-            val dynamicTheme by appPrefsRepository.dynamicTheme.flow
+            val dynamicTheme by prefsRepository.dynamicTheme.flow
                 .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
-            val uiFont by appPrefsRepository.uiFont.flow
+            val uiFont by prefsRepository.uiFont.flow
                 .collectAsStateWithLifecycle(initialValue = initialUiFont)
-            val biometricLock by appPrefsRepository.biometricLock.flow
+            val biometricLock by prefsRepository.biometricLock.flow
                 .collectAsStateWithLifecycle(initialValue = biometricLockEnabled)
 
             ToptyTheme(

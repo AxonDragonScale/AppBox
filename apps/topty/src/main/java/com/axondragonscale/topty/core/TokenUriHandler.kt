@@ -7,6 +7,7 @@ import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
 import com.axondragonscale.commons.logD
+import androidx.core.net.toUri
 
 /**
  * Created by Ronak Harkhani on 27/10/24
@@ -23,7 +24,7 @@ object TokenUriHandler {
     fun isValidTokenUri(uri: String?): Boolean {
         this.logD { "isValidTokenUri start" }
         if (uri == null) return false
-        val uri = Uri.parse(uri)
+        val uri = uri.toUri()
 
         // Verify scheme
         this.logD { "scheme = ${uri.scheme}" }
@@ -43,7 +44,7 @@ object TokenUriHandler {
 
     fun parseTokenUri(uri: String?): Token? {
         if (uri == null) return null
-        val uri = Uri.parse(uri)
+        val uri = uri.toUri()
         var token = Token.emptyToken()
 
         // Verify Scheme

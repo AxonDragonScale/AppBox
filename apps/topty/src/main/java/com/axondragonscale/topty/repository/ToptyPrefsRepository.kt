@@ -14,11 +14,9 @@ import com.axondragonscale.topty.model.UIMode
 
 private val Context.appPrefs: DataStore<Preferences> by preferencesDataStore("topty_prefs")
 
-class AppPrefsRepository(context: Context) {
+class ToptyPrefsRepository(context: Context) {
 
     private val dataStore = context.appPrefs
-
-    val prefsFlow = dataStore.data
 
     val uiMode = dataStore.enumSetting(
         key = stringPreferencesKey("uiMode"),

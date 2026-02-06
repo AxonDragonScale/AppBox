@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.commons.collect
 import com.axondragonscale.commons.combine
-import com.axondragonscale.topty.repository.AppPrefsRepository
+import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
  * Created by Ronak Harkhani on 13/10/24
  */
 class SettingsVM(
-    private val appPrefsRepository: AppPrefsRepository,
+    private val prefsRepository: ToptyPrefsRepository,
 ): ViewModel() {
 
     val uiState = MutableStateFlow(SettingsUiState())
@@ -22,12 +22,12 @@ class SettingsVM(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             combine(
-                appPrefsRepository.uiMode.flow,
-                appPrefsRepository.dynamicTheme.flow,
-                appPrefsRepository.uiFont.flow,
-                appPrefsRepository.codeDesign.flow,
-                appPrefsRepository.speakOutOnTap.flow,
-                appPrefsRepository.biometricLock.flow,
+                prefsRepository.uiMode.flow,
+                prefsRepository.dynamicTheme.flow,
+                prefsRepository.uiFont.flow,
+                prefsRepository.codeDesign.flow,
+                prefsRepository.speakOutOnTap.flow,
+                prefsRepository.biometricLock.flow,
             ) { uiMode, dynamicTheme, uiFont, codeDesign, speakOutOnTap, biometricLock ->
                 uiState.update {
                     it.copy(
@@ -46,22 +46,22 @@ class SettingsVM(
     fun onEvent(event: SettingsUiEvent) = viewModelScope.launch(Dispatchers.IO) {
         when (event) {
             is SettingsUiEvent.UIModeUpdated ->
-                appPrefsRepository.uiMode.set(event.uiMode)
+                prefsRepository.uiMode.set(event.uiMode)
 
             is SettingsUiEvent.DynamicThemeToggled ->
-                appPrefsRepository.dynamicTheme.set(event.dynamicTheme)
+                prefsRepository.dynamicTheme.set(event.dynamicTheme)
 
             is SettingsUiEvent.UIFontUpdated ->
-                appPrefsRepository.uiFont.set(event.uiFont)
+                prefsRepository.uiFont.set(event.uiFont)
 
             is SettingsUiEvent.CodeDesignUpdated ->
-                appPrefsRepository.codeDesign.set(event.codeDesign)
+                prefsRepository.codeDesign.set(event.codeDesign)
 
             is SettingsUiEvent.SpeakOutOnTapToggled ->
-                appPrefsRepository.speakOutOnTap.set(event.speakOutOnTap)
+                prefsRepository.speakOutOnTap.set(event.speakOutOnTap)
 
             is SettingsUiEvent.BiometricLockToggled ->
-                appPrefsRepository.biometricLock.set(event.biometricLock)
+                prefsRepository.biometricLock.set(event.biometricLock)
 
             // Handled in Compose
             SettingsUiEvent.NavigateBack -> Unit

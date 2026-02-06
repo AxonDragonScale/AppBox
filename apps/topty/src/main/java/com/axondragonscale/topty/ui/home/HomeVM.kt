@@ -7,7 +7,7 @@ import com.axondragonscale.topty.core.TTS
 import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.model.Protocol
 import com.axondragonscale.commons.collect
-import com.axondragonscale.topty.repository.AppPrefsRepository
+import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.repository.TokenRepository
 import com.axondragonscale.topty.util.generateCode
 import com.google.mlkit.vision.common.InputImage
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
  * Created by Ronak Harkhani on 22/09/24
  */
 class HomeVM(
-    private val appPrefsRepository: AppPrefsRepository,
+    private val prefsRepository: ToptyPrefsRepository,
     private val repository: TokenRepository,
     private val tts: TTS,
 ) : ViewModel() {
@@ -37,8 +37,8 @@ class HomeVM(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             combine(
-                appPrefsRepository.codeDesign.flow,
-                appPrefsRepository.speakOutOnTap.flow,
+                prefsRepository.codeDesign.flow,
+                prefsRepository.speakOutOnTap.flow,
                 repository.getTokens(),
             ) { codeDesign, speakOutOnTap, tokens ->
                 val codes = tokens.map { token -> token.generateCode() }
