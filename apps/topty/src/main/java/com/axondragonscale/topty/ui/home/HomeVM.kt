@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.axondragonscale.topty.core.QRScanner
 import com.axondragonscale.topty.core.TTS
 import com.axondragonscale.topty.core.TokenUriHandler
+import com.axondragonscale.topty.model.Code
 import com.axondragonscale.topty.model.Protocol
 import com.axondragonscale.commons.collect
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
@@ -42,12 +43,17 @@ class HomeVM(
                 repository.getTokens(),
             ) { codeDesign, speakOutOnTap, tokens ->
                 val codes = tokens.map { token -> token.generateCode() }
+                val groups = tokens.map { it.group }.filter { it.isNotBlank() }.distinct().sorted()
+
                 uiState.update {
+                    val filteredCodes = codes.applyFilters(it.searchQuery, it.selectedGroup)
                     it.copy(
                         isLoading = false,
                         codeDesign = codeDesign,
                         codes = codes,
+                        filteredCodes = filteredCodes,
                         speakOutOnTap = speakOutOnTap,
+                        availableGroups = groups,
                     )
                 }
             }.collect()
@@ -59,12 +65,15 @@ class HomeVM(
         is HomeUiEvent.RefreshCode -> onRefreshCode(event)
         is HomeUiEvent.SpeakOut -> onSpeakOut(event)
         is HomeUiEvent.DeleteToken -> onDeleteToken(event)
+        is HomeUiEvent.UpdateSearchQuery -> onUpdateSearchQuery(event)
+        is HomeUiEvent.SelectGroup -> onSelectGroup(event)
+        is HomeUiEvent.ClearFilters -> onClearFilters()
 
         // Handled in Compose
-        HomeUiEvent.NavigateToAddToken -> Unit
+        is HomeUiEvent.NavigateToAddToken -> Unit
         is HomeUiEvent.NavigateToEditToken -> Unit
-        HomeUiEvent.NavigateToQRScanner -> Unit
-        HomeUiEvent.NavigateToSettings -> Unit
+        is HomeUiEvent.NavigateToQRScanner -> Unit
+        is HomeUiEvent.NavigateToSettings -> Unit
     }
 
     private fun onScanImage(
@@ -108,6 +117,48 @@ class HomeVM(
         event: HomeUiEvent.DeleteToken,
     ) = viewModelScope.launch(Dispatchers.IO) {
         repository.deleteToken(event.tokenId)
+    }
+
+    private fun onUpdateSearchQuery(event: HomeUiEvent.UpdateSearchQuery) {
+        uiState.update {
+            it.copy(
+                searchQuery = event.query,
+                filteredCodes = it.codes.applyFilters(event.query, it.selectedGroup)
+            )
+        }
+    }
+
+    private fun onSelectGroup(event: HomeUiEvent.SelectGroup) {
+        uiState.update {
+            it.copy(
+                selectedGroup = event.group,
+                filteredCodes = it.codes.applyFilters(it.searchQuery, event.group)
+            )
+        }
+    }
+
+    private fun onClearFilters() {
+        uiState.update {
+            it.copy(searchQuery = "", selectedGroup = null, filteredCodes = it.codes)
+        }
+    }
+
+    private fun List<Code>.applyFilters(searchQuery: String, selectedGroup: String?): List<Code> {
+        var filtered = this
+
+        if (selectedGroup != null)
+            filtered = filtered.filter { it.token.group == selectedGroup }
+
+        if (searchQuery.isNotBlank()) {
+            val query = searchQuery.trim().lowercase()
+            filtered = filtered.filter { code ->
+                code.token.name.lowercase().contains(query) ||
+                        code.token.issuer.lowercase().contains(query) ||
+                        code.token.group.lowercase().contains(query)
+            }
+        }
+
+        return filtered
     }
 
     override fun onCleared() {

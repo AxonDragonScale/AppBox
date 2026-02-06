@@ -16,4 +16,7 @@ sealed interface HomeUiEvent {
     data class DeleteToken(val tokenId: Long): HomeUiEvent
     data class RefreshCode(val index: Int, val code: Code): HomeUiEvent
     data class SpeakOut(val code: Code): HomeUiEvent
+    data class UpdateSearchQuery(val query: String): HomeUiEvent
+    data class SelectGroup(val group: String?): HomeUiEvent
+    data object ClearFilters: HomeUiEvent
 }

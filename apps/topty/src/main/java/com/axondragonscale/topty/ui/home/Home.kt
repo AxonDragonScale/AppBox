@@ -6,6 +6,11 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,13 +38,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Shield
@@ -48,6 +57,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -57,10 +67,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -85,6 +98,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.Code
 import com.axondragonscale.topty.model.CodeDesign
@@ -96,7 +110,6 @@ import com.axondragonscale.topty.ui.common.ExpandingFabButton
 import com.axondragonscale.topty.ui.common.ExpandingFabItem
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
-import com.axondragonscale.commons.collectWithLifecycle
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.concurrent.timer
@@ -130,9 +143,9 @@ fun Home(
         uiState = uiState,
         onEvent = { event ->
             when (event) {
-                HomeUiEvent.NavigateToQRScanner -> navController.navigate(Route.QRScanner)
-                HomeUiEvent.NavigateToAddToken -> navController.navigate(Route.Token.Add(null))
-                HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
+                is HomeUiEvent.NavigateToQRScanner -> navController.navigate(Route.QRScanner)
+                is HomeUiEvent.NavigateToAddToken -> navController.navigate(Route.Token.Add(null))
+                is HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
                 is HomeUiEvent.NavigateToEditToken -> navController.navigate(Route.Token.Edit(event.tokenId))
 
                 else -> vm.onEvent(event)
@@ -153,10 +166,21 @@ private fun Home(
 ) {
     val context = LocalContext.current
     var pendingDeleteTokenId by remember { mutableStateOf<Long?>(null) }
+    var isSearchVisible by remember { mutableStateOf(true) }
+
+    // Clear filters when search is hidden
+    LaunchedEffect(isSearchVisible) {
+        if (!isSearchVisible && (uiState.searchQuery.isNotBlank() || uiState.selectedGroup != null))
+            onEvent(HomeUiEvent.ClearFilters)
+    }
+    
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopBar(onSettingsClick = { onEvent(HomeUiEvent.NavigateToSettings) })
+            TopBar(
+                onSearchClick = { isSearchVisible = !isSearchVisible },
+                onSettingsClick = { onEvent(HomeUiEvent.NavigateToSettings) }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -166,26 +190,64 @@ private fun Home(
             )
         },
     ) { contentPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = contentPadding.calculateTopPadding()),
         ) {
-            when {
-                uiState.isLoading ->
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                uiState.codes.isEmpty() ->
-                    EmptyState(modifier = Modifier.fillMaxSize())
-                else ->
-                    CodeList(
-                        codeDesign = uiState.codeDesign,
-                        codes = uiState.codes,
-                        speakOutOnTap = uiState.speakOutOnTap,
-                        onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
-                        onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
-                        onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
-                        onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
+            // Search and Filter Section
+            AnimatedVisibility(
+                visible = isSearchVisible,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    SearchBar(
+                        searchQuery = uiState.searchQuery,
+                        onSearchQueryChange = { onEvent(HomeUiEvent.UpdateSearchQuery(it)) },
+                        onClearSearch = {
+                            onEvent(HomeUiEvent.ClearFilters)
+                            isSearchVisible = false
+                        }
                     )
+
+                    if (uiState.availableGroups.isNotEmpty())
+                        FilterChips(
+                            availableGroups = uiState.availableGroups,
+                            selectedGroup = uiState.selectedGroup,
+                            onGroupSelected = { onEvent(HomeUiEvent.SelectGroup(it)) },
+                            onClearFilters = { onEvent(HomeUiEvent.ClearFilters) },
+                            hasActiveFilters = uiState.searchQuery.isNotBlank() || uiState.selectedGroup != null
+                        )
+                }
+            }
+
+            // Content
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+            ) {
+                when {
+                    uiState.isLoading ->
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    uiState.codes.isEmpty() ->
+                        EmptyState(modifier = Modifier.fillMaxSize())
+                    uiState.filteredCodes.isEmpty() ->
+                        NoResultsState(modifier = Modifier.fillMaxSize())
+                    else ->
+                        CodeList(
+                            codeDesign = uiState.codeDesign,
+                            codes = uiState.filteredCodes,
+                            speakOutOnTap = uiState.speakOutOnTap,
+                            onRefreshCode = { index, code -> onEvent(HomeUiEvent.RefreshCode(index, code)) },
+                            onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
+                            onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
+                            onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
+                        )
+                }
             }
         }
 
@@ -243,6 +305,7 @@ fun DeleteConfirmationDialog(
 @Composable
 private fun TopBar(
     modifier: Modifier = Modifier,
+    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     TopAppBar(
@@ -255,15 +318,155 @@ private fun TopBar(
             )
         },
         actions = {
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onBackground,
+                )
+            }
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     imageVector = Icons.Default.Tune,
-                    contentDescription = null,
+                    contentDescription = "Settings",
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             }
         }
     )
+}
+
+@Composable
+private fun SearchBar(
+    modifier: Modifier = Modifier,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onClearSearch: () -> Unit,
+) {
+    TextField(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
+        placeholder = { Text("Search by name, issuer, or group") },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search"
+            )
+        },
+        trailingIcon = {
+            if (searchQuery.isNotBlank()) {
+                IconButton(onClick = onClearSearch) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear search"
+                    )
+                }
+            }
+        },
+        singleLine = true,
+        shape = DefaultShape,
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+        )
+    )
+}
+
+@Composable
+private fun FilterChips(
+    modifier: Modifier = Modifier,
+    availableGroups: List<String>,
+    selectedGroup: String?,
+    onGroupSelected: (String?) -> Unit,
+    onClearFilters: () -> Unit,
+    hasActiveFilters: Boolean,
+) {
+    LazyRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (hasActiveFilters) {
+            item {
+                FilterChip(
+                    selected = false,
+                    onClick = onClearFilters,
+                    label = { Text("Clear") },
+                    leadingIcon = {
+                        Icon(
+                            modifier = Modifier.size(18.dp),
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                        )
+                    }
+                )
+            }
+        }
+
+        item {
+            FilterChip(
+                selected = selectedGroup == null,
+                onClick = { onGroupSelected(null) },
+                label = { Text("All") },
+                leadingIcon = {
+                    Icon(
+                        modifier = Modifier.size(18.dp),
+                        imageVector = Icons.Default.FilterList,
+                        contentDescription = null,
+                    )
+                }
+            )
+        }
+
+        availableGroups.forEach { group ->
+            item {
+                FilterChip(
+                    selected = selectedGroup == group,
+                    onClick = { onGroupSelected(group) },
+                    label = { Text(group) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoResultsState(
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            modifier = Modifier.size(120.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "No Results Found",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Try adjusting your search or filters",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+        )
+    }
 }
 
 @Composable
@@ -841,28 +1044,30 @@ private fun NoQRFoundDialog(
 private fun Preview() {
     ToptyTheme {
         val uiState = remember {
+            val codes = listOf(
+                TOTPCode(
+                    code = "123456",
+                    token = Token.emptyToken().copy(
+                        name = "AxonDragonScale",
+                        issuer = "Github"
+                    ),
+                    periodStart = 0,
+                    periodEnd = 0,
+                ),
+                HOTPCode(
+                    code = "456789",
+                    token = Token.emptyToken().copy(
+                        name = "Ronak Harkhani",
+                        issuer = "Topty",
+                        protocol = Protocol.HOTP,
+                    ),
+                )
+            )
             HomeUiState(
                 isLoading = false,
                 codeDesign = CodeDesign.C,
-                codes = listOf(
-                    TOTPCode(
-                        code = "123456",
-                        token = Token.emptyToken().copy(
-                            name = "AxonDragonScale",
-                            issuer = "Github"
-                        ),
-                        periodStart = 0,
-                        periodEnd = 0,
-                    ),
-                    HOTPCode(
-                        code = "456789",
-                        token = Token.emptyToken().copy(
-                            name = "Ronak Harkhani",
-                            issuer = "Topty",
-                            protocol = Protocol.HOTP,
-                        ),
-                    )
-                )
+                codes = codes,
+                filteredCodes = codes,
             )
         }
         Home(
@@ -872,6 +1077,46 @@ private fun Preview() {
     }
 }
 
+@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewSearchAndFilter() {
+    ToptyTheme {
+        val uiState = remember {
+            val codes = listOf(
+                TOTPCode(
+                    code = "123456",
+                    token = Token.emptyToken().copy(
+                        name = "AxonDragonScale",
+                        issuer = "Github",
+                    ),
+                    periodStart = 0,
+                    periodEnd = 0,
+                ),
+                HOTPCode(
+                    code = "456789",
+                    token = Token.emptyToken().copy(
+                        name = "Ronak Harkhani",
+                        issuer = "Topty",
+                        protocol = Protocol.HOTP,
+                    ),
+                )
+            )
+            HomeUiState(
+                isLoading = false,
+                codeDesign = CodeDesign.C,
+                codes = codes,
+                filteredCodes = codes,
+                searchQuery = "1234",
+                availableGroups = listOf("Array", "Boolean")
+            )
+        }
+        Home(
+            uiState = uiState,
+            onEvent = { }
+        )
+    }
+}
 
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
