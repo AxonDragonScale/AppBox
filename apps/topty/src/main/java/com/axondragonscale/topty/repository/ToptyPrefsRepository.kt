@@ -48,4 +48,9 @@ class ToptyPrefsRepository(context: Context) {
         default = false,
     )
 
+    val preventScreenshots = dataStore.setting(
+        key = booleanPreferencesKey("preventScreenshots"),
+        default = true,
+    )
+
 }

@@ -1,6 +1,7 @@
 package com.axondragonscale.topty
 
 import android.os.Bundle
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -68,6 +69,10 @@ class ToptyActivity : FragmentActivity() {
         }
 
         val biometricLockEnabled = runBlocking { prefsRepository.biometricLock.get() }
+        val preventScreenshotsEnabled = runBlocking { prefsRepository.preventScreenshots.get() }
+
+        // Apply screenshot prevention if enabled
+        if (preventScreenshotsEnabled) window.setFlags(FLAG_SECURE, FLAG_SECURE)
 
         // Check if biometric authentication is required
         if (biometricLockEnabled) {
@@ -90,6 +95,17 @@ class ToptyActivity : FragmentActivity() {
                 .collectAsStateWithLifecycle(initialValue = initialUiFont)
             val biometricLock by prefsRepository.biometricLock.flow
                 .collectAsStateWithLifecycle(initialValue = biometricLockEnabled)
+            val preventScreenshots by prefsRepository.preventScreenshots.flow
+                .collectAsStateWithLifecycle(initialValue = preventScreenshotsEnabled)
+
+            // Update FLAG_SECURE based on preference changes
+            LaunchedEffect(preventScreenshots) {
+                if (preventScreenshots) {
+                    window.setFlags(FLAG_SECURE, FLAG_SECURE)
+                } else {
+                    window.clearFlags(FLAG_SECURE)
+                }
+            }
 
             ToptyTheme(
                 darkTheme = isDarkTheme(uiMode),

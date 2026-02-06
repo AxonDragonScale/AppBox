@@ -14,4 +14,5 @@ data class SettingsUiState(
     val codeDesign: CodeDesign = CodeDesign.DEFAULT,
     val speakOutOnTap: Boolean = false,
     val biometricLock: Boolean = false,
+    val preventScreenshots: Boolean = true,
 )

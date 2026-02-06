@@ -15,5 +15,6 @@ sealed interface SettingsUiEvent {
     data class CodeDesignUpdated(val codeDesign: CodeDesign) : SettingsUiEvent
     data class SpeakOutOnTapToggled(val speakOutOnTap: Boolean) : SettingsUiEvent
     data class BiometricLockToggled(val biometricLock: Boolean) : SettingsUiEvent
+    data class PreventScreenshotsToggled(val preventScreenshots: Boolean) : SettingsUiEvent
     data object NavigateToDevTools : SettingsUiEvent
 }

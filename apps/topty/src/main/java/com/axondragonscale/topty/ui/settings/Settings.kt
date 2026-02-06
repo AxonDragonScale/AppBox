@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.DesignServices
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -140,9 +141,11 @@ private fun Settings(
                 codeDesign = uiState.codeDesign,
                 speakOutOnTap = uiState.speakOutOnTap,
                 biometricLock = uiState.biometricLock,
+                preventScreenshots = uiState.preventScreenshots,
                 onCodeDesignUpdated = { onEvent(SettingsUiEvent.CodeDesignUpdated(it)) },
                 onSpeakOutOnTapToggled = { onEvent(SettingsUiEvent.SpeakOutOnTapToggled(it)) },
                 onBiometricLockToggled = { onEvent(SettingsUiEvent.BiometricLockToggled(it)) },
+                onPreventScreenshotsToggled = { onEvent(SettingsUiEvent.PreventScreenshotsToggled(it)) },
             )
 
             AboutSection(
@@ -237,9 +240,11 @@ private fun BehaviorSection(
     codeDesign: CodeDesign,
     speakOutOnTap: Boolean,
     biometricLock: Boolean,
+    preventScreenshots: Boolean,
     onCodeDesignUpdated: (CodeDesign) -> Unit,
     onSpeakOutOnTapToggled: (Boolean) -> Unit,
     onBiometricLockToggled: (Boolean) -> Unit,
+    onPreventScreenshotsToggled: (Boolean) -> Unit,
 ) = Section(
     modifier = modifier,
     title = "Behavior",
@@ -282,7 +287,7 @@ private fun BehaviorSection(
     )
 
     SettingsCard(
-        modifier = Modifier,
+        modifier = Modifier.padding(bottom = 8.dp),
         leadingContent = {
             Icon(
                 imageVector = Icons.Filled.Campaign,
@@ -295,6 +300,24 @@ private fun BehaviorSection(
             Switch(
                 checked = speakOutOnTap,
                 onCheckedChange = onSpeakOutOnTapToggled,
+            )
+        }
+    )
+
+    SettingsCard(
+        modifier = Modifier,
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Filled.Security,
+                contentDescription = "Prevent Screenshots",
+            )
+        },
+        headlineContent = { Text(text = "Prevent Screenshots") },
+        supportingContent = { Text(text = "Block screenshots and screen recording") },
+        trailingContent = {
+            Switch(
+                checked = preventScreenshots,
+                onCheckedChange = onPreventScreenshotsToggled,
             )
         }
     )
