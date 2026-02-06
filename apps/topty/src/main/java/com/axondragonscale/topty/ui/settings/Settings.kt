@@ -318,7 +318,7 @@ private fun AboutSection(
             )
         },
         headlineContent = { Text(text = "Topty") },
-        supportingContent = { Text(text = "Version TODO") }
+        supportingContent = { Text(text = "v${BuildConfig.VERSION_NAME}") }
     )
 
     SettingsCard(
