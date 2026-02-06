@@ -1,13 +1,12 @@
 package com.axondragonscale.topty.core
 
-import android.net.Uri
+import androidx.core.net.toUri
+import com.axondragonscale.commons.logD
 import com.axondragonscale.topty.Scheme
 import com.axondragonscale.topty.UriParam
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
-import com.axondragonscale.commons.logD
-import androidx.core.net.toUri
 
 /**
  * Created by Ronak Harkhani on 27/10/24
@@ -42,7 +41,7 @@ object TokenUriHandler {
         return true
     }
 
-    fun parseTokenUri(uri: String?): Token? {
+    fun parseTokenUri(uri: String?): Token? = runCatching {
         if (uri == null) return null
         val uri = uri.toUri()
 
@@ -121,5 +120,8 @@ object TokenUriHandler {
             counter = tokenCounter,
             digits = tokenDigits,
         )
+    }.getOrElse { exception ->
+        this.logD { "Error parsing token URI: ${exception.message} \n${exception.stackTraceToString()}" }
+        null
     }
 }
