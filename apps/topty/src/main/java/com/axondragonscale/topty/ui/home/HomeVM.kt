@@ -65,6 +65,7 @@ class HomeVM(
         is HomeUiEvent.RefreshCode -> onRefreshCode(event)
         is HomeUiEvent.SpeakOut -> onSpeakOut(event)
         is HomeUiEvent.DeleteToken -> onDeleteToken(event)
+        is HomeUiEvent.CodeCopied -> onCodeCopied(event)
         is HomeUiEvent.UpdateSearchQuery -> onUpdateSearchQuery(event)
         is HomeUiEvent.SelectGroup -> onSelectGroup(event)
         is HomeUiEvent.ClearFilters -> onClearFilters()
@@ -117,6 +118,14 @@ class HomeVM(
         event: HomeUiEvent.DeleteToken,
     ) = viewModelScope.launch(Dispatchers.IO) {
         repository.deleteToken(event.tokenId)
+    }
+
+    private fun onCodeCopied(
+        event: HomeUiEvent.CodeCopied,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        val token = repository.getToken(event.tokenId) ?: return@launch
+        val updatedToken = token.copy(lastUsedAt = System.currentTimeMillis())
+        repository.saveToken(updatedToken)
     }
 
     private fun onUpdateSearchQuery(event: HomeUiEvent.UpdateSearchQuery) {

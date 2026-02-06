@@ -92,6 +92,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -166,14 +167,14 @@ private fun Home(
 ) {
     val context = LocalContext.current
     var pendingDeleteTokenId by remember { mutableStateOf<Long?>(null) }
-    var isSearchVisible by remember { mutableStateOf(true) }
+    var isSearchVisible by remember { mutableStateOf(false) }
 
     // Clear filters when search is hidden
     LaunchedEffect(isSearchVisible) {
         if (!isSearchVisible && (uiState.searchQuery.isNotBlank() || uiState.selectedGroup != null))
             onEvent(HomeUiEvent.ClearFilters)
     }
-    
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -202,7 +203,7 @@ private fun Home(
                 exit = shrinkVertically() + fadeOut()
             ) {
                 Column(
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = if (uiState.availableGroups.isNotEmpty()) 8.dp else 16.dp)
                 ) {
                     SearchBar(
                         searchQuery = uiState.searchQuery,
@@ -232,11 +233,11 @@ private fun Home(
             ) {
                 when {
                     uiState.isLoading ->
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center).padding(bottom = 96.dp))
                     uiState.codes.isEmpty() ->
-                        EmptyState(modifier = Modifier.fillMaxSize())
+                        EmptyState(modifier = Modifier.fillMaxSize().padding(bottom = 96.dp))
                     uiState.filteredCodes.isEmpty() ->
-                        NoResultsState(modifier = Modifier.fillMaxSize())
+                        NoResultsState(modifier = Modifier.fillMaxSize().padding(bottom = 96.dp))
                     else ->
                         CodeList(
                             codeDesign = uiState.codeDesign,
@@ -246,6 +247,7 @@ private fun Home(
                             onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
                             onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
                             onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
+                            onCodeCopied = { onEvent(HomeUiEvent.CodeCopied(it)) },
                         )
                 }
             }
@@ -474,7 +476,7 @@ private fun EmptyState(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -488,26 +490,20 @@ private fun EmptyState(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "No Codes Yet",
+            text = "Secure Your Accounts",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Add your first code to get started",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = "Tap the + button below",
+            text = "Add two-factor authentication codes to keep your accounts safe",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -646,6 +642,7 @@ private fun CodeList(
     onEditToken: (Long) -> Unit,
     onDeleteToken: (Long) -> Unit,
     onSpeakOut: (Code) -> Unit,
+    onCodeCopied: (Long) -> Unit,
 ) = LazyColumn(
     modifier = modifier,
     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -724,6 +721,7 @@ private fun CodeList(
                                     ClipData.newPlainText("Topty Code", code.code)
                                 )
                             )
+                            onCodeCopied(code.token.id)
                             if (speakOutOnTap) onSpeakOut(code)
                         }
                     },

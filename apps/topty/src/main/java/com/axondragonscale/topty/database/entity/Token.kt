@@ -24,6 +24,7 @@ data class Token(
     val period: Int, // TODO: Convert to duration class ?
     val counter: Long,
     val digits: Int,
+    val lastUsedAt: Long,
 ) {
 
     /**
@@ -56,7 +57,8 @@ data class Token(
             hashAlgo = HashAlgo.SHA1,
             period = 30,
             counter = 0L,
-            digits = 6
+            digits = 6,
+            lastUsedAt = 0L
         )
 
         /**
@@ -74,6 +76,7 @@ data class Token(
             period: Int,
             counter: Long,
             digits: Int,
+            lastUsedAt: Long = 0L,
         ): Token {
             return Token(
                 id = id,
@@ -87,6 +90,7 @@ data class Token(
                 period = period,
                 counter = counter,
                 digits = digits,
+                lastUsedAt = lastUsedAt,
             )
         }
     }
