@@ -72,10 +72,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -503,6 +505,7 @@ private fun CodeList(
                 onDelete = onDelete,
             )
 
+            val haptic = LocalHapticFeedback.current
             val codeModifier = Modifier
                 .offset { IntOffset(swipeState.requireOffset().roundToInt(), 0) }
                 .anchoredDraggable(
@@ -511,6 +514,7 @@ private fun CodeList(
                 )
                 .combinedClickable(
                     onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         scope.launch {
                             clipboard.setClipEntry(
                                 ClipEntry(
@@ -594,7 +598,12 @@ private fun CodeA(
 
         if (code.token.protocol == Protocol.HOTP) {
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = onRefresh) {
+
+            val haptic = LocalHapticFeedback.current
+            IconButton(onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onRefresh()
+            }) {
                 Icon(
                     modifier = Modifier.size(32.dp),
                     imageVector = Icons.Default.Refresh,
@@ -658,7 +667,12 @@ private fun CodeB(
 
         if (code.token.protocol == Protocol.HOTP) {
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = onRefresh) {
+
+            val haptic = LocalHapticFeedback.current
+            IconButton(onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onRefresh()
+            }) {
                 Icon(
                     modifier = Modifier.size(32.dp),
                     imageVector = Icons.Default.Refresh,
@@ -762,9 +776,13 @@ private fun CodeC(
                 gapSize = 2.dp
             )
         } else if (code.token.protocol == Protocol.HOTP) {
+            val haptic = LocalHapticFeedback.current
             IconButton(
                 modifier = Modifier.size(36.dp),
-                onClick = onRefresh,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onRefresh()
+                },
             ) {
                 Icon(
                     modifier = Modifier.size(32.dp),
