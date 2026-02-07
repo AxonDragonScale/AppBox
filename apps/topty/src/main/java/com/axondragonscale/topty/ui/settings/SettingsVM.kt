@@ -2,13 +2,12 @@ package com.axondragonscale.topty.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.commons.Tuple6
 import com.axondragonscale.commons.collect
 import com.axondragonscale.commons.combine
+import com.axondragonscale.topty.auth.BiometricAvailabilityChecker
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -17,11 +16,17 @@ import kotlinx.coroutines.launch
  */
 class SettingsVM(
     private val prefsRepository: ToptyPrefsRepository,
+    private val biometricAvailabilityChecker: BiometricAvailabilityChecker,
 ): ViewModel() {
 
     val uiState = MutableStateFlow(SettingsUiState())
 
     init {
+        viewModelScope.launch(Dispatchers.IO) {
+            val unavailableReason = biometricAvailabilityChecker.canAuthenticate().getFailureResultOrNull()
+            uiState.update { it.copy(biometricUnavailableReason = unavailableReason) }
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
             combine(
                 prefsRepository.uiMode.flow,
@@ -64,8 +69,14 @@ class SettingsVM(
             is SettingsUiEvent.SpeakOutOnTapToggled ->
                 prefsRepository.speakOutOnTap.set(event.speakOutOnTap)
 
-            is SettingsUiEvent.BiometricLockToggled ->
+            is SettingsUiEvent.BiometricLockToggled -> {
+                if (event.biometricLock) {
+                    val result = biometricAvailabilityChecker.canAuthenticate()
+                    uiState.update { it.copy(biometricUnavailableReason = result.getFailureResultOrNull()) }
+                    if (result.isFailure()) return@launch // Don't enable if biometric is not available
+                }
                 prefsRepository.biometricLock.set(event.biometricLock)
+            }
 
             is SettingsUiEvent.PreventScreenshotsToggled ->
                 prefsRepository.preventScreenshots.set(event.preventScreenshots)

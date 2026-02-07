@@ -1,5 +1,6 @@
 package com.axondragonscale.topty.di
 
+import com.axondragonscale.topty.auth.BiometricAvailabilityChecker
 import com.axondragonscale.topty.backup.BackupExporter
 import com.axondragonscale.topty.backup.BackupImporter
 import com.axondragonscale.topty.core.TTS
@@ -36,6 +37,9 @@ val ToptyModule = module {
 
     // Core
     singleOf(::TTS)
+
+    // Auth
+    singleOf(::BiometricAvailabilityChecker)
 
     // ViewModel
     viewModelOf(::HomeVM)

@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -144,6 +145,7 @@ private fun Settings(
                 codeDesign = uiState.codeDesign,
                 speakOutOnTap = uiState.speakOutOnTap,
                 biometricLock = uiState.biometricLock,
+                biometricUnavailableReason = uiState.biometricUnavailableReason,
                 preventScreenshots = uiState.preventScreenshots,
                 onCodeDesignUpdated = { onEvent(SettingsUiEvent.CodeDesignUpdated(it)) },
                 onSpeakOutOnTapToggled = { onEvent(SettingsUiEvent.SpeakOutOnTapToggled(it)) },
@@ -248,6 +250,7 @@ private fun BehaviorSection(
     codeDesign: CodeDesign,
     speakOutOnTap: Boolean,
     biometricLock: Boolean,
+    biometricUnavailableReason: String?,
     preventScreenshots: Boolean,
     onCodeDesignUpdated: (CodeDesign) -> Unit,
     onSpeakOutOnTapToggled: (Boolean) -> Unit,
@@ -285,7 +288,13 @@ private fun BehaviorSection(
             )
         },
         headlineContent = { Text(text = "Biometric Lock") },
-        supportingContent = { Text(text = "Require Fingerprint to open app") },
+        supportingContent = {
+            Text(
+                text = biometricUnavailableReason ?: "Require Fingerprint to open app",
+                color = if (biometricUnavailableReason == null) LocalContentColor.current
+                        else MaterialTheme.colorScheme.error
+            )
+        },
         trailingContent = {
             Switch(
                 checked = biometricLock,
