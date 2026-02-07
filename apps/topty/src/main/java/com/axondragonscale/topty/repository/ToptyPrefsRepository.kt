@@ -59,4 +59,9 @@ class ToptyPrefsRepository(context: Context) {
         default = SortOrder.DEFAULT,
     )
 
+    val hasCompletedOnboarding = dataStore.setting(
+        key = booleanPreferencesKey("hasCompletedOnboarding"),
+        default = false,
+    )
+
 }

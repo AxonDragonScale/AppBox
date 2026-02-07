@@ -17,6 +17,7 @@ import com.axondragonscale.topty.auth.BiometricAuthManager
 import com.axondragonscale.topty.model.UIMode
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.ui.BiometricLockScreen
+import com.axondragonscale.topty.ui.Route
 import com.axondragonscale.topty.ui.ToptyApp
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 import kotlinx.coroutines.flow.first
@@ -47,6 +48,7 @@ class ToptyActivity : FragmentActivity() {
             )
         }
 
+        val hasCompletedOnboarding = runBlocking { prefsRepository.hasCompletedOnboarding.flow.first() }
         val biometricLockEnabled = runBlocking { prefsRepository.biometricLock.get() }
         val preventScreenshotsEnabled = runBlocking { prefsRepository.preventScreenshots.get() }
 
@@ -69,11 +71,8 @@ class ToptyActivity : FragmentActivity() {
 
             // Update FLAG_SECURE based on preference changes
             LaunchedEffect(preventScreenshots) {
-                if (preventScreenshots) {
-                    window.setFlags(FLAG_SECURE, FLAG_SECURE)
-                } else {
-                    window.clearFlags(FLAG_SECURE)
-                }
+                if (preventScreenshots) window.setFlags(FLAG_SECURE, FLAG_SECURE)
+                else window.clearFlags(FLAG_SECURE)
             }
 
             ToptyTheme(
@@ -88,7 +87,7 @@ class ToptyActivity : FragmentActivity() {
                         onAuthenticated = { isAuthenticated = true }
                     )
                 } else {
-                    ToptyApp()
+                    ToptyApp(startDestination = if (hasCompletedOnboarding) Route.Home else Route.Onboarding)
                 }
             }
         }

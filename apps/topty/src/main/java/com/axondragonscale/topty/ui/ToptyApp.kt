@@ -13,6 +13,7 @@ import com.axondragonscale.topty.ui.backuprestore.BackupRestore
 import com.axondragonscale.topty.ui.devtools.ToptyDevTools
 import com.axondragonscale.topty.ui.token.Token
 import com.axondragonscale.topty.ui.home.Home
+import com.axondragonscale.topty.ui.onboarding.Onboarding
 import com.axondragonscale.topty.ui.qrscanner.QRScanner
 import com.axondragonscale.topty.ui.settings.Settings
 
@@ -21,17 +22,24 @@ import com.axondragonscale.topty.ui.settings.Settings
  */
 
 @Composable
-fun ToptyApp(modifier: Modifier = Modifier) {
+fun ToptyApp(
+    modifier: Modifier = Modifier,
+    startDestination: Any,
+) {
     val navController = rememberNavController()
     NavHost(
         modifier = modifier.background(MaterialTheme.colorScheme.background),
         navController = navController,
-        startDestination = Route.Home,
+        startDestination = startDestination,
         enterTransition = { slideIntoContainer(SlideDirection.Left) },
         exitTransition = { slideOutOfContainer(SlideDirection.Left) },
         popEnterTransition = { slideIntoContainer(SlideDirection.Right) },
         popExitTransition = { slideOutOfContainer(SlideDirection.Right) }
     ) {
+        composable<Route.Onboarding> {
+            Onboarding(navController = navController)
+        }
+
         composable<Route.Home> {
             Home(navController = navController)
         }

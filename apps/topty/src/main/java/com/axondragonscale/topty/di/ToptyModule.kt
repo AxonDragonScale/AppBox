@@ -10,6 +10,7 @@ import com.axondragonscale.topty.repository.TokenRepository
 import com.axondragonscale.topty.ui.backuprestore.BackupRestoreVM
 import com.axondragonscale.topty.ui.token.TokenVM
 import com.axondragonscale.topty.ui.home.HomeVM
+import com.axondragonscale.topty.ui.onboarding.OnboardingVM
 import com.axondragonscale.topty.ui.qrscanner.QRScannerVM
 import com.axondragonscale.topty.ui.settings.SettingsVM
 import org.koin.core.module.dsl.factoryOf
@@ -43,6 +44,7 @@ val ToptyModule = module {
 
     // ViewModel
     viewModelOf(::HomeVM)
+    viewModelOf(::OnboardingVM)
     viewModelOf(::QRScannerVM)
     viewModelOf(::SettingsVM)
     viewModelOf(::TokenVM)

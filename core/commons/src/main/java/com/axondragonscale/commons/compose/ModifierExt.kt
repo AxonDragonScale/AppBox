@@ -1,6 +1,7 @@
 package com.axondragonscale.commons.compose
 
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 
 /**
  * Conditionally applies the given [modifier] if [condition] is true.
@@ -27,3 +28,8 @@ inline fun <T> Modifier.thenIfNotNull(
     value: T?,
     modifier: Modifier.(T) -> Modifier
 ): Modifier = if (value != null) this.modifier(value) else this
+
+/**
+ * Applies alpha to the composable based on [isVisible].
+ */
+fun Modifier.visible(isVisible: Boolean) = this.alpha(if (isVisible) 1f else 0f)

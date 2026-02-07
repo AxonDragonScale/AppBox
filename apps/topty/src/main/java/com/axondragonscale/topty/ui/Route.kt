@@ -8,6 +8,9 @@ import kotlinx.serialization.Serializable
 object Route {
 
     @Serializable
+    data object Onboarding
+
+    @Serializable
     data object Home
 
     @Serializable
