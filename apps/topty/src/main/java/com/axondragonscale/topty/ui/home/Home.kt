@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -232,12 +233,7 @@ private fun Home(
                 }
             }
 
-            // Content
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-            ) {
+            Box(modifier = Modifier.fillMaxSize().weight(1f)) {
                 when {
                     uiState.isLoading ->
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center).padding(bottom = 96.dp))
@@ -705,7 +701,7 @@ private fun CodeList(
     contentPadding = PaddingValues(horizontal = 16.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
 ) {
-    itemsIndexed(codes) { index, code ->
+    items(codes, { code -> code.token.id }) { code ->
         val isTotp = code is TOTPCode
         var timeRemaining by remember { mutableLongStateOf(
             if (isTotp) (System.currentTimeMillis() - code.periodStart) else 0
@@ -1107,6 +1103,7 @@ private fun Preview() {
                 TOTPCode(
                     code = "123456",
                     token = Token.emptyToken().copy(
+                        id = 1,
                         name = "AxonDragonScale",
                         issuer = "Github"
                     ),
@@ -1116,6 +1113,7 @@ private fun Preview() {
                 HOTPCode(
                     code = "456789",
                     token = Token.emptyToken().copy(
+                        id = 2,
                         name = "Ronak Harkhani",
                         issuer = "Topty",
                         protocol = Protocol.HOTP,
@@ -1146,6 +1144,7 @@ private fun PreviewSearchAndFilter() {
                 TOTPCode(
                     code = "123456",
                     token = Token.emptyToken().copy(
+                        id = 1,
                         name = "AxonDragonScale",
                         issuer = "Github",
                     ),
@@ -1155,6 +1154,7 @@ private fun PreviewSearchAndFilter() {
                 HOTPCode(
                     code = "456789",
                     token = Token.emptyToken().copy(
+                        id = 2,
                         name = "Ronak Harkhani",
                         issuer = "Topty",
                         protocol = Protocol.HOTP,
