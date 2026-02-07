@@ -76,10 +76,17 @@ class ToptyActivity : FragmentActivity() {
 
         // Check if biometric authentication is required
         if (biometricLockEnabled) {
-            val result = biometricAuthManager.canAuthenticate().onFailure { errorMessage ->
-                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
-            }
-            isAuthenticated = result.isSuccess()
+            biometricAuthManager.canAuthenticate()
+                .onSuccess {
+                    biometricAuthManager.authenticate(
+                        onSuccess = { isAuthenticated = true },
+                        onFailed = {  },
+                        onError = { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+                    )
+                }
+                .onFailure { errorMessage ->
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
+                }
         } else {
             isAuthenticated = true
         }
