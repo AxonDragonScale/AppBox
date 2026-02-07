@@ -52,14 +52,12 @@ class BackupExporter(
      */
     suspend fun exportToFile(tokens: List<Token>, format: BackupFormat, uri: Uri): Result<Unit, String> {
         return try {
-            // Generate backup content
             val content = when (format) {
                 BackupFormat.TOPTY -> exportToptyFormat(tokens)
                 BackupFormat.AEGIS -> exportAegisFormat(tokens)
                 BackupFormat.OTP_AUTH_URI -> exportOtpAuthUriFormat(tokens)
             }
 
-            // Write to file
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                 outputStream.write(content.toByteArray())
                 outputStream.flush()
