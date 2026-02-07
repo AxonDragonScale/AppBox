@@ -8,6 +8,7 @@ import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.model.Code
 import com.axondragonscale.topty.model.Protocol
 import com.axondragonscale.commons.collect
+import com.axondragonscale.topty.model.SortOrder
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.repository.TokenRepository
 import com.axondragonscale.topty.util.generateCode
@@ -40,19 +41,21 @@ class HomeVM(
             combine(
                 prefsRepository.codeDesign.flow,
                 prefsRepository.speakOutOnTap.flow,
+                prefsRepository.sortOrder.flow,
                 repository.getTokens(),
-            ) { codeDesign, speakOutOnTap, tokens ->
+            ) { codeDesign, speakOutOnTap, sortOrder, tokens ->
                 val codes = tokens.map { token -> token.generateCode() }
                 val groups = tokens.map { it.group }.filter { it.isNotBlank() }.distinct().sorted()
 
                 uiState.update {
-                    val filteredCodes = codes.applyFilters(it.searchQuery, it.selectedGroup)
+                    val filteredCodes = codes.applyFilters(it.searchQuery, it.selectedGroup, sortOrder)
                     it.copy(
                         isLoading = false,
                         codeDesign = codeDesign,
                         codes = codes,
                         filteredCodes = filteredCodes,
                         speakOutOnTap = speakOutOnTap,
+                        sortOrder = sortOrder,
                         availableGroups = groups,
                     )
                 }
@@ -68,6 +71,7 @@ class HomeVM(
         is HomeUiEvent.CodeCopied -> onCodeCopied(event)
         is HomeUiEvent.UpdateSearchQuery -> onUpdateSearchQuery(event)
         is HomeUiEvent.SelectGroup -> onSelectGroup(event)
+        is HomeUiEvent.UpdateSortOrder -> onUpdateSortOrder(event)
         is HomeUiEvent.ClearFilters -> onClearFilters()
 
         // Handled in Compose
@@ -106,8 +110,8 @@ class HomeVM(
 
             // Find and update the code in the full list by token ID
             val newCodes = state.codes.map { code -> if (code.token.id == token.id) newCode else code }
-            // Reapply filters to the updated list
-            val newFilteredCodes = newCodes.applyFilters(state.searchQuery, state.selectedGroup)
+            // Reapply filters and sorting to the updated list
+            val newFilteredCodes = newCodes.applyFilters(state.searchQuery, state.selectedGroup, state.sortOrder)
 
             state.copy(codes = newCodes, filteredCodes = newFilteredCodes)
         }
@@ -137,7 +141,7 @@ class HomeVM(
         uiState.update {
             it.copy(
                 searchQuery = event.query,
-                filteredCodes = it.codes.applyFilters(event.query, it.selectedGroup)
+                filteredCodes = it.codes.applyFilters(event.query, it.selectedGroup, it.sortOrder)
             )
         }
     }
@@ -146,18 +150,32 @@ class HomeVM(
         uiState.update {
             it.copy(
                 selectedGroup = event.group,
-                filteredCodes = it.codes.applyFilters(it.searchQuery, event.group)
+                filteredCodes = it.codes.applyFilters(it.searchQuery, event.group, it.sortOrder)
             )
+        }
+    }
+
+    private fun onUpdateSortOrder(event: HomeUiEvent.UpdateSortOrder) {
+        viewModelScope.launch(Dispatchers.IO) {
+            prefsRepository.sortOrder.set(event.sortOrder)
         }
     }
 
     private fun onClearFilters() {
         uiState.update {
-            it.copy(searchQuery = "", selectedGroup = null, filteredCodes = it.codes)
+            it.copy(
+                searchQuery = "",
+                selectedGroup = null,
+                filteredCodes = it.codes.applyFilters("", null, it.sortOrder)
+            )
         }
     }
 
-    private fun List<Code>.applyFilters(searchQuery: String, selectedGroup: String?): List<Code> {
+    private fun List<Code>.applyFilters(
+        searchQuery: String,
+        selectedGroup: String?,
+        sortOrder: SortOrder
+    ): List<Code> {
         var filtered = this
 
         if (selectedGroup != null)
@@ -167,12 +185,22 @@ class HomeVM(
             val query = searchQuery.trim().lowercase()
             filtered = filtered.filter { code ->
                 code.token.name.lowercase().contains(query) ||
-                        code.token.issuer.lowercase().contains(query) ||
-                        code.token.group.lowercase().contains(query)
+                code.token.issuer.lowercase().contains(query) ||
+                code.token.group.lowercase().contains(query)
             }
         }
 
-        return filtered
+        return when (sortOrder) {
+            SortOrder.ADDED_FIRST -> filtered.sortedBy { it.token.id }
+            SortOrder.ADDED_LAST -> filtered.sortedByDescending { it.token.id }
+            SortOrder.NAME_ASC -> filtered.sortedBy { it.token.name.lowercase() }
+            SortOrder.NAME_DESC -> filtered.sortedByDescending { it.token.name.lowercase() }
+            SortOrder.ISSUER_ASC -> filtered.sortedBy { it.token.issuer.lowercase() }
+            SortOrder.ISSUER_DESC -> filtered.sortedByDescending { it.token.issuer.lowercase() }
+            SortOrder.GROUP_ASC -> filtered.sortedBy { it.token.group.lowercase() }
+            SortOrder.GROUP_DESC -> filtered.sortedByDescending { it.token.group.lowercase() }
+            SortOrder.RECENTLY_USED -> filtered.sortedByDescending { it.token.lastUsedAt }
+        }
     }
 
     override fun onCleared() {

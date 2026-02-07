@@ -2,6 +2,7 @@ package com.axondragonscale.topty.ui.home
 
 import com.axondragonscale.topty.model.Code
 import com.axondragonscale.topty.model.CodeDesign
+import com.axondragonscale.topty.model.SortOrder
 
 /**
  * Created by Ronak Harkhani on 22/09/24
@@ -15,4 +16,5 @@ data class HomeUiState(
     val searchQuery: String = "",
     val selectedGroup: String? = null,
     val availableGroups: List<String> = emptyList(),
+    val sortOrder: SortOrder = SortOrder.DEFAULT,
 )

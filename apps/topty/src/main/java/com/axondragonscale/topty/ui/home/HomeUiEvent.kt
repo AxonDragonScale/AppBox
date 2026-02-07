@@ -3,6 +3,7 @@ package com.axondragonscale.topty.ui.home
 import android.content.Context
 import android.net.Uri
 import com.axondragonscale.topty.model.Code
+import com.axondragonscale.topty.model.SortOrder
 
 /**
  * Created by Ronak Harkhani on 22/09/24
@@ -20,4 +21,5 @@ sealed interface HomeUiEvent {
     data class UpdateSearchQuery(val query: String): HomeUiEvent
     data class SelectGroup(val group: String?): HomeUiEvent
     data object ClearFilters: HomeUiEvent
+    data class UpdateSortOrder(val sortOrder: SortOrder): HomeUiEvent
 }

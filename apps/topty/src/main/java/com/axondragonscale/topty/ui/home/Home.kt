@@ -41,6 +41,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -49,13 +51,15 @@ import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -105,6 +109,7 @@ import com.axondragonscale.topty.model.Code
 import com.axondragonscale.topty.model.CodeDesign
 import com.axondragonscale.topty.model.HOTPCode
 import com.axondragonscale.topty.model.Protocol
+import com.axondragonscale.topty.model.SortOrder
 import com.axondragonscale.topty.model.TOTPCode
 import com.axondragonscale.topty.ui.Route
 import com.axondragonscale.topty.ui.common.ExpandingFabButton
@@ -179,6 +184,8 @@ private fun Home(
         modifier = modifier,
         topBar = {
             TopBar(
+                currentSortOrder = uiState.sortOrder,
+                onSortOrderChanged = { onEvent(HomeUiEvent.UpdateSortOrder(it)) },
                 onSearchClick = { isSearchVisible = !isSearchVisible },
                 onSettingsClick = { onEvent(HomeUiEvent.NavigateToSettings) }
             )
@@ -307,6 +314,8 @@ fun DeleteConfirmationDialog(
 @Composable
 private fun TopBar(
     modifier: Modifier = Modifier,
+    currentSortOrder: SortOrder,
+    onSortOrderChanged: (SortOrder) -> Unit,
     onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -327,15 +336,63 @@ private fun TopBar(
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             }
+
+            SortMenu(
+                currentSortOrder = currentSortOrder,
+                onSortOrderChanged = onSortOrderChanged
+            )
+
             IconButton(onClick = onSettingsClick) {
                 Icon(
-                    imageVector = Icons.Default.Tune,
+                    imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             }
         }
     )
+}
+
+@Composable
+fun SortMenu(
+    modifier: Modifier = Modifier,
+    currentSortOrder: SortOrder,
+    onSortOrderChanged: (SortOrder) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Sort,
+                contentDescription = "Sort"
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            SortOrder.entries.forEach { sortOrder ->
+                DropdownMenuItem(
+                    text = { Text(sortOrder.displayName()) },
+                    onClick = {
+                        onSortOrderChanged(sortOrder)
+                        expanded = false
+                    },
+                    leadingIcon = {
+                        if (sortOrder == currentSortOrder) {
+                            Icon(
+                                modifier = Modifier.size(18.dp),
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Selected"
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Composable

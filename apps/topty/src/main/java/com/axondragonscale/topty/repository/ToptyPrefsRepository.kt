@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.axondragonscale.commons.enumSetting
 import com.axondragonscale.commons.setting
 import com.axondragonscale.topty.model.CodeDesign
+import com.axondragonscale.topty.model.SortOrder
 import com.axondragonscale.topty.model.UIFont
 import com.axondragonscale.topty.model.UIMode
 
@@ -51,6 +52,11 @@ class ToptyPrefsRepository(context: Context) {
     val preventScreenshots = dataStore.setting(
         key = booleanPreferencesKey("preventScreenshots"),
         default = true,
+    )
+
+    val sortOrder = dataStore.enumSetting(
+        key = stringPreferencesKey("sortOrder"),
+        default = SortOrder.DEFAULT,
     )
 
 }
