@@ -15,12 +15,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +40,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
@@ -91,6 +90,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -154,6 +154,7 @@ fun Home(
                 is HomeUiEvent.NavigateToAddToken -> navController.navigate(Route.Token.Add(null))
                 is HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
                 is HomeUiEvent.NavigateToEditToken -> navController.navigate(Route.Token.Edit(event.tokenId))
+                is HomeUiEvent.NavigateToShareToken -> navController.navigate(Route.ShareToken(event.tokenId))
 
                 else -> vm.onEvent(event)
             }
@@ -249,6 +250,8 @@ private fun Home(
                             onRefreshCode = { code -> onEvent(HomeUiEvent.RefreshCode(code)) },
                             onEditToken = { onEvent(HomeUiEvent.NavigateToEditToken(it)) },
                             onDeleteToken = { tokenId -> pendingDeleteTokenId = tokenId },
+                            onShareToken = { onEvent(HomeUiEvent.NavigateToShareToken(it)) },
+                            onToggleFavorite = { onEvent(HomeUiEvent.ToggleFavorite(it)) },
                             onSpeakOut = { onEvent(HomeUiEvent.SpeakOut(it)) },
                             onCodeCopied = { onEvent(HomeUiEvent.CodeCopied(it)) },
                         )
@@ -694,14 +697,25 @@ private fun CodeList(
     onRefreshCode: (Code) -> Unit,
     onEditToken: (Long) -> Unit,
     onDeleteToken: (Long) -> Unit,
+    onShareToken: (Long) -> Unit,
+    onToggleFavorite: (Long) -> Unit,
     onSpeakOut: (Code) -> Unit,
     onCodeCopied: (Long) -> Unit,
-) = LazyColumn(
-    modifier = modifier,
-    contentPadding = PaddingValues(horizontal = 16.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp),
 ) {
-    items(codes, { code -> code.token.id }) { code ->
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+
+    var contextMenuTokenId by remember { mutableStateOf<Long?>(null) }
+    var contextMenuPosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(codes, { code -> code.token.id }) { code ->
         val isTotp = code is TOTPCode
         var timeRemaining by remember { mutableLongStateOf(
             if (isTotp) (System.currentTimeMillis() - code.periodStart) else 0
@@ -722,7 +736,6 @@ private fun CodeList(
             onDispose { timer.cancel() }
         }
 
-        val density = LocalDensity.current
         val buttonWidth = 72.dp
         val buttonPadding = 8.dp
         val actionWidth = buttonWidth * 2 + buttonPadding * 2
@@ -738,8 +751,6 @@ private fun CodeList(
             )
         }
 
-        val clipboard = LocalClipboard.current
-        val scope = rememberCoroutineScope()
         val onRefresh = { onRefreshCode(code) }
 
         val onEdit: () -> Unit = {
@@ -761,39 +772,54 @@ private fun CodeList(
                 onDelete = onDelete,
             )
 
-            val haptic = LocalHapticFeedback.current
             val codeModifier = Modifier
                 .offset { IntOffset(swipeState.requireOffset().roundToInt(), 0) }
                 .anchoredDraggable(
                     state = swipeState,
                     orientation = Orientation.Horizontal,
                 )
-                .combinedClickable(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        scope.launch {
-                            clipboard.setClipEntry(
-                                ClipEntry(
-                                    ClipData.newPlainText("Topty Code", code.code)
-                                )
-                            )
-                            onCodeCopied(code.token.id)
-                            if (speakOutOnTap) onSpeakOut(code)
+                .pointerInput(code.token.id) {
+                    detectTapGestures(
+                        onTap = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            scope.launch {
+                                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Topty Code", code.code)))
+                                onCodeCopied(code.token.id)
+                                if (speakOutOnTap) onSpeakOut(code)
+                            }
+                        },
+                        onLongPress = { offset ->
+                            contextMenuPosition = offset
+                            contextMenuTokenId = code.token.id
                         }
-                    },
-                    onLongClick = { onEditToken(code.token.id) }
-                )
+                    )
+                }
 
-            when (codeDesign) {
-                CodeDesign.A -> CodeA(codeModifier, code, timeRemaining, onRefresh)
-                CodeDesign.B -> CodeB(codeModifier, code, timeRemaining, onRefresh)
-                CodeDesign.C -> CodeC(codeModifier, code, timeRemaining, onRefresh)
+                if (contextMenuTokenId == code.token.id) {
+                    Box(modifier = Modifier.offset { IntOffset(contextMenuPosition.x.toInt(), contextMenuPosition.y.toInt()) }) {
+                        TokenContextMenu(
+                            expanded = true,
+                            onDismiss = { contextMenuTokenId = null },
+                            isFavorite = code.token.isFavorite,
+                            onEdit = { onEditToken(code.token.id) },
+                            onDelete = { onDeleteToken(code.token.id) },
+                            onShare = { onShareToken(code.token.id) },
+                            onToggleFavorite = { onToggleFavorite(code.token.id) }
+                        )
+                    }
+                }
+
+                when (codeDesign) {
+                    CodeDesign.A -> CodeA(codeModifier, code, timeRemaining, onRefresh)
+                    CodeDesign.B -> CodeB(codeModifier, code, timeRemaining, onRefresh)
+                    CodeDesign.C -> CodeC(codeModifier, code, timeRemaining, onRefresh)
+                }
             }
         }
-    }
 
-    item {
-        Spacer(modifier = Modifier.height(96.dp))
+        item {
+            Spacer(modifier = Modifier.height(96.dp))
+        }
     }
 }
 

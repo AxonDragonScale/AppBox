@@ -16,6 +16,7 @@ import com.axondragonscale.topty.ui.home.Home
 import com.axondragonscale.topty.ui.onboarding.Onboarding
 import com.axondragonscale.topty.ui.qrscanner.QRScanner
 import com.axondragonscale.topty.ui.settings.Settings
+import com.axondragonscale.topty.ui.sharetoken.ShareToken
 
 /**
  * Created by Ronak Harkhani on 15/09/24
@@ -74,6 +75,14 @@ fun ToptyApp(
 
         composable<Route.DevTools> {
             ToptyDevTools()
+        }
+
+        composable<Route.ShareToken> {
+            val shareTokenRoute = it.toRoute<Route.ShareToken>()
+            ShareToken(
+                navController = navController,
+                tokenId = shareTokenRoute.tokenId,
+            )
         }
     }
 }

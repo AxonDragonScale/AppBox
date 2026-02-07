@@ -32,6 +32,7 @@ coil = "3.3.0"
 protobuf = "3.25.4" # Update carefully
 guava = "33.5.0-android"
 accompanist = "0.36.0"
+zxing = "3.5.4"
 
 [libraries]
 # Plugins
@@ -112,6 +113,7 @@ coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "
 
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
+zxing = { module = "com.google.zxing:core", version.ref = "zxing" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

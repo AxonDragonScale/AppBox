@@ -5,10 +5,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Created by Ronak Harkhani on 25/01/25
@@ -28,11 +30,14 @@ suspend fun <T> Flow<T>.collect() = this.collect {}
  * @param onEffect Callback invoked for each flow emission
  */
 @Composable
-fun <T> Flow<T>.collectWithLifecycle(onEffect: (T) -> Unit) {
+fun <T> Flow<T>.collectWithLifecycle(
+    context: CoroutineContext = Dispatchers.Main.immediate,
+    onEffect: suspend (T) -> Unit,
+) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(this, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            withContext(Dispatchers.Main.immediate) {
+            withContext(context) {
                 this@collectWithLifecycle.collect(onEffect)
             }
         }

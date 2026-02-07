@@ -31,4 +31,7 @@ object Route {
     @Serializable
     data object BackupRestore
 
+    @Serializable
+    data class ShareToken(val tokenId: Long)
+
 }

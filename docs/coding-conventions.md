@@ -9,8 +9,33 @@ This document outlines the coding standards and conventions used across the AppB
 ### Composable Parameters
 
 #### Modifier Parameter Position
-- **Always use `modifier` as the first parameter** whenever possible/applicable
+- **Always use `modifier` as the first parameter in all composables** (both top-level ViewModel-handling composables and inner UI composables)
+- `modifier` should always have a default value of `Modifier = Modifier`
 - This provides consistency and makes it easier to apply custom styling at call sites
+- Even when a composable has required parameters like `navController` or route parameters, `modifier` still comes first
+
+**Example:**
+```kotlin
+// Top-level composable with ViewModel
+@Composable
+fun ShareToken(
+    modifier: Modifier = Modifier,  // Always first
+    navController: NavController,   // Required parameters after
+    tokenId: Long,
+) {
+    // ViewModel handling...
+}
+
+// Inner UI composable
+@Composable
+private fun ShareToken(
+    modifier: Modifier = Modifier,  // Always first
+    uiState: ShareTokenUiState,     // State parameters after
+    onEvent: (ShareTokenUiEvent) -> Unit,
+) {
+    // Pure UI...
+}
+```
 
 ### Composable Structure
 

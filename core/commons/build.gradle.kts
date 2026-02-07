@@ -35,4 +35,6 @@ dependencies {
 
     // Ktor
     implementation(libs.bundles.ktor)
+
+    implementation(libs.zxing)
 }

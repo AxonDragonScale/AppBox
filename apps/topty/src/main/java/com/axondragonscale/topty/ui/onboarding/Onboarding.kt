@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.commons.compose.visible
 import com.axondragonscale.topty.ui.Route
 import com.axondragonscale.topty.ui.onboarding.pages.AddTokenGuidePage
@@ -56,25 +57,23 @@ fun Onboarding(
     val viewModel: OnboardingVM = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.uiEffect.collect { effect ->
-            when (effect) {
-                OnboardingUiEffect.NavigateToHome -> {
-                    navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
-                }
-                OnboardingUiEffect.NavigateToQRScanner -> {
-                    navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
-                    navController.navigate(Route.QRScanner)
-                }
-                OnboardingUiEffect.NavigateToAddToken -> {
-                    navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
-                    navController.navigate(Route.Token.Add(uri = null))
-                }
-                OnboardingUiEffect.NavigateToBackupRestore -> {
-                    navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
-                    navController.navigate(Route.Settings)
-                    navController.navigate(Route.BackupRestore)
-                }
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            OnboardingUiEffect.NavigateToHome -> {
+                navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
+            }
+            OnboardingUiEffect.NavigateToQRScanner -> {
+                navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
+                navController.navigate(Route.QRScanner)
+            }
+            OnboardingUiEffect.NavigateToAddToken -> {
+                navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
+                navController.navigate(Route.Token.Add(uri = null))
+            }
+            OnboardingUiEffect.NavigateToBackupRestore -> {
+                navController.navigate(Route.Home) { popUpTo(Route.Onboarding) { inclusive = true } }
+                navController.navigate(Route.Settings)
+                navController.navigate(Route.BackupRestore)
             }
         }
     }

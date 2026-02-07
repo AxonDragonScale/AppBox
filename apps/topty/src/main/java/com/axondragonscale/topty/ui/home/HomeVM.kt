@@ -73,8 +73,10 @@ class HomeVM(
         is HomeUiEvent.SelectGroup -> onSelectGroup(event)
         is HomeUiEvent.UpdateSortOrder -> onUpdateSortOrder(event)
         is HomeUiEvent.ClearFilters -> onClearFilters()
+        is HomeUiEvent.ToggleFavorite -> onToggleFavorite(event)
 
         // Handled in Compose
+        is HomeUiEvent.NavigateToShareToken -> Unit
         is HomeUiEvent.NavigateToAddToken -> Unit
         is HomeUiEvent.NavigateToEditToken -> Unit
         is HomeUiEvent.NavigateToQRScanner -> Unit
@@ -169,6 +171,14 @@ class HomeVM(
                 filteredCodes = it.codes.applyFilters("", null, it.sortOrder)
             )
         }
+    }
+
+    private fun onToggleFavorite(
+        event: HomeUiEvent.ToggleFavorite,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        val token = repository.getToken(event.tokenId) ?: return@launch
+        val updatedToken = token.copy(isFavorite = !token.isFavorite)
+        repository.saveToken(updatedToken)
     }
 
     private fun List<Code>.applyFilters(

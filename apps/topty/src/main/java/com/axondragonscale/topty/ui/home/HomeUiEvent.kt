@@ -22,4 +22,6 @@ sealed interface HomeUiEvent {
     data class SelectGroup(val group: String?): HomeUiEvent
     data object ClearFilters: HomeUiEvent
     data class UpdateSortOrder(val sortOrder: SortOrder): HomeUiEvent
+    data class NavigateToShareToken(val tokenId: Long): HomeUiEvent
+    data class ToggleFavorite(val tokenId: Long): HomeUiEvent
 }

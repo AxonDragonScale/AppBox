@@ -52,6 +52,7 @@ dependencies {
 
     implementation(libs.guava)
     implementation(libs.accompanist.permissions)
+    implementation(libs.zxing)
 
     // Datastore
     implementation(libs.bundles.datastore)

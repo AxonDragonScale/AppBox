@@ -118,18 +118,6 @@ class JestApplication : Application() {
 
 ## Coding Conventions
 
-### Kotlin Style
-- Use Kotlin idioms (scope functions, extension functions, sealed classes)
-- Prefer `Flow` for reactive streams
-- Use `suspend` functions for one-shot async operations
-- Leverage Kotlin serialization for JSON
-
-### Compose Style
-- Use Material 3 theming
-- Prefer stateless composables with state hoisting
-- Use `remember` and `derivedStateOf` appropriately
-- Follow slot-based API patterns for reusable components
-
 ### Module Guidelines
 - Each app is fully self-contained with its own Application class
 - Shared code goes in `:core:commons`
@@ -146,12 +134,6 @@ class JestApplication : Application() {
 ./gradlew :apps:jest:assembleDebug
 ./gradlew :apps:wallmatic:assembleDebug
 ./gradlew :apps:topty:assembleDebug
-
-# Run tests
-./gradlew test
-
-# Install specific app
-./gradlew :apps:jest:installDebug
 ```
 
 ## Key Dependencies Reference

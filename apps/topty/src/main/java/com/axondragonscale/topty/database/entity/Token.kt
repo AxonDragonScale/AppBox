@@ -25,6 +25,7 @@ data class Token(
     val counter: Long,
     val digits: Int,
     val lastUsedAt: Long,
+    val isFavorite: Boolean = false,
 ) {
 
     /**
@@ -58,7 +59,8 @@ data class Token(
             period = 30,
             counter = 0L,
             digits = 6,
-            lastUsedAt = 0L
+            lastUsedAt = 0L,
+            isFavorite = false
         )
 
         /**
@@ -77,6 +79,7 @@ data class Token(
             counter: Long,
             digits: Int,
             lastUsedAt: Long = 0L,
+            isFavorite: Boolean = false,
         ): Token {
             return Token(
                 id = id,
@@ -91,6 +94,7 @@ data class Token(
                 counter = counter,
                 digits = digits,
                 lastUsedAt = lastUsedAt,
+                isFavorite = isFavorite,
             )
         }
     }
