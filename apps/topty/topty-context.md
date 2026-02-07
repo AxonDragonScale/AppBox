@@ -1,265 +1,222 @@
-# Topty - Module Context
+# Topty - 2FA Authenticator Module
 
 ## Overview
-
-Topty is a lightweight 2FA (Two-Factor Authentication) authenticator sub-app within AppBox. It generates time-based (TOTP) and counter-based (HOTP) one-time passwords compatible with Google Authenticator and other standard 2FA systems. Features QR code scanning, manual token entry, and text-to-speech code readout.
-
-## Package Structure
-
-```
-com.axondragonscale.topty/
-├── ToptyActivity.kt              # Entry point activity
-├── ToptyConstants.kt             # URI schemes, parameters, links
-├── core/
-│   ├── HMACGenerator.kt          # HMAC-based code generation
-│   ├── HOTPGenerator.kt          # Counter-based OTP generation
-│   ├── QRScanner.kt              # CameraX QR code scanning
-│   ├── TOTPGenerator.kt          # Time-based OTP generation
-│   ├── TTS.kt                    # Text-to-speech for codes
-│   └── TokenUriHandler.kt        # otpauth:// URI parsing
-├── database/
-│   ├── ToptyDatabase.kt          # Room database definition
-│   ├── converter/                # Room type converters
-│   ├── dao/                      # Data Access Objects
-│   └── entity/
-│       └── Token.kt              # Token entity
-├── di/
-│   └── ToptyModule.kt            # Koin dependency injection module
-├── model/
-│   ├── Code.kt                   # Code sealed class (HOTPCode, TOTPCode)
-│   ├── CodeDesign.kt             # Code display style options
-│   ├── HashAlgo.kt               # Hash algorithms (SHA1, SHA256, SHA512)
-│   ├── Protocol.kt               # OTP protocols (TOTP, HOTP)
-│   ├── UIFont.kt                 # Font customization options
-│   └── UIMode.kt                 # Light/Dark/Auto theme mode
-├── repository/
-│   ├── AppPrefsRepository.kt     # User preferences (DataStore)
-│   └── TokenRepository.kt        # Token data operations
-├── ui/
-│   ├── Route.kt                  # Navigation routes (type-safe)
-│   ├── ToptyApp.kt               # Root composable with NavHost
-│   ├── common/                   # Shared UI components
-│   ├── home/                     # Home screen (token list + codes)
-│   ├── qrscanner/                # QR code scanner screen
-│   ├── settings/                 # Settings screen
-│   ├── theme/                    # Topty-specific theming
-│   ├── token/                    # Add/Edit token screen
-│   └── util/                     # UI utilities
-└── util/
-    └── DevTools.kt               # Development utilities
-```
+Topty is a secure 2FA authenticator within AppBox that generates TOTP/HOTP one-time passwords. Features include QR scanning, biometric lock, backup/restore with multiple format support, and encrypted secret storage using Android Keystore.
 
 ## Architecture
+- **UI**: Jetpack Compose + Material3
+- **Navigation**: Type-safe Navigation Compose with `@Serializable` routes
+- **DI**: Koin (`ToptyApplication` initializes `ToptyModule`)
+- **Database**: Room with encrypted secrets
+- **Security**: Android Keystore (AES-256-GCM), BiometricPrompt API
+- **Camera**: CameraX + ML Kit Barcode Scanner
+- **Preferences**: DataStore
 
-- **UI Framework**: Jetpack Compose with Material3
-- **Navigation**: Jetpack Navigation Compose (type-safe routes)
-- **Dependency Injection**: Koin
-- **State Management**: ViewModel + StateFlow
-- **Persistence**: Room database + DataStore Preferences
-- **Camera**: CameraX for QR scanning
-- **Barcode**: ML Kit Barcode Scanner
-- **Image Loading**: Coil
-
-## Key Components
-
-### ToptyActivity
-Entry point activity with splash screen support, edge-to-edge display, and theme configuration.
-
-```kotlin
-companion object {
-    fun start(context: Context) {
-        val intent = Intent(context, ToptyActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-    }
-}
+## Package Structure
+```
+com.axondragonscale.topty/
+├── ToptyActivity.kt              # Entry point with biometric lock integration
+├── ToptyApplication.kt           # Koin initialization (CommonsModule + ToptyModule)
+├── ToptyConstants.kt             # URI schemes and parameters
+├── auth/
+│   ├── BiometricAuthManager.kt   # Authentication prompts (requires FragmentActivity)
+│   └── BiometricAvailabilityChecker.kt  # Hardware availability checks
+├── backup/
+│   ├── AegisVaultData.kt         # Aegis format data models
+│   ├── BackupExporter.kt         # Export to Topty/Aegis/URI formats
+│   ├── BackupFormat.kt           # Format enum (TOPTY, AEGIS, OTP_AUTH_URI)
+│   ├── BackupImporter.kt         # Import from backup files
+│   └── ToptyBackupData.kt        # Native backup data models
+├── core/
+│   ├── HMACGenerator.kt          # HMAC-based code generation
+│   ├── HOTPGenerator.kt          # Counter-based OTP (RFC 4226)
+│   ├── QRScanner.kt              # CameraX QR scanning (deprecated, use ui/common)
+│   ├── TOTPGenerator.kt          # Time-based OTP (RFC 6238)
+│   ├── TTS.kt                    # Text-to-speech for codes
+│   └── TokenUriHandler.kt        # Parse/generate otpauth:// URIs
+├── database/
+│   ├── ToptyDatabase.kt          # Room database singleton
+│   ├── converter/
+│   │   ├── HashAlgoConverter.kt  # Room type converter
+│   │   └── ProtocolConverter.kt  # Room type converter
+│   ├── dao/
+│   │   └── TokenDao.kt           # Token CRUD operations
+│   └── entity/
+│       └── Token.kt              # Token entity with encrypted secrets
+├── di/
+│   └── ToptyModule.kt            # Koin module (DB, repos, VMs, backup, auth)
+├── model/
+│   ├── Code.kt                   # Sealed class (TOTPCode, HOTPCode)
+│   ├── CodeDesign.kt             # Code display styles
+│   ├── HashAlgo.kt               # SHA1, SHA256, SHA512
+│   ├── Protocol.kt               # TOTP, HOTP
+│   ├── SortOrder.kt              # 9 sorting options with displayName()
+│   ├── UIFont.kt                 # Font customization
+│   └── UIMode.kt                 # LIGHT, DARK, AUTO
+├── repository/
+│   ├── TokenRepository.kt        # Token CRUD, bulk operations
+│   └── ToptyPrefsRepository.kt   # DataStore preferences
+├── security/
+│   └── SecretEncryption.kt       # AES-256-GCM with Android Keystore
+├── ui/
+│   ├── BiometricLockScreen.kt    # Lock screen composable
+│   ├── Route.kt                  # Type-safe @Serializable routes
+│   ├── ToptyApp.kt               # Root NavHost composable
+│   ├── backuprestore/
+│   │   ├── BackupRestore.kt      # Backup/restore screen
+│   │   ├── BackupRestoreUiEvent.kt
+│   │   ├── BackupRestoreUiState.kt
+│   │   └── BackupRestoreVM.kt
+│   ├── common/                   # Camera, Dropdown, TextInput, etc.
+│   │   ├── Camera.kt
+│   │   ├── Dropdown.kt
+│   │   ├── ExpandingFabButton.kt
+│   │   ├── QRCodeAnalyzer.kt
+│   │   ├── ScannerOverlay.kt
+│   │   ├── Switch.kt
+│   │   └── TextInput.kt
+│   ├── devtools/
+│   │   └── ToptyDevTools.kt      # Debug utilities
+│   ├── home/
+│   │   ├── Home.kt               # Token list with live codes
+│   │   ├── HomeUiEffect.kt
+│   │   ├── HomeUiEvent.kt
+│   │   ├── HomeUiState.kt
+│   │   └── HomeVM.kt
+│   ├── qrscanner/
+│   │   ├── QRScanner.kt          # QR scanning screen
+│   │   ├── QRScannerUiEffect.kt
+│   │   ├── QRScannerUiEvent.kt
+│   │   ├── QRScannerUiState.kt
+│   │   └── QRScannerVM.kt
+│   ├── settings/
+│   │   ├── Settings.kt           # Settings screen
+│   │   ├── SettingsUiEvent.kt
+│   │   ├── SettingsUiState.kt
+│   │   └── SettingsVM.kt
+│   ├── theme/
+│   │   ├── Color.kt
+│   │   ├── Shape.kt
+│   │   ├── Theme.kt
+│   │   └── Type.kt
+│   ├── token/
+│   │   ├── Token.kt              # Add/edit token screen
+│   │   ├── TokenUiEffect.kt
+│   │   ├── TokenUiEvent.kt
+│   │   ├── TokenUiState.kt
+│   │   └── TokenVM.kt
+│   └── util/
+│       ├── Debug.kt
+│       ├── ModifierExt.kt
+│       └── UiModeExt.kt
+└── util/
+    ├── BackupFormatExt.kt        # BackupFormat extensions
+    └── TokenExt.kt               # Token.generateCode() extension
 ```
 
-### Navigation Routes
-Type-safe navigation using kotlinx.serialization:
-```kotlin
-object Route {
-    data object Home
-    data object QRScanner
-    data object Settings
-    sealed interface Token {
-        data class Add(val uri: String?): Token
-        data class Edit(val id: Long): Token
-    }
-}
-```
+## Key Features
 
-### Main Screens
-- **Home**: List of tokens with live-updating OTP codes
-- **QRScanner**: Camera-based QR code scanning for token import
-- **Token (Add/Edit)**: Manual token entry or editing
-- **Settings**: App configuration (theme, font, code design, TTS)
+### Security & Authentication
+- **SecretEncryption**: Token secrets encrypted with AES-256-GCM (Android Keystore)
+- **Biometric Lock**: Optional app-level authentication using fingerprint/face unlock
+- **Screenshot Prevention**: Configurable security option (default: enabled)
+
+### Token Management
+- **Token Entity** (`database/entity/Token.kt`):
+  - Stores `encryptedSecret` (auto-decrypted via `secret` property getter)
+  - Factory methods: `fromPlaintext()` auto-encrypts, `withSecret()` creates encrypted copy
+  - Fields: `id`, `name`, `issuer`, `group`, `note`, `protocol`, `hashAlgo`, `period`, `counter`, `digits`, `lastUsedAt`
+- **Protocols**: TOTP (time-based), HOTP (counter-based)
+- **Hash Algorithms**: SHA1, SHA256, SHA512
+- **Sort Options**: Added first/last, name/issuer/group A-Z/Z-A, recently used
 
 ### OTP Generation
+- `TOTPGenerator` / `HOTPGenerator` use `HMACGenerator`
+- Code types: `TOTPCode` (with period tracking), `HOTPCode`
+- Extension: `Token.generateCode()` delegates to appropriate generator
+- Secrets auto-decrypt during generation via `token.secret` property
 
-**Supported Protocols:**
-- `TOTP` - Time-based One-Time Password (RFC 6238)
-- `HOTP` - HMAC-based One-Time Password (RFC 4226)
+### Backup & Restore
+**Three Formats:**
+1. **TOPTY** (`.topty`) - Encrypted JSON with all data (group, note, lastUsedAt)
+2. **AEGIS** (`.json`) - Industry standard, compatible with Aegis/andOTP/2FAS (no notes/lastUsedAt)
+3. **OTP_AUTH_URI** (`.txt`) - Plain text `otpauth://` URIs (basic compatibility)
 
-**Supported Hash Algorithms:**
-- SHA1 (default)
-- SHA256
-- SHA512
+**Classes:**
+- `BackupExporter`: Serializes and exports tokens
+- `BackupImporter`: Parses and imports tokens (auto-generates new IDs)
 
-**TOTPGenerator:**
+### UI Screens & Routes
 ```kotlin
-object TOTPGenerator {
-    fun generateCode(token: Token): TOTPCode {
-        val counter = Math.floorDiv(System.currentTimeMillis(), token.period * 1000)
-        // ... generates code using HMACGenerator
+object Route {
+    data object Home                    // Token list with live codes
+    data object QRScanner               // Camera-based QR import
+    data object Settings                // Theme, security, preferences
+    sealed interface Token {
+        data class Add(val uri: String?)
+        data class Edit(val id: Long)
     }
+    data object BackupRestore          // Import/export
+    data object DevTools               // Debug utilities
 }
 ```
 
-### Token URI Format
-Follows Google Authenticator Key URI Format:
+### Preferences (ToptyPrefsRepository)
+- `uiMode`: Light/Dark/Auto
+- `dynamicTheme`: Material You colors
+- `codeDesign`: Display style
+- `uiFont`: Font customization
+- `speakOutOnTap`: TTS accessibility
+- `biometricLock`: App authentication
+- `preventScreenshots`: Security flag
+- `sortOrder`: Token list ordering
+
+## Token URI Format
+Follows Google Authenticator spec:
 ```
-otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
+otpauth://totp/ACME:user@email.com?secret=BASE32&issuer=ACME&algorithm=SHA1&digits=6&period=30
 ```
+**Handled by**: `TokenUriHandler.parseTokenUri()` / `generateTokenUri()`
 
-**Supported Parameters:**
-- `secret` (required) - Base32 encoded secret key
-- `issuer` - Service provider name
-- `algorithm` - SHA1, SHA256, SHA512
-- `digits` - Code length (6-8)
-- `period` - TOTP refresh interval (30-3600 seconds)
-- `counter` - HOTP counter (required for HOTP)
+## Data Flow Examples
 
-### Database Entity
+### QR Code Import
+1. QRScanner → ML Kit detects → Validate URI
+2. Navigate to `Token.Add(uri)` → Parse URI
+3. User confirms → `Token.fromPlaintext()` encrypts secret
+4. Save to Room via `TokenRepository`
 
-**Token:**
-```kotlin
-@Entity(tableName = "token")
-data class Token(
-    @PrimaryKey(autoGenerate = true)
-    var id: Long = 0,
-    val name: String,
-    val issuer: String,
-    val group: String,
-    val note: String,
-    val secret: String,
-    val protocol: Protocol,
-    val hashAlgo: HashAlgo,
-    val period: Int,
-    val counter: Long,
-    val digits: Int,
-)
-```
+### Code Generation
+1. `HomeVM` observes `TokenRepository.getTokens()`
+2. Auto-decrypt: `token.secret` property
+3. Generate: `token.generateCode()` → TOTP/HOTP
+4. Display with countdown, update `lastUsedAt` on tap
 
-### Code Models
-```kotlin
-sealed class Code {
-    abstract val code: String
-    abstract val token: Token
-}
+### Biometric Lock
+1. Check `biometricLock` pref → Show `BiometricLockScreen`
+2. `BiometricAuthManager.authenticate()` prompts
+3. Success → Navigate to Home | Fail → Retry | Unavailable → Auto-disable
 
-data class TOTPCode(
-    override val code: String,
-    override val token: Token,
-    val periodStart: Long,
-    val periodEnd: Long,
-) : Code()
-
-data class HOTPCode(
-    override val code: String,
-    override val token: Token,
-) : Code()
-```
-
-### AppPrefsRepository (DataStore)
-Persisted preferences:
-- `uiMode`: UIMode enum (LIGHT, DARK, AUTO)
-- `dynamicTheme`: Boolean for Material You colors
-- `codeDesign`: CodeDesign enum for display style
-- `uiFont`: UIFont enum for font customization
-- `speakOutOnTap`: Boolean for TTS feature
-
-### Text-to-Speech (TTS)
-Accessibility feature that reads out OTP codes when tapped.
+### Backup
+1. Select format → `BackupExporter.exportToFile(tokens, format, uri)`
+2. TOPTY: Encrypt JSON | AEGIS: JSON vault | URI: Plain text
+3. Save to user-selected location
 
 ## Dependencies
+- AndroidX: Compose BOM, Navigation, Room, DataStore, Biometric, CameraX, Splash Screen
+- ML Kit: Barcode Scanner
+- Koin: DI
+- kotlinx: serialization, coroutines, datetime
+- Coil: Image loading
+- Accompanist: Permissions
 
-### Local Modules
-- `projects.commons` - Shared utilities
-
-### Key Libraries
-- AndroidX Compose BOM + Material3
-- Navigation Compose
-- Splash Screen API
-- CameraX (camera2, lifecycle, view)
-- ML Kit Barcode Scanner
-- Coil (image loading)
-- Koin (DI)
-- Room (database)
-- DataStore Preferences
-- Accompanist Permissions
-- Guava (utilities)
-- kotlinx.serialization
-
-## Build Configuration
-
+## Build Info
 - **Namespace**: `com.axondragonscale.topty`
 - **Min SDK**: 31 (Android 12)
-- **Java/Kotlin**: 21
+- **Version**: 1.0.0
 
-## Resources
-
-### Launcher Icon
-- Accent Color: `#2196F3` (Blue)
-- Icon files in `mipmap-*/topty_icon*`
-
-### Constants
-```kotlin
-object Scheme {
-    const val OTPAUTH = "otpauth"
-}
-
-object UriParam {
-    const val SECRET = "secret"
-    const val ISSUER = "issuer"
-    const val ALGORITHM = "algorithm"
-    const val DIGITS = "digits"
-    const val PERIOD = "period"
-    const val COUNTER = "counter"
-}
-```
-
-## Data Flow
-
-### Adding Token via QR Code
-1. User opens QRScanner → CameraX preview starts
-2. ML Kit scans frames for QR codes
-3. QR detected → `TokenUriHandler.isValidTokenUri()` validates
-4. Valid URI → Navigate to `Route.Token.Add(uri)`
-5. `TokenUriHandler.parseTokenUri()` extracts token data
-6. User confirms → `TokenRepository.saveToken()` persists to Room
-
-### Adding Token Manually
-1. User navigates to `Route.Token.Add(null)`
-2. Manual entry form displayed
-3. User fills fields → Token object created
-4. Save → `TokenRepository.saveToken()` persists to Room
-
-### Generating Codes
-1. `HomeVM` observes `TokenRepository.getTokens()`
-2. For each token, `TOTPGenerator.generateCode()` called
-3. Codes refresh based on `period` (typically 30 seconds)
-4. UI displays codes with countdown indicator
-
-### Code Display with TTS
-1. User taps code card
-2. Code copied to clipboard
-3. If `speakOutOnTap` enabled → `TTS.speak(code)`
-
-## Code Style
-
-- ViewModels: `HomeVM`, `QRScannerVM`, `TokenVM`, `SettingsVM`
-- Type-safe navigation with `@Serializable` route classes
-- Sealed classes for code types (TOTPCode, HOTPCode)
-- Object singletons for generators (TOTPGenerator, HOTPGenerator, HMACGenerator)
-- Extension properties for Protocol (`code` returns lowercase name)
+## Code Conventions
+- ViewModels: `HomeVM`, `QRScannerVM`, `TokenVM`, `SettingsVM`, `BackupRestoreVM`
+- Generators: Object singletons (`TOTPGenerator`, `HOTPGenerator`, `HMACGenerator`, `SecretEncryption`)
+- Koin DSL: `singleOf`, `factoryOf`, `viewModelOf`
+- Extensions: `Token.generateCode()`, `Protocol.code`, `SortOrder.displayName()`
