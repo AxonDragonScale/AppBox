@@ -1,14 +1,21 @@
 package com.axondragonscale.topty.ui.devtools
 
+import android.content.res.Configuration
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import com.axondragonscale.commons.devtools.DevToolsScreen
 import com.axondragonscale.topty.BuildConfig
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
+import com.axondragonscale.topty.ui.theme.ToptyTheme
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -23,7 +30,17 @@ fun ToptyDevTools(
 ) {
     val prefsRepository: ToptyPrefsRepository = koinInject()
     val scope = rememberCoroutineScope()
+    ToptyDevTools(
+        modifier = modifier,
+        onResetOnboarding = { scope.launch { prefsRepository.hasCompletedOnboarding.set(false) } }
+    )
+}
 
+@Composable
+private fun ToptyDevTools(
+    modifier: Modifier = Modifier,
+    onResetOnboarding: () -> Unit,
+) {
     DevToolsScreen(
         modifier = modifier,
         title = "Topty Dev Tools",
@@ -35,14 +52,27 @@ fun ToptyDevTools(
             info("Package", BuildConfig.APPLICATION_ID)
 
             // Onboarding Section
-            section("Onboarding", Icons.Rounded.Refresh)
+            section("Onboarding", Icons.Default.TouchApp)
             action(
+                icon = Icons.Default.Refresh,
                 title = "Reset Onboarding",
-                subtitle = "Clear onboarding completion flag to show onboarding again on next launch",
-                onClick = {
-                    scope.launch { prefsRepository.hasCompletedOnboarding.set(false) }
-                }
+                subtitle = "Show onboarding again on next launch",
+                destructive = true,
+                onClick = onResetOnboarding
             )
         }
     )
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun ToptyDevToolsPreview() {
+    ToptyTheme {
+        Surface {
+            ToptyDevTools(
+                onResetOnboarding = {}
+            )
+        }
+    }
 }
