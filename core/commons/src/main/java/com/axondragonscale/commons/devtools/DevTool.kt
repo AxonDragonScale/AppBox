@@ -27,6 +27,7 @@ sealed interface DevTool {
         val iconTint: Color? = null,
         val destructive: Boolean = false,
         val onClick: () -> Unit,
+        val completionAlert: String? = null,
     ) : DevTool
 
     /**

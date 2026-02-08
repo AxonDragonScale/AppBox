@@ -43,6 +43,7 @@ class DevToolsBuilder {
         iconTint: Color? = null,
         destructive: Boolean = false,
         onClick: () -> Unit,
+        completionAlert: String? = null,
     ) = apply {
         tools.add(
             DevTool.Action(
@@ -52,6 +53,7 @@ class DevToolsBuilder {
                 iconTint = iconTint,
                 destructive = destructive,
                 onClick = onClick,
+                completionAlert = completionAlert,
             )
         )
     }

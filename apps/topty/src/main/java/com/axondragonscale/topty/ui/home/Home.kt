@@ -718,7 +718,7 @@ private fun CodeList(
         items(codes, { code -> code.token.id }) { code ->
         val isTotp = code is TOTPCode
         var timeRemaining by remember { mutableLongStateOf(
-            if (isTotp) (System.currentTimeMillis() - code.periodStart) else 0
+            if (isTotp) (System.currentTimeMillis() - code.periodStart) else 10000
         ) }
         DisposableEffect(code) {
             // Don't start timer if code is not time dependent

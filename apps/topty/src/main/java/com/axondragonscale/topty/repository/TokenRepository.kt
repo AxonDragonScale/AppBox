@@ -20,4 +20,6 @@ class TokenRepository(
 
     suspend fun deleteToken(tokenId: Long) = dao.delete(tokenId)
 
+    suspend fun deleteAllTokens() = dao.deleteAllTokens()
+
 }

@@ -1,5 +1,6 @@
 package com.axondragonscale.commons.devtools
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -68,12 +70,16 @@ fun DevToolActionItem(
         MaterialTheme.colorScheme.onSurface
     }
 
+    val context = LocalContext.current
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .clickable(onClick = tool.onClick)
+            .clickable {
+                tool.onClick()
+                tool.completionAlert?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+            }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
