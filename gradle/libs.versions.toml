@@ -22,7 +22,7 @@ mlkitBarcodeScanner = "17.3.0"
 # Kotlin
 kotlinx-coroutines = "1.10.2"
 kotlinx-serialization = "1.10.0"
-kotlinx-datetime = "0.6.1"
+kotlinx-datetime = "0.7.1"
 
 # Third party
 koin-bom = "4.1.1"

@@ -6,7 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.axondragonscale.topty.database.ToptyDatabase.Companion.DB_VERSION
 import com.axondragonscale.topty.database.dao.TokenDao
+import com.axondragonscale.topty.database.dao.WidgetDao
 import com.axondragonscale.topty.database.entity.Token
+import com.axondragonscale.topty.database.entity.Widget
 
 /**
  * Created by Ronak Harkhani on 14/10/24
@@ -14,6 +16,7 @@ import com.axondragonscale.topty.database.entity.Token
 @Database(
     entities = [
         Token::class,
+        Widget::class,
     ],
     version = DB_VERSION,
     exportSchema = true,
@@ -37,5 +40,7 @@ abstract class ToptyDatabase: RoomDatabase() {
     }
 
     abstract fun codeDao(): TokenDao
+
+    abstract fun widgetDao(): WidgetDao
 
 }

@@ -28,6 +28,7 @@ val ToptyModule = module {
     // Database
     singleOf(ToptyDatabase::create)
     singleOf(ToptyDatabase::codeDao)
+    singleOf(ToptyDatabase::widgetDao)
 
     // Repository
     singleOf(::TokenRepository)

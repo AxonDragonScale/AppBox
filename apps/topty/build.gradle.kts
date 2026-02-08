@@ -54,6 +54,9 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.zxing)
 
+    // Glance (Widgets)
+    implementation(libs.bundles.glance)
+
     // Datastore
     implementation(libs.bundles.datastore)
     implementation(libs.protobuf.kotlin)

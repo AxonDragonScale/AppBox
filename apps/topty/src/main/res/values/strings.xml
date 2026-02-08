@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget Descriptions -->
+    <string name="single_token_widget_description">Display a single 2FA code</string>
+    <string name="multi_token_widget_description">Display multiple 2FA codes</string>
+</resources>
