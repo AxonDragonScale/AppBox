@@ -3,6 +3,7 @@ package com.axondragonscale.topty.ui.sharetoken
 import android.content.ClipData
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil3.Uri
 import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.commons.qr.QRGenerator
 import com.axondragonscale.topty.database.entity.Token
@@ -108,9 +110,6 @@ private fun ShareToken(
     onEvent: (ShareTokenUiEvent) -> Unit,
     onBack: () -> Unit,
 ) {
-    val clipboard = LocalClipboard.current
-    val scope = rememberCoroutineScope()
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -140,103 +139,118 @@ private fun ShareToken(
                 uiState.error != null ->
                     ErrorState(modifier = Modifier.align(Alignment.Center), message = uiState.error)
 
-                uiState.token != null && uiState.qrBitmap != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            if (uiState.token.issuer.isNotBlank()) {
-                                Text(
-                                    text = uiState.token.issuer,
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                            }
-                            if (uiState.token.name.isNotBlank()) {
-                                Text(
-                                    text = uiState.token.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
+                uiState.token != null && uiState.qrBitmap != null ->
+                    ShareTokenUi(
+                        token = uiState.token,
+                        tokenUri = uiState.tokenUri,
+                        qrBitmap = uiState.qrBitmap,
+                        onEvent = onEvent,
+                    )
+            }
+        }
+    }
+}
 
-                        Surface(
-                            modifier = Modifier
-                                .padding(vertical = 32.dp)
-                                .padding(horizontal = 20.dp)
-                                .aspectRatio(1f),
-                            shape = DefaultShape,
-                            shadowElevation = 4.dp,
-                            color = MaterialTheme.colorScheme.surface
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.White)
-                                    .padding(4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    bitmap = uiState.qrBitmap.asImageBitmap(),
-                                    contentDescription = "QR Code",
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
+@Composable
+fun ShareTokenUi(
+    modifier: Modifier = Modifier,
+    token: Token,
+    tokenUri: String,
+    qrBitmap: Bitmap,
+    onEvent: (ShareTokenUiEvent) -> Unit,
+) {
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(36.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (token.issuer.isNotBlank())
+            Text(
+                text = token.issuer,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
 
-                        Text(
-                            modifier = Modifier.padding(bottom = 32.dp),
-                            text = "Scan this QR code to add the token",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                            textAlign = TextAlign.Center
-                        )
+        if (token.name.isNotBlank())
+            Text(
+                text = token.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            OutlinedButton(
-                                modifier = Modifier.weight(1f),
-                                shape = DefaultShape,
-                                onClick = {
-                                    scope.launch {
-                                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Token URI", uiState.tokenUri)))
-                                    }
-                                    onEvent(ShareTokenUiEvent.CopyUri)
-                                },
-                            ) {
-                                Icon(
-                                    modifier = Modifier.padding(end = 8.dp).size(18.dp),
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = null,
-                                )
-                                Text("Copy URI")
-                            }
+        Surface(
+            modifier = Modifier
+                .padding(vertical = 24.dp)
+                .aspectRatio(1f),
+            shape = DefaultShape,
+            shadowElevation = 4.dp,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    bitmap = qrBitmap.asImageBitmap(),
+                    contentDescription = "QR Code",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
 
-                            Button(
-                                modifier = Modifier.weight(1f),
-                                shape = DefaultShape,
-                                onClick = { onEvent(ShareTokenUiEvent.ShareUri) },
-                            ) {
-                                Icon(
-                                    modifier = Modifier.padding(end = 8.dp).size(18.dp),
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = null,
-                                )
-                                Text("Share")
-                            }
-                        }
+        Text(
+            modifier = Modifier.padding(bottom = 36.dp),
+            text = "Scan this QR code to add the token",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                shape = DefaultShape,
+                onClick = {
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Token URI", tokenUri)))
                     }
-                }
+                    onEvent(ShareTokenUiEvent.CopyUri)
+                },
+            ) {
+                Icon(
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .size(18.dp),
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = null,
+                )
+                Text("Copy URI")
+            }
+
+            Button(
+                modifier = Modifier.weight(1f),
+                shape = DefaultShape,
+                onClick = { onEvent(ShareTokenUiEvent.ShareUri) },
+            ) {
+                Icon(
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .size(18.dp),
+                    imageVector = Icons.Default.Share,
+                    contentDescription = null,
+                )
+                Text("Share")
             }
         }
     }
