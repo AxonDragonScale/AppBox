@@ -3,10 +3,8 @@ package com.axondragonscale.topty.ui.onboarding.pages
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -15,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -142,7 +139,7 @@ fun SetPasswordPage(
         // Password Strength Indicator
         if (password.isNotEmpty()) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 LinearProgressIndicator(
@@ -170,20 +167,6 @@ fun SetPasswordPage(
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { onEvent(OnboardingUiEvent.SetPassword) },
-            enabled = password.isNotEmpty() &&
-                     confirmPassword.isNotEmpty() &&
-                     password == confirmPassword &&
-                     passwordError == null
-        ) {
-            Text("Continue")
-        }
-
     }
 }
 

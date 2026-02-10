@@ -5,7 +5,4 @@ package com.axondragonscale.topty.ui.onboarding
  */
 sealed interface OnboardingUiEffect {
     data object NavigateToHome : OnboardingUiEffect
-    data object NavigateToQRScanner : OnboardingUiEffect
-    data object NavigateToAddToken : OnboardingUiEffect
-    data object NavigateToBackupRestore : OnboardingUiEffect
 }

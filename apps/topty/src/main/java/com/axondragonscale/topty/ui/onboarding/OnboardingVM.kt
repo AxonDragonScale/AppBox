@@ -27,11 +27,6 @@ class OnboardingVM(
 
     fun onEvent(event: OnboardingUiEvent): Any = when (event) {
         is OnboardingUiEvent.NextPage -> onNextPage()
-        is OnboardingUiEvent.PreviousPage -> onPreviousPage()
-        is OnboardingUiEvent.SkipOnboarding -> onSkipOnboarding()
-        is OnboardingUiEvent.NavigateToQRScanner -> onNavigateToQRScanner()
-        is OnboardingUiEvent.NavigateToManualEntry -> onNavigateToManualEntry()
-        is OnboardingUiEvent.NavigateToImport -> onNavigateToImport()
         is OnboardingUiEvent.PasswordChanged -> onPasswordChanged(event.password)
         is OnboardingUiEvent.ConfirmPasswordChanged -> onConfirmPasswordChanged(event.confirmPassword)
         is OnboardingUiEvent.SetPassword -> onSetPassword()
@@ -40,36 +35,20 @@ class OnboardingVM(
     private fun onNextPage() {
         uiState.update { state ->
             val nextPage = state.currentPage + 1
-            if (nextPage < state.totalPages) state.copy(currentPage = nextPage) else state
+            if (nextPage < state.totalPages) {
+                state.copy(currentPage = nextPage)
+            } else {
+                // Reached the end, complete onboarding
+                viewModelScope.launch(Dispatchers.IO) {
+                    prefsRepository.hasCompletedOnboarding.set(true)
+                    uiEffectChannel.send(OnboardingUiEffect.NavigateToHome)
+                }
+                state
+            }
         }
     }
 
-    private fun onPreviousPage() {
-        uiState.update { state ->
-            val prevPage = state.currentPage - 1
-            if (prevPage >= 0) state.copy(currentPage = prevPage) else state
-        }
-    }
 
-    private fun onSkipOnboarding() = viewModelScope.launch(Dispatchers.IO) {
-        prefsRepository.hasCompletedOnboarding.set(true)
-        uiEffectChannel.send(OnboardingUiEffect.NavigateToHome)
-    }
-
-    private fun onNavigateToQRScanner() = viewModelScope.launch(Dispatchers.IO) {
-        prefsRepository.hasCompletedOnboarding.set(true)
-        uiEffectChannel.send(OnboardingUiEffect.NavigateToQRScanner)
-    }
-
-    private fun onNavigateToManualEntry() = viewModelScope.launch(Dispatchers.IO) {
-        prefsRepository.hasCompletedOnboarding.set(true)
-        uiEffectChannel.send(OnboardingUiEffect.NavigateToAddToken)
-    }
-
-    private fun onNavigateToImport() = viewModelScope.launch(Dispatchers.IO) {
-        prefsRepository.hasCompletedOnboarding.set(true)
-        uiEffectChannel.send(OnboardingUiEffect.NavigateToBackupRestore)
-    }
 
     private fun onPasswordChanged(password: String) {
         uiState.update { state ->
@@ -102,7 +81,9 @@ class OnboardingVM(
         }
 
         passwordManager.setPassword(state.password)
+        prefsRepository.hasCompletedOnboarding.set(true)
 
-        onNextPage()
+        // Password is set on last page, navigate to home
+        uiEffectChannel.send(OnboardingUiEffect.NavigateToHome)
     }
 }

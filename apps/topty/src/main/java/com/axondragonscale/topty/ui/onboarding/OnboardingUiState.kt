@@ -7,7 +7,7 @@ import com.axondragonscale.topty.model.PasswordStrength
  */
 data class OnboardingUiState(
     val currentPage: Int = 0,
-    val totalPages: Int = 4,
+    val totalPages: Int = 3,
     val password: String = "",
     val confirmPassword: String = "",
     val passwordError: String? = null,
