@@ -138,36 +138,40 @@ private fun Settings(
                 uiMode = uiState.uiMode,
                 dynamicTheme = uiState.dynamicTheme,
                 uiFont = uiState.uiFont,
+                codeDesign = uiState.codeDesign,
                 onUiModeUpdated = { onEvent(SettingsUiEvent.UIModeUpdated(it)) },
                 onDynamicThemeToggled = { onEvent(SettingsUiEvent.DynamicThemeToggled(it)) },
                 onUiFontUpdated = { onEvent(SettingsUiEvent.UIFontUpdated(it)) },
+                onCodeDesignUpdated = { onEvent(SettingsUiEvent.CodeDesignUpdated(it)) },
             )
 
             BehaviorSection(
-                modifier = Modifier.padding(top = 16.dp),
-                codeDesign = uiState.codeDesign,
+                modifier = Modifier.padding(top = 24.dp),
                 speakOutOnTap = uiState.speakOutOnTap,
+                onSpeakOutOnTapToggled = { onEvent(SettingsUiEvent.SpeakOutOnTapToggled(it)) },
+            )
+
+            SecuritySection(
+                modifier = Modifier.padding(top = 24.dp),
                 biometricLock = uiState.biometricLock,
                 biometricUnavailableReason = uiState.biometricUnavailableReason,
                 preventScreenshots = uiState.preventScreenshots,
-                onCodeDesignUpdated = { onEvent(SettingsUiEvent.CodeDesignUpdated(it)) },
-                onSpeakOutOnTapToggled = { onEvent(SettingsUiEvent.SpeakOutOnTapToggled(it)) },
                 onBiometricLockToggled = { onEvent(SettingsUiEvent.BiometricLockToggled(it)) },
                 onPreventScreenshotsToggled = { onEvent(SettingsUiEvent.PreventScreenshotsToggled(it)) },
                 onChangePasswordClicked = { onEvent(SettingsUiEvent.NavigateToChangePassword) },
             )
 
             DataSection(
-                modifier = Modifier.padding(top = 16.dp),
+                modifier = Modifier.padding(top = 24.dp),
                 onOpenBackupRestore = { onEvent(SettingsUiEvent.NavigateToBackupRestore) }
             )
 
             AboutSection(
-                modifier = Modifier.padding(top = 16.dp),
+                modifier = Modifier.padding(top = 24.dp),
             )
 
             DevToolsSection(
-                modifier = Modifier.padding(top = 16.dp),
+                modifier = Modifier.padding(top = 24.dp),
                 onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) }
             )
 
@@ -182,9 +186,11 @@ private fun AppearanceSection(
     uiMode: UIMode,
     dynamicTheme: Boolean,
     uiFont: UIFont,
+    codeDesign: CodeDesign,
     onUiModeUpdated: (UIMode) -> Unit,
     onDynamicThemeToggled: (Boolean) -> Unit,
     onUiFontUpdated: (UIFont) -> Unit,
+    onCodeDesignUpdated: (CodeDesign) -> Unit,
 ) = Section(
     modifier = modifier,
     title = "Appearance"
@@ -229,7 +235,7 @@ private fun AppearanceSection(
     )
 
     SettingsCard(
-        modifier = Modifier,
+        modifier = Modifier.padding(bottom = 8.dp),
         leadingContent = {
             Icon(
                 imageVector = Icons.Filled.TextFields,
@@ -246,27 +252,9 @@ private fun AppearanceSection(
             )
         }
     )
-}
 
-@Composable
-private fun BehaviorSection(
-    modifier: Modifier = Modifier,
-    codeDesign: CodeDesign,
-    speakOutOnTap: Boolean,
-    biometricLock: Boolean,
-    biometricUnavailableReason: String?,
-    preventScreenshots: Boolean,
-    onCodeDesignUpdated: (CodeDesign) -> Unit,
-    onSpeakOutOnTapToggled: (Boolean) -> Unit,
-    onBiometricLockToggled: (Boolean) -> Unit,
-    onPreventScreenshotsToggled: (Boolean) -> Unit,
-    onChangePasswordClicked: () -> Unit,
-) = Section(
-    modifier = modifier,
-    title = "Behavior",
-) {
     SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = Modifier,
         leadingContent = {
             Icon(
                 imageVector = Icons.Filled.DesignServices,
@@ -283,7 +271,49 @@ private fun BehaviorSection(
             )
         }
     )
+}
 
+@Composable
+private fun BehaviorSection(
+    modifier: Modifier = Modifier,
+    speakOutOnTap: Boolean,
+    onSpeakOutOnTapToggled: (Boolean) -> Unit,
+) = Section(
+    modifier = modifier,
+    title = "Behavior",
+) {
+    SettingsCard(
+        modifier = Modifier,
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Filled.Campaign,
+                contentDescription = "Speak Out",
+            )
+        },
+        headlineContent = { Text(text = "Speak Out") },
+        supportingContent = { Text(text = "Tap to speak out the code") },
+        trailingContent = {
+            Switch(
+                checked = speakOutOnTap,
+                onCheckedChange = onSpeakOutOnTapToggled,
+            )
+        }
+    )
+}
+
+@Composable
+private fun SecuritySection(
+    modifier: Modifier = Modifier,
+    biometricLock: Boolean,
+    biometricUnavailableReason: String?,
+    preventScreenshots: Boolean,
+    onBiometricLockToggled: (Boolean) -> Unit,
+    onPreventScreenshotsToggled: (Boolean) -> Unit,
+    onChangePasswordClicked: () -> Unit,
+) = Section(
+    modifier = modifier,
+    title = "Security",
+) {
     SettingsCard(
         modifier = Modifier.padding(bottom = 8.dp),
         leadingContent = {
@@ -322,24 +352,6 @@ private fun BehaviorSection(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = "Open",
-            )
-        }
-    )
-
-    SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
-        leadingContent = {
-            Icon(
-                imageVector = Icons.Filled.Campaign,
-                contentDescription = "Speak Out",
-            )
-        },
-        headlineContent = { Text(text = "Speak Out") },
-        supportingContent = { Text(text = "Tap to speak out the code") },
-        trailingContent = {
-            Switch(
-                checked = speakOutOnTap,
-                onCheckedChange = onSpeakOutOnTapToggled,
             )
         }
     )

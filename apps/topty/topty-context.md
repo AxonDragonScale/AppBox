@@ -108,7 +108,7 @@ com.axondragonscale.topty/
 │   │   ├── ChangePasswordUiEvent.kt
 │   │   ├── ChangePasswordUiState.kt
 │   │   ├── ChangePasswordVM.kt
-│   │   ├── Settings.kt           # Settings screen
+│   │   ├── Settings.kt           # Settings screen (Appearance/Behavior/Security/Data/About)
 │   │   ├── SettingsUiEvent.kt
 │   │   ├── SettingsUiState.kt
 │   │   └── SettingsVM.kt
@@ -209,18 +209,25 @@ object Route {
 ```
 
 ### Preferences (ToptyPrefsRepository)
+**Appearance:**
 - `uiMode`: Light/Dark/Auto
 - `dynamicTheme`: Material You colors
-- `codeDesign`: Display style
 - `uiFont`: Font customization
+- `codeDesign`: Code display style
+
+**Behavior:**
 - `speakOutOnTap`: TTS accessibility
+- `sortOrder`: Token list ordering
+
+**Security:**
 - `biometricLock`: App authentication
 - `preventScreenshots`: Security flag
-- `sortOrder`: Token list ordering
-- `hasCompletedOnboarding`: Onboarding completion status
 - `passwordHash`: Hashed master password for verification
 - `passwordHashSalt`: Salt for password hash
 - `keyDerivationSalt`: Salt for encryption key derivation
+
+**Other:**
+- `hasCompletedOnboarding`: Onboarding completion status
 
 ## Token URI Format
 Follows Google Authenticator spec:
@@ -332,3 +339,9 @@ When password changes, all token secrets must be re-encrypted:
 6. **Favorites**: Tokens can now be marked as favorites
 7. **Context Menu**: Added context menu for token actions in home screen
 8. **Test Data**: Added `TestData.kt` with 10 diverse test tokens for development
+9. **Settings Reorganization**: Settings screen now has clear sections:
+   - **Appearance**: UI Mode, Dynamic Theme, Font, Code UI
+   - **Behavior**: Speak Out
+   - **Security**: Biometric Lock, Change Password, Prevent Screenshots
+   - **Data**: Backup & Restore
+   - **About**: App info and developer details
