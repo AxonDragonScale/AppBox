@@ -6,7 +6,7 @@ import com.axondragonscale.commons.Result
 import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.Protocol
-import com.axondragonscale.topty.security.SecretEncryption
+import com.axondragonscale.topty.security.TokenEncryption
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -91,7 +91,7 @@ class BackupExporter(
         }
 
         val backupData = ToptyBackupData(tokenCount = tokens.size, tokens = backupTokens)
-        return SecretEncryption.encrypt(json.encodeToString(backupData))
+        return TokenEncryption.encrypt(json.encodeToString(backupData))
     }
 
     /**

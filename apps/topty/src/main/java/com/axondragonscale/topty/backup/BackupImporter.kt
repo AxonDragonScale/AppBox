@@ -7,7 +7,7 @@ import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
-import com.axondragonscale.topty.security.SecretEncryption
+import com.axondragonscale.topty.security.TokenEncryption
 import kotlinx.serialization.json.Json
 
 /**
@@ -75,7 +75,7 @@ class BackupImporter(
     private fun importToptyFormat(content: String): List<Token> {
         // Decrypt the backup
         val decryptedContent = try {
-            SecretEncryption.decrypt(content)
+            TokenEncryption.decrypt(content)
         } catch (e: Exception) {
             // If decryption fails, assume it's unencrypted (for backward compatibility)
             content

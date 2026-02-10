@@ -85,6 +85,7 @@ class SettingsVM(
             SettingsUiEvent.NavigateBack -> Unit
             SettingsUiEvent.NavigateToDevTools -> Unit
             SettingsUiEvent.NavigateToBackupRestore -> Unit
+            SettingsUiEvent.NavigateToChangePassword -> Unit
         }
     }
 

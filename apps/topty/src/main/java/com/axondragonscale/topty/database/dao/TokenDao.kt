@@ -3,6 +3,7 @@ package com.axondragonscale.topty.database.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import com.axondragonscale.topty.database.entity.Token
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,7 @@ interface TokenDao {
     @Upsert
     suspend fun upsert(token: Token): Long
 
+    @Transaction
     @Upsert
     suspend fun upsert(tokens: List<Token>): List<Long>
 

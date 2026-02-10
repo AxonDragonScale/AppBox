@@ -64,4 +64,19 @@ class ToptyPrefsRepository(context: Context) {
         default = false,
     )
 
+    val passwordHash = dataStore.setting(
+        key = stringPreferencesKey("passwordHash"),
+        default = "",
+    )
+
+    val passwordHashSalt = dataStore.setting(
+        key = stringPreferencesKey("passwordHashSalt"),
+        default = "",
+    )
+
+    val keyDerivationSalt = dataStore.setting(
+        key = stringPreferencesKey("keyDerivationSalt"),
+        default = "",
+    )
+
 }

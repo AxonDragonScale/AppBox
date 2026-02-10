@@ -34,4 +34,7 @@ object Route {
     @Serializable
     data class ShareToken(val tokenId: Long)
 
+    @Serializable
+    data object ChangePassword
+
 }

@@ -15,6 +15,7 @@ import com.axondragonscale.topty.ui.token.Token
 import com.axondragonscale.topty.ui.home.Home
 import com.axondragonscale.topty.ui.onboarding.Onboarding
 import com.axondragonscale.topty.ui.qrscanner.QRScanner
+import com.axondragonscale.topty.ui.settings.ChangePassword
 import com.axondragonscale.topty.ui.settings.Settings
 import com.axondragonscale.topty.ui.sharetoken.ShareToken
 
@@ -67,6 +68,10 @@ fun ToptyApp(
 
         composable<Route.Settings> {
             Settings(navController = navController)
+        }
+
+        composable<Route.ChangePassword> {
+            ChangePassword(navController = navController)
         }
 
         composable<Route.BackupRestore> {

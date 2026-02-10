@@ -18,4 +18,5 @@ sealed interface SettingsUiEvent {
     data class PreventScreenshotsToggled(val preventScreenshots: Boolean) : SettingsUiEvent
     data object NavigateToBackupRestore : SettingsUiEvent
     data object NavigateToDevTools : SettingsUiEvent
+    data object NavigateToChangePassword : SettingsUiEvent
 }

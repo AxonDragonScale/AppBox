@@ -1,5 +1,6 @@
 package com.axondragonscale.topty.core
 
+import com.axondragonscale.commons.logD
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.TOTPCode
 
@@ -8,7 +9,11 @@ import com.axondragonscale.topty.model.TOTPCode
  */
 object TOTPGenerator {
 
+    private const val TAG = "TOTPGenerator"
+
     fun generateCode(token: Token): TOTPCode {
+        TAG.logD { "generateCode() for ${token.id}" }
+
         val counter = Math.floorDiv(System.currentTimeMillis(), token.period * 1000)
         val periodStart = counter * token.period * 1000
         val periodEnd = periodStart + token.period * 1000

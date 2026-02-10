@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.DesignServices
 import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
@@ -89,6 +90,8 @@ fun Settings(
 
                 SettingsUiEvent.NavigateToBackupRestore -> navController.navigate(Route.BackupRestore)
 
+                SettingsUiEvent.NavigateToChangePassword -> navController.navigate(Route.ChangePassword)
+
                 else -> vm.onEvent(event)
             }
         }
@@ -151,6 +154,7 @@ private fun Settings(
                 onSpeakOutOnTapToggled = { onEvent(SettingsUiEvent.SpeakOutOnTapToggled(it)) },
                 onBiometricLockToggled = { onEvent(SettingsUiEvent.BiometricLockToggled(it)) },
                 onPreventScreenshotsToggled = { onEvent(SettingsUiEvent.PreventScreenshotsToggled(it)) },
+                onChangePasswordClicked = { onEvent(SettingsUiEvent.NavigateToChangePassword) },
             )
 
             DataSection(
@@ -256,6 +260,7 @@ private fun BehaviorSection(
     onSpeakOutOnTapToggled: (Boolean) -> Unit,
     onBiometricLockToggled: (Boolean) -> Unit,
     onPreventScreenshotsToggled: (Boolean) -> Unit,
+    onChangePasswordClicked: () -> Unit,
 ) = Section(
     modifier = modifier,
     title = "Behavior",
@@ -299,6 +304,24 @@ private fun BehaviorSection(
             Switch(
                 checked = biometricLock,
                 onCheckedChange = onBiometricLockToggled,
+            )
+        }
+    )
+
+    SettingsCard(
+        modifier = Modifier.padding(bottom = 8.dp).clickable(onClick = onChangePasswordClicked),
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Filled.Lock,
+                contentDescription = "Change Password",
+            )
+        },
+        headlineContent = { Text(text = "Change Password") },
+        supportingContent = { Text(text = "Update your master password") },
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = "Open",
             )
         }
     )

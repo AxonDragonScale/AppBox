@@ -5,7 +5,7 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
-import com.axondragonscale.topty.security.SecretEncryption
+import com.axondragonscale.topty.security.TokenEncryption
 
 /**
  * Created by Ronak Harkhani on 14/10/24
@@ -34,14 +34,14 @@ data class Token(
      */
     @get:Ignore
     val secret: String
-        get() = if (encryptedSecret.isEmpty()) "" else SecretEncryption.decrypt(encryptedSecret)
+        get() = if (encryptedSecret.isEmpty()) "" else TokenEncryption.decrypt(encryptedSecret)
 
     /**
      * Creates a copy of this token with a new secret (automatically encrypted).
      * Use this instead of directly setting the secret property.
      */
     fun withSecret(plainSecret: String): Token {
-        return copy(encryptedSecret = SecretEncryption.encrypt(plainSecret))
+        return copy(encryptedSecret = TokenEncryption.encrypt(plainSecret))
     }
 
     companion object {
@@ -87,7 +87,7 @@ data class Token(
                 issuer = issuer,
                 group = group,
                 note = note,
-                encryptedSecret = SecretEncryption.encrypt(secret),
+                encryptedSecret = TokenEncryption.encrypt(secret),
                 protocol = protocol,
                 hashAlgo = hashAlgo,
                 period = period,

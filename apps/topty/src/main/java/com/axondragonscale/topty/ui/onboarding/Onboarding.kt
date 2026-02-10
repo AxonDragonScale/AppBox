@@ -41,6 +41,7 @@ import com.axondragonscale.commons.compose.visible
 import com.axondragonscale.topty.ui.Route
 import com.axondragonscale.topty.ui.onboarding.pages.AddTokenGuidePage
 import com.axondragonscale.topty.ui.onboarding.pages.FeaturesPage
+import com.axondragonscale.topty.ui.onboarding.pages.SetPasswordPage
 import com.axondragonscale.topty.ui.onboarding.pages.WelcomePage
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 import org.koin.androidx.compose.koinViewModel
@@ -124,8 +125,15 @@ private fun Onboarding(
             ) { page ->
                 when (page) {
                     0 -> WelcomePage()
-                    1 -> FeaturesPage()
-                    2 -> AddTokenGuidePage(
+                    1 -> SetPasswordPage(
+                        password = uiState.password,
+                        confirmPassword = uiState.confirmPassword,
+                        passwordError = uiState.passwordError,
+                        passwordStrength = uiState.passwordStrength,
+                        onEvent = onEvent
+                    )
+                    2 -> FeaturesPage()
+                    3 -> AddTokenGuidePage(
                         onScanQRCode = { onEvent(OnboardingUiEvent.NavigateToQRScanner) },
                         onManualEntry = { onEvent(OnboardingUiEvent.NavigateToManualEntry) },
                         onImport = { onEvent(OnboardingUiEvent.NavigateToImport) }

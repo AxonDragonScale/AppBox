@@ -40,14 +40,9 @@ class ToptyActivity : FragmentActivity() {
         var keepSplashScreen = true
         splashScreen.setKeepOnScreenCondition { keepSplashScreen }
 
-        val (initialUiMode, initialDynamicTheme, initialUiFont) = runBlocking {
-            Triple(
-                prefsRepository.uiMode.flow.first(),
-                prefsRepository.dynamicTheme.flow.first(),
-                prefsRepository.uiFont.flow.first(),
-            )
-        }
-
+        val initialUiMode = runBlocking { prefsRepository.uiMode.flow.first() }
+        val initialDynamicTheme = runBlocking { prefsRepository.dynamicTheme.flow.first() }
+        val initialUiFont = runBlocking { prefsRepository.uiFont.flow.first() }
         val hasCompletedOnboarding = runBlocking { prefsRepository.hasCompletedOnboarding.flow.first() }
         val biometricLockEnabled = runBlocking { prefsRepository.biometricLock.get() }
         val preventScreenshotsEnabled = runBlocking { prefsRepository.preventScreenshots.get() }
@@ -58,18 +53,11 @@ class ToptyActivity : FragmentActivity() {
         keepSplashScreen = false
 
         setContent {
-            val uiMode by prefsRepository.uiMode.flow
-                .collectAsStateWithLifecycle(initialValue = initialUiMode)
-            val dynamicTheme by prefsRepository.dynamicTheme.flow
-                .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
-            val uiFont by prefsRepository.uiFont.flow
-                .collectAsStateWithLifecycle(initialValue = initialUiFont)
-            val biometricLock by prefsRepository.biometricLock.flow
-                .collectAsStateWithLifecycle(initialValue = biometricLockEnabled)
-            val preventScreenshots by prefsRepository.preventScreenshots.flow
-                .collectAsStateWithLifecycle(initialValue = preventScreenshotsEnabled)
+            val uiMode by prefsRepository.uiMode.flow.collectAsStateWithLifecycle(initialValue = initialUiMode)
+            val dynamicTheme by prefsRepository.dynamicTheme.flow.collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
+            val uiFont by prefsRepository.uiFont.flow.collectAsStateWithLifecycle(initialValue = initialUiFont)
+            val preventScreenshots by prefsRepository.preventScreenshots.flow.collectAsStateWithLifecycle(initialValue = preventScreenshotsEnabled)
 
-            // Update FLAG_SECURE based on preference changes
             LaunchedEffect(preventScreenshots) {
                 if (preventScreenshots) window.setFlags(FLAG_SECURE, FLAG_SECURE)
                 else window.clearFlags(FLAG_SECURE)
@@ -80,7 +68,7 @@ class ToptyActivity : FragmentActivity() {
                 dynamicColor = dynamicTheme,
                 uiFont = uiFont,
             ) {
-                if (biometricLock && !isAuthenticated) {
+                if (biometricLockEnabled && !isAuthenticated) {
                     BiometricLockScreen(
                         biometricAuthManager = biometricAuthManager,
                         prefsRepository = prefsRepository,

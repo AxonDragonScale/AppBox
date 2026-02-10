@@ -1,7 +1,11 @@
 package com.axondragonscale.topty.repository
 
+import com.axondragonscale.commons.logD
 import com.axondragonscale.topty.database.dao.TokenDao
 import com.axondragonscale.topty.database.entity.Token
+import com.axondragonscale.topty.security.TokenEncryption
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 /**
  * Created by Ronak Harkhani on 14/10/24
@@ -9,6 +13,9 @@ import com.axondragonscale.topty.database.entity.Token
 class TokenRepository(
     private val dao: TokenDao,
 ) {
+    companion object {
+        private const val TAG = "TokenRepository"
+    }
 
     fun getTokens() = dao.getTokens()
 
@@ -21,5 +28,21 @@ class TokenRepository(
     suspend fun deleteToken(tokenId: Long) = dao.delete(tokenId)
 
     suspend fun deleteAllTokens() = dao.deleteAllTokens()
+
+    /**
+     * Re-encrypts all tokens with a new encryption key. Used when changing password.
+     */
+    suspend fun reEncryptAllTokens(oldKey: ByteArray, newKey: ByteArray) {
+        TAG.logD { "reEncryptAllTokens() start" }
+        val reEncryptedTokens = dao.getAllTokens().map { token ->
+            val decryptedSecret = TokenEncryption.decrypt(token.encryptedSecret, oldKey) // Decrypt with old key
+            val reEncryptedSecret = TokenEncryption.encrypt(decryptedSecret, newKey) // Encrypt with new key
+
+            token.copy(encryptedSecret = reEncryptedSecret)
+        }
+
+        TAG.logD { "reEncryptAllTokens() inserting reEncryptedTokens" }
+        dao.upsert(reEncryptedTokens)
+    }
 
 }
