@@ -34,7 +34,7 @@ interface TokenDao {
     @Upsert
     suspend fun upsert(token: Token): Long
 
-    @Transaction
+    @Transaction // Needs to be atomic to prevent observers from triggering
     @Upsert
     suspend fun upsert(tokens: List<Token>): List<Long>
 

@@ -41,6 +41,8 @@ class TokenRepository(
             token.copy(encryptedSecret = reEncryptedSecret)
         }
 
+        // The new tokens must be inserted atomically to prevent observers from triggering midway
+        // i.e. when some tokens are new and some are old, which leads to decryption failure
         TAG.logD { "reEncryptAllTokens() inserting reEncryptedTokens" }
         dao.upsert(reEncryptedTokens)
     }
