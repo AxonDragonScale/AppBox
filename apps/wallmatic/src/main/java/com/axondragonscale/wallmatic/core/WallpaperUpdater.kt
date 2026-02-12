@@ -122,7 +122,7 @@ class WallpaperUpdater(
         scheduler.scheduleNextUpdate()
     }
 
-    private fun setWallpaper(wallpaper: Wallpaper, target: TargetScreen) = runCatching {
+    fun setWallpaper(wallpaper: Wallpaper, target: TargetScreen) = runCatching {
         manager.setStream(
             context.contentResolver.openInputStream(wallpaper.uri.toUri()),
             null,

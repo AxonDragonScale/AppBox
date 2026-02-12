@@ -3,6 +3,7 @@ package com.axondragonscale.wallmatic.ui.folder
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +17,7 @@ class FolderVM(
     private val savedStateHandle: SavedStateHandle,
     private val repository: WallmaticRepository,
     private val appPrefsRepository: AppPrefsRepository,
+    private val wallpaperUpdater: WallpaperUpdater,
 ) : ViewModel() {
 
     private val folderId: Int = savedStateHandle.get<Int>("folderId")!!
@@ -35,6 +37,7 @@ class FolderVM(
     fun onEvent(event: FolderUiEvent): Any = when (event) {
         is FolderUiEvent.BlacklistWallpaper -> onBlacklistWallpaper(event)
         is FolderUiEvent.WhitelistWallpaper -> onWhitelistWallpaper(event)
+        is FolderUiEvent.SetWallpaper -> onSetWallpaper(event)
 
         // Handled by view
         is FolderUiEvent.NavigateToWallpaper -> Unit
@@ -69,6 +72,12 @@ class FolderVM(
             isBlacklisted = false
         }
         // TODO: Update Cover
+    }
+
+    private fun onSetWallpaper(
+        event: FolderUiEvent.SetWallpaper,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        wallpaperUpdater.setWallpaper(event.wallpaper, event.target)
     }
 
 }

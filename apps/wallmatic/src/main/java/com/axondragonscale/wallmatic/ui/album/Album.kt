@@ -28,7 +28,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +53,7 @@ import androidx.navigation.NavHostController
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.FullFolder
+import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
 import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
@@ -109,6 +113,7 @@ fun Album(
     wallpaperActionsTarget?.let {
         WallpaperActionsContextMenuDialog(
             wallpaper = it,
+            onSetWallpaper = { target -> vm.onEvent(AlbumUiEvent.SetWallpaper(it, target)) },
             onDelete = { vm.onEvent(AlbumUiEvent.DeleteWallpaper(it.id)) },
             onDismiss = { wallpaperActionsTarget = null },
         )
@@ -335,6 +340,7 @@ private fun FolderActionsContextMenuDialog(
 fun WallpaperActionsContextMenuDialog(
     modifier: Modifier = Modifier,
     wallpaper: Wallpaper,
+    onSetWallpaper: (TargetScreen) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -347,6 +353,30 @@ fun WallpaperActionsContextMenuDialog(
             )
         },
         contextMenuItems = listOf(
+            ContextMenuItem(
+                icon = Icons.Default.Home,
+                text = "Set Home Screen",
+                action = {
+                    onSetWallpaper(TargetScreen.Home)
+                    onDismiss()
+                },
+            ),
+            ContextMenuItem(
+                icon = Icons.Default.Lock,
+                text = "Set Lock Screen",
+                action = {
+                    onSetWallpaper(TargetScreen.Lock)
+                    onDismiss()
+                },
+            ),
+            ContextMenuItem(
+                icon = Icons.Default.Wallpaper,
+                text = "Set Both",
+                action = {
+                    onSetWallpaper(TargetScreen.Both)
+                    onDismiss()
+                },
+            ),
             ContextMenuItem(
                 icon = Icons.Default.Delete,
                 text = "Delete",

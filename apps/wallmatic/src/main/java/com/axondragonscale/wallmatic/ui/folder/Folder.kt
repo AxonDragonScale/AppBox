@@ -17,6 +17,9 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -30,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
+import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
 import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
@@ -73,6 +77,7 @@ fun Folder(
     wallpaperActionsTarget?.let {
         WallpaperActionsContextMenuDialog(
             wallpaper = it,
+            onSetWallpaper = { target -> vm.onEvent(FolderUiEvent.SetWallpaper(it, target)) },
             onBlacklist = { vm.onEvent(FolderUiEvent.BlacklistWallpaper(it)) },
             onWhitelist = { vm.onEvent(FolderUiEvent.WhitelistWallpaper(it)) },
             onDismiss = { wallpaperActionsTarget = null },
@@ -145,6 +150,7 @@ private fun Folder(
 fun WallpaperActionsContextMenuDialog(
     modifier: Modifier = Modifier,
     wallpaper: Wallpaper,
+    onSetWallpaper: (TargetScreen) -> Unit,
     onBlacklist: () -> Unit,
     onWhitelist: () -> Unit,
     onDismiss: () -> Unit,
@@ -158,26 +164,58 @@ fun WallpaperActionsContextMenuDialog(
                 cornerRadius = 12.dp,
             )
         },
-        contextMenuItems = listOf(
-            if (wallpaper.isBlacklisted)
+        contextMenuItems = buildList {
+            add(
                 ContextMenuItem(
-                    icon = Icons.Outlined.CheckCircle,
-                    text = "Whitelist",
+                    icon = Icons.Default.Home,
+                    text = "Set Home Screen",
                     action = {
-                        onWhitelist()
+                        onSetWallpaper(TargetScreen.Home)
                         onDismiss()
                     },
                 )
-            else
+            )
+            add(
                 ContextMenuItem(
-                    icon = Icons.Default.Block,
-                    text = "Blacklist",
+                    icon = Icons.Default.Lock,
+                    text = "Set Lock Screen",
                     action = {
-                        onBlacklist()
+                        onSetWallpaper(TargetScreen.Lock)
                         onDismiss()
                     },
                 )
-        ),
+            )
+            add(
+                ContextMenuItem(
+                    icon = Icons.Default.Wallpaper,
+                    text = "Set Both",
+                    action = {
+                        onSetWallpaper(TargetScreen.Both)
+                        onDismiss()
+                    },
+                )
+            )
+            add(
+                if (wallpaper.isBlacklisted)
+                    ContextMenuItem(
+                        icon = Icons.Outlined.CheckCircle,
+                        text = "Whitelist",
+                        action = {
+                            onWhitelist()
+                            onDismiss()
+                        },
+                    )
+                else
+                    ContextMenuItem(
+                        icon = Icons.Default.Block,
+                        text = "Blacklist",
+                        action = {
+                            onBlacklist()
+                            onDismiss()
+                        },
+                    )
+            )
+        },
         onDismiss = onDismiss,
     )
 }

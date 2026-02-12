@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.wallmatic.core.AlbumManager
+import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ internal class AlbumVM(
     private val repository: WallmaticRepository,
     private val appPrefsRepository: AppPrefsRepository,
     private val albumManager: AlbumManager,
+    private val wallpaperUpdater: WallpaperUpdater,
 ) : ViewModel() {
 
     private val albumId: Int = savedStateHandle.get<Int>("albumId")!!
@@ -40,6 +42,7 @@ internal class AlbumVM(
         is AlbumUiEvent.ImagesSelected -> onImagesSelected(event)
         is AlbumUiEvent.DeleteFolder -> onDeleteFolder(event)
         is AlbumUiEvent.DeleteWallpaper -> onDeleteWallpaper(event)
+        is AlbumUiEvent.SetWallpaper -> onSetWallpaper(event)
 
         // Handled by View
         is AlbumUiEvent.NavigateToWallpaper -> Unit
@@ -88,5 +91,11 @@ internal class AlbumVM(
         event: AlbumUiEvent.DeleteWallpaper,
     ) = runAndSyncState {
         repository.deleteWallpapers(listOf(event.wallpaperId))
+    }
+
+    private fun onSetWallpaper(
+        event: AlbumUiEvent.SetWallpaper,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        wallpaperUpdater.setWallpaper(event.wallpaper, event.target)
     }
 }
