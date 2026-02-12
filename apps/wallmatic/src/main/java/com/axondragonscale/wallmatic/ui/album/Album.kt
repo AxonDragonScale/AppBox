@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -48,7 +47,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import org.koin.androidx.compose.koinViewModel
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.FullFolder
@@ -59,9 +57,9 @@ import com.axondragonscale.wallmatic.ui.common.FluidFabButton
 import com.axondragonscale.wallmatic.ui.common.FluidFabButtonProperties
 import com.axondragonscale.wallmatic.ui.common.TopBar
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
-import com.axondragonscale.wallmatic.ui.theme.SystemBars
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.util.getAspectRatio
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 23/06/24
@@ -79,9 +77,8 @@ fun Album(
     var folderActionsTarget by remember { mutableStateOf<FullFolder?>(null) }
     var wallpaperActionsTarget by remember { mutableStateOf<Wallpaper?>(null) }
 
-    SystemBars(statusBarColor = MaterialTheme.colorScheme.primaryContainer)
     Album(
-        modifier = modifier.statusBarsPadding(),
+        modifier = modifier,
         uiState = uiState,
         onEvent = { event ->
             when (event) {

@@ -15,9 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import org.koin.androidx.compose.koinViewModel
-import com.axondragonscale.wallmatic.ui.theme.SystemBars
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 11/07/24
@@ -27,7 +26,6 @@ import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 fun Wallpaper(modifier: Modifier = Modifier) {
     val vm: WallpaperVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
-    SystemBars()
     Wallpaper(
         modifier = modifier,
         uiState = uiState,

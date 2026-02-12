@@ -32,7 +32,6 @@ fun Dashboard(
     navController: NavController,
     tab: Tab,
 ) {
-    SystemBars(navBarColor = MaterialTheme.colorScheme.primaryContainer)
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         val pagerState = rememberPagerState(
             initialPage = tab.position,

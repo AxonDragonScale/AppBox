@@ -36,7 +36,6 @@ import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
 import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
 import com.axondragonscale.wallmatic.ui.common.TopBar
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
-import com.axondragonscale.wallmatic.ui.theme.SystemBars
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -55,9 +54,8 @@ fun Folder(
 
     var wallpaperActionsTarget by remember { mutableStateOf<Wallpaper?>(null) }
 
-    SystemBars(statusBarColor = MaterialTheme.colorScheme.primaryContainer)
     Folder(
-        modifier = modifier.statusBarsPadding(),
+        modifier = modifier,
         uiState = uiState,
         onEvent = { event ->
             when (event) {
