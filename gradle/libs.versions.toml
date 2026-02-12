@@ -34,6 +34,9 @@ protobuf = "3.25.4" # Update carefully
 guava = "33.5.0-android"
 accompanist = "0.36.0"
 zxing = "3.5.4"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
 
 [libraries]
 # Plugins
@@ -116,6 +119,10 @@ coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
 zxing = { module = "com.google.zxing:core", version.ref = "zxing" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
