@@ -51,8 +51,11 @@ import com.axondragonscale.npinner.ui.theme.NPinnerTheme
 import com.axondragonscale.npinner.util.formatted
 import com.axondragonscale.npinner.util.toEpochMillis
 import com.axondragonscale.npinner.util.toLocalDate
-import java.time.LocalDate
-import java.time.LocalTime
+import kotlin.time.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Created by Ronak Harkhani on 29/04/23
@@ -84,7 +87,7 @@ fun Scheduler(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            
+
             IconToggleButton(
                 modifier = Modifier.padding(12.dp),
                 checked = schedule != null,
@@ -99,12 +102,12 @@ fun Scheduler(
                 )
             }
         }
-        
+
         if (schedule != null) {
             if (!schedule.isFuture) {
                 InvalidScheduleWarning()
             }
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -121,7 +124,7 @@ fun Scheduler(
                         uncheckedColor = MaterialTheme.colorScheme.onBackground,
                     ),
                 )
-                
+
                 Text(
                     text = "REPEAT EVERY...",
                     style = MaterialTheme.typography.labelLarge,
@@ -130,9 +133,9 @@ fun Scheduler(
                     fontWeight = FontWeight.Bold,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             SegmentedToggleButton(
                 modifier = Modifier
                     .padding(horizontal = 24.dp)
@@ -169,7 +172,7 @@ fun InvalidScheduleWarning() {
             contentDescription = "Warning",
             tint = MaterialTheme.colorScheme.onError,
         )
-        
+
         Text(
             modifier = Modifier.padding(start = 12.dp),
             text = "This schedule is in the past. Please delete or edit your schedule.",
@@ -194,7 +197,7 @@ fun DateTimePicker(
             text = schedule.date.formatted,
             onClick = { showDatePicker = true },
         )
-        
+
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState(
                 initialSelectedDateMillis = schedule.asLocalDateTime.toEpochMillis(),
@@ -221,15 +224,15 @@ fun DateTimePicker(
                 DatePicker(state = datePickerState)
             }
         }
-        
+
         Spacer(modifier = Modifier.width(8.dp))
-        
+
         var showTimePicker by remember { mutableStateOf(false) }
         PickerButton(
             text = schedule.time.formatted,
             onClick = { showTimePicker = true },
         )
-        
+
         if (showTimePicker) {
             val timePickerState = rememberTimePickerState(
                 initialHour = schedule.time.hour,
@@ -240,7 +243,7 @@ fun DateTimePicker(
                 onCancel = { showTimePicker = false },
                 onConfirm = {
                     showTimePicker = false
-                    val newTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                    val newTime = LocalTime(timePickerState.hour, timePickerState.minute)
                     onScheduleChange(schedule.copy(time = newTime))
                 },
             ) {
@@ -275,12 +278,13 @@ fun SchedulerNullPreview() {
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun SchedulerPreview() {
+    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
     NPinnerTheme {
         Surface {
             Scheduler(
                 schedule = Schedule(
-                    date = LocalDate.now(),
-                    time = LocalTime.now(),
+                    date = now.date,
+                    time = now.time,
                     type = ScheduleType.DAY,
                 ),
                 onScheduleChange = {},
@@ -293,12 +297,13 @@ fun SchedulerPreview() {
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun SchedulerNoRepeatPreview() {
+    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
     NPinnerTheme {
         Surface {
             Scheduler(
                 schedule = Schedule(
-                    date = LocalDate.now(),
-                    time = LocalTime.now(),
+                    date = now.date,
+                    time = now.time,
                     type = null,
                 ),
                 onScheduleChange = {},

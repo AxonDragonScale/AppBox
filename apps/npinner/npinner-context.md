@@ -8,6 +8,7 @@ NPinner is a notification pinning app within AppBox that lets users create persi
 - **Navigation**: Navigation Compose with string routes and deep links (`npinner://` scheme)
 - **DI**: Koin (`NPinnerApplication` initializes `CommonsModule` + `NPinnerModule`)
 - **Database**: Room (single table, soft deletes via `deletedAt`)
+- **Date/Time**: kotlinx-datetime (`kotlinx.datetime.LocalDate`, `LocalTime`, `LocalDateTime`; `kotlin.time.Clock`, `kotlin.time.Instant`)
 - **Preferences**: DataStore Preferences (dark mode only)
 - **Workers**: WorkManager with Koin worker factory
 - **Permissions**: Accompanist Permissions (POST_NOTIFICATIONS)
@@ -133,12 +134,13 @@ npinner://notificationEditor?id= → Edit existing notification (ACTION_EDIT dee
 ### Schedule (embedded in entity)
 | Field | Type | Notes |
 |-------|------|-------|
-| date | LocalDate | Room converter: String ↔ LocalDate |
-| time | LocalTime | Room converter: String ↔ LocalTime |
+| date | `kotlinx.datetime.LocalDate` | Room converter: ISO String ↔ LocalDate |
+| time | `kotlinx.datetime.LocalTime` | Room converter: ISO String ↔ LocalTime |
 | type | ScheduleType? | null = one-time, non-null = recurring |
 
+- `asLocalDateTime`: combines date + time via `LocalDateTime(date, time)`
 - `isFuture`: true if `type != null` (recurring always valid) or datetime is in the future
-- Default: 10 minutes from now, repeat daily
+- Default: 10 minutes from now (`Clock.System.now().plus(10.minutes)`), repeat daily
 
 ### Database
 - Single table `notifications`, version 1, `exportSchema = true`
@@ -150,8 +152,8 @@ npinner://notificationEditor?id= → Edit existing notification (ACTION_EDIT dee
 ### Notification Lifecycle
 1. **Create**: New UUID → editor → save → if no schedule, auto-pin + post notification
 2. **Pin/Unpin**: Toggle updates DB + posts/dismisses system notification
-3. **Schedule**: WorkManager one-time work with delay → pins + posts on trigger
-4. **Recurring**: After trigger, ScheduleWorker adds 1 day/week/month and re-enqueues
+3. **Schedule**: WorkManager one-time work with delay (computed via `Instant` subtraction) → pins + posts on trigger
+4. **Recurring**: After trigger, ScheduleWorker adds 1 day/week/month via `LocalDate.plus(1, DateTimeUnit.DAY/WEEK/MONTH)` and re-enqueues
 5. **Delete**: Soft-delete (sets `deletedAt`) + dismiss notification + cancel scheduled work
 6. **Swipe-to-dismiss**: In list, triggers full delete flow
 
@@ -192,12 +194,22 @@ All receivers implement `KoinComponent` and use `by inject()` for dependencies.
 - `NPinnerModalBottomSheet`: wraps Material3 BottomSheet for theme picker and about
 - Dynamic color enabled by default (Android 12+)
 
+## Date/Time Notes
+- Uses **kotlinx-datetime** (0.7.1+), NOT java.time
+- `Clock` and `Instant` are from `kotlin.time` (moved from kotlinx-datetime in 0.7.0)
+- `LocalDate`, `LocalTime`, `LocalDateTime`, `TimeZone`, `DateTimeUnit` are from `kotlinx.datetime`
+- Extension `Instant.toLocalDateTime(TimeZone)` is imported from `kotlinx.datetime.toLocalDateTime`
+- Extension `LocalDateTime.toInstant(TimeZone)` is imported from `kotlinx.datetime.toInstant`
+- Formatting uses `kotlinx.datetime.format` extension + `LocalDate.Format { }` / `LocalTime.Format { }` builders
+- Room converters use ISO string format (compatible between java.time and kotlinx-datetime)
+- WorkManager delay: `(scheduledInstant - Clock.System.now()).inWholeMilliseconds`
+
 ## Dependencies
 - AndroidX: Compose BOM, Navigation, Room (KSP), DataStore Preferences, Splash Screen, WorkManager
 - Koin: BOM + full bundle (includes workmanager, compose, navigation)
 - Accompanist: Permissions
 - Coil: Image loading (bundled but minimally used)
-- kotlinx: serialization, coroutines
+- kotlinx: serialization, coroutines, datetime
 
 ## Build Info
 - **Namespace**: `com.axondragonscale.npinner`

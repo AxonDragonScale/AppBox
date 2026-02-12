@@ -1,7 +1,7 @@
 package com.axondragonscale.npinner.data.converter
 
 import androidx.room.TypeConverter
-import java.time.LocalTime
+import kotlinx.datetime.LocalTime
 
 /**
  * Created by Ronak Harkhani on 30/04/23

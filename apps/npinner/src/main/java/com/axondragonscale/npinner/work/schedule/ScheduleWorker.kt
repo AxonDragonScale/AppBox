@@ -11,6 +11,9 @@ import com.axondragonscale.npinner.model.ScheduleType
 import com.axondragonscale.npinner.repository.NotificationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.plus
 
 /**
  * Created by Ronak Harkhani on 01/05/23
@@ -44,16 +47,17 @@ class ScheduleWorker(
         val schedule = notification.schedule
 
         val currentScheduledTime = schedule.asLocalDateTime
-        val newScheduleTime = when (schedule.type!!) {
-            ScheduleType.DAY -> currentScheduledTime.plusDays(1)
-            ScheduleType.WEEK -> currentScheduledTime.plusWeeks(1)
-            ScheduleType.MONTH -> currentScheduledTime.plusMonths(1)
+        val newDate = when (schedule.type) {
+            ScheduleType.DAY -> currentScheduledTime.date.plus(1, DateTimeUnit.DAY)
+            ScheduleType.WEEK -> currentScheduledTime.date.plus(1, DateTimeUnit.WEEK)
+            ScheduleType.MONTH -> currentScheduledTime.date.plus(1, DateTimeUnit.MONTH)
         }
+        val newScheduleTime = LocalDateTime(newDate, currentScheduledTime.time)
 
         val updatedNotification = notification.copy(
             schedule = schedule.copy(
-                date = newScheduleTime.toLocalDate(),
-                time = newScheduleTime.toLocalTime()
+                date = newScheduleTime.date,
+                time = newScheduleTime.time
             )
         )
 

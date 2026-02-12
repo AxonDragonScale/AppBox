@@ -5,7 +5,9 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
 import com.axondragonscale.npinner.model.NPinnerNotification
 import com.axondragonscale.npinner.work.schedule.ScheduleNotificationRequest
-import java.time.LocalDateTime
+import kotlin.time.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Created by Ronak Harkhani on 01/05/23
@@ -20,8 +22,8 @@ class NPinnerNotificationScheduler(
             schedule ?: return
 
             val scheduledAt = schedule.asLocalDateTime
-            val currentTime = LocalDateTime.now()
-            if (scheduledAt.isBefore(currentTime)) return
+            val currentTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+            if (scheduledAt < currentTime) return
 
             WorkManager.getInstance(context)
                 .enqueueUniqueWork(

@@ -49,4 +49,5 @@ dependencies {
     // Kotlin
     implementation(libs.bundles.coroutines)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime)
 }

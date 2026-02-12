@@ -4,8 +4,10 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.workDataOf
 import com.axondragonscale.npinner.model.Schedule
-import java.time.Duration
-import java.time.LocalDateTime
+import kotlin.time.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import java.util.concurrent.TimeUnit
 
 /**
  * Created by Ronak Harkhani on 01/05/23
@@ -16,14 +18,16 @@ object ScheduleNotificationRequest {
 
     fun getRequest(id: String, schedule: Schedule): OneTimeWorkRequest {
         val scheduledAt = schedule.asLocalDateTime
-        val currentTime = LocalDateTime.now()
-        val initialDelay = Duration.between(currentTime, scheduledAt)
+        val tz = TimeZone.currentSystemDefault()
+        val scheduledInstant = scheduledAt.toInstant(tz)
+        val currentInstant = Clock.System.now()
+        val initialDelay = scheduledInstant - currentInstant
 
         val inputData = workDataOf(INPUT_DATA_KEY_ID to id)
 
         return OneTimeWorkRequestBuilder<ScheduleWorker>()
             .setInputData(inputData)
-            .setInitialDelay(initialDelay)
+            .setInitialDelay(initialDelay.inWholeMilliseconds, TimeUnit.MILLISECONDS)
             .addTag(getTag(id))
             .build()
     }

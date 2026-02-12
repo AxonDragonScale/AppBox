@@ -1,32 +1,44 @@
 package com.axondragonscale.npinner.util
 
 import android.text.format.DateUtils
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Created by Ronak Harkhani on 01/05/23
  */
 
-private const val DATE_FORMAT = "MMM d"
-private val dateFormatter = DateTimeFormatter.ofPattern(DATE_FORMAT)
+private val dateFormat = LocalDate.Format {
+    monthName(kotlinx.datetime.format.MonthNames.ENGLISH_ABBREVIATED)
+    char(' ')
+    day()
+}
+
 val LocalDate.formatted: String
-    get() = this.format(dateFormatter).uppercase()
+    get() = this.format(dateFormat).uppercase()
 
-fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this)
-    .atZone(ZoneId.systemDefault())
-    .toLocalDate()
+fun Long.toLocalDate(): LocalDate = Instant.fromEpochMilliseconds(this)
+    .toLocalDateTime(TimeZone.currentSystemDefault())
+    .date
 
+private val timeFormat = LocalTime.Format {
+    amPmHour(Padding.NONE)
+    char(':')
+    minute()
+    char(' ')
+    amPmMarker("AM", "PM")
+}
 
-private const val TIME_FORMAT = "h:mm a"
-private val timeFormatter = DateTimeFormatter.ofPattern(TIME_FORMAT)
 val LocalTime.formatted: String
-    get() = this.format(timeFormatter).uppercase()
+    get() = this.format(timeFormat).uppercase()
 
 val Long.relativeTimeSpan: String
     get() = DateUtils.getRelativeTimeSpanString(
@@ -36,4 +48,5 @@ val Long.relativeTimeSpan: String
         DateUtils.FORMAT_ABBREV_RELATIVE,
     ).toString()
 
-fun LocalDateTime.toEpochMillis(): Long = this.toInstant(ZoneOffset.UTC).toEpochMilli()
+fun LocalDateTime.toEpochMillis(): Long =
+    this.toInstant(TimeZone.UTC).toEpochMilliseconds()

@@ -47,8 +47,11 @@ import com.axondragonscale.npinner.ui.common.IconLabel
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
 import com.axondragonscale.npinner.util.formatted
 import com.axondragonscale.npinner.util.relativeTimeSpan
-import java.time.LocalDate
-import java.time.LocalTime
+import kotlin.time.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Created by Ronak Harkhani on 27/04/23
@@ -70,7 +73,7 @@ fun NotificationItem(
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             NotificationItemHeader(relativeTimeSpan = notification.updatedAt.relativeTimeSpan)
-            
+
             Text(
                 modifier = Modifier.padding(vertical = 8.dp),
                 text = notification.title,
@@ -78,7 +81,7 @@ fun NotificationItem(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground // TODO: Change with background
             )
-            
+
             notification.description.takeIf { !it.isNullOrBlank() }?.let { content ->
                 Text(
                     text = content,
@@ -88,7 +91,7 @@ fun NotificationItem(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8F) // TODO: Change with background
                 )
             }
-            
+
             notification.schedule?.let {
                 ScheduleButton(
                     modifier = Modifier.padding(top = 16.dp),
@@ -98,7 +101,7 @@ fun NotificationItem(
                 )
             }
         }
-        
+
         IconToggleButton(
             modifier = Modifier
                 .size(48.dp)
@@ -121,7 +124,7 @@ fun NotificationItem(
                 )
             }
         }
-        
+
         Divider(modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
@@ -141,14 +144,14 @@ fun NotificationItemHeader(
             labelText = "NPINNER",
             tint = MaterialTheme.colorScheme.primary
         )
-        
+
         Text(
             modifier = Modifier.padding(horizontal = 8.dp),
             text = "•",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onBackground
         )
-        
+
         Text(
             text = relativeTimeSpan,
             style = MaterialTheme.typography.labelSmall,
@@ -168,7 +171,7 @@ fun ScheduleButton(
 ) {
     val enabled = schedule.isFuture
     var showDropdown by remember { mutableStateOf(false) }
-    
+
     OutlinedButton(
         modifier = modifier.height(32.dp),
         onClick = { showDropdown = true },
@@ -183,7 +186,7 @@ fun ScheduleButton(
             contentDescription = "Schedule",
             tint = if (enabled) tint else disabledTint
         )
-        
+
         Text(
             modifier = Modifier.padding(start = 8.dp),
             text = "${schedule.date.formatted} - ${schedule.time.formatted}",
@@ -192,7 +195,7 @@ fun ScheduleButton(
             fontWeight = FontWeight.Bold,
         )
     }
-    
+
     DropdownMenu(
         expanded = showDropdown,
         onDismissRequest = { showDropdown = false }
@@ -216,6 +219,7 @@ fun ScheduleButton(
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun NotificationItemPreview() {
+    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
     NPinnerTheme {
         NotificationItem(
             notification = NPinnerNotification(
@@ -223,7 +227,7 @@ fun NotificationItemPreview() {
                 title = "Title",
                 description = stringResource(id = R.string.lorem_ipsum),
                 isPinned = true,
-                schedule = Schedule(LocalDate.now(), LocalTime.now(), ScheduleType.DAY),
+                schedule = Schedule(now.date, now.time, ScheduleType.DAY),
                 createdAt = 1L,
                 updatedAt = 1L,
             ),
