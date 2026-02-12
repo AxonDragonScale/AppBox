@@ -80,6 +80,41 @@ Users can save generated QR codes for later access.
 - Wraps `DevToolsScreen` from `:core:commons`
 - App-specific tools: clear database, clear scan history, reset preferences
 
+### 8. Templates
+
+Style presets that let users skip manual customization and apply a complete look in one tap.
+
+**Predefined Templates (bundled with the app):**
+
+| Template | Description |
+|----------|-------------|
+| **Classic** | Black dots, white background, square dot and eye style — the standard QR look |
+| **Rounded** | Circle dots, rounded square eyes, black on white |
+| **Neon** | Circle dots with a cyan-to-magenta linear gradient, dark background |
+| **Elegant** | Rounded square dots, leaf eyes, deep navy on off-white |
+| **Sunset** | Diamond dots, orange-to-red radial gradient, warm cream background |
+| **Monochrome** | Square dots, solid dark gray, light gray background — subtle and minimal |
+| **Ocean** | Circle dots, teal-to-blue linear gradient, white background |
+| **Midnight** | Rounded square dots, white on black (inverted), rounded eyes |
+
+- Predefined templates are read-only and always available
+- They are defined in code (not in the database) as constant `QRStyle` instances
+
+**User Templates:**
+
+- Save the current style from the Creator screen as a personal template
+- User assigns a name when saving a template
+- User templates are stored in Room and can be renamed or deleted
+- Templates only store style — they are content-agnostic
+
+**Template Picker (in Creator Screen):**
+
+- Horizontally scrollable row at the top of the customization panel (above Dot Style)
+- Each template shown as a small QR code thumbnail rendered with that style
+- Predefined templates appear first, followed by user templates
+- Tapping a template applies its `QRStyle` to the current QR code, replacing all style fields
+- A "Save as Template" action in the Creator screen's overflow/action menu
+
 ---
 
 ## Architecture
@@ -131,10 +166,12 @@ com.axondragonscale.qrqanvas/
 │   ├── QRQanvasDatabase.kt
 │   ├── dao/
 │   │   ├── QRCodeDao.kt
-│   │   └── ScanHistoryDao.kt
+│   │   ├── ScanHistoryDao.kt
+│   │   └── TemplateDao.kt
 │   ├── entity/
 │   │   ├── QRCodeEntity.kt
-│   │   └── ScanHistoryEntity.kt
+│   │   ├── ScanHistoryEntity.kt
+│   │   └── TemplateEntity.kt
 │   └── converter/
 │       └── QRStyleConverter.kt
 │
@@ -146,7 +183,8 @@ com.axondragonscale.qrqanvas/
 │   ├── ColorConfig.kt          # Sealed: Solid, LinearGradient, RadialGradient
 │   ├── LogoConfig.kt           # Data class: uri, size, padding, shape
 │   ├── ExportFormat.kt         # Enum: PNG, SVG
-│   └── ScanResult.kt           # Data class for decoded scan output
+│   ├── ScanResult.kt           # Data class for decoded scan output
+│   └── PredefinedTemplates.kt  # Object with constant QRStyle instances for bundled templates
 │
 ├── core/
 │   ├── QRGenerator.kt          # ZXing wrapper — content + error correction → BitMatrix
@@ -157,6 +195,7 @@ com.axondragonscale.qrqanvas/
 ├── repository/
 │   ├── QRCodeRepository.kt     # CRUD for saved QR codes
 │   ├── ScanHistoryRepository.kt
+│   ├── TemplateRepository.kt   # User templates CRUD + merges with predefined
 │   └── AppPrefsRepository.kt   # DataStore preferences
 │
 ├── ui/
@@ -217,7 +256,6 @@ QRCodeEntity
 ├── contentType: String            # Discriminator: "url", "text", "wifi", etc.
 ├── contentData: String            # Serialized content payload (JSON)
 ├── styleData: String              # Serialized QRStyle (JSON via kotlinx.serialization)
-├── previewImagePath: String?      # File path to cached rendered preview
 ├── createdAt: Long                # Epoch millis
 ├── updatedAt: Long                # Epoch millis
 ```
@@ -263,6 +301,29 @@ QRContent
 ├── Location(latitude: Double, longitude: Double)
 ```
 
+### TemplateEntity (Room — user templates only)
+
+```
+TemplateEntity
+├── id: Long (PK, auto-generate)
+├── name: String                   # User-assigned template name
+├── styleData: String              # Serialized QRStyle (JSON via kotlinx.serialization)
+├── createdAt: Long                # Epoch millis
+```
+
+### Template (UI model)
+
+```
+Template
+├── id: String                     # "predefined_classic" or "user_<roomId>"
+├── name: String
+├── style: QRStyle
+├── isPredefined: Boolean
+```
+
+Predefined templates are mapped to this model from `PredefinedTemplates` constants.
+User templates are mapped from `TemplateEntity`. The unified `Template` model is what the UI layer consumes.
+
 ---
 
 ## Screen Designs
@@ -288,18 +349,20 @@ The main customization studio. Split into two logical zones:
 
 **Bottom zone — Customization Panel (scrollable):**
 1. **Content Input** — Content type selector (chips/tabs) + type-specific input fields
-2. **Dot Style** — Visual selector showing each dot shape
-3. **Dot Color** — Color picker with solid/gradient modes
-4. **Eye Style** — Visual selector for finder pattern shapes
-5. **Eye Color** — Separate pickers for frame and inner dot
-6. **Background** — Color picker or image picker
-7. **Logo** — Image picker + size slider + shape selector
-8. **Error Correction** — Segmented button (L / M / Q / H) — auto-locks to H when logo is set
-9. **Advanced** — Quiet zone slider, export size
+2. **Template Picker** — Horizontally scrollable row of template thumbnails (predefined first, then user templates); tapping one applies its `QRStyle`
+3. **Dot Style** — Visual selector showing each dot shape
+4. **Dot Color** — Color picker with solid/gradient modes
+5. **Eye Style** — Visual selector for finder pattern shapes
+6. **Eye Color** — Separate pickers for frame and inner dot
+7. **Background** — Color picker or image picker
+8. **Logo** — Image picker + size slider + shape selector
+9. **Error Correction** — Segmented button (L / M / Q / H) — auto-locks to H when logo is set
+10. **Advanced** — Quiet zone slider, export size
 
 **Actions:**
 - Save button — persists to database
 - Export/Share button — opens export options (format, resolution, share)
+- Save as Template — saves current `QRStyle` as a user template (overflow menu or action icon)
 
 ### Scanner Screen
 
@@ -346,7 +409,8 @@ Chronological list of scanned QR codes.
 Home ──────────► Creator (new)
   │                 │
   │                 ├──► (save) ──► back to Home
-  │                 └──► (export/share)
+  │                 ├──► (export/share)
+  │                 └──► (save as template)
   │
   ├──► Detail ────► Creator (edit, pre-filled)
   │       │
@@ -361,6 +425,8 @@ Home ──────────► Creator (new)
   │       │
   │       └──► (result actions)
   │
+  ├──► Templates ──► (manage user templates: rename, delete)
+  │
   └──► Settings
           │
           └──► DevTools
@@ -373,6 +439,7 @@ Route.Creator(qrCodeId: Long?)    — Create new (null) or edit existing
 Route.Detail(qrCodeId: Long)      — View saved QR code
 Route.Scanner                     — Camera scanner
 Route.History                     — Scan history list
+Route.Templates                   — Manage user templates
 Route.Settings                    — App settings
 Route.DevTools                    — Developer tools
 ```
@@ -422,11 +489,15 @@ The renderer must also expose a Compose-friendly path: rendering into a `Canvas`
 |----------|--------|-----------|
 | QR rendering approach | Custom Canvas drawing over ZXing BitMatrix | ZXing only generates the data matrix; all visual customization requires custom rendering |
 | Real-time preview | Compose `Canvas` composable reading style state | Avoids Bitmap allocation churn during editing; recomposes only the canvas |
+| Thumbnail rendering | On-the-fly from stored `QRStyle` — no cached preview images | `styleData` is already the single source of truth; eliminates file storage overhead, staleness, and cache cleanup complexity. Thumbnails render at small resolution (~100px) which is trivial. If the Home grid ever lags with many items, add an in-memory `LruCache<id+updatedAt, Bitmap>` — no disk needed |
 | Style persistence | kotlinx.serialization JSON stored as String column in Room | Flexible schema evolution without Room migrations for style changes |
 | Content type modeling | Sealed class hierarchy | Type-safe, exhaustive when-matching, easy to extend |
 | Scan integration | CameraX `MlKitAnalyzer` | First-party integration, avoids manual frame conversion boilerplate |
 | Logo embedding | Render logo on top of QR + use High error correction | Standard approach; 30% error correction compensates for obscured modules |
 | Export file sharing | FileProvider with cache directory | No WRITE_EXTERNAL_STORAGE permission needed; standard Android sharing pattern |
+| Predefined templates | Hardcoded `QRStyle` constants in `PredefinedTemplates` object | No DB migration needed when adding/modifying bundled templates; always available offline |
+| User template storage | Room entity with serialized `QRStyle` JSON | Same serialization strategy as QR codes; consistent and flexible |
+| Template model split | Separate `TemplateEntity` (Room) and `Template` (UI) | Predefined templates have no Room entity; unified UI model hides the source distinction |
 
 ---
 
@@ -442,8 +513,8 @@ No other permissions needed. File export uses app cache + FileProvider. Gallery 
 
 ## Future Considerations
 
-- **Templates**: Pre-designed style presets users can pick as a starting point
 - **Batch generation**: Create multiple QR codes from a CSV or list input
 - **Animated QR codes**: GIF/APNG export with animated dot patterns
 - **Widget**: Home screen widget showing a pinned QR code for quick access (Glance)
 - **QR code in-painting**: Use the camera to overlay a styled QR code onto a real-world surface for AR preview
+- **Template sharing**: Export/import user templates as files or deep links
