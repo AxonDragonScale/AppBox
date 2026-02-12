@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".NPinnerApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/npinner_icon"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/npinner_icon_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NPinner"
+        tools:targetApi="31">
+
+        <activity
+            android:name=".NPinnerActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.NPinner"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+
+                <data android:scheme="npinner" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".core.receiver.UnpinNotificationReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="npinner.unpin_notification" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".core.receiver.DeleteNotificationReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="npinner.delete_notification" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".core.receiver.AppUpdateReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".core.receiver.DeviceBootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="remove">
+        </provider>
+
+    </application>
+
+</manifest>
