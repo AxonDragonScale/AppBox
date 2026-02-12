@@ -13,7 +13,7 @@ android {
     defaultConfig {
         applicationId = "com.axondragonscale.wallmatic"
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
     }
 }
 

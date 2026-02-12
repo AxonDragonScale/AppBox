@@ -378,7 +378,7 @@ private fun AboutCard(
         },
         supportingContent = {
             Text(
-                text = "Version TODO Remove",
+                text = "v${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.labelSmall,
             )
         }
