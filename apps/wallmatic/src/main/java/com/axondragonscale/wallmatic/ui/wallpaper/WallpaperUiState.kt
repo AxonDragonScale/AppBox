@@ -1,5 +1,6 @@
 package com.axondragonscale.wallmatic.ui.wallpaper
 
+import androidx.compose.ui.unit.IntSize
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 
 /**
@@ -7,5 +8,9 @@ import com.axondragonscale.wallmatic.database.entity.Wallpaper
  */
 data class WallpaperUiState(
     val isLoading: Boolean = true,
-    val wallpaper: Wallpaper? = null
+    val wallpaper: Wallpaper? = null,
+    val imageSize: IntSize = IntSize.Zero,
+    val isEditMode: Boolean = false,
+    val tempCropRect: android.graphics.Rect? = null,
+    val tempRotation: Int = 0,
 )

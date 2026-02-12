@@ -2,10 +2,14 @@ package com.axondragonscale.wallmatic.core
 
 import android.app.WallpaperManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import androidx.core.net.toUri
 import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.background.WallmaticScheduler
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
+import com.axondragonscale.wallmatic.database.entity.getCropRect
 import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.model.getRandomWallpaper
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
@@ -14,6 +18,8 @@ import com.axondragonscale.wallmatic.util.homeConfig
 import com.axondragonscale.wallmatic.util.lockConfig
 import com.axondragonscale.wallmatic.util.nextUpdate
 import kotlinx.coroutines.flow.firstOrNull
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 
 /**
  * Created by Ronak Harkhani on 23/09/24
@@ -123,11 +129,43 @@ class WallpaperUpdater(
     }
 
     fun setWallpaper(wallpaper: Wallpaper, target: TargetScreen) = runCatching {
+        val inputStream = context.contentResolver.openInputStream(wallpaper.uri.toUri())
+
+        // Load bitmap
+        var bitmap = BitmapFactory.decodeStream(inputStream)
+        inputStream?.close()
+
+        // Apply rotation if needed
+        if (wallpaper.rotationDegrees != 0) {
+            val matrix = Matrix().apply {
+                postRotate(wallpaper.rotationDegrees.toFloat())
+            }
+            val rotatedBitmap = Bitmap.createBitmap(
+                bitmap,
+                0,
+                0,
+                bitmap.width,
+                bitmap.height,
+                matrix,
+                true
+            )
+            bitmap.recycle()
+            bitmap = rotatedBitmap
+        }
+
+        // Get crop hint (if any)
+        val cropHint = wallpaper.getCropRect()
+
+        // Compress and set wallpaper
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        bitmap.recycle()
+
         manager.setStream(
-            context.contentResolver.openInputStream(wallpaper.uri.toUri()),
-            null,
+            ByteArrayInputStream(outputStream.toByteArray()),
+            cropHint,
             true,
-            target.toFlag(),
+            target.toFlag()
         )
     }
 

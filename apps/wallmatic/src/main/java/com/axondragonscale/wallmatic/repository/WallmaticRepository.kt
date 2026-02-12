@@ -97,6 +97,10 @@ class WallmaticRepository(
         }
     }
 
+    suspend fun updateWallpaper(wallpaper: Wallpaper) {
+        wallmaticDao.upsertWallpaper(wallpaper)
+    }
+
     // MARK: Save / Create -------------------------------------------------------------------------
 
     suspend fun saveAlbum(album: Album): Int {
