@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,7 +40,7 @@ import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
  */
 
 val BOTTOM_BAR_HEIGHT = 64.dp
-private val BottomBarShape = RoundedCornerShape(topStartPercent = 40, topEndPercent = 40)
+private val BottomBarShape = RoundedCornerShape(topStartPercent = 25, topEndPercent = 25)
 
 @Composable
 fun BottomBar(
@@ -51,12 +52,13 @@ fun BottomBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(BOTTOM_BAR_HEIGHT)
             .shadow(elevation = 20.dp, shape = BottomBarShape)
             .background(
                 color = MaterialTheme.colorScheme.primaryContainer,
                 shape = BottomBarShape
             )
+            .navigationBarsPadding()
+            .height(BOTTOM_BAR_HEIGHT)
             .padding(horizontal = 24.dp),
         horizontalArrangement = Arrangement.Center,
     ) {

@@ -17,6 +17,7 @@ import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
 /**
@@ -49,11 +50,8 @@ fun WallmaticDevTools(
                 title = "Sync Albums",
                 subtitle = "Synchronize all albums with filesystem",
                 icon = Icons.Rounded.Sync,
-            ) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    syncManager.syncAlbums()
-                }
-            }
+                onClick = { withContext(Dispatchers.IO) { syncManager.syncAlbums() } }
+            )
 
             toggle(
                 title = "Fast Auto-Cycle",

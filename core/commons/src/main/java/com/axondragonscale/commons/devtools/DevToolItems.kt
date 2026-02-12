@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 /**
  * Renders a DevTool based on its type.
@@ -71,13 +73,14 @@ fun DevToolActionItem(
     }
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable {
-                tool.onClick()
+                scope.launch { tool.onClick() }
                 tool.completionAlert?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
             }
             .padding(horizontal = 16.dp, vertical = 14.dp),

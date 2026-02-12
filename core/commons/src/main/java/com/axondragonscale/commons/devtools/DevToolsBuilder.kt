@@ -42,8 +42,8 @@ class DevToolsBuilder {
         icon: ImageVector? = null,
         iconTint: Color? = null,
         destructive: Boolean = false,
-        onClick: () -> Unit,
         completionAlert: String? = null,
+        onClick: suspend () -> Unit,
     ) = apply {
         tools.add(
             DevTool.Action(
@@ -52,8 +52,8 @@ class DevToolsBuilder {
                 icon = icon,
                 iconTint = iconTint,
                 destructive = destructive,
-                onClick = onClick,
                 completionAlert = completionAlert,
+                onClick = onClick,
             )
         )
     }

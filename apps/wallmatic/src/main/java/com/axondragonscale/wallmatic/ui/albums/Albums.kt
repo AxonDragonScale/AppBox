@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,6 +54,7 @@ import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.commons.collectWithLifecycle
+import com.axondragonscale.commons.compose.navigationBarsHeight
 import com.axondragonscale.wallmatic.ui.util.countSummary
 
 /**
@@ -174,7 +176,7 @@ private fun AlbumList(
     LazyVerticalStaggeredGrid(
         modifier = modifier.padding(horizontal = 8.dp),
         columns = StaggeredGridCells.Fixed(2),
-        contentPadding = PaddingValues(top = 16.dp, bottom = BOTTOM_BAR_HEIGHT + 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = BOTTOM_BAR_HEIGHT + navigationBarsHeight() + 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalItemSpacing = 8.dp
     ) {

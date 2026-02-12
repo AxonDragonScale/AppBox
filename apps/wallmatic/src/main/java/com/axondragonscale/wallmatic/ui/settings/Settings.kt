@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.commons.compose.navigationBarsHeight
 import org.koin.androidx.compose.koinViewModel
 import com.axondragonscale.wallmatic.BuildConfig
 import com.axondragonscale.wallmatic.util.Link
@@ -124,7 +125,7 @@ private fun Settings(
             onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) },
         )
 
-        Spacer(modifier = Modifier.height(BOTTOM_BAR_HEIGHT))
+        Spacer(modifier = Modifier.height(BOTTOM_BAR_HEIGHT + navigationBarsHeight()))
     }
 }
 

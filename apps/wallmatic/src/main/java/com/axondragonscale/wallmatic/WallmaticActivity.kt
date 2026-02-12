@@ -34,10 +34,8 @@ class WallmaticActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-
-        val (initialUiMode, initialDynamicTheme) = runBlocking {
-            appPrefsRepository.uiModeFlow.first() to appPrefsRepository.dynamicThemeFlow.first()
-        }
+        val initialUiMode = runBlocking { appPrefsRepository.uiModeFlow.first() }
+        val initialDynamicTheme = runBlocking { appPrefsRepository.dynamicThemeFlow.first() }
 
         // Sync albums in onStart creates a race condition when picking a folder or wallpaper.
         // Album sync and adding items to DB will happen at the same time when picker closes
