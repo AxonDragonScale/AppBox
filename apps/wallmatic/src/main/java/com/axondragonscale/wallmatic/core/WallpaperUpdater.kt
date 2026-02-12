@@ -3,16 +3,15 @@ package com.axondragonscale.wallmatic.core
 import android.app.WallpaperManager
 import android.content.Context
 import androidx.core.net.toUri
+import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.background.WallmaticScheduler
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.getWhitelistedWallpapers
+import com.axondragonscale.wallmatic.model.getRandomWallpaper
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.util.homeConfig
 import com.axondragonscale.wallmatic.util.lockConfig
-import com.axondragonscale.commons.logD
-import com.axondragonscale.commons.logE
 import com.axondragonscale.wallmatic.util.nextUpdate
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -91,7 +90,7 @@ class WallpaperUpdater(
 
         if (config.mirrorHomeConfigForLock) {
             this.logD { "Updating wallpaper. homeAlbumId: $homeAlbumId, lockAlbumId: $lockAlbumId" }
-            val wallpaper = homeAlbum.getWhitelistedWallpapers().random()
+            val wallpaper = homeAlbum.getRandomWallpaper()
             setWallpaper(wallpaper, TargetScreen.Both)
             // Lock Config automatically updated since mirroring is enabled
             appPrefsRepository.setConfig(config.homeConfig {
@@ -101,7 +100,7 @@ class WallpaperUpdater(
         } else {
             if (target.isHome()) {
                 this.logD { "Updating home wallpaper. homeAlbumId: $homeAlbumId" }
-                val wallpaper = homeAlbum.getWhitelistedWallpapers().random()
+                val wallpaper = homeAlbum.getRandomWallpaper()
                 setWallpaper(wallpaper, TargetScreen.Home)
                 appPrefsRepository.setConfig(config.homeConfig {
                     currentWallpaperId = wallpaper.id
@@ -110,7 +109,7 @@ class WallpaperUpdater(
             }
             if (target.isLock()) {
                 this.logD { "Updating lock wallpaper. lockAlbumId: $lockAlbumId" }
-                val wallpaper = lockAlbum.getWhitelistedWallpapers().random()
+                val wallpaper = lockAlbum.getRandomWallpaper()
                 setWallpaper(wallpaper, TargetScreen.Lock)
                 appPrefsRepository.setConfig(config.lockConfig {
                     currentWallpaperId = wallpaper.id
@@ -123,7 +122,7 @@ class WallpaperUpdater(
         scheduler.scheduleNextUpdate()
     }
 
-    private fun setWallpaper(wallpaper: Wallpaper, target: TargetScreen) {
+    private fun setWallpaper(wallpaper: Wallpaper, target: TargetScreen) = runCatching {
         manager.setStream(
             context.contentResolver.openInputStream(wallpaper.uri.toUri()),
             null,

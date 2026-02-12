@@ -50,6 +50,8 @@ import com.axondragonscale.wallmatic.ui.bottombar.BOTTOM_BAR_HEIGHT
 import com.axondragonscale.wallmatic.ui.common.AlbumNameDialog
 import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
 import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
+import com.axondragonscale.wallmatic.ui.common.EmptyState
+import com.axondragonscale.wallmatic.ui.common.LoadingState
 import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
@@ -135,11 +137,23 @@ private fun Albums(
     onEvent: (AlbumsUiEvent) -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        AlbumList(
-            albums = uiState.albums,
-            onAlbumClick = { onEvent(AlbumsUiEvent.NavigateToAlbum(it.id)) },
-            onAlbumLongClick = { onEvent(AlbumsUiEvent.ShowAlbumActionsDialog(it)) }
-        )
+        when {
+            uiState.isLoading ->
+                LoadingState(message = "Loading albums...")
+
+            uiState.albums.isEmpty() ->
+                EmptyState(
+                    title = "No Albums Yet",
+                    description = "Create your first album to get started organizing your wallpapers"
+                )
+
+            else ->
+                AlbumList(
+                    albums = uiState.albums,
+                    onAlbumClick = { onEvent(AlbumsUiEvent.NavigateToAlbum(it.id)) },
+                    onAlbumLongClick = { onEvent(AlbumsUiEvent.ShowAlbumActionsDialog(it)) }
+                )
+        }
 
         CreateAlbumButton(
             onCreateClick = { onEvent(AlbumsUiEvent.ShowCreateAlbumDialog) }

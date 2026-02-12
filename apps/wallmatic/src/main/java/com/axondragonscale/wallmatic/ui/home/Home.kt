@@ -72,6 +72,7 @@ import com.axondragonscale.wallmatic.model.wallpaperConfig
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.bottombar.BOTTOM_BAR_HEIGHT
 import com.axondragonscale.wallmatic.ui.bottombar.Tab
+import com.axondragonscale.wallmatic.ui.common.LoadingState
 import com.axondragonscale.wallmatic.ui.common.SelectAlbumBottomSheet
 import com.axondragonscale.wallmatic.ui.common.SettingsCard
 import com.axondragonscale.wallmatic.ui.common.TabHeader
@@ -157,47 +158,46 @@ private fun Home(
             text = "Wallmatic"
         )
 
-        if (uiState.isLoading) {
-            Text("TODO: Loading")
-        } else {
-            when {
-                uiState.albums.isEmpty() ->
-                    TextAndButton(
-                        text = """
-                            Auto cycle wallpapers.
-                            Choose individual images
-                            Or entire folders.
-                        """.trimIndent(),
-                        buttonText = "CREATE ALBUM",
-                        buttonIcon = Icons.Outlined.AddCircle,
-                        onClick = { onEvent(HomeUiEvent.CreateAlbumClick) }
-                    )
+        when {
+            uiState.isLoading ->
+                LoadingState(message = "Loading wallpapers...")
 
-                !uiState.config.isInit || uiState.homeAlbum == null || uiState.lockAlbum == null ->
-                    TextAndButton(
-                        text = """
-                            Auto cycle wallpapers.
-                            Choose individual images
-                            Or entire folders.
-                        """.trimIndent(),
-                        buttonText = "SELECT ALBUM",
-                        buttonIcon = Icons.Outlined.CheckCircle,
-                        onClick = { onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Both)) }
-                    )
+            uiState.albums.isEmpty() ->
+                TextAndButton(
+                    text = """
+                        Auto cycle wallpapers.
+                        Choose individual images
+                        Or entire folders.
+                    """.trimIndent(),
+                    buttonText = "CREATE ALBUM",
+                    buttonIcon = Icons.Outlined.AddCircle,
+                    onClick = { onEvent(HomeUiEvent.CreateAlbumClick) }
+                )
 
-                else -> {
-                    HomeScreenCard(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        uiState = uiState,
-                        onEvent = onEvent,
-                    )
+            !uiState.config.isInit || uiState.homeAlbum == null || uiState.lockAlbum == null ->
+                TextAndButton(
+                    text = """
+                        Auto cycle wallpapers.
+                        Choose individual images
+                        Or entire folders.
+                    """.trimIndent(),
+                    buttonText = "SELECT ALBUM",
+                    buttonIcon = Icons.Outlined.CheckCircle,
+                    onClick = { onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Both)) }
+                )
 
-                    LockScreenCard(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        uiState = uiState,
-                        onEvent = onEvent,
-                    )
-                }
+            else -> {
+                HomeScreenCard(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    uiState = uiState,
+                    onEvent = onEvent,
+                )
+
+                LockScreenCard(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    uiState = uiState,
+                    onEvent = onEvent,
+                )
             }
         }
 

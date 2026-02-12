@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -34,6 +33,8 @@ import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
 import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
+import com.axondragonscale.wallmatic.ui.common.EmptyState
+import com.axondragonscale.wallmatic.ui.common.LoadingState
 import com.axondragonscale.wallmatic.ui.common.TopBar
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
@@ -86,34 +87,57 @@ private fun Folder(
     uiState: FolderUiState,
     onEvent: (FolderUiEvent) -> Unit,
 ) {
-    if (uiState.folder == null) return
-    Column(modifier = modifier.fillMaxSize()) {
-        TopBar(
-            title = "Folder",
-            subtitle = uiState.folder.name
-        )
+    when {
+        uiState.isLoading ->
+            LoadingState(message = "Loading folder...")
 
-        LazyVerticalStaggeredGrid(
-            modifier = Modifier.fillMaxSize(),
-            columns = StaggeredGridCells.Fixed(uiState.gridSize),
-            contentPadding = PaddingValues(8.dp),
-            verticalItemSpacing = 8.dp,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(uiState.folder.wallpapers) {
-                Wallpaper(
-                    modifier = Modifier.combinedClickable(
-                        onClick = { onEvent(FolderUiEvent.NavigateToWallpaper(it.id)) },
-                        onLongClick = { onEvent(FolderUiEvent.ShowWallpaperActions(it)) }
-                    ),
-                    wallpaper = it,
+        uiState.folder == null ->
+            EmptyState(
+                title = "Folder Not Found",
+                description = "This folder may have been deleted"
+            )
+
+        uiState.folder.wallpapers.isEmpty() ->
+            Column(modifier = modifier.fillMaxSize()) {
+                TopBar(
+                    title = "Folder",
+                    subtitle = uiState.folder.name
+                )
+                EmptyState(
+                    title = "No Wallpapers",
+                    description = "This folder doesn't contain any images"
                 )
             }
 
-            item(span = StaggeredGridItemSpan.FullLine) {
-                Spacer(modifier = Modifier.navigationBarsPadding())
+        else ->
+            Column(modifier = modifier.fillMaxSize()) {
+                TopBar(
+                    title = "Folder",
+                    subtitle = uiState.folder.name
+                )
+
+                LazyVerticalStaggeredGrid(
+                    modifier = Modifier.fillMaxSize(),
+                    columns = StaggeredGridCells.Fixed(uiState.gridSize),
+                    contentPadding = PaddingValues(8.dp),
+                    verticalItemSpacing = 8.dp,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(uiState.folder.wallpapers) {
+                        Wallpaper(
+                            modifier = Modifier.combinedClickable(
+                                onClick = { onEvent(FolderUiEvent.NavigateToWallpaper(it.id)) },
+                                onLongClick = { onEvent(FolderUiEvent.ShowWallpaperActions(it)) }
+                            ),
+                            wallpaper = it,
+                        )
+                    }
+
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Spacer(modifier = Modifier.navigationBarsPadding())
+                    }
+                }
             }
-        }
     }
 }
 

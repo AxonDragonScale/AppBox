@@ -6,6 +6,7 @@ import com.axondragonscale.wallmatic.model.FullFolder
  * Created by Ronak Harkhani on 17/09/24
  */
 data class FolderUiState(
+    val isLoading: Boolean = true,
     val gridSize: Int = 2,
     val folder: FullFolder? = null,
 )

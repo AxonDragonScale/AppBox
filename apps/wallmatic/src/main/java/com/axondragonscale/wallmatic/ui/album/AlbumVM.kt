@@ -50,7 +50,7 @@ internal class AlbumVM(
 
     private suspend fun syncUiStateWithAlbum() {
         val album = repository.getFullAlbum(albumId)
-        uiState.update { it.copy(album = album) }
+        uiState.update { it.copy(loading = false, album = album) }
     }
 
     private inline fun runAndSyncState(

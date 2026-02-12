@@ -23,7 +23,7 @@ class WallpaperVM(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             uiState.update {
-                it.copy(wallpaper = repository.getWallpaper(wallpaperId))
+                it.copy(isLoading = false, wallpaper = repository.getWallpaper(wallpaperId))
             }
         }
     }

@@ -53,8 +53,10 @@ import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
 import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
+import com.axondragonscale.wallmatic.ui.common.EmptyState
 import com.axondragonscale.wallmatic.ui.common.FluidFabButton
 import com.axondragonscale.wallmatic.ui.common.FluidFabButtonProperties
+import com.axondragonscale.wallmatic.ui.common.LoadingState
 import com.axondragonscale.wallmatic.ui.common.TopBar
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
@@ -121,57 +123,82 @@ private fun Album(
     uiState: AlbumUiState,
     onEvent: (AlbumUiEvent) -> Unit,
 ) {
-    if (uiState.album == null) return
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            TopBar(
-                title = "Album",
-                subtitle = uiState.album.name,
-            )
+        when {
+            uiState.loading ->
+                LoadingState(message = "Loading album...")
 
-            LazyVerticalStaggeredGrid(
-                modifier = Modifier.fillMaxSize(),
-                columns = StaggeredGridCells.Fixed(uiState.gridSize),
-                contentPadding = PaddingValues(8.dp),
-                verticalItemSpacing = 8.dp,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                for (folder in uiState.album.folders) {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        Folder(
-                            folder = folder,
-                            enabled = true,
-                            onClick = { onEvent(AlbumUiEvent.NavigateToFolder(folder.id)) },
-                            onLongClick = { onEvent(AlbumUiEvent.ShowFolderActions(folder)) },
-                            onWallpaperClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(it)) }
-                        )
-                    }
-                }
+            uiState.album == null ->
+                EmptyState(
+                    title = "Album Not Found",
+                    description = "This album may have been deleted"
+                )
 
-                items(uiState.album.wallpapers) {
-                    Wallpaper(
-                        modifier = Modifier.combinedClickable(
-                            onClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(it.id)) },
-                            onLongClick = { onEvent(AlbumUiEvent.ShowWallpaperActions(it)) }
-                        ),
-                        wallpaper = it,
+            uiState.album.folders.isEmpty() && uiState.album.wallpapers.isEmpty() ->
+                Column(modifier = Modifier.fillMaxSize()) {
+                    TopBar(
+                        title = "Album",
+                        subtitle = uiState.album.name,
+                    )
+                    EmptyState(
+                        title = "No Wallpapers Yet",
+                        description = "Add folders or images to start building your collection"
                     )
                 }
 
-                item(span = StaggeredGridItemSpan.FullLine) {
-                    Spacer(modifier = Modifier.navigationBarsPadding())
+            else -> {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    TopBar(
+                        title = "Album",
+                        subtitle = uiState.album.name,
+                    )
+
+                    LazyVerticalStaggeredGrid(
+                        modifier = Modifier.fillMaxSize(),
+                        columns = StaggeredGridCells.Fixed(uiState.gridSize),
+                        contentPadding = PaddingValues(8.dp),
+                        verticalItemSpacing = 8.dp,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        for (folder in uiState.album.folders) {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                Folder(
+                                    folder = folder,
+                                    enabled = true,
+                                    onClick = { onEvent(AlbumUiEvent.NavigateToFolder(folder.id)) },
+                                    onLongClick = { onEvent(AlbumUiEvent.ShowFolderActions(folder)) },
+                                    onWallpaperClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(it)) }
+                                )
+                            }
+                        }
+
+                        items(uiState.album.wallpapers) {
+                            Wallpaper(
+                                modifier = Modifier.combinedClickable(
+                                    onClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(it.id)) },
+                                    onLongClick = { onEvent(AlbumUiEvent.ShowWallpaperActions(it)) }
+                                ),
+                                wallpaper = it,
+                            )
+                        }
+
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Spacer(modifier = Modifier.navigationBarsPadding())
+                        }
+                    }
                 }
             }
         }
 
-        PickerButton(
-            modifier = Modifier.navigationBarsPadding(),
-            onFolderSelected = { onEvent(AlbumUiEvent.FolderSelected(it)) },
-            onImagesSelected = { onEvent(AlbumUiEvent.ImagesSelected(it)) },
-        )
+        if (!uiState.loading && uiState.album != null)
+            PickerButton(
+                modifier = Modifier.navigationBarsPadding(),
+                onFolderSelected = { onEvent(AlbumUiEvent.FolderSelected(it)) },
+                onImagesSelected = { onEvent(AlbumUiEvent.ImagesSelected(it)) },
+            )
     }
 }
 

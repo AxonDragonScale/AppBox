@@ -43,7 +43,7 @@ class FolderVM(
 
     private suspend fun syncUiStateWithFolder() {
         val folder = repository.getFullFolder(folderId)
-        uiState.value = uiState.value.copy(folder = folder)
+        uiState.value = uiState.value.copy(isLoading = false, folder = folder)
     }
 
     private inline fun runAndSyncState(
