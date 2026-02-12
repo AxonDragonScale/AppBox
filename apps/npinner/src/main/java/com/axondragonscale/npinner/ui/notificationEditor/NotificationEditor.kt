@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.npinner.model.NPinnerNotification
 import com.axondragonscale.npinner.model.Schedule
+import com.axondragonscale.npinner.model.ScheduleType
 import com.axondragonscale.npinner.ui.common.BottomBar
 import com.axondragonscale.npinner.ui.common.BottomButton
 import com.axondragonscale.npinner.ui.common.Divider
@@ -33,6 +34,12 @@ import com.axondragonscale.npinner.ui.common.IconActionButton
 import com.axondragonscale.npinner.ui.common.TopBar
 import com.axondragonscale.npinner.ui.theme.Dimen
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Created by Ronak Harkhani on 22/04/23
@@ -154,6 +161,139 @@ fun NotificationEditorPreview() {
                     createNew = true,
                     notification = NPinnerNotification.newInstance()
                 ),
+                onBackClick = {},
+                onSaveClick = {},
+                onDeleteClick = {},
+                onContentChange = { _, _ -> },
+                onScheduleChange = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Light Mode - With Content", showBackground = true)
+@Preview(name = "Dark Mode - With Content", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun NotificationEditorWithContentPreview() {
+    NPinnerTheme {
+        Surface {
+            NotificationEditor(
+                uiState = NotificationEditorUiState.Success(
+                    createNew = true,
+                    notification = NPinnerNotification.newInstance().copy(
+                        title = "Buy groceries",
+                        description = "Milk, eggs, bread, and coffee beans",
+                    ),
+                ),
+                onBackClick = {},
+                onSaveClick = {},
+                onDeleteClick = {},
+                onContentChange = { _, _ -> },
+                onScheduleChange = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Light Mode - Future Schedule (Recurring)", showBackground = true)
+@Preview(name = "Dark Mode - Future Schedule (Recurring)", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun NotificationEditorFutureSchedulePreview() {
+    val future = Clock.System.now().plus(2.hours)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    NPinnerTheme {
+        Surface {
+            NotificationEditor(
+                uiState = NotificationEditorUiState.Success(
+                    createNew = true,
+                    notification = NPinnerNotification.newInstance().copy(
+                        title = "Take medication",
+                        description = "Vitamin D supplement after lunch",
+                        schedule = Schedule(
+                            date = future.date,
+                            time = future.time,
+                            type = ScheduleType.DAY,
+                        ),
+                    ),
+                ),
+                onBackClick = {},
+                onSaveClick = {},
+                onDeleteClick = {},
+                onContentChange = { _, _ -> },
+                onScheduleChange = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Light Mode - Future Schedule (One-time)", showBackground = true)
+@Preview(name = "Dark Mode - Future Schedule (One-time)", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun NotificationEditorOneTimeSchedulePreview() {
+    val future = Clock.System.now().plus(2.hours)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    NPinnerTheme {
+        Surface {
+            NotificationEditor(
+                uiState = NotificationEditorUiState.Success(
+                    createNew = true,
+                    notification = NPinnerNotification.newInstance().copy(
+                        title = "Dentist appointment",
+                        description = "Dr. Smith, Room 204",
+                        schedule = Schedule(
+                            date = future.date,
+                            time = future.time,
+                            type = null,
+                        ),
+                    ),
+                ),
+                onBackClick = {},
+                onSaveClick = {},
+                onDeleteClick = {},
+                onContentChange = { _, _ -> },
+                onScheduleChange = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Light Mode - Past Schedule", showBackground = true)
+@Preview(name = "Dark Mode - Past Schedule", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun NotificationEditorPastSchedulePreview() {
+    NPinnerTheme {
+        Surface {
+            NotificationEditor(
+                uiState = NotificationEditorUiState.Success(
+                    createNew = false,
+                    notification = NPinnerNotification.newInstance().copy(
+                        title = "Submit report",
+                        description = "Quarterly review document",
+                        schedule = Schedule(
+                            date = LocalDate(2024, 1, 1),
+                            time = LocalTime(9, 0),
+                            type = null,
+                        ),
+                    ),
+                ),
+                onBackClick = {},
+                onSaveClick = {},
+                onDeleteClick = {},
+                onContentChange = { _, _ -> },
+                onScheduleChange = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Light Mode - Loading", showBackground = true)
+@Preview(name = "Dark Mode - Loading", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun NotificationEditorLoadingPreview() {
+    NPinnerTheme {
+        Surface {
+            NotificationEditor(
+                uiState = NotificationEditorUiState.Loading,
                 onBackClick = {},
                 onSaveClick = {},
                 onDeleteClick = {},

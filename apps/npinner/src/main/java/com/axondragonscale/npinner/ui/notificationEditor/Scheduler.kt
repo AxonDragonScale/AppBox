@@ -162,7 +162,7 @@ fun InvalidScheduleWarning() {
             .padding(bottom = 12.dp)
             .background(
                 color = MaterialTheme.colorScheme.error,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(2.dp),
             )
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,

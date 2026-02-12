@@ -20,10 +20,10 @@ fun NPinnerApp() {
         modifier = Modifier.systemBarsPadding(),
         navController = navController,
         startDestination = Destination.Notifications.route,
-        enterTransition = { slideIntoContainer(SlideDirection.Up) },
-        exitTransition = { slideOutOfContainer(SlideDirection.Up) },
-        popEnterTransition = { slideIntoContainer(SlideDirection.Down) },
-        popExitTransition = { slideOutOfContainer(SlideDirection.Down) }
+        enterTransition = { slideIntoContainer(SlideDirection.Start) },
+        exitTransition = { slideOutOfContainer(SlideDirection.Start) },
+        popEnterTransition = { slideIntoContainer(SlideDirection.End) },
+        popExitTransition = { slideOutOfContainer(SlideDirection.End) }
     ) {
 
         notificationsGraph(navController)
@@ -32,5 +32,3 @@ fun NPinnerApp() {
 
     }
 }
-
-
