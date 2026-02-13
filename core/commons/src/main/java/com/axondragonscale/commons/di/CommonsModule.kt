@@ -1,6 +1,6 @@
 package com.axondragonscale.commons.di
 
-import com.axondragonscale.commons.createJson
+import com.axondragonscale.commons.CommonJson
 import com.axondragonscale.commons.network.createHttpClient
 import org.koin.dsl.module
 
@@ -9,6 +9,6 @@ import org.koin.dsl.module
  */
 
 val CommonsModule = module {
-    single { createJson() }
+    single { CommonJson }
     single { createHttpClient(get(), get()) }
 }

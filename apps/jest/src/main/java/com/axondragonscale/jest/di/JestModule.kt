@@ -10,13 +10,10 @@ import com.axondragonscale.jest.ui.list.FavoritesVM
 import com.axondragonscale.jest.ui.list.HistoryVM
 import com.axondragonscale.jest.ui.settings.SettingsVM
 import com.axondragonscale.jest.ui.tune.PrefsVM
-import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val JestModule = module {
-    single { Json { ignoreUnknownKeys = true } }
-
     single { JestDatabase.create(get()) }
     single { get<JestDatabase>().getJokeDao() }
 
