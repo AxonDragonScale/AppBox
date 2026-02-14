@@ -37,9 +37,7 @@ fun QRQanvasApp(modifier: Modifier = Modifier) {
     ) {
         composable<Route.Home> {
             Home(
-                onNavigateToCreator = {
-                    navController.navigate(Route.Creator())
-                },
+                onNavigateToCreator = { navController.navigate(Route.Creator()) },
                 onNavigateToScanner = {
                     navController.navigate(Route.Scanner)
                 },

@@ -22,11 +22,14 @@ class HomeVM(
     private val qrCodeRepository: QRCodeRepository,
     private val qrGenerator: QRGenerator,
     private val qrRenderer: QRRenderer,
+    private val json: Json,
 ) : ViewModel() {
 
-    val uiState = MutableStateFlow(HomeUiState())
+    companion object {
+        private const val THUMBNAIL_SIZE = 200
+    }
 
-    private val json = Json { ignoreUnknownKeys = true }
+    val uiState = MutableStateFlow(HomeUiState())
 
     /** Tracks which entity IDs already have a thumbnail being generated or cached. */
     private val generatingIds = mutableSetOf<Long>()
@@ -36,7 +39,9 @@ class HomeVM(
     }
 
     fun onEvent(event: HomeUiEvent): Unit = when (event) {
-        is HomeUiEvent.QRCodeClicked -> Unit // Handled by navigation callback in composable
+
+        // Handled in composable
+        is HomeUiEvent.QRCodeClicked -> Unit
     }
 
     private fun observeQRCodes() {
@@ -92,9 +97,5 @@ class HomeVM(
         } catch (e: Exception) {
             null
         }
-    }
-
-    companion object {
-        private const val THUMBNAIL_SIZE = 200
     }
 }

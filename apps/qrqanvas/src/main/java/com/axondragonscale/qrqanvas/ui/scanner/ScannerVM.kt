@@ -27,14 +27,13 @@ class ScannerVM(
     private val application: Application,
     private val qrContentParser: QRContentParser,
     private val scanHistoryRepository: ScanHistoryRepository,
+    private val json: Json,
 ) : ViewModel() {
 
     val uiState = MutableStateFlow(ScannerUiState())
 
     private val _effects = Channel<ScannerUiEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     fun onEvent(event: ScannerUiEvent): Unit = when (event) {
         is ScannerUiEvent.ToggleFlash -> onToggleFlash()

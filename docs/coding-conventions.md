@@ -115,6 +115,56 @@ private fun MyComponentPreview() {
 
 ## General Kotlin
 
+### Class Organization
+
+#### Companion Object Placement
+- **Keep `companion object` at the top of its enclosing class/interface/object**, before any other members
+- This ensures constants and factory methods are immediately visible when reading the class
+
+### Coroutine Launch Style
+
+#### Prefer Expression Body for Coroutine-Launching Functions
+- When a function's sole purpose is to launch a coroutine, use expression body syntax (`=`) instead of wrapping in a block body
+- This reduces nesting and makes the intent clearer
+
+**Preferred:**
+```kotlin
+fun loadData() = viewModelScope.launch {
+    val result = repository.fetchData()
+    uiState.update { it.copy(data = result) }
+}
+```
+
+**Avoid:**
+```kotlin
+fun loadData() {
+    viewModelScope.launch {
+        val result = repository.fetchData()
+        uiState.update { it.copy(data = result) }
+    }
+}
+```
+
+### Lambda Formatting
+
+#### Single-Line Lambdas
+- **Prefer keeping lambdas on a single line when the total line length is under 120 characters**
+- This improves readability for short, simple lambdas
+
+**Preferred:**
+```kotlin
+items.filter { it.isActive }
+items.map { Item(id = it.id, name = it.name) }
+uiState.update { it.copy(isLoading = true) }
+```
+
+**Avoid (when it fits in a single line under 120 chars):**
+```kotlin
+items.filter {
+    it.isActive
+}
+```
+
 ### Naming Conventions
 - ViewModels: Use `VM` suffix (e.g., `HomeVM`, `SettingsVM`)
 - UI State classes: Use `UiState` suffix (e.g., `HomeUiState`)
