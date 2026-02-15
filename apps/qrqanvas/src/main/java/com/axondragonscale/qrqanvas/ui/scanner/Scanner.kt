@@ -15,8 +15,13 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,7 +75,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -196,15 +210,13 @@ private fun Scanner(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
                 ),
             )
         },
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
+    ) { _ ->
+        Box(modifier = Modifier.fillMaxSize()) {
             if (permissionState.status.isGranted) {
                 // Camera Preview
                 CameraPreview(
@@ -216,9 +228,10 @@ private fun Scanner(
                     },
                 )
 
-                // Viewfinder Overlay
-                ViewfinderOverlay(
-                    modifier = Modifier.align(Alignment.Center),
+                // Scanner Overlay (dimming + viewfinder + scan line)
+                ScannerOverlay(
+                    modifier = Modifier.fillMaxSize(),
+                    isPaused = uiState.isScanPaused,
                 )
 
                 // Bottom Controls
@@ -342,25 +355,83 @@ private class QRCodeImageAnalyzer(
 }
 
 @Composable
-private fun ViewfinderOverlay(
+private fun ScannerOverlay(
     modifier: Modifier = Modifier,
+    isPaused: Boolean,
 ) {
-    Box(
+    val horizontalMargin = 48.dp
+    val cornerRadius = 24.dp
+    val verticalOffset = 40.dp
+
+    val infiniteTransition = rememberInfiniteTransition(label = "scanner")
+    val scanLineProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2500),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "scanLine",
+    )
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    Canvas(
         modifier = modifier
-            .size(250.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .border(
-                width = 3.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(24.dp),
-            ),
-        contentAlignment = Alignment.Center,
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
     ) {
-        Text(
-            text = "Point at a QR code",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+        val marginPx = horizontalMargin.toPx()
+        val vfSizePx = size.width - 2 * marginPx
+        val crPx = cornerRadius.toPx()
+        val offsetPx = verticalOffset.toPx()
+
+        val left = marginPx
+        val top = (size.height - vfSizePx) / 2f - offsetPx
+
+        // Dim overlay
+        drawRect(color = Color.Black.copy(alpha = 0.45f))
+
+        // Cut out the viewfinder area
+        drawRoundRect(
+            color = Color.Black,
+            topLeft = Offset(left, top),
+            size = Size(vfSizePx, vfSizePx),
+            cornerRadius = CornerRadius(crPx),
+            blendMode = BlendMode.Clear,
         )
+
+        // Viewfinder border
+        drawRoundRect(
+            color = primaryColor,
+            topLeft = Offset(left, top),
+            size = Size(vfSizePx, vfSizePx),
+            cornerRadius = CornerRadius(crPx),
+            style = Stroke(width = 3.dp.toPx()),
+        )
+
+        // Animated scanning line
+        if (!isPaused) {
+            val inset = 20.dp.toPx()
+            val lineY = top + inset + scanLineProgress * (vfSizePx - 2 * inset)
+
+            drawLine(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        primaryColor.copy(alpha = 0.6f),
+                        primaryColor,
+                        primaryColor.copy(alpha = 0.6f),
+                        Color.Transparent,
+                    ),
+                    startX = left + inset,
+                    endX = left + vfSizePx - inset,
+                ),
+                start = Offset(left + inset, lineY),
+                end = Offset(left + vfSizePx - inset, lineY),
+                strokeWidth = 2.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+        }
     }
 }
 

@@ -1087,9 +1087,9 @@ private fun EyeStyleSelector(
             val containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceContainer
 
-            Column(
+            Box(
                 modifier = Modifier
-                    .width(72.dp)
+                    .size(56.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .border(
                         width = if (isSelected) 2.dp else 1.dp,
@@ -1097,10 +1097,8 @@ private fun EyeStyleSelector(
                         shape = RoundedCornerShape(12.dp),
                     )
                     .background(containerColor)
-                    .clickable { onStyleSelected(style) }
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                    .clickable { onStyleSelected(style) },
+                contentAlignment = Alignment.Center,
             ) {
                 val drawColor = if (isSelected) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurface
@@ -1109,12 +1107,6 @@ private fun EyeStyleSelector(
                 ) {
                     drawEyeStylePreview(style, drawColor)
                 }
-                Text(
-                    text = style.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
-                )
             }
         }
     }
