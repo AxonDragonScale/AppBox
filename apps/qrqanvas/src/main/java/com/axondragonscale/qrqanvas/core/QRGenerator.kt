@@ -1,6 +1,6 @@
 package com.axondragonscale.qrqanvas.core
 
-import com.axondragonscale.qrqanvas.model.ErrorCorrectionLevel
+import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -24,14 +24,14 @@ object QRGenerator {
      *
      * @param content The QR content to encode.
      * @param errorCorrection The error correction level. Higher levels produce denser codes
-     *   but allow more damage/obstruction (e.g. logo embedding requires [ErrorCorrectionLevel.H]).
+     *   but allow more damage/obstruction (e.g. logo embedding requires [QRErrorCorrection.H]).
      * @return A square [BitMatrix] where `true` = dark module, `false` = light module.
      *   Each cell corresponds to exactly one QR module.
      * @throws com.google.zxing.WriterException if the content cannot be encoded.
      */
     fun generate(
         content: QRContent,
-        errorCorrection: ErrorCorrectionLevel = ErrorCorrectionLevel.M,
+        errorCorrection: QRErrorCorrection = QRErrorCorrection.M,
     ): BitMatrix {
         val encoded = QRContentCodec.encode(content)
         val hints = mapOf(

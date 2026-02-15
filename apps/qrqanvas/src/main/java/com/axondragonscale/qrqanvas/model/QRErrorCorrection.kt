@@ -4,10 +4,10 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import kotlinx.serialization.Serializable
 
 /**
- * Created by Ronak Harkhani on13/02/26
+ * Created by Ronak Harkhani on 13/02/26
  */
 @Serializable
-enum class ErrorCorrectionLevel {
+enum class QRErrorCorrection {
     L,
     M,
     Q,

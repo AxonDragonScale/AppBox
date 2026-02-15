@@ -1,5 +1,6 @@
 package com.axondragonscale.qrqanvas.di
 
+import coil3.ImageLoader
 import com.axondragonscale.qrqanvas.core.QRExporter
 import com.axondragonscale.qrqanvas.database.QRQanvasDatabase
 import com.axondragonscale.qrqanvas.repository.AppPrefsRepository
@@ -30,6 +31,7 @@ val QRQanvasModule = module {
 
     // Core
     singleOf(::QRExporter)
+    single { ImageLoader(androidContext()) }
 
     // Repositories
     singleOf(::AppPrefsRepository)

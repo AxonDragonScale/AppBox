@@ -56,6 +56,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -89,9 +90,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.model.ColorData
+import com.axondragonscale.qrqanvas.ui.common.QRPreview
+import com.axondragonscale.qrqanvas.ui.common.QRPreviewStyle
 import com.axondragonscale.qrqanvas.model.DotStyle
-import com.axondragonscale.qrqanvas.model.ErrorCorrectionLevel
+import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.axondragonscale.qrqanvas.model.EyeStyle
 import com.axondragonscale.qrqanvas.model.LogoData
 import com.axondragonscale.qrqanvas.model.LogoShape
@@ -107,7 +111,7 @@ import kotlin.math.roundToInt
  * Created by Ronak Harkhani on 09/07/25
  */
 
-// region: Top-Level Composable
+// region Top-Level Composable
 
 @Composable
 fun Creator(
@@ -123,12 +127,10 @@ fun Creator(
         if (qrCodeId != null) viewModel.loadQRCode(qrCodeId)
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is CreatorUiEffect.SaveCompleted -> onNavigateBack()
-                is CreatorUiEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
-            }
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            is CreatorUiEffect.SaveCompleted -> onNavigateBack()
+            is CreatorUiEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
         }
     }
 
@@ -143,7 +145,7 @@ fun Creator(
 
 // endregion
 
-// region: Main Creator Screen
+// region Main Creator Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -195,6 +197,8 @@ private fun Creator(
                     .fillMaxWidth()
                     .padding(horizontal = 48.dp, vertical = 8.dp),
                 bitmap = uiState.qrBitmap,
+                style = QRPreviewStyle.Empty,
+                contentPadding = 12.dp,
             )
 
             // Tab Row
@@ -281,59 +285,7 @@ private fun Creator(
 
 // endregion
 
-// region: QR Preview
-
-@Composable
-private fun QRPreview(
-    modifier: Modifier = Modifier,
-    bitmap: Bitmap?,
-) {
-    Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(16.dp),
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (bitmap != null) {
-            Image(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "QR Code Preview",
-                contentScale = ContentScale.Fit,
-                filterQuality = FilterQuality.None,
-            )
-        } else {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.QrCode2,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outlineVariant,
-                    modifier = Modifier.padding(8.dp),
-                )
-                Text(
-                    text = "Enter content to generate QR",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-            }
-        }
-    }
-}
-
-// endregion
-
-// region: Tab Content — Content
+// region Tab Content — Content
 
 @Composable
 private fun ContentTabContent(
@@ -403,7 +355,7 @@ private fun ContentTabContent(
 
 // endregion
 
-// region: Tab Content — Dots
+// region Tab Content — Dots
 
 @Composable
 private fun DotsTabContent(
@@ -436,7 +388,7 @@ private fun DotsTabContent(
 
 // endregion
 
-// region: Tab Content — Eyes
+// region Tab Content — Eyes
 
 @Composable
 private fun EyesTabContent(
@@ -476,13 +428,13 @@ private fun EyesTabContent(
 
 // endregion
 
-// region: Tab Content — Background
+// region Tab Content — Background
 
 @Composable
 private fun BackgroundTabContent(
     modifier: Modifier = Modifier,
     backgroundColor: ColorData,
-    errorCorrection: ErrorCorrectionLevel,
+    errorCorrection: QRErrorCorrection,
     hasLogo: Boolean,
     quietZone: Int,
     onEvent: (CreatorUiEvent) -> Unit,
@@ -518,7 +470,7 @@ private fun BackgroundTabContent(
 
 // endregion
 
-// region: Tab Content — Logo
+// region Tab Content — Logo
 
 @Composable
 private fun LogoTabContent(
@@ -547,7 +499,7 @@ private fun LogoTabContent(
 
 // endregion
 
-// region: Tab Content — Templates
+// region Tab Content — Templates
 
 @Composable
 private fun TemplatesTabContent(
@@ -591,7 +543,7 @@ private fun TemplatesTabContent(
 
 // endregion
 
-// region: Dialogs
+// region Dialogs
 
 @Composable
 private fun SaveTemplateDialog(
@@ -639,7 +591,7 @@ private fun SaveTemplateDialog(
 
 // endregion
 
-// region: Content Input Components
+// region Content Input Components
 
 @Composable
 private fun ContentTypeSelector(
@@ -707,6 +659,16 @@ private fun ContentInputFields(
             )
 
             is ContentInputState.Sms -> SmsInputFields(
+                input = contentInput,
+                onInputChanged = onContentInputChanged,
+            )
+
+            is ContentInputState.Contact -> ContactInputFields(
+                input = contentInput,
+                onInputChanged = onContentInputChanged,
+            )
+
+            is ContentInputState.Location -> LocationInputFields(
                 input = contentInput,
                 onInputChanged = onContentInputChanged,
             )
@@ -914,9 +876,155 @@ private fun SmsInputFields(
     }
 }
 
+@Composable
+private fun ContactInputFields(
+    modifier: Modifier = Modifier,
+    input: ContentInputState.Contact,
+    onInputChanged: (ContentInputState) -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.name,
+            onValueChange = { onInputChanged(input.copy(name = it)) },
+            label = { Text(text = "Name") },
+            placeholder = { Text(text = "Full name") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.phone,
+            onValueChange = { onInputChanged(input.copy(phone = it)) },
+            label = { Text(text = "Phone") },
+            placeholder = { Text(text = "+1 234 567 8900") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.email,
+            onValueChange = { onInputChanged(input.copy(email = it)) },
+            label = { Text(text = "Email") },
+            placeholder = { Text(text = "user@example.com") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.organization,
+            onValueChange = { onInputChanged(input.copy(organization = it)) },
+            label = { Text(text = "Organization") },
+            placeholder = { Text(text = "Company name") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.title,
+            onValueChange = { onInputChanged(input.copy(title = it)) },
+            label = { Text(text = "Title") },
+            placeholder = { Text(text = "Job title") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.url,
+            onValueChange = { onInputChanged(input.copy(url = it)) },
+            label = { Text(text = "Website") },
+            placeholder = { Text(text = "https://example.com") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.address,
+            onValueChange = { onInputChanged(input.copy(address = it)) },
+            label = { Text(text = "Address") },
+            placeholder = { Text(text = "Street, City, Country") },
+            shape = RoundedCornerShape(12.dp),
+            minLines = 2,
+            maxLines = 3,
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.note,
+            onValueChange = { onInputChanged(input.copy(note = it)) },
+            label = { Text(text = "Note") },
+            placeholder = { Text(text = "Additional notes") },
+            shape = RoundedCornerShape(12.dp),
+            minLines = 2,
+            maxLines = 3,
+        )
+    }
+}
+
+@Composable
+private fun LocationInputFields(
+    modifier: Modifier = Modifier,
+    input: ContentInputState.Location,
+    onInputChanged: (ContentInputState) -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                value = input.latitude,
+                onValueChange = { onInputChanged(input.copy(latitude = it)) },
+                label = { Text(text = "Latitude") },
+                placeholder = { Text(text = "37.7749") },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                value = input.longitude,
+                onValueChange = { onInputChanged(input.copy(longitude = it)) },
+                label = { Text(text = "Longitude") },
+                placeholder = { Text(text = "-122.4194") },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+        }
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = input.label,
+            onValueChange = { onInputChanged(input.copy(label = it)) },
+            label = { Text(text = "Label") },
+            placeholder = { Text(text = "Location name (optional)") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+        )
+    }
+}
+
 // endregion
 
-// region: Dot Style Components
+// region Dot Style Components
 
 @Composable
 private fun DotStyleSelector(
@@ -1066,7 +1174,7 @@ private fun DrawScope.drawDotStylePreview(
 
 // endregion
 
-// region: Eye Style Components
+// region Eye Style Components
 
 @Composable
 private fun EyeStyleSelector(
@@ -1253,13 +1361,13 @@ private fun DrawScope.drawDiamondPreview(
 
 // endregion
 
-// region: Background Components
+// region Background Components
 
 @Composable
 private fun ErrorCorrectionSelector(
     modifier: Modifier = Modifier,
-    selectedLevel: ErrorCorrectionLevel,
-    onLevelSelected: (ErrorCorrectionLevel) -> Unit,
+    selectedLevel: QRErrorCorrection,
+    onLevelSelected: (QRErrorCorrection) -> Unit,
     isLockedByLogo: Boolean,
 ) {
     Column(
@@ -1267,13 +1375,13 @@ private fun ErrorCorrectionSelector(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            ErrorCorrectionLevel.entries.forEachIndexed { index, level ->
+            QRErrorCorrection.entries.forEachIndexed { index, level ->
                 SegmentedButton(
                     selected = level == selectedLevel,
                     onClick = { if (!isLockedByLogo) onLevelSelected(level) },
                     shape = SegmentedButtonDefaults.itemShape(
                         index = index,
-                        count = ErrorCorrectionLevel.entries.size,
+                        count = QRErrorCorrection.entries.size,
                     ),
                     enabled = !isLockedByLogo,
                 ) {
@@ -1316,7 +1424,7 @@ private fun QuietZoneSlider(
 
 // endregion
 
-// region: Logo Components
+// region Logo Components
 
 @Composable
 private fun LogoSection(
@@ -1577,7 +1685,7 @@ private fun DrawScope.drawLogoShapePreview(
 
 // endregion
 
-// region: Template Components
+// region Template Components
 
 @Composable
 private fun TemplatePicker(
@@ -1666,7 +1774,7 @@ private fun TemplateCard(
 
 // endregion
 
-// region: Shared Components
+// region Shared Components
 
 @Composable
 private fun SectionHeader(
@@ -1684,18 +1792,19 @@ private fun SectionHeader(
 
 // endregion
 
-// region: Previews
+// region Previews
 
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun CreatorPreview() {
     QRQanvasTheme {
-        Creator(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = CreatorUiState(),
-            onEvent = {},
-        )
+        Surface {
+            Creator(
+                uiState = CreatorUiState(),
+                onEvent = {},
+            )
+        }
     }
 }
 
@@ -1704,14 +1813,15 @@ private fun CreatorPreview() {
 @Composable
 private fun CreatorWiFiPreview() {
     QRQanvasTheme {
-        Creator(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = CreatorUiState(
-                contentType = ContentType.WiFi,
-                contentInput = ContentInputState.WiFi(),
-            ),
-            onEvent = {},
-        )
+        Surface {
+            Creator(
+                uiState = CreatorUiState(
+                    contentType = ContentType.WiFi,
+                    contentInput = ContentInputState.WiFi(),
+                ),
+                onEvent = {},
+            )
+        }
     }
 }
 

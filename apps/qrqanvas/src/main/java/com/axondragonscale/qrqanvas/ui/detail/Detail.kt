@@ -1,16 +1,12 @@
 package com.axondragonscale.qrqanvas.ui.detail
 
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,14 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Sms
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,21 +44,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.model.QRContent
+import com.axondragonscale.qrqanvas.ui.common.QRPreview
+import com.axondragonscale.qrqanvas.ui.common.QRPreviewStyle
+import com.axondragonscale.qrqanvas.ui.common.displayValue
+import com.axondragonscale.qrqanvas.ui.common.typeIcon
+import com.axondragonscale.qrqanvas.ui.common.typeLabel
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlin.time.Instant
 
 /**
  * Created by Ronak Harkhani on 09/07/25
@@ -96,13 +88,11 @@ fun Detail(
     }
 
     // Handle one-shot effects
-    LaunchedEffect(Unit) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is DetailUiEffect.NavigateToEditor -> onNavigateToEditor(effect.qrCodeId)
-                is DetailUiEffect.NavigateBack -> onNavigateBack()
-                is DetailUiEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
-            }
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            is DetailUiEffect.NavigateToEditor -> onNavigateToEditor(effect.qrCodeId)
+            is DetailUiEffect.NavigateBack -> onNavigateBack()
+            is DetailUiEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
         }
     }
 
@@ -176,6 +166,7 @@ private fun Detail(
                         .fillMaxWidth()
                         .padding(horizontal = 40.dp, vertical = 16.dp),
                     bitmap = uiState.qrBitmap,
+                    style = QRPreviewStyle.Loading,
                 )
 
                 // Content Summary
@@ -222,61 +213,15 @@ private fun Detail(
 }
 
 @Composable
-private fun QRPreview(
-    modifier: Modifier = Modifier,
-    bitmap: Bitmap?,
-) {
-    Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(16.dp),
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (bitmap != null) {
-            Image(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "QR Code",
-                contentScale = ContentScale.Fit,
-                filterQuality = FilterQuality.None,
-            )
-        } else {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
-                    strokeWidth = 3.dp,
-                )
-                Text(
-                    text = "Rendering…",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun ContentSummary(
     modifier: Modifier = Modifier,
     content: QRContent?,
 ) {
     if (content == null) return
 
-    val typeLabel = contentTypeLabel(content)
-    val typeIcon = contentTypeIcon(content)
-    val displayValue = contentDisplayValue(content)
+    val label = content.typeLabel()
+    val icon = content.typeIcon()
+    val value = content.displayValue()
 
     Column(
         modifier = modifier
@@ -298,12 +243,12 @@ private fun ContentSummary(
         ) {
             Icon(
                 modifier = Modifier.size(16.dp),
-                imageVector = typeIcon,
+                imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = typeLabel,
+                text = label,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -311,7 +256,7 @@ private fun ContentSummary(
         }
 
         Text(
-            text = displayValue,
+            text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -435,63 +380,17 @@ private fun DeleteConfirmationDialog(
 
 // --- Helper functions ---
 
-private fun contentTypeLabel(content: QRContent): String = when (content) {
-    is QRContent.Text -> "Text"
-    is QRContent.Url -> "URL"
-    is QRContent.WiFi -> "Wi-Fi"
-    is QRContent.Email -> "Email"
-    is QRContent.Phone -> "Phone"
-    is QRContent.Sms -> "SMS"
-    is QRContent.Contact -> "Contact"
-    is QRContent.Location -> "Location"
-}
-
-private fun contentTypeIcon(content: QRContent): ImageVector = when (content) {
-    is QRContent.Text -> Icons.Filled.TextFields
-    is QRContent.Url -> Icons.Filled.Link
-    is QRContent.WiFi -> Icons.Filled.Wifi
-    is QRContent.Email -> Icons.Filled.Email
-    is QRContent.Phone -> Icons.Filled.Phone
-    is QRContent.Sms -> Icons.Filled.Sms
-    is QRContent.Contact -> Icons.Filled.TextFields
-    is QRContent.Location -> Icons.Filled.TextFields
-}
-
-private fun contentDisplayValue(content: QRContent): String = when (content) {
-    is QRContent.Text -> content.value
-    is QRContent.Url -> content.url
-    is QRContent.WiFi -> buildString {
-        appendLine("SSID: ${content.ssid}")
-        append("Security: ${content.encryptionType.protocol}")
-        if (content.hidden) append("\nHidden network")
-    }
-    is QRContent.Email -> buildString {
-        appendLine(content.address)
-        content.subject?.let { appendLine("Subject: $it") }
-        content.body?.let { append("Body: $it") }
-    }.trimEnd()
-    is QRContent.Phone -> content.number
-    is QRContent.Sms -> buildString {
-        appendLine(content.number)
-        content.message?.let { append(it) }
-    }.trimEnd()
-    is QRContent.Contact -> buildString {
-        appendLine(content.name)
-        content.phone?.let { appendLine("Phone: $it") }
-        content.email?.let { appendLine("Email: $it") }
-        content.organization?.let { append("Org: $it") }
-    }.trimEnd()
-    is QRContent.Location -> buildString {
-        appendLine("${content.latitude}, ${content.longitude}")
-        content.label?.let { append(it) }
-    }.trimEnd()
-}
-
-private val dateFormat = SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
-
 private fun formatTimestamp(millis: Long): String {
     if (millis == 0L) return "—"
-    return dateFormat.format(Date(millis))
+    val instant = Instant.fromEpochMilliseconds(millis)
+    val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val month = localDateTime.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
+    val day = localDateTime.date.day
+    val year = localDateTime.year
+    val hour = if (localDateTime.hour % 12 == 0) 12 else localDateTime.hour % 12
+    val minute = localDateTime.minute.toString().padStart(2, '0')
+    val amPm = if (localDateTime.hour < 12) "AM" else "PM"
+    return "$month $day, $year at $hour:$minute $amPm"
 }
 
 // --- Previews ---
@@ -501,16 +400,17 @@ private fun formatTimestamp(millis: Long): String {
 @Composable
 private fun DetailPreview() {
     QRQanvasTheme {
-        Detail(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = DetailUiState(
-                isLoading = false,
-                title = "My Website",
-                content = QRContent.Url(url = "https://example.com"),
-                createdAt = System.currentTimeMillis() - 86400000,
-                modifiedAt = System.currentTimeMillis(),
-            ),
-        )
+        Surface {
+            Detail(
+                uiState = DetailUiState(
+                    isLoading = false,
+                    title = "My Website",
+                    content = QRContent.Url(url = "https://example.com"),
+                    createdAt = System.currentTimeMillis() - 86400000,
+                    modifiedAt = System.currentTimeMillis(),
+                ),
+            )
+        }
     }
 }
 
@@ -518,10 +418,11 @@ private fun DetailPreview() {
 @Composable
 private fun DetailLoadingPreview() {
     QRQanvasTheme {
-        Detail(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = DetailUiState(isLoading = true),
-        )
+        Surface {
+            Detail(
+                uiState = DetailUiState(isLoading = true),
+            )
+        }
     }
 }
 
@@ -529,16 +430,17 @@ private fun DetailLoadingPreview() {
 @Composable
 private fun DetailDeleteDialogPreview() {
     QRQanvasTheme {
-        Detail(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = DetailUiState(
-                isLoading = false,
-                title = "Test QR",
-                content = QRContent.Text("Hello World"),
-                createdAt = System.currentTimeMillis(),
-                modifiedAt = System.currentTimeMillis(),
-                showDeleteDialog = true,
-            ),
-        )
+        Surface {
+            Detail(
+                uiState = DetailUiState(
+                    isLoading = false,
+                    title = "Test QR",
+                    content = QRContent.Text("Hello World"),
+                    createdAt = System.currentTimeMillis(),
+                    modifiedAt = System.currentTimeMillis(),
+                    showDeleteDialog = true,
+                ),
+            )
+        }
     }
 }

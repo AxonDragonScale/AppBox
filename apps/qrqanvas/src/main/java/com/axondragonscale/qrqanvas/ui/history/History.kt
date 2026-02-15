@@ -53,6 +53,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -79,10 +80,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.qrqanvas.database.entity.ScanHistoryEntity
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
+import com.axondragonscale.commons.collectWithLifecycle
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Created by Ronak Harkhani on 09/07/25
@@ -99,42 +101,40 @@ fun History(
     val context = LocalContext.current
 
     // Handle one-shot effects
-    LaunchedEffect(Unit) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is HistoryUiEffect.CopyToClipboard -> {
-                    val clipboard =
-                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("QR Code", effect.text))
-                    snackbarHostState.showSnackbar("Copied to clipboard")
-                }
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            is HistoryUiEffect.CopyToClipboard -> {
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("QR Code", effect.text))
+                snackbarHostState.showSnackbar("Copied to clipboard")
+            }
 
-                is HistoryUiEffect.ShareText -> {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, effect.text)
+            is HistoryUiEffect.ShareText -> {
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, effect.text)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val chooser = Intent.createChooser(shareIntent, "Share").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(chooser)
+            }
+
+            is HistoryUiEffect.OpenUrl -> {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    val chooser = Intent.createChooser(shareIntent, "Share").apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(chooser)
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    snackbarHostState.showSnackbar("Cannot open this content")
                 }
+            }
 
-                is HistoryUiEffect.OpenUrl -> {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        snackbarHostState.showSnackbar("Cannot open this content")
-                    }
-                }
-
-                is HistoryUiEffect.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
+            is HistoryUiEffect.ShowSnackbar -> {
+                snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
@@ -535,8 +535,10 @@ private fun formatTimestamp(timestamp: Long): String {
         diff < 86_400_000 -> "${diff / 3_600_000}h ago"
         diff < 172_800_000 -> "Yesterday"
         else -> {
-            val sdf = SimpleDateFormat("MMM d", Locale.getDefault())
-            sdf.format(Date(timestamp))
+            val instant = Instant.fromEpochMilliseconds(timestamp)
+            val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+            val month = localDateTime.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
+            "${month} ${localDateTime.date.day}"
         }
     }
 }
@@ -546,9 +548,9 @@ private fun formatTimestamp(timestamp: Long): String {
 @Composable
 private fun HistoryEmptyPreview() {
     QRQanvasTheme {
-        History(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-        )
+        Surface {
+            History()
+        }
     }
 }
 
@@ -557,9 +559,9 @@ private fun HistoryEmptyPreview() {
 @Composable
 private fun HistoryListPreview() {
     QRQanvasTheme {
-        History(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = HistoryUiState(
+        Surface {
+            History(
+                uiState = HistoryUiState(
                 scanHistory = listOf(
                     ScanHistoryEntity(
                         id = 1,
@@ -581,7 +583,8 @@ private fun HistoryListPreview() {
                     ),
                 ),
                 expandedItemId = 1,
-            ),
-        )
+                ),
+            )
+        }
     }
 }

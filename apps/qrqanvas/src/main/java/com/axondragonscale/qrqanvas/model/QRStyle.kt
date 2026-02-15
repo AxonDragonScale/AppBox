@@ -15,19 +15,19 @@ data class QRStyle(
     val backgroundColor: ColorData = ColorData.Solid(0xFFFFFFFF),
     val backgroundImageUri: String? = null,
     val logoData: LogoData? = null,
-    val errorCorrection: ErrorCorrectionLevel = ErrorCorrectionLevel.M,
+    val errorCorrection: QRErrorCorrection = QRErrorCorrection.M,
     val quietZone: Int = 1,
     val size: Int = 1024,
 ) {
 
     /**
-     * Returns a copy with error correction forced to [ErrorCorrectionLevel.H]
+     * Returns a copy with error correction forced to [QRErrorCorrection.H]
      * if a logo is embedded, since the logo obscures modules and high error
      * correction is needed to keep the code scannable.
      */
     fun withEnforcedLogoErrorCorrection(): QRStyle =
-        if (logoData != null && errorCorrection != ErrorCorrectionLevel.H) {
-            copy(errorCorrection = ErrorCorrectionLevel.H)
+        if (logoData != null && errorCorrection != QRErrorCorrection.H) {
+            copy(errorCorrection = QRErrorCorrection.H)
         } else {
             this
         }

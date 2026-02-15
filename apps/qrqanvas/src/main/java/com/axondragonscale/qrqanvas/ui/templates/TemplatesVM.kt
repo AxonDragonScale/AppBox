@@ -1,16 +1,15 @@
 package com.axondragonscale.qrqanvas.ui.templates
 
-import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.qrqanvas.core.QRGenerator
-import com.axondragonscale.qrqanvas.core.QRRenderer
+import com.axondragonscale.qrqanvas.core.ThumbnailGenerator
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.model.Template
 import com.axondragonscale.qrqanvas.repository.TemplateRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -20,14 +19,12 @@ import kotlinx.coroutines.launch
  */
 class TemplatesVM(
     private val templateRepository: TemplateRepository,
-    private val qrGenerator: QRGenerator,
-    private val qrRenderer: QRRenderer,
 ) : ViewModel() {
 
     val uiState = MutableStateFlow(TemplatesUiState())
 
-    private val _effects = Channel<TemplatesUiEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private val uiEffectChannel = Channel<TemplatesUiEffect>(Channel.BUFFERED)
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
     /** Tracks which template IDs already have a thumbnail being generated. */
     private val generatingIds = mutableSetOf<String>()
@@ -46,19 +43,17 @@ class TemplatesVM(
         is TemplatesUiEvent.DismissDelete -> onDismissDelete()
     }
 
-    private fun observeTemplates() {
-        viewModelScope.launch {
-            templateRepository.getAll().collect { allTemplates ->
-                val predefined = allTemplates.filter { it.isPredefined }
-                val user = allTemplates.filter { !it.isPredefined }
-                uiState.update {
-                    it.copy(
-                        predefinedTemplates = predefined,
-                        userTemplates = user,
-                    )
-                }
-                generateMissingThumbnails(allTemplates)
+    private fun observeTemplates() = viewModelScope.launch {
+        templateRepository.getAll().collect { allTemplates ->
+            val predefined = allTemplates.filter { it.isPredefined }
+            val user = allTemplates.filter { !it.isPredefined }
+            uiState.update {
+                it.copy(
+                    predefinedTemplates = predefined,
+                    userTemplates = user,
+                )
             }
+            generateMissingThumbnails(allTemplates)
         }
     }
 
@@ -82,7 +77,8 @@ class TemplatesVM(
         for (template in missing) {
             generatingIds.add(template.id)
             viewModelScope.launch(Dispatchers.Default) {
-                val bitmap = renderThumbnail(template)
+                val dummyContent = QRContent.Text("QRQanvas")
+                val bitmap = ThumbnailGenerator.generate(dummyContent, template.style)
                 if (bitmap != null) {
                     uiState.update { state ->
                         state.copy(templateThumbnails = state.templateThumbnails + (template.id to bitmap))
@@ -90,20 +86,6 @@ class TemplatesVM(
                 }
                 generatingIds.remove(template.id)
             }
-        }
-    }
-
-    /**
-     * Renders a small QR code thumbnail from the template's style.
-     */
-    private fun renderThumbnail(template: Template): Bitmap? {
-        return try {
-            val dummyContent = QRContent.Text("QRQanvas")
-            val style = template.style.copy(size = THUMBNAIL_SIZE, quietZone = 1, logoData = null)
-            val bitMatrix = qrGenerator.generate(dummyContent, style.errorCorrection)
-            qrRenderer.render(bitMatrix, style)
-        } catch (e: Exception) {
-            null
         }
     }
 
@@ -136,7 +118,7 @@ class TemplatesVM(
 
         viewModelScope.launch(Dispatchers.IO) {
             templateRepository.rename(templateId, newName)
-            _effects.send(TemplatesUiEffect.ShowSnackbar("Template renamed to \"$newName\""))
+            uiEffectChannel.send(TemplatesUiEffect.ShowSnackbar("Template renamed to \"$newName\""))
         }
     }
 
@@ -174,7 +156,7 @@ class TemplatesVM(
 
         viewModelScope.launch(Dispatchers.IO) {
             templateRepository.delete(templateId)
-            _effects.send(TemplatesUiEffect.ShowSnackbar("Template \"$name\" deleted"))
+            uiEffectChannel.send(TemplatesUiEffect.ShowSnackbar("Template \"$name\" deleted"))
         }
     }
 
@@ -186,9 +168,5 @@ class TemplatesVM(
                 deleteTemplateName = "",
             )
         }
-    }
-
-    companion object {
-        private const val THUMBNAIL_SIZE = 200
     }
 }

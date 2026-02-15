@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,12 +30,13 @@ class DetailVM(
     private val context: Context,
     private val qrCodeRepository: QRCodeRepository,
     private val qrExporter: QRExporter,
+    private val imageLoader: ImageLoader,
 ) : ViewModel() {
 
     val uiState = MutableStateFlow(DetailUiState())
 
-    private val _effects = Channel<DetailUiEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private val uiEffectChannel = Channel<DetailUiEffect>(Channel.BUFFERED)
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
     private var qrCodeId: Long = 0L
     private var logoBitmap: Bitmap? = null
@@ -51,7 +53,7 @@ class DetailVM(
             val entity = qrCodeRepository.getById(id)
             if (entity == null) {
                 // Entity was deleted or doesn't exist — navigate back
-                _effects.send(DetailUiEffect.NavigateBack)
+                uiEffectChannel.send(DetailUiEffect.NavigateBack)
                 return@launch
             }
 
@@ -99,7 +101,7 @@ class DetailVM(
 
     private fun onEditClicked() {
         viewModelScope.launch {
-            _effects.send(DetailUiEffect.NavigateToEditor(qrCodeId))
+            uiEffectChannel.send(DetailUiEffect.NavigateToEditor(qrCodeId))
         }
     }
 
@@ -121,7 +123,7 @@ class DetailVM(
             } else {
                 "Failed to save QR code"
             }
-            _effects.send(DetailUiEffect.ShowSnackbar(message))
+            uiEffectChannel.send(DetailUiEffect.ShowSnackbar(message))
         }
     }
 
@@ -133,7 +135,7 @@ class DetailVM(
         uiState.update { it.copy(showDeleteDialog = false) }
         viewModelScope.launch(Dispatchers.IO) {
             qrCodeRepository.delete(qrCodeId)
-            _effects.send(DetailUiEffect.NavigateBack)
+            uiEffectChannel.send(DetailUiEffect.NavigateBack)
         }
     }
 
@@ -147,7 +149,6 @@ class DetailVM(
     private fun loadLogoBitmapAndRender(uri: String, content: QRContent, style: QRStyle) {
         logoLoadJob?.cancel()
         logoLoadJob = viewModelScope.launch(Dispatchers.IO) {
-            val imageLoader = ImageLoader(context)
             val request = ImageRequest.Builder(context)
                 .data(uri)
                 .size(512)

@@ -8,18 +8,18 @@ import coil3.ImageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.toBitmap
-import com.axondragonscale.qrqanvas.core.QRContentCodec
 import com.axondragonscale.qrqanvas.core.QRExporter
 import com.axondragonscale.qrqanvas.core.QRGenerator
 import com.axondragonscale.qrqanvas.core.QRRenderer
+import com.axondragonscale.qrqanvas.core.ThumbnailGenerator
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.model.ColorData
 import com.axondragonscale.qrqanvas.model.DotStyle
-import com.axondragonscale.qrqanvas.model.ErrorCorrectionLevel
 import com.axondragonscale.qrqanvas.model.EyeStyle
 import com.axondragonscale.qrqanvas.model.LogoData
 import com.axondragonscale.qrqanvas.model.LogoShape
 import com.axondragonscale.qrqanvas.model.QRContent
+import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.model.Template
 import com.axondragonscale.qrqanvas.repository.QRCodeRepository
@@ -28,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -40,12 +41,13 @@ class CreatorVM(
     private val qrCodeRepository: QRCodeRepository,
     private val qrExporter: QRExporter,
     private val templateRepository: TemplateRepository,
+    private val imageLoader: ImageLoader,
 ) : ViewModel() {
 
     val uiState = MutableStateFlow(CreatorUiState())
 
-    private val _effects = Channel<CreatorUiEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private val uiEffectChannel = Channel<CreatorUiEffect>(Channel.BUFFERED)
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
     private var renderJob: Job? = null
     private var logoLoadJob: Job? = null
@@ -212,7 +214,7 @@ class CreatorVM(
         regenerateQR()
     }
 
-    private fun onErrorCorrectionSelected(level: ErrorCorrectionLevel) {
+    private fun onErrorCorrectionSelected(level: QRErrorCorrection) {
         if (level == uiState.value.style.errorCorrection) return
         uiState.update { it.copy(style = it.style.copy(errorCorrection = level)) }
         regenerateQR()
@@ -265,7 +267,7 @@ class CreatorVM(
                     )
                 )
             }
-            _effects.send(CreatorUiEffect.SaveCompleted)
+            uiEffectChannel.send(CreatorUiEffect.SaveCompleted)
         }
     }
 
@@ -289,7 +291,7 @@ class CreatorVM(
             } else {
                 "Failed to save QR code"
             }
-            _effects.send(CreatorUiEffect.ShowSnackbar(message))
+            uiEffectChannel.send(CreatorUiEffect.ShowSnackbar(message))
         }
     }
 
@@ -331,14 +333,11 @@ class CreatorVM(
 
         viewModelScope.launch(Dispatchers.Default) {
             val dummyContent = QRContent.Text("QRQanvas")
-            val thumbnailSize = 200
 
-            val newThumbnails = missing.associate { template ->
-                val style = template.style.copy(size = thumbnailSize, quietZone = 1)
-                val bitMatrix = QRGenerator.generate(dummyContent, style.errorCorrection)
-                val bitmap = QRRenderer.render(bitMatrix, style)
-                template.id to bitmap
-            }
+            val newThumbnails = missing.mapNotNull { template ->
+                ThumbnailGenerator.generate(dummyContent, template.style)
+                    ?.let { bitmap -> template.id to bitmap }
+            }.toMap()
 
             uiState.update { it.copy(templateThumbnails = it.templateThumbnails + newThumbnails) }
         }
@@ -365,7 +364,7 @@ class CreatorVM(
             // Strip logo and size before saving as template — templates are style-only
             val templateStyle = style.copy(logoData = null, size = 1024)
             templateRepository.insert(name, templateStyle)
-            _effects.send(CreatorUiEffect.ShowSnackbar("Template \"$name\" saved"))
+            uiEffectChannel.send(CreatorUiEffect.ShowSnackbar("Template \"$name\" saved"))
         }
     }
 
@@ -380,7 +379,6 @@ class CreatorVM(
     private fun loadLogoBitmap(uri: String) {
         logoLoadJob?.cancel()
         logoLoadJob = viewModelScope.launch(Dispatchers.IO) {
-            val imageLoader = ImageLoader(context)
             val request = ImageRequest.Builder(context)
                 .data(uri)
                 .size(512) // Reasonable size for logo overlay
@@ -421,6 +419,8 @@ class CreatorVM(
         ContentType.Email -> ContentInputState.Email()
         ContentType.Phone -> ContentInputState.Phone()
         ContentType.Sms -> ContentInputState.Sms()
+        ContentType.Contact -> ContentInputState.Contact()
+        ContentType.Location -> ContentInputState.Location()
     }
 
     private fun ContentInputState.toQRContent(): QRContent? = when (this) {
@@ -448,6 +448,25 @@ class CreatorVM(
                 number = number,
                 message = message.ifBlank { null },
             ) else null
+
+        is ContentInputState.Contact ->
+            if (isValid) QRContent.Contact(
+                name = name,
+                phone = phone.ifBlank { null },
+                email = email.ifBlank { null },
+                organization = organization.ifBlank { null },
+                title = title.ifBlank { null },
+                url = url.ifBlank { null },
+                address = address.ifBlank { null },
+                note = note.ifBlank { null },
+            ) else null
+
+        is ContentInputState.Location ->
+            if (isValid) QRContent.Location(
+                latitude = latitude.toDouble(),
+                longitude = longitude.toDouble(),
+                label = label.ifBlank { null },
+            ) else null
     }
 
     /**
@@ -460,8 +479,8 @@ class CreatorVM(
         is QRContent.Email -> ContentType.Email
         is QRContent.Phone -> ContentType.Phone
         is QRContent.Sms -> ContentType.Sms
-        is QRContent.Contact -> ContentType.Text // fallback — Contact not in creator types
-        is QRContent.Location -> ContentType.Text // fallback — Location not in creator types
+        is QRContent.Contact -> ContentType.Contact
+        is QRContent.Location -> ContentType.Location
     }
 
     /**
@@ -485,7 +504,20 @@ class CreatorVM(
             number = number,
             message = message ?: "",
         )
-        is QRContent.Contact -> ContentInputState.Text(value = QRContentCodec.encode(this))
-        is QRContent.Location -> ContentInputState.Text(value = QRContentCodec.encode(this))
+        is QRContent.Contact -> ContentInputState.Contact(
+            name = name,
+            phone = phone ?: "",
+            email = email ?: "",
+            organization = organization ?: "",
+            title = title ?: "",
+            url = url ?: "",
+            address = address ?: "",
+            note = note ?: "",
+        )
+        is QRContent.Location -> ContentInputState.Location(
+            latitude = latitude.toString(),
+            longitude = longitude.toString(),
+            label = label ?: "",
+        )
     }
 }

@@ -6,6 +6,7 @@ import com.axondragonscale.qrqanvas.repository.ScanHistoryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -19,8 +20,8 @@ class HistoryVM(
 
     val uiState = MutableStateFlow(HistoryUiState())
 
-    private val _effects = Channel<HistoryUiEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private val uiEffectChannel = Channel<HistoryUiEffect>(Channel.BUFFERED)
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
     init {
         observeScanHistory()
@@ -37,11 +38,9 @@ class HistoryVM(
         is HistoryUiEvent.OpenItem -> onOpenItem(event.rawValue)
     }
 
-    private fun observeScanHistory() {
-        viewModelScope.launch {
-            scanHistoryRepository.getAll().collect { entries ->
-                uiState.update { it.copy(scanHistory = entries) }
-            }
+    private fun observeScanHistory() = viewModelScope.launch {
+        scanHistoryRepository.getAll().collect { entries ->
+            uiState.update { it.copy(scanHistory = entries) }
         }
     }
 
@@ -61,7 +60,7 @@ class HistoryVM(
                 if (state.expandedItemId == id) state.copy(expandedItemId = null)
                 else state
             }
-            _effects.send(HistoryUiEffect.ShowSnackbar("Scan entry deleted"))
+            uiEffectChannel.send(HistoryUiEffect.ShowSnackbar("Scan entry deleted"))
         }
     }
 
@@ -73,7 +72,7 @@ class HistoryVM(
         uiState.update { it.copy(showClearAllDialog = false, expandedItemId = null) }
         viewModelScope.launch(Dispatchers.IO) {
             scanHistoryRepository.deleteAll()
-            _effects.send(HistoryUiEffect.ShowSnackbar("Scan history cleared"))
+            uiEffectChannel.send(HistoryUiEffect.ShowSnackbar("Scan history cleared"))
         }
     }
 
@@ -83,19 +82,19 @@ class HistoryVM(
 
     private fun onCopyItem(rawValue: String) {
         viewModelScope.launch {
-            _effects.send(HistoryUiEffect.CopyToClipboard(rawValue))
+            uiEffectChannel.send(HistoryUiEffect.CopyToClipboard(rawValue))
         }
     }
 
     private fun onShareItem(rawValue: String) {
         viewModelScope.launch {
-            _effects.send(HistoryUiEffect.ShareText(rawValue))
+            uiEffectChannel.send(HistoryUiEffect.ShareText(rawValue))
         }
     }
 
     private fun onOpenItem(rawValue: String) {
         viewModelScope.launch {
-            _effects.send(HistoryUiEffect.OpenUrl(rawValue))
+            uiEffectChannel.send(HistoryUiEffect.OpenUrl(rawValue))
         }
     }
 }

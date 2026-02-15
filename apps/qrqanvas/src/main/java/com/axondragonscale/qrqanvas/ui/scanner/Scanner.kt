@@ -95,6 +95,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -129,42 +130,40 @@ fun Scanner(
     }
 
     // Handle one-shot effects
-    LaunchedEffect(Unit) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is ScannerUiEffect.CopyToClipboard -> {
-                    val clipboard =
-                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("QR Code", effect.text))
-                    snackbarHostState.showSnackbar("Copied to clipboard")
-                }
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            is ScannerUiEffect.CopyToClipboard -> {
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("QR Code", effect.text))
+                snackbarHostState.showSnackbar("Copied to clipboard")
+            }
 
-                is ScannerUiEffect.ShareText -> {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, effect.text)
+            is ScannerUiEffect.ShareText -> {
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, effect.text)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val chooser = Intent.createChooser(shareIntent, "Share").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(chooser)
+            }
+
+            is ScannerUiEffect.OpenUrl -> {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    val chooser = Intent.createChooser(shareIntent, "Share").apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(chooser)
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    snackbarHostState.showSnackbar("Cannot open this content")
                 }
+            }
 
-                is ScannerUiEffect.OpenUrl -> {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        snackbarHostState.showSnackbar("Cannot open this content")
-                    }
-                }
-
-                is ScannerUiEffect.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
+            is ScannerUiEffect.ShowSnackbar -> {
+                snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
@@ -742,9 +741,9 @@ private fun openLabel(content: QRContent): String = when (content) {
 @Composable
 private fun ScannerPreview() {
     QRQanvasTheme {
-        Scanner(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-        )
+        androidx.compose.material3.Surface {
+            Scanner()
+        }
     }
 }
 

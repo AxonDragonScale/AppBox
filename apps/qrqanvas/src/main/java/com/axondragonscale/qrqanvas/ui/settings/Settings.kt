@@ -350,12 +350,13 @@ private fun SettingsCard(
 @Composable
 private fun SettingsPreview() {
     QRQanvasTheme {
-        val uiState by remember { mutableStateOf(SettingsUiState()) }
-        Settings(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = uiState,
-            onEvent = {},
-            onNavigateBack = {},
-        )
+        androidx.compose.material3.Surface {
+            val uiState by remember { mutableStateOf(SettingsUiState()) }
+            Settings(
+                uiState = uiState,
+                onEvent = {},
+                onNavigateBack = {},
+            )
+        }
     }
 }

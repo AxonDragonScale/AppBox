@@ -48,4 +48,26 @@ sealed interface ContentInputState {
     ) : ContentInputState {
         override val isValid: Boolean get() = number.isNotBlank()
     }
+
+    data class Contact(
+        val name: String = "",
+        val phone: String = "",
+        val email: String = "",
+        val organization: String = "",
+        val title: String = "",
+        val url: String = "",
+        val address: String = "",
+        val note: String = "",
+    ) : ContentInputState {
+        override val isValid: Boolean get() = name.isNotBlank()
+    }
+
+    data class Location(
+        val latitude: String = "",
+        val longitude: String = "",
+        val label: String = "",
+    ) : ContentInputState {
+        override val isValid: Boolean
+            get() = latitude.toDoubleOrNull() != null && longitude.toDoubleOrNull() != null
+    }
 }

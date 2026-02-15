@@ -14,6 +14,7 @@ import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,8 +30,8 @@ class ScannerVM(
 
     val uiState = MutableStateFlow(ScannerUiState())
 
-    private val _effects = Channel<ScannerUiEffect>(Channel.BUFFERED)
-    val effects = _effects.receiveAsFlow()
+    private val uiEffectChannel = Channel<ScannerUiEffect>(Channel.BUFFERED)
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
     fun onEvent(event: ScannerUiEvent): Unit = when (event) {
         is ScannerUiEvent.ToggleFlash -> onToggleFlash()
@@ -83,7 +84,7 @@ class ScannerVM(
                 val inputStream = context.contentResolver.openInputStream(
                     android.net.Uri.parse(uri)
                 ) ?: run {
-                    _effects.send(ScannerUiEffect.ShowSnackbar("Failed to read image"))
+                    uiEffectChannel.send(ScannerUiEffect.ShowSnackbar("Failed to read image"))
                     return@launch
                 }
 
@@ -91,7 +92,7 @@ class ScannerVM(
                 inputStream.close()
 
                 if (bitmap == null) {
-                    _effects.send(ScannerUiEffect.ShowSnackbar("Failed to decode image"))
+                    uiEffectChannel.send(ScannerUiEffect.ShowSnackbar("Failed to decode image"))
                     return@launch
                 }
 
@@ -108,7 +109,7 @@ class ScannerVM(
                             onQRCodeScanned(rawValue)
                         } else {
                             viewModelScope.launch {
-                                _effects.send(
+                                uiEffectChannel.send(
                                     ScannerUiEffect.ShowSnackbar("No QR code found in image")
                                 )
                             }
@@ -116,13 +117,13 @@ class ScannerVM(
                     }
                     .addOnFailureListener {
                         viewModelScope.launch {
-                            _effects.send(
+                            uiEffectChannel.send(
                                 ScannerUiEffect.ShowSnackbar("Failed to scan image")
                             )
                         }
                     }
             } catch (e: Exception) {
-                _effects.send(ScannerUiEffect.ShowSnackbar("Failed to process image"))
+                uiEffectChannel.send(ScannerUiEffect.ShowSnackbar("Failed to process image"))
             }
         }
     }
@@ -141,21 +142,21 @@ class ScannerVM(
     private fun onCopyResult() {
         val rawValue = uiState.value.scannedRawValue ?: return
         viewModelScope.launch {
-            _effects.send(ScannerUiEffect.CopyToClipboard(rawValue))
+            uiEffectChannel.send(ScannerUiEffect.CopyToClipboard(rawValue))
         }
     }
 
     private fun onShareResult() {
         val rawValue = uiState.value.scannedRawValue ?: return
         viewModelScope.launch {
-            _effects.send(ScannerUiEffect.ShareText(rawValue))
+            uiEffectChannel.send(ScannerUiEffect.ShareText(rawValue))
         }
     }
 
     private fun onOpenResult() {
         val rawValue = uiState.value.scannedRawValue ?: return
         viewModelScope.launch {
-            _effects.send(ScannerUiEffect.OpenUrl(rawValue))
+            uiEffectChannel.send(ScannerUiEffect.OpenUrl(rawValue))
         }
     }
 }

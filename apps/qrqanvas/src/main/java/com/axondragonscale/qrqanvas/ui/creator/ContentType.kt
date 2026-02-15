@@ -3,6 +3,8 @@ package com.axondragonscale.qrqanvas.ui.creator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.TextFields
@@ -22,4 +24,6 @@ enum class ContentType(
     Email("Email", Icons.Filled.Email),
     Phone("Phone", Icons.Filled.Phone),
     Sms("SMS", Icons.Filled.Sms),
+    Contact("Contact", Icons.Filled.Person),
+    Location("Location", Icons.Filled.LocationOn),
 }

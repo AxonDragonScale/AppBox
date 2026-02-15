@@ -19,18 +19,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Sms
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -49,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,9 +49,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.model.QRStyle
+import com.axondragonscale.qrqanvas.ui.common.typeIcon
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -79,14 +73,20 @@ fun Home(
     val viewModel: HomeVM = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            is HomeUiEffect.NavigateToCreator -> onNavigateToCreator()
+            is HomeUiEffect.NavigateToScanner -> onNavigateToScanner()
+            is HomeUiEffect.NavigateToHistory -> onNavigateToHistory()
+            is HomeUiEffect.NavigateToSettings -> onNavigateToSettings()
+            is HomeUiEffect.NavigateToDetail -> onNavigateToDetail(effect.qrCodeId)
+        }
+    }
+
     Home(
         modifier = modifier,
         uiState = uiState,
-        onNavigateToCreator = onNavigateToCreator,
-        onNavigateToScanner = onNavigateToScanner,
-        onNavigateToHistory = onNavigateToHistory,
-        onNavigateToSettings = onNavigateToSettings,
-        onNavigateToDetail = onNavigateToDetail,
+        onEvent = viewModel::onEvent,
     )
 }
 
@@ -95,11 +95,7 @@ fun Home(
 private fun Home(
     modifier: Modifier = Modifier,
     uiState: HomeUiState = HomeUiState(),
-    onNavigateToCreator: () -> Unit = {},
-    onNavigateToScanner: () -> Unit = {},
-    onNavigateToHistory: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {},
-    onNavigateToDetail: (Long) -> Unit = {},
+    onEvent: (HomeUiEvent) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -107,19 +103,19 @@ private fun Home(
             TopAppBar(
                 title = { Text(text = "QRQanvas") },
                 actions = {
-                    IconButton(onClick = onNavigateToScanner) {
+                    IconButton(onClick = { onEvent(HomeUiEvent.NavigateToScanner) }) {
                         Icon(
                             imageVector = Icons.Filled.QrCodeScanner,
                             contentDescription = "Scan QR Code",
                         )
                     }
-                    IconButton(onClick = onNavigateToHistory) {
+                    IconButton(onClick = { onEvent(HomeUiEvent.NavigateToHistory) }) {
                         Icon(
                             imageVector = Icons.Filled.History,
                             contentDescription = "Scan History",
                         )
                     }
-                    IconButton(onClick = onNavigateToSettings) {
+                    IconButton(onClick = { onEvent(HomeUiEvent.NavigateToSettings) }) {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             contentDescription = "Settings",
@@ -129,7 +125,7 @@ private fun Home(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToCreator) {
+            FloatingActionButton(onClick = { onEvent(HomeUiEvent.NavigateToCreator) }) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Create QR Code",
@@ -150,7 +146,7 @@ private fun Home(
                     .padding(innerPadding),
                 qrCodes = uiState.qrCodes,
                 thumbnails = uiState.thumbnails,
-                onCardClick = onNavigateToDetail,
+                onCardClick = { id -> onEvent(HomeUiEvent.QRCodeClicked(id)) },
             )
         }
     }
@@ -190,7 +186,7 @@ private fun QRCodeCard(
     onClick: () -> Unit,
 ) {
     val contentTypeIcon = remember(entity.content) {
-        resolveContentTypeIcon(entity.content)
+        entity.content.typeIcon()
     }
 
     Card(
@@ -296,28 +292,14 @@ private fun EmptyState(
     }
 }
 
-/**
- * Resolves an icon for the given [QRContent] type.
- */
-private fun resolveContentTypeIcon(content: QRContent): ImageVector = when (content) {
-    is QRContent.Url -> Icons.Filled.Link
-    is QRContent.WiFi -> Icons.Filled.Wifi
-    is QRContent.Email -> Icons.Filled.Email
-    is QRContent.Phone -> Icons.Filled.Phone
-    is QRContent.Sms -> Icons.Filled.Sms
-    is QRContent.Contact -> Icons.Filled.Person
-    is QRContent.Location -> Icons.Filled.LocationOn
-    is QRContent.Text -> Icons.Filled.TextFields
-}
-
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun HomeEmptyPreview() {
     QRQanvasTheme {
-        Home(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-        )
+        Surface {
+            Home()
+        }
     }
 }
 
@@ -326,36 +308,37 @@ private fun HomeEmptyPreview() {
 @Composable
 private fun HomeGridPreview() {
     QRQanvasTheme {
-        Home(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            uiState = HomeUiState(
-                qrCodes = listOf(
-                    QRCodeEntity(
-                        id = 1,
-                        title = "My Website",
-                        content = QRContent.Url(url = "https://example.com"),
-                        style = QRStyle(),
-                        createdAt = System.currentTimeMillis(),
-                        modifiedAt = System.currentTimeMillis(),
-                    ),
-                    QRCodeEntity(
-                        id = 2,
-                        title = "Home Wi-Fi Network",
-                        content = QRContent.WiFi(ssid = "MyWiFi", password = "pass"),
-                        style = QRStyle(),
-                        createdAt = System.currentTimeMillis(),
-                        modifiedAt = System.currentTimeMillis(),
-                    ),
-                    QRCodeEntity(
-                        id = 3,
-                        title = "Hello World",
-                        content = QRContent.Text(value = "Hello"),
-                        style = QRStyle(),
-                        createdAt = System.currentTimeMillis(),
-                        modifiedAt = System.currentTimeMillis(),
+        Surface {
+            Home(
+                uiState = HomeUiState(
+                    qrCodes = listOf(
+                        QRCodeEntity(
+                            id = 1,
+                            title = "My Website",
+                            content = QRContent.Url(url = "https://example.com"),
+                            style = QRStyle(),
+                            createdAt = System.currentTimeMillis(),
+                            modifiedAt = System.currentTimeMillis(),
+                        ),
+                        QRCodeEntity(
+                            id = 2,
+                            title = "Home Wi-Fi Network",
+                            content = QRContent.WiFi(ssid = "MyWiFi", password = "pass"),
+                            style = QRStyle(),
+                            createdAt = System.currentTimeMillis(),
+                            modifiedAt = System.currentTimeMillis(),
+                        ),
+                        QRCodeEntity(
+                            id = 3,
+                            title = "Hello World",
+                            content = QRContent.Text(value = "Hello"),
+                            style = QRStyle(),
+                            createdAt = System.currentTimeMillis(),
+                            modifiedAt = System.currentTimeMillis(),
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
+        }
     }
 }

@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.model.Template
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import org.koin.androidx.compose.koinViewModel
@@ -81,12 +82,10 @@ fun Templates(
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle one-shot effects
-    LaunchedEffect(Unit) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is TemplatesUiEffect.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            is TemplatesUiEffect.ShowSnackbar -> {
+                snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
@@ -505,8 +504,8 @@ private fun DeleteTemplateDialog(
 @Composable
 private fun TemplatesEmptyPreview() {
     QRQanvasTheme {
-        Templates(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-        )
+        androidx.compose.material3.Surface {
+            Templates()
+        }
     }
 }

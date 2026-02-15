@@ -2,7 +2,7 @@ package com.axondragonscale.qrqanvas.ui.creator
 
 import com.axondragonscale.qrqanvas.model.ColorData
 import com.axondragonscale.qrqanvas.model.DotStyle
-import com.axondragonscale.qrqanvas.model.ErrorCorrectionLevel
+import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.axondragonscale.qrqanvas.model.EyeStyle
 import com.axondragonscale.qrqanvas.model.LogoShape
 import com.axondragonscale.qrqanvas.model.QRStyle
@@ -23,7 +23,7 @@ sealed interface CreatorUiEvent {
     data class LogoSizeChanged(val size: Float) : CreatorUiEvent
     data class LogoPaddingChanged(val padding: Float) : CreatorUiEvent
     data class LogoShapeSelected(val shape: LogoShape) : CreatorUiEvent
-    data class ErrorCorrectionSelected(val level: ErrorCorrectionLevel) : CreatorUiEvent
+    data class ErrorCorrectionSelected(val level: QRErrorCorrection) : CreatorUiEvent
     data class QuietZoneChanged(val quietZone: Int) : CreatorUiEvent
     data class TemplateSelected(val style: QRStyle) : CreatorUiEvent
     data object SaveClicked : CreatorUiEvent

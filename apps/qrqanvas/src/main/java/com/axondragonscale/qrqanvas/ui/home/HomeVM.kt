@@ -1,14 +1,15 @@
 package com.axondragonscale.qrqanvas.ui.home
 
-import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.qrqanvas.core.QRGenerator
-import com.axondragonscale.qrqanvas.core.QRRenderer
+import com.axondragonscale.qrqanvas.core.ThumbnailGenerator
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.repository.QRCodeRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -25,6 +26,9 @@ class HomeVM(
 
     val uiState = MutableStateFlow(HomeUiState())
 
+    private val uiEffectChannel = Channel<HomeUiEffect>(Channel.BUFFERED)
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
+
     /** Tracks which entity IDs already have a thumbnail being generated or cached. */
     private val generatingIds = mutableSetOf<Long>()
 
@@ -33,17 +37,32 @@ class HomeVM(
     }
 
     fun onEvent(event: HomeUiEvent): Unit = when (event) {
-
-        // Handled in composable
-        is HomeUiEvent.QRCodeClicked -> Unit
+        is HomeUiEvent.NavigateToCreator -> {
+            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToCreator) }
+            Unit
+        }
+        is HomeUiEvent.NavigateToScanner -> {
+            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToScanner) }
+            Unit
+        }
+        is HomeUiEvent.NavigateToHistory -> {
+            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToHistory) }
+            Unit
+        }
+        is HomeUiEvent.NavigateToSettings -> {
+            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToSettings) }
+            Unit
+        }
+        is HomeUiEvent.QRCodeClicked -> {
+            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToDetail(event.qrCodeId)) }
+            Unit
+        }
     }
 
-    private fun observeQRCodes() {
-        viewModelScope.launch {
-            qrCodeRepository.getAll().collect { entities ->
-                uiState.update { it.copy(qrCodes = entities) }
-                generateMissingThumbnails(entities)
-            }
+    private fun observeQRCodes() = viewModelScope.launch {
+        qrCodeRepository.getAll().collect { entities ->
+            uiState.update { it.copy(qrCodes = entities) }
+            generateMissingThumbnails(entities)
         }
     }
 
@@ -67,7 +86,7 @@ class HomeVM(
         for (entity in missing) {
             generatingIds.add(entity.id)
             viewModelScope.launch(Dispatchers.Default) {
-                val bitmap = renderThumbnail(entity)
+                val bitmap = ThumbnailGenerator.generate(entity.content, entity.style)
                 if (bitmap != null) {
                     uiState.update { state ->
                         state.copy(thumbnails = state.thumbnails + (entity.id to bitmap))
@@ -75,21 +94,6 @@ class HomeVM(
                 }
                 generatingIds.remove(entity.id)
             }
-        }
-    }
-
-    /**
-     * Renders a small QR code thumbnail from the entity's content and style.
-     */
-    private fun renderThumbnail(entity: QRCodeEntity): Bitmap? {
-        return try {
-            val content = entity.content
-            val style = entity.style
-            val thumbnailStyle = style.copy(size = THUMBNAIL_SIZE, logoData = null)
-            val bitMatrix = QRGenerator.generate(content, thumbnailStyle.errorCorrection)
-            QRRenderer.render(bitMatrix, thumbnailStyle)
-        } catch (e: Exception) {
-            null
         }
     }
 }
