@@ -7,6 +7,7 @@ import android.graphics.Path
 import android.graphics.RectF
 import androidx.core.graphics.createBitmap
 import com.axondragonscale.qrqanvas.model.ColorData
+import com.axondragonscale.qrqanvas.model.Corner
 import com.axondragonscale.qrqanvas.model.DotStyle
 import com.axondragonscale.qrqanvas.model.EyeStyle
 import com.axondragonscale.qrqanvas.model.LogoData
@@ -321,13 +322,13 @@ object QRRenderer {
         qrBounds: RectF,
     ) {
         val finderOrigins = listOf(
-            0 to 0,                         // Top-left
-            matrixSize - 7 to 0,            // Top-right
-            0 to matrixSize - 7,            // Bottom-left
+            Triple(0, 0, Corner.TopLeft),
+            Triple(matrixSize - 7, 0, Corner.TopRight),
+            Triple(0, matrixSize - 7, Corner.BottomLeft),
         )
 
-        for ((originCol, originRow) in finderOrigins) {
-            drawFinderPattern(style, moduleSize, originCol, originRow, qrBounds)
+        for ((originCol, originRow, corner) in finderOrigins) {
+            drawFinderPattern(style, moduleSize, originCol, originRow, qrBounds, corner)
         }
     }
 
@@ -337,6 +338,7 @@ object QRRenderer {
         originCol: Int,
         originRow: Int,
         qrBounds: RectF,
+        corner: Corner,
     ) {
         val quietZone = style.quietZone
 
@@ -394,9 +396,9 @@ object QRRenderer {
             }
 
             EyeStyle.Leaf -> {
-                drawLeafRect(outerRect, moduleSize * 2.5f, framePaint, eyePath)
-                drawLeafRect(innerRect, moduleSize * 1.8f, bgPaint, eyePath)
-                drawLeafRect(dotRect, moduleSize * 1.0f, dotPaint, eyePath)
+                drawLeafRect(outerRect, moduleSize * 2.5f, framePaint, eyePath, corner)
+                drawLeafRect(innerRect, moduleSize * 1.8f, bgPaint, eyePath, corner)
+                drawLeafRect(dotRect, moduleSize * 1.0f, dotPaint, eyePath, corner)
             }
 
             EyeStyle.Diamond -> {
@@ -408,17 +410,36 @@ object QRRenderer {
     }
 
     /**
-     * Draws a "leaf" shape: a rounded rect with only the top-left and
-     * bottom-right corners rounded, giving an organic leaf appearance.
+     * Draws a "leaf" shape: a rounded rect with two diagonally opposite corners rounded,
+     * oriented so that the sharp tips point outward from the QR code.
+     *
+     * The [corner] determines which diagonal pair gets the sharp tips:
+     * - [Corner.TopRight] / [Corner.BottomLeft]: sharp at top-right & bottom-left (default leaf)
+     * - [Corner.TopLeft] / [Corner.BottomRight]: sharp at top-left & bottom-right (mirrored)
      */
-    private fun Canvas.drawLeafRect(rect: RectF, radius: Float, paint: Paint, eyePath: Path) {
+    private fun Canvas.drawLeafRect(
+        rect: RectF,
+        radius: Float,
+        paint: Paint,
+        eyePath: Path,
+        corner: Corner = Corner.TopRight,
+    ) {
         val r = radius
-        val radii = floatArrayOf(
-            r, r,       // top-left
-            0f, 0f,     // top-right
-            r, r,       // bottom-right
-            0f, 0f,     // bottom-left
-        )
+        val radii = when (corner) {
+            Corner.TopLeft, Corner.BottomRight -> floatArrayOf(
+                0f, 0f,     // top-left (sharp)
+                r, r,       // top-right (rounded)
+                0f, 0f,     // bottom-right (sharp)
+                r, r,       // bottom-left (rounded)
+            )
+
+            Corner.TopRight, Corner.BottomLeft -> floatArrayOf(
+                r, r,       // top-left (rounded)
+                0f, 0f,     // top-right (sharp)
+                r, r,       // bottom-right (rounded)
+                0f, 0f,     // bottom-left (sharp)
+            )
+        }
         eyePath.apply {
             rewind()
             addRoundRect(rect, radii, Path.Direction.CW)
