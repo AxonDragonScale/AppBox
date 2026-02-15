@@ -24,8 +24,6 @@ import com.axondragonscale.qrqanvas.util.unescapeBackslash
  */
 object QRContentCodec {
 
-    // region: Encode
-
     /**
      * Encodes the given [content] into the raw string format that gets embedded in the QR code.
      */
@@ -39,62 +37,6 @@ object QRContentCodec {
         is QRContent.Sms -> encodeSms(content)
         is QRContent.Location -> encodeLocation(content)
     }
-
-    private fun encodeText(content: QRContent.Text): String = content.value
-
-    private fun encodeUrl(content: QRContent.Url): String = content.url
-
-    private fun encodeWifi(content: QRContent.WiFi): String = buildString {
-        append("WIFI:")
-        append("T:${content.encryptionType.protocol};")
-        append("S:${content.ssid.escapeBackslash(WIFI_ESCAPE_CHARS)};")
-        if (content.encryptionType != WifiEncryption.Open) {
-            append("P:${content.password.escapeBackslash(WIFI_ESCAPE_CHARS)};")
-        }
-        if (content.hidden) append("H:true;")
-        append(";")
-    }
-
-    private fun encodeContact(content: QRContent.Contact): String = buildString {
-        appendLine("BEGIN:VCARD")
-        appendLine("VERSION:3.0")
-        appendLine("N:${content.name}")
-        appendLine("FN:${content.name}")
-        content.phone?.let { appendLine("TEL:$it") }
-        content.email?.let { appendLine("EMAIL:$it") }
-        content.organization?.let { appendLine("ORG:$it") }
-        content.title?.let { appendLine("TITLE:$it") }
-        content.url?.let { appendLine("URL:$it") }
-        content.address?.let { appendLine("ADR:$it") }
-        content.note?.let { appendLine("NOTE:$it") }
-        append("END:VCARD")
-    }
-
-    private fun encodeEmail(content: QRContent.Email): String = buildString {
-        append("mailto:${content.address}")
-        val params = mutableListOf<String>()
-        content.subject?.let { params.add("subject=$it") }
-        content.body?.let { params.add("body=$it") }
-        if (params.isNotEmpty()) {
-            append("?${params.joinToString("&")}")
-        }
-    }
-
-    private fun encodePhone(content: QRContent.Phone): String = "tel:${content.number}"
-
-    private fun encodeSms(content: QRContent.Sms): String = buildString {
-        append("smsto:${content.number}")
-        content.message?.let { append(":$it") }
-    }
-
-    private fun encodeLocation(content: QRContent.Location): String = buildString {
-        append("geo:${content.latitude},${content.longitude}")
-        content.label?.let { append("?q=$it") }
-    }
-
-    // endregion
-
-    // region: Decode
 
     /**
      * Parses a raw QR code string into the appropriate [QRContent] subtype.
@@ -112,33 +54,58 @@ object QRContentCodec {
             trimmed.startsWith("smsto:", ignoreCase = true) -> decodeSms(trimmed, "smsto:")
             trimmed.startsWith("sms:", ignoreCase = true) -> decodeSms(trimmed, "sms:")
             trimmed.startsWith("geo:", ignoreCase = true) -> decodeLocation(trimmed)
-            trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true) -> QRContent.Url(url = trimmed)
-            else -> QRContent.Text(value = trimmed)
+            trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true) -> decodeUrl(trimmed)
+            else -> decodeText(trimmed)
         }
     }
 
-    // region: WiFi
+    // region Text
+
+    private fun encodeText(content: QRContent.Text): String = content.value
+
+    private fun decodeText(rawValue: String): QRContent.Text = QRContent.Text(value = rawValue)
+
+    // endregion Text
+
+    // region Url
+
+    private fun encodeUrl(content: QRContent.Url): String = content.url
+
+    private fun decodeUrl(rawValue: String): QRContent.Url = QRContent.Url(url = rawValue)
+
+    // endregion Url
+
+    // region WiFi
+
+    private fun encodeWifi(content: QRContent.WiFi): String = buildString {
+        append("WIFI:")
+        append("T:${content.encryptionType.protocol};")
+        append("S:${content.ssid.escapeBackslash(WIFI_ESCAPE_CHARS)};")
+        if (content.encryptionType != WifiEncryption.Open) {
+            append("P:${content.password.escapeBackslash(WIFI_ESCAPE_CHARS)};")
+        }
+        if (content.hidden) append("H:true;")
+        append(";")
+    }
 
     /**
      * Parses a WiFi QR string of the format:
      * `WIFI:T:<encryption>;S:<ssid>;P:<password>;H:<hidden>;;`
      */
     private fun decodeWifi(raw: String): QRContent.WiFi {
-        val body = raw.removePrefix("WIFI:").removeSuffix(";")
-        // WiFi values can contain escaped semicolons (\;), so a simple split
-        // would incorrectly break on those. Custom parsing is required here.
+        val body = raw.removePrefix("WIFI:").removePrefix("wifi:").removeSuffix(";")
         val params = parseWifiParams(body)
 
         val encryptionType = when (params["T"]?.uppercase()) {
             "WPA", "WPA2", "WPA/WPA2" -> WifiEncryption.WPA
             "WEP" -> WifiEncryption.WEP
-            "nopass", "" -> WifiEncryption.Open
+            "NOPASS", "" -> WifiEncryption.Open
             else -> WifiEncryption.WPA
         }
 
         return QRContent.WiFi(
-            ssid = (params["S"] ?: "").unescapeBackslash(WIFI_ESCAPE_CHARS),
-            password = (params["P"] ?: "").unescapeBackslash(WIFI_ESCAPE_CHARS),
+            ssid = params["S"].orEmpty().unescapeBackslash(WIFI_ESCAPE_CHARS),
+            password = params["P"].orEmpty().unescapeBackslash(WIFI_ESCAPE_CHARS),
             encryptionType = encryptionType,
             hidden = params["H"]?.equals("true", ignoreCase = true) == true,
         )
@@ -188,7 +155,22 @@ object QRContentCodec {
 
     // endregion
 
-    // region: vCard / Contact
+    // region vCard / Contact
+
+    private fun encodeContact(content: QRContent.Contact): String = buildString {
+        appendLine("BEGIN:VCARD")
+        appendLine("VERSION:3.0")
+        appendLine("N:${content.name}")
+        appendLine("FN:${content.name}")
+        content.phone?.let { appendLine("TEL:$it") }
+        content.email?.let { appendLine("EMAIL:$it") }
+        content.organization?.let { appendLine("ORG:$it") }
+        content.title?.let { appendLine("TITLE:$it") }
+        content.url?.let { appendLine("URL:$it") }
+        content.address?.let { appendLine("ADR:$it") }
+        content.note?.let { appendLine("NOTE:$it") }
+        append("END:VCARD")
+    }
 
     /**
      * Parses a vCard string into a [QRContent.Contact].
@@ -209,40 +191,30 @@ object QRContentCodec {
             when {
                 upperLine.startsWith("FN:") -> name = line.substringAfter(":")
                 upperLine.startsWith("N:") && name.isEmpty() -> name = line.substringAfter(":")
-                upperLine.startsWith("TEL") -> phone = extractVCardValue(line)
-                upperLine.startsWith("EMAIL") -> email = extractVCardValue(line)
+                upperLine.startsWith("TEL") -> phone = line.substringAfter(":")
+                upperLine.startsWith("EMAIL") -> email = line.substringAfter(":")
                 upperLine.startsWith("ORG:") -> organization = line.substringAfter(":")
                 upperLine.startsWith("TITLE:") -> title = line.substringAfter(":")
                 upperLine.startsWith("URL:") -> url = line.substringAfter(":")
-                upperLine.startsWith("ADR") -> address = extractVCardValue(line)
+                upperLine.startsWith("ADR") -> address = line.substringAfter(":")
                 upperLine.startsWith("NOTE:") -> note = line.substringAfter(":")
             }
         }
 
-        return QRContent.Contact(
-            name = name,
-            phone = phone,
-            email = email,
-            organization = organization,
-            title = title,
-            url = url,
-            address = address,
-            note = note,
-        )
-    }
-
-    /**
-     * Extracts the value part of a vCard line that may contain type parameters,
-     * e.g. `TEL;TYPE=CELL:+1234567890` → `+1234567890`.
-     */
-    private fun extractVCardValue(line: String): String {
-        val parts = line.split(":", limit = 2)
-        return if (parts.size == 2) parts[1] else line
+        return QRContent.Contact(name, phone, email, organization, title, url, address, note)
     }
 
     // endregion
 
-    // region: Email
+    // region Email
+
+    private fun encodeEmail(content: QRContent.Email): String = buildString {
+        append("mailto:${content.address}")
+        val params = mutableListOf<String>()
+        content.subject?.let { params.add("subject=$it") }
+        content.body?.let { params.add("body=$it") }
+        if (params.isNotEmpty()) append("?${params.joinToString("&")}")
+    }
 
     /**
      * Parses a `mailto:` URI into a [QRContent.Email].
@@ -250,20 +222,17 @@ object QRContentCodec {
      */
     private fun decodeEmail(raw: String): QRContent.Email {
         val afterScheme = raw.removePrefix("mailto:")
-        val parts = afterScheme.split("?", limit = 2)
-        val address = parts[0]
-        val queryParams = if (parts.size == 2) parseQueryParams(parts[1]) else emptyMap()
+        val address = afterScheme.substringBefore('?')
+        val queryParams = parseQueryParams(afterScheme)
 
-        return QRContent.Email(
-            address = address,
-            subject = queryParams["subject"],
-            body = queryParams["body"],
-        )
+        return QRContent.Email(address, queryParams["subject"], queryParams["body"])
     }
 
     // endregion
 
-    // region: Phone
+    // region Phone
+
+    private fun encodePhone(content: QRContent.Phone): String = "tel:${content.number}"
 
     /**
      * Parses a `tel:` URI into a [QRContent.Phone].
@@ -274,7 +243,12 @@ object QRContentCodec {
 
     // endregion
 
-    // region: SMS
+    // region SMS
+
+    private fun encodeSms(content: QRContent.Sms): String = buildString {
+        append("smsto:${content.number}")
+        content.message?.let { append(":$it") }
+    }
 
     /**
      * Parses an `smsto:` or `sms:` URI into a [QRContent.Sms].
@@ -288,10 +262,7 @@ object QRContentCodec {
         if (questionIndex >= 0) {
             val number = afterScheme.substring(0, questionIndex)
             val params = parseQueryParams(afterScheme.substring(questionIndex + 1))
-            return QRContent.Sms(
-                number = number,
-                message = params["body"],
-            )
+            return QRContent.Sms(number = number, message = params["body"])
         }
 
         // Check for colon-separated message: smsto:+123:Hello
@@ -308,7 +279,12 @@ object QRContentCodec {
 
     // endregion
 
-    // region: Location
+    // region Location
+
+    private fun encodeLocation(content: QRContent.Location): String = buildString {
+        append("geo:${content.latitude},${content.longitude}")
+        content.label?.let { append("?q=$it") }
+    }
 
     /**
      * Parses a `geo:` URI into a [QRContent.Location].
@@ -316,51 +292,34 @@ object QRContentCodec {
      */
     private fun decodeLocation(raw: String): QRContent {
         val afterScheme = raw.removePrefix("geo:")
-        val questionIndex = afterScheme.indexOf('?')
-        val coordsPart: String
-        val queryParams: Map<String, String>
 
-        if (questionIndex >= 0) {
-            coordsPart = afterScheme.substring(0, questionIndex)
-            queryParams = parseQueryParams(afterScheme.substring(questionIndex + 1))
-        } else {
-            coordsPart = afterScheme
-            queryParams = emptyMap()
-        }
-
-        val parts = coordsPart.split(",")
+        val queryParams = parseQueryParams(afterScheme)
+        val parts = afterScheme.substringBefore('?').split(",")
         val lat = parts.getOrNull(0)?.toDoubleOrNull()
         val lng = parts.getOrNull(1)?.toDoubleOrNull()
 
         return if (lat != null && lng != null) {
-            QRContent.Location(
-                latitude = lat,
-                longitude = lng,
-                label = queryParams["q"],
-            )
+            QRContent.Location(latitude = lat, longitude = lng, label = queryParams["q"])
         } else {
-            // Couldn't parse coordinates — fallback to text
-            QRContent.Text(value = raw)
+            QRContent.Text(value = raw) // Couldn't parse coordinates — fallback to text
         }
     }
 
     // endregion
 
-    // region: Helpers
+    // region Helpers
 
     /**
-     * Parses URL-style query parameters (`key=value&key2=value2`) into a map.
+     * Parses URL-style query parameters (`xxx?key=value&key2=value2`) into a map.
      */
-    private fun parseQueryParams(query: String): Map<String, String> {
-        if (query.isBlank()) return emptyMap()
-        return query.split("&").mapNotNull { param ->
-            val eqIndex = param.indexOf('=')
-            if (eqIndex > 0) {
-                val key = param.substring(0, eqIndex).lowercase()
-                val value = param.substring(eqIndex + 1)
-                key to value
-            } else null
-        }.toMap()
+    private fun parseQueryParams(rawValue: String): Map<String, String> {
+        val query = rawValue.substringAfter('?')
+        if (query.isBlank() || !query.contains('=')) return emptyMap()
+        return query.split("&").associate { param ->
+            param.split('=').let {
+                it.getOrNull(0).orEmpty() to it.getOrNull(1).orEmpty()
+            }
+        }
     }
 
     // endregion
