@@ -49,24 +49,31 @@ Follow the pattern used in `Home.kt`:
 ```kotlin
 @Composable
 fun MyScreen(
-    navController: NavController,
     modifier: Modifier = Modifier,
+    navController: NavController,
 ) {
     val viewModel: MyViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
-    // Handle effects/navigation
-    LaunchedEffect(Unit) {
-        viewModel.uiEffect.collect { effect ->
-            // Handle navigation effects
+
+    // Collect effects only for things the VM initiates (e.g., navigate after async work)
+    viewModel.uiEffect.collectWithLifecycle { effect ->
+        when (effect) {
+            is MyUiEffect.NavigateToResult -> navController.navigate(Route.Result(effect.id))
         }
     }
-    
+
     // Call preview-friendly composable
+    // Intercept navigation events here; forward the rest to the VM
     MyScreen(
         modifier = modifier,
         uiState = uiState,
-        onEvent = { viewModel.onEvent(it) }
+        onEvent = { event ->
+            when (event) {
+                is MyUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
+                is MyUiEvent.NavigateToDetail -> navController.navigate(Route.Detail(event.id))
+                else -> viewModel.onEvent(event)
+            }
+        },
     )
 }
 
@@ -88,6 +95,61 @@ private fun MyScreenPreview() {
             onEvent = {}
         )
     }
+}
+```
+
+### Navigation
+
+#### Pass `navController` to Top-Level Composables
+- **Top-level screen composables should accept `navController: NavController`** instead of individual navigation callbacks (`onNavigateToX`, `onNavigateToY`, etc.)
+- This keeps the call site in `NavHost` clean and avoids proliferating lambda parameters
+- Navigation is then handled directly in the top-level composable's `onEvent` interceptor
+
+**Preferred:**
+```kotlin
+composable<Route.Home> {
+    Home(navController = navController)
+}
+```
+
+**Avoid:**
+```kotlin
+composable<Route.Home> {
+    Home(
+        onNavigateToCreator = { navController.navigate(Route.Creator()) },
+        onNavigateToScanner = { navController.navigate(Route.Scanner) },
+        onNavigateToSettings = { navController.navigate(Route.Settings) },
+        onNavigateToDetail = { id -> navController.navigate(Route.Detail(id)) },
+    )
+}
+```
+
+#### Intercept Navigation Events in Compose
+- **Navigation events triggered by user interaction should be intercepted in the top-level composable's `onEvent` lambda** and handled directly with `navController.navigate(...)`, instead of sending them to the VM and bouncing them back via `uiEffect`
+- Only use `uiEffect` for navigation that the VM initiates after async work (e.g., "navigate to result screen after a network call completes")
+- In the VM, navigation events that are handled in Compose should map to `Unit` in the `onEvent` `when` block
+
+**In the composable:**
+```kotlin
+onEvent = { event ->
+    when (event) {
+        // Intercept navigation — handle directly
+        is MyUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
+        is MyUiEvent.ItemClicked -> navController.navigate(Route.Detail(event.itemId))
+        // Forward everything else to the VM
+        else -> viewModel.onEvent(event)
+    }
+},
+```
+
+**In the VM:**
+```kotlin
+fun onEvent(event: MyUiEvent): Any = when (event) {
+    is MyUiEvent.Search -> handleSearch(event)
+    is MyUiEvent.Delete -> handleDelete(event)
+    // Navigation events handled in Compose
+    is MyUiEvent.NavigateToSettings -> Unit
+    is MyUiEvent.ItemClicked -> Unit
 }
 ```
 

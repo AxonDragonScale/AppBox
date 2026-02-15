@@ -36,21 +36,7 @@ fun QRQanvasApp(modifier: Modifier = Modifier) {
         popExitTransition = { slideOutOfContainer(SlideDirection.Right) },
     ) {
         composable<Route.Home> {
-            Home(
-                onNavigateToCreator = { navController.navigate(Route.Creator()) },
-                onNavigateToScanner = {
-                    navController.navigate(Route.Scanner)
-                },
-                onNavigateToHistory = {
-                    navController.navigate(Route.History)
-                },
-                onNavigateToSettings = {
-                    navController.navigate(Route.Settings)
-                },
-                onNavigateToDetail = { qrCodeId ->
-                    navController.navigate(Route.Detail(qrCodeId))
-                },
-            )
+            Home(navController = navController)
         }
 
         composable<Route.Creator> { backStackEntry ->

@@ -49,12 +49,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.model.QRStyle
+import com.axondragonscale.qrqanvas.ui.Route
 import com.axondragonscale.qrqanvas.ui.common.typeIcon
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
+import androidx.navigation.NavController
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -64,29 +65,25 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun Home(
     modifier: Modifier = Modifier,
-    onNavigateToCreator: () -> Unit,
-    onNavigateToScanner: () -> Unit,
-    onNavigateToHistory: () -> Unit,
-    onNavigateToSettings: () -> Unit,
-    onNavigateToDetail: (Long) -> Unit,
+    navController: NavController,
 ) {
     val viewModel: HomeVM = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    viewModel.uiEffect.collectWithLifecycle { effect ->
-        when (effect) {
-            is HomeUiEffect.NavigateToCreator -> onNavigateToCreator()
-            is HomeUiEffect.NavigateToScanner -> onNavigateToScanner()
-            is HomeUiEffect.NavigateToHistory -> onNavigateToHistory()
-            is HomeUiEffect.NavigateToSettings -> onNavigateToSettings()
-            is HomeUiEffect.NavigateToDetail -> onNavigateToDetail(effect.qrCodeId)
-        }
-    }
-
     Home(
         modifier = modifier,
         uiState = uiState,
-        onEvent = viewModel::onEvent,
+        onEvent = { event ->
+            when (event) {
+                is HomeUiEvent.NavigateToCreator -> navController.navigate(Route.Creator())
+                is HomeUiEvent.NavigateToScanner -> navController.navigate(Route.Scanner)
+                is HomeUiEvent.NavigateToHistory -> navController.navigate(Route.History)
+                is HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
+                is HomeUiEvent.QRCodeClicked -> navController.navigate(Route.Detail(event.qrCodeId))
+
+                else -> viewModel.onEvent(event)
+            }
+        },
     )
 }
 

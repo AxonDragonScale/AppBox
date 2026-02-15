@@ -6,10 +6,7 @@ import com.axondragonscale.qrqanvas.core.ThumbnailGenerator
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.repository.QRCodeRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -26,9 +23,6 @@ class HomeVM(
 
     val uiState = MutableStateFlow(HomeUiState())
 
-    private val uiEffectChannel = Channel<HomeUiEffect>(Channel.BUFFERED)
-    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
-
     /** Tracks which entity IDs already have a thumbnail being generated or cached. */
     private val generatingIds = mutableSetOf<Long>()
 
@@ -36,27 +30,13 @@ class HomeVM(
         observeQRCodes()
     }
 
-    fun onEvent(event: HomeUiEvent): Unit = when (event) {
-        is HomeUiEvent.NavigateToCreator -> {
-            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToCreator) }
-            Unit
-        }
-        is HomeUiEvent.NavigateToScanner -> {
-            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToScanner) }
-            Unit
-        }
-        is HomeUiEvent.NavigateToHistory -> {
-            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToHistory) }
-            Unit
-        }
-        is HomeUiEvent.NavigateToSettings -> {
-            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToSettings) }
-            Unit
-        }
-        is HomeUiEvent.QRCodeClicked -> {
-            viewModelScope.launch { uiEffectChannel.send(HomeUiEffect.NavigateToDetail(event.qrCodeId)) }
-            Unit
-        }
+    fun onEvent(event: HomeUiEvent): Any = when (event) {
+        // Navigation events handled in Compose
+        is HomeUiEvent.NavigateToCreator -> Unit
+        is HomeUiEvent.NavigateToScanner -> Unit
+        is HomeUiEvent.NavigateToHistory -> Unit
+        is HomeUiEvent.NavigateToSettings -> Unit
+        is HomeUiEvent.QRCodeClicked -> Unit
     }
 
     private fun observeQRCodes() = viewModelScope.launch {
