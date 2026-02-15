@@ -28,7 +28,7 @@ import com.axondragonscale.qrqanvas.database.entity.TemplateEntity
 internal abstract class QRQanvasDatabase : RoomDatabase() {
 
     companion object {
-        const val DB_VERSION = 3
+        const val DB_VERSION = 4
         const val DB_NAME = "QRQanvasDatabase"
 
         fun create(appContext: Context): QRQanvasDatabase =

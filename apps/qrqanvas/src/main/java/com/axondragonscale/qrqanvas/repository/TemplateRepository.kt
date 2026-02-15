@@ -7,7 +7,6 @@ import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.model.Template
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
 
 /**
  * Created by Ronak Harkhani on 09/07/25
@@ -18,25 +17,19 @@ import kotlinx.serialization.json.Json
  */
 class TemplateRepository(
     private val templateDao: TemplateDao,
-    private val json: Json,
 ) {
 
     /**
      * Returns a [Flow] of all templates — predefined first, then user templates.
      */
     fun getAll(): Flow<List<Template>> = templateDao.getAll().map { userEntities ->
-        val userTemplates = userEntities.mapNotNull { entity ->
-            try {
-                val style: QRStyle = json.decodeFromString(entity.styleJson)
-                Template(
-                    id = "user_${entity.id}",
-                    name = entity.name,
-                    style = style,
-                    isPredefined = false,
-                )
-            } catch (e: Exception) {
-                null
-            }
+        val userTemplates = userEntities.map { entity ->
+            Template(
+                id = "user_${entity.id}",
+                name = entity.name,
+                style = entity.style,
+                isPredefined = false,
+            )
         }
         PredefinedTemplates.all + userTemplates
     }
@@ -45,18 +38,13 @@ class TemplateRepository(
      * Returns a [Flow] of only user-created templates.
      */
     fun getUserTemplates(): Flow<List<Template>> = templateDao.getAll().map { userEntities ->
-        userEntities.mapNotNull { entity ->
-            try {
-                val style: QRStyle = json.decodeFromString(entity.styleJson)
-                Template(
-                    id = "user_${entity.id}",
-                    name = entity.name,
-                    style = style,
-                    isPredefined = false,
-                )
-            } catch (e: Exception) {
-                null
-            }
+        userEntities.map { entity ->
+            Template(
+                id = "user_${entity.id}",
+                name = entity.name,
+                style = entity.style,
+                isPredefined = false,
+            )
         }
     }
 
@@ -66,11 +54,10 @@ class TemplateRepository(
      * @return The database ID of the newly created template.
      */
     suspend fun insert(name: String, style: QRStyle): Long {
-        val styleJson = json.encodeToString(QRStyle.serializer(), style)
         return templateDao.insert(
             TemplateEntity(
                 name = name,
-                styleJson = styleJson,
+                style = style,
                 createdAt = System.currentTimeMillis(),
             )
         )

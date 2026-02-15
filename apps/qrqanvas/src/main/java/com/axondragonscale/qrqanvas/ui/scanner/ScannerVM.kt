@@ -17,8 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+
 
 /**
  * Created by Ronak Harkhani on 09/07/25
@@ -26,7 +25,6 @@ import kotlinx.serialization.json.Json
 class ScannerVM(
     private val context: Context,
     private val scanHistoryRepository: ScanHistoryRepository,
-    private val json: Json,
 ) : ViewModel() {
 
     val uiState = MutableStateFlow(ScannerUiState())
@@ -65,11 +63,10 @@ class ScannerVM(
 
         // Auto-save to scan history
         viewModelScope.launch(Dispatchers.IO) {
-            val contentJson = json.encodeToString(content)
             scanHistoryRepository.insert(
                 ScanHistoryEntity(
                     rawValue = rawValue,
-                    contentJson = contentJson,
+                    content = content,
                     scannedAt = System.currentTimeMillis(),
                 )
             )

@@ -79,7 +79,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.qrqanvas.database.entity.ScanHistoryEntity
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
-import kotlinx.serialization.json.Json
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -329,14 +328,7 @@ private fun ScanHistoryItem(
     onShare: () -> Unit,
     onOpen: () -> Unit,
 ) {
-    val json = remember { Json { ignoreUnknownKeys = true } }
-    val content = remember(entity.contentJson) {
-        try {
-            json.decodeFromString<QRContent>(entity.contentJson)
-        } catch (e: Exception) {
-            null
-        }
-    }
+    val content = entity.content
 
     Column(
         modifier = modifier
@@ -572,19 +564,19 @@ private fun HistoryListPreview() {
                     ScanHistoryEntity(
                         id = 1,
                         rawValue = "https://example.com",
-                        contentJson = """{"type":"url","url":"https://example.com"}""",
+                        content = QRContent.Url(url = "https://example.com"),
                         scannedAt = System.currentTimeMillis() - 300_000,
                     ),
                     ScanHistoryEntity(
                         id = 2,
                         rawValue = "Hello World",
-                        contentJson = """{"type":"text","value":"Hello World"}""",
+                        content = QRContent.Text(value = "Hello World"),
                         scannedAt = System.currentTimeMillis() - 7_200_000,
                     ),
                     ScanHistoryEntity(
                         id = 3,
                         rawValue = "tel:+1234567890",
-                        contentJson = """{"type":"phone","number":"+1234567890"}""",
+                        content = QRContent.Phone(number = "+1234567890"),
                         scannedAt = System.currentTimeMillis() - 90_000_000,
                     ),
                 ),

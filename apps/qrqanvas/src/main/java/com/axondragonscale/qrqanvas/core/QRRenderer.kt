@@ -104,12 +104,7 @@ object QRRenderer {
         val totalFraction = logoData.size + logoData.padding * 2
         val halfExclusion = qrSize * totalFraction / 2f
 
-        return RectF(
-            cx - halfExclusion,
-            cy - halfExclusion,
-            cx + halfExclusion,
-            cy + halfExclusion,
-        )
+        return RectF(cx - halfExclusion, cy - halfExclusion, cx + halfExclusion, cy + halfExclusion)
     }
 
     private fun Canvas.drawBackground(colorData: ColorData, rect: RectF) {
