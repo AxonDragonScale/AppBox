@@ -6,7 +6,7 @@ import com.axondragonscale.qrqanvas.model.WifiEncryption
  * Created by Ronak Harkhani on 13/02/26
  *
  * Holds the input field values for each content type in the Creator screen.
- * Each subtype corresponds to a [ContentType] and contains the fields
+ * Each subtype corresponds to a [com.axondragonscale.qrqanvas.model.ContentType] and contains the fields
  * needed to construct the matching [com.axondragonscale.qrqanvas.model.QRContent] subtype.
  */
 sealed interface ContentInputState {

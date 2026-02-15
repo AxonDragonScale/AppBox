@@ -53,9 +53,9 @@ import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.ui.common.QRPreview
 import com.axondragonscale.qrqanvas.ui.common.QRPreviewStyle
-import com.axondragonscale.qrqanvas.ui.common.displayValue
-import com.axondragonscale.qrqanvas.ui.common.typeIcon
-import com.axondragonscale.qrqanvas.ui.common.typeLabel
+import com.axondragonscale.qrqanvas.util.displayValue
+import com.axondragonscale.qrqanvas.util.typeIcon
+import com.axondragonscale.qrqanvas.util.typeLabel
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

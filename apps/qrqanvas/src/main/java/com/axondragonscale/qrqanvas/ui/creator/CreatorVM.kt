@@ -14,6 +14,7 @@ import com.axondragonscale.qrqanvas.core.QRRenderer
 import com.axondragonscale.qrqanvas.core.ThumbnailGenerator
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.model.ColorData
+import com.axondragonscale.qrqanvas.model.ContentType
 import com.axondragonscale.qrqanvas.model.DotStyle
 import com.axondragonscale.qrqanvas.model.EyeStyle
 import com.axondragonscale.qrqanvas.model.LogoData

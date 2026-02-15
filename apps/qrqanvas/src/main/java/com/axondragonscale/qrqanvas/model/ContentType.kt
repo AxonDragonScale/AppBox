@@ -1,4 +1,4 @@
-package com.axondragonscale.qrqanvas.ui.creator
+package com.axondragonscale.qrqanvas.model
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email

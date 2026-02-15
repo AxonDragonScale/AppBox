@@ -53,7 +53,7 @@ import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.ui.Route
-import com.axondragonscale.qrqanvas.ui.common.typeIcon
+import com.axondragonscale.qrqanvas.util.typeIcon
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import androidx.navigation.NavController
 import org.koin.androidx.compose.koinViewModel

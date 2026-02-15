@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 fun QRPreview(
     modifier: Modifier = Modifier,
     bitmap: Bitmap?,
-    style: QRPreviewStyle = QRPreviewStyle.Loading,
+    style: QRPreviewStyle = QRPreviewStyle.Loading, // REVIEW: lets just have isLoading boolean instead
     contentPadding: Dp = 16.dp,
 ) {
     Box(

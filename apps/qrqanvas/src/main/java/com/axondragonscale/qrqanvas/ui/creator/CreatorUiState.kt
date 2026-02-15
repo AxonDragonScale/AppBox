@@ -1,6 +1,7 @@
 package com.axondragonscale.qrqanvas.ui.creator
 
 import android.graphics.Bitmap
+import com.axondragonscale.qrqanvas.model.ContentType
 import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.model.Template
 

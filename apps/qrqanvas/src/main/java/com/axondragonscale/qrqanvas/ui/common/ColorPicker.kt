@@ -88,6 +88,29 @@ private val PRESET_COLORS = listOf(
     0xFF607D8B, // Blue Grey
 )
 
+val BACKGROUND_PRESET_COLORS = listOf(
+    0xFFFFFFFF, // White
+    0xFFF5F5F5, // Grey 100
+    0xFFECEFF1, // Blue Grey 50
+    0xFFFCE4EC, // Pink 50
+    0xFFF3E5F5, // Purple 50
+    0xFFEDE7F6, // Deep Purple 50
+    0xFFE8EAF6, // Indigo 50
+    0xFFE3F2FD, // Blue 50
+    0xFFE0F7FA, // Cyan 50
+    0xFFE0F2F1, // Teal 50
+    0xFFE8F5E9, // Green 50
+    0xFFF1F8E9, // Light Green 50
+    0xFFFFFDE7, // Yellow 50
+    0xFFFFF8E1, // Amber 50
+    0xFFFFF3E0, // Orange 50
+    0xFFFBE9E7, // Deep Orange 50
+    0xFFEFEBE9, // Brown 50
+    0xFF263238, // Blue Grey 900
+    0xFF212121, // Grey 900
+    0xFF000000, // Black
+)
+
 private enum class ColorMode(val label: String) {
     Solid("Solid"),
     Linear("Linear"),
@@ -98,6 +121,7 @@ private enum class ColorMode(val label: String) {
 fun ColorPicker(
     modifier: Modifier = Modifier,
     selectedColor: ColorData,
+    presetColors: List<Long> = PRESET_COLORS,
     onColorSelected: (ColorData) -> Unit,
 ) {
     var mode by remember(selectedColor) {
@@ -133,6 +157,7 @@ fun ColorPicker(
             when (currentMode) {
                 ColorMode.Solid -> SolidColorPicker(
                     selectedColor = selectedColor.asSolidOrFirst(),
+                    presetColors = presetColors,
                     onColorSelected = { onColorSelected(ColorData.Solid(it)) },
                 )
 
@@ -142,6 +167,7 @@ fun ColorPicker(
                             colors = listOf(0xFF000000L, 0xFFFFFFFF),
                             angleDegrees = 0f,
                         ),
+                    presetColors = presetColors,
                     onConfigChanged = onColorSelected,
                 )
 
@@ -152,6 +178,7 @@ fun ColorPicker(
                             centerX = 0.5f,
                             centerY = 0.5f,
                         ),
+                    presetColors = presetColors,
                     onConfigChanged = onColorSelected,
                 )
             }
@@ -188,9 +215,10 @@ private fun ColorModeSelector(
 private fun SolidColorPicker(
     modifier: Modifier = Modifier,
     selectedColor: Long,
+    presetColors: List<Long> = PRESET_COLORS,
     onColorSelected: (Long) -> Unit,
 ) {
-    val isCustomColor = selectedColor !in PRESET_COLORS
+    val isCustomColor = selectedColor !in presetColors
     var showCustomInput by remember { mutableStateOf(isCustomColor) }
     var customHex by remember(selectedColor) {
         mutableStateOf(
@@ -207,7 +235,7 @@ private fun SolidColorPicker(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            PRESET_COLORS.forEach { colorLong ->
+            presetColors.forEach { colorLong ->
                 ColorSwatch(
                     color = colorLong,
                     isSelected = colorLong == selectedColor && !showCustomInput,
@@ -244,6 +272,7 @@ private fun SolidColorPicker(
 private fun LinearGradientPicker(
     modifier: Modifier = Modifier,
     config: ColorData.LinearGradient,
+    presetColors: List<Long> = PRESET_COLORS,
     onConfigChanged: (ColorData) -> Unit,
 ) {
     val startColor = config.colors.getOrElse(0) { 0xFF000000L }
@@ -266,6 +295,7 @@ private fun LinearGradientPicker(
         GradientColorSection(
             label = "Start Color",
             selectedColor = startColor,
+            presetColors = presetColors,
             onColorSelected = { color ->
                 onConfigChanged(
                     ColorData.LinearGradient(
@@ -280,6 +310,7 @@ private fun LinearGradientPicker(
         GradientColorSection(
             label = "End Color",
             selectedColor = endColor,
+            presetColors = presetColors,
             onColorSelected = { color ->
                 onConfigChanged(
                     ColorData.LinearGradient(
@@ -325,6 +356,7 @@ private fun LinearGradientPicker(
 private fun RadialGradientPicker(
     modifier: Modifier = Modifier,
     config: ColorData.RadialGradient,
+    presetColors: List<Long> = PRESET_COLORS,
     onConfigChanged: (ColorData) -> Unit,
 ) {
     val centerColor = config.colors.getOrElse(0) { 0xFF000000L }
@@ -347,6 +379,7 @@ private fun RadialGradientPicker(
         GradientColorSection(
             label = "Center Color",
             selectedColor = centerColor,
+            presetColors = presetColors,
             onColorSelected = { color ->
                 onConfigChanged(
                     ColorData.RadialGradient(
@@ -362,6 +395,7 @@ private fun RadialGradientPicker(
         GradientColorSection(
             label = "Edge Color",
             selectedColor = edgeColor,
+            presetColors = presetColors,
             onColorSelected = { color ->
                 onConfigChanged(
                     ColorData.RadialGradient(
@@ -447,9 +481,10 @@ private fun GradientColorSection(
     modifier: Modifier = Modifier,
     label: String,
     selectedColor: Long,
+    presetColors: List<Long> = PRESET_COLORS,
     onColorSelected: (Long) -> Unit,
 ) {
-    val isCustomColor = selectedColor !in PRESET_COLORS
+    val isCustomColor = selectedColor !in presetColors
     var showCustomInput by remember { mutableStateOf(false) }
     var customHex by remember(selectedColor) {
         mutableStateOf(
@@ -493,7 +528,7 @@ private fun GradientColorSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            PRESET_COLORS.forEach { colorLong ->
+            presetColors.forEach { colorLong ->
                 ColorSwatch(
                     color = colorLong,
                     isSelected = colorLong == selectedColor && !showCustomInput,

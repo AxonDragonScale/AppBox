@@ -92,6 +92,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.model.ColorData
+import com.axondragonscale.qrqanvas.model.ContentType
 import com.axondragonscale.qrqanvas.ui.common.QRPreview
 import com.axondragonscale.qrqanvas.ui.common.QRPreviewStyle
 import com.axondragonscale.qrqanvas.model.DotStyle
@@ -102,6 +103,7 @@ import com.axondragonscale.qrqanvas.model.LogoShape
 import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.model.Template
 import com.axondragonscale.qrqanvas.model.WifiEncryption
+import com.axondragonscale.qrqanvas.ui.common.BACKGROUND_PRESET_COLORS
 import com.axondragonscale.qrqanvas.ui.common.ColorPicker
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import org.koin.androidx.compose.koinViewModel
@@ -448,6 +450,7 @@ private fun BackgroundTabContent(
         SectionHeader(text = "Background Color")
         ColorPicker(
             selectedColor = backgroundColor,
+            presetColors = BACKGROUND_PRESET_COLORS,
             onColorSelected = { onEvent(CreatorUiEvent.BackgroundColorSelected(it)) },
         )
 

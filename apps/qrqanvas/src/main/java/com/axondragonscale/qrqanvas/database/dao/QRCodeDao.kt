@@ -27,4 +27,7 @@ interface QRCodeDao {
 
     @Query("DELETE FROM qr_code WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("DELETE FROM qr_code")
+    suspend fun deleteAll()
 }
