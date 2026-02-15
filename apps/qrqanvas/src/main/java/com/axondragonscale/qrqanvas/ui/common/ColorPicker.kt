@@ -51,7 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.qrqanvas.model.ColorConfig
+import com.axondragonscale.qrqanvas.model.ColorData
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -60,8 +60,8 @@ import kotlin.math.sin
 /**
  * Created by Ronak Harkhani on 13/02/26
  *
- * A color picker component supporting [ColorConfig.Solid], [ColorConfig.LinearGradient],
- * and [ColorConfig.RadialGradient] modes. Users can switch between modes via segmented buttons,
+ * A color picker component supporting [ColorData.Solid], [ColorData.LinearGradient],
+ * and [ColorData.RadialGradient] modes. Users can switch between modes via segmented buttons,
  * pick preset or custom hex colors, and configure gradient angle (linear) or center (radial).
  */
 
@@ -97,15 +97,15 @@ private enum class ColorMode(val label: String) {
 @Composable
 fun ColorPicker(
     modifier: Modifier = Modifier,
-    selectedColor: ColorConfig,
-    onColorSelected: (ColorConfig) -> Unit,
+    selectedColor: ColorData,
+    onColorSelected: (ColorData) -> Unit,
 ) {
     var mode by remember(selectedColor) {
         mutableStateOf(
             when (selectedColor) {
-                is ColorConfig.Solid -> ColorMode.Solid
-                is ColorConfig.LinearGradient -> ColorMode.Linear
-                is ColorConfig.RadialGradient -> ColorMode.Radial
+                is ColorData.Solid -> ColorMode.Solid
+                is ColorData.LinearGradient -> ColorMode.Linear
+                is ColorData.RadialGradient -> ColorMode.Radial
             }
         )
     }
@@ -133,12 +133,12 @@ fun ColorPicker(
             when (currentMode) {
                 ColorMode.Solid -> SolidColorPicker(
                     selectedColor = selectedColor.asSolidOrFirst(),
-                    onColorSelected = { onColorSelected(ColorConfig.Solid(it)) },
+                    onColorSelected = { onColorSelected(ColorData.Solid(it)) },
                 )
 
                 ColorMode.Linear -> LinearGradientPicker(
-                    config = selectedColor as? ColorConfig.LinearGradient
-                        ?: ColorConfig.LinearGradient(
+                    config = selectedColor as? ColorData.LinearGradient
+                        ?: ColorData.LinearGradient(
                             colors = listOf(0xFF000000L, 0xFFFFFFFF),
                             angleDegrees = 0f,
                         ),
@@ -146,8 +146,8 @@ fun ColorPicker(
                 )
 
                 ColorMode.Radial -> RadialGradientPicker(
-                    config = selectedColor as? ColorConfig.RadialGradient
-                        ?: ColorConfig.RadialGradient(
+                    config = selectedColor as? ColorData.RadialGradient
+                        ?: ColorData.RadialGradient(
                             colors = listOf(0xFF000000L, 0xFFFFFFFF),
                             centerX = 0.5f,
                             centerY = 0.5f,
@@ -243,8 +243,8 @@ private fun SolidColorPicker(
 @Composable
 private fun LinearGradientPicker(
     modifier: Modifier = Modifier,
-    config: ColorConfig.LinearGradient,
-    onConfigChanged: (ColorConfig) -> Unit,
+    config: ColorData.LinearGradient,
+    onConfigChanged: (ColorData) -> Unit,
 ) {
     val startColor = config.colors.getOrElse(0) { 0xFF000000L }
     val endColor = config.colors.getOrElse(1) { 0xFFFFFFFF }
@@ -256,7 +256,7 @@ private fun LinearGradientPicker(
     ) {
         // Gradient preview
         GradientPreview(
-            colorConfig = ColorConfig.LinearGradient(
+            colorData = ColorData.LinearGradient(
                 colors = listOf(startColor, endColor),
                 angleDegrees = angle,
             ),
@@ -268,7 +268,7 @@ private fun LinearGradientPicker(
             selectedColor = startColor,
             onColorSelected = { color ->
                 onConfigChanged(
-                    ColorConfig.LinearGradient(
+                    ColorData.LinearGradient(
                         colors = listOf(color, endColor),
                         angleDegrees = angle,
                     )
@@ -282,7 +282,7 @@ private fun LinearGradientPicker(
             selectedColor = endColor,
             onColorSelected = { color ->
                 onConfigChanged(
-                    ColorConfig.LinearGradient(
+                    ColorData.LinearGradient(
                         colors = listOf(startColor, color),
                         angleDegrees = angle,
                     )
@@ -304,7 +304,7 @@ private fun LinearGradientPicker(
                 onValueChange = { newAngle ->
                     angle = newAngle
                     onConfigChanged(
-                        ColorConfig.LinearGradient(
+                        ColorData.LinearGradient(
                             colors = listOf(startColor, endColor),
                             angleDegrees = newAngle,
                         )
@@ -324,8 +324,8 @@ private fun LinearGradientPicker(
 @Composable
 private fun RadialGradientPicker(
     modifier: Modifier = Modifier,
-    config: ColorConfig.RadialGradient,
-    onConfigChanged: (ColorConfig) -> Unit,
+    config: ColorData.RadialGradient,
+    onConfigChanged: (ColorData) -> Unit,
 ) {
     val centerColor = config.colors.getOrElse(0) { 0xFF000000L }
     val edgeColor = config.colors.getOrElse(1) { 0xFFFFFFFF }
@@ -336,7 +336,7 @@ private fun RadialGradientPicker(
     ) {
         // Gradient preview
         GradientPreview(
-            colorConfig = ColorConfig.RadialGradient(
+            colorData = ColorData.RadialGradient(
                 colors = listOf(centerColor, edgeColor),
                 centerX = config.centerX,
                 centerY = config.centerY,
@@ -349,7 +349,7 @@ private fun RadialGradientPicker(
             selectedColor = centerColor,
             onColorSelected = { color ->
                 onConfigChanged(
-                    ColorConfig.RadialGradient(
+                    ColorData.RadialGradient(
                         colors = listOf(color, edgeColor),
                         centerX = config.centerX,
                         centerY = config.centerY,
@@ -364,7 +364,7 @@ private fun RadialGradientPicker(
             selectedColor = edgeColor,
             onColorSelected = { color ->
                 onConfigChanged(
-                    ColorConfig.RadialGradient(
+                    ColorData.RadialGradient(
                         colors = listOf(centerColor, color),
                         centerX = config.centerX,
                         centerY = config.centerY,
@@ -382,7 +382,7 @@ private fun RadialGradientPicker(
 @Composable
 private fun GradientPreview(
     modifier: Modifier = Modifier,
-    colorConfig: ColorConfig,
+    colorData: ColorData,
 ) {
     Box(
         modifier = modifier
@@ -395,19 +395,19 @@ private fun GradientPreview(
                 shape = RoundedCornerShape(12.dp),
             )
             .drawBehind {
-                val brush = when (colorConfig) {
-                    is ColorConfig.Solid -> {
+                val brush = when (colorData) {
+                    is ColorData.Solid -> {
                         Brush.linearGradient(
                             colors = listOf(
-                                Color(colorConfig.color.toInt()),
-                                Color(colorConfig.color.toInt()),
+                                Color(colorData.color.toInt()),
+                                Color(colorData.color.toInt()),
                             ),
                         )
                     }
 
-                    is ColorConfig.LinearGradient -> {
-                        val colors = colorConfig.colors.map { Color(it.toInt()) }
-                        val angleRad = Math.toRadians(colorConfig.angleDegrees.toDouble())
+                    is ColorData.LinearGradient -> {
+                        val colors = colorData.colors.map { Color(it.toInt()) }
+                        val angleRad = Math.toRadians(colorData.angleDegrees.toDouble())
                         val cx = size.width / 2f
                         val cy = size.height / 2f
                         val halfW = size.width / 2f
@@ -422,10 +422,10 @@ private fun GradientPreview(
                         )
                     }
 
-                    is ColorConfig.RadialGradient -> {
-                        val colors = colorConfig.colors.map { Color(it.toInt()) }
-                        val cx = size.width * colorConfig.centerX
-                        val cy = size.height * colorConfig.centerY
+                    is ColorData.RadialGradient -> {
+                        val colors = colorData.colors.map { Color(it.toInt()) }
+                        val cx = size.width * colorData.centerX
+                        val cy = size.height * colorData.centerY
                         val maxDx = maxOf(cx, size.width - cx)
                         val maxDy = maxOf(cy, size.height - cy)
                         val radius = kotlin.math.sqrt(maxDx * maxDx + maxDy * maxDy)
@@ -684,38 +684,38 @@ private fun HexColorInput(
 // region Utility Functions
 
 /**
- * Converts a [ColorConfig] to a different [ColorMode], preserving colors where possible.
+ * Converts a [ColorData] to a different [ColorMode], preserving colors where possible.
  */
-private fun convertColorConfig(config: ColorConfig, targetMode: ColorMode): ColorConfig {
+private fun convertColorConfig(config: ColorData, targetMode: ColorMode): ColorData {
     val colors = when (config) {
-        is ColorConfig.Solid -> listOf(config.color, config.color)
-        is ColorConfig.LinearGradient -> config.colors
-        is ColorConfig.RadialGradient -> config.colors
+        is ColorData.Solid -> listOf(config.color, config.color)
+        is ColorData.LinearGradient -> config.colors
+        is ColorData.RadialGradient -> config.colors
     }
     val firstColor = colors.getOrElse(0) { 0xFF000000L }
     val secondColor = colors.getOrElse(1) { 0xFFFFFFFF }
 
     return when (targetMode) {
-        ColorMode.Solid -> ColorConfig.Solid(firstColor)
-        ColorMode.Linear -> ColorConfig.LinearGradient(
+        ColorMode.Solid -> ColorData.Solid(firstColor)
+        ColorMode.Linear -> ColorData.LinearGradient(
             colors = listOf(firstColor, secondColor),
-            angleDegrees = (config as? ColorConfig.LinearGradient)?.angleDegrees ?: 0f,
+            angleDegrees = (config as? ColorData.LinearGradient)?.angleDegrees ?: 0f,
         )
-        ColorMode.Radial -> ColorConfig.RadialGradient(
+        ColorMode.Radial -> ColorData.RadialGradient(
             colors = listOf(firstColor, secondColor),
-            centerX = (config as? ColorConfig.RadialGradient)?.centerX ?: 0.5f,
-            centerY = (config as? ColorConfig.RadialGradient)?.centerY ?: 0.5f,
+            centerX = (config as? ColorData.RadialGradient)?.centerX ?: 0.5f,
+            centerY = (config as? ColorData.RadialGradient)?.centerY ?: 0.5f,
         )
     }
 }
 
 /**
- * Extracts the first solid color from any [ColorConfig] as a Long ARGB value.
+ * Extracts the first solid color from any [ColorData] as a Long ARGB value.
  */
-private fun ColorConfig.asSolidOrFirst(): Long = when (this) {
-    is ColorConfig.Solid -> color
-    is ColorConfig.LinearGradient -> colors.firstOrNull() ?: 0xFF000000L
-    is ColorConfig.RadialGradient -> colors.firstOrNull() ?: 0xFF000000L
+private fun ColorData.asSolidOrFirst(): Long = when (this) {
+    is ColorData.Solid -> color
+    is ColorData.LinearGradient -> colors.firstOrNull() ?: 0xFF000000L
+    is ColorData.RadialGradient -> colors.firstOrNull() ?: 0xFF000000L
 }
 
 /**
@@ -765,7 +765,7 @@ private fun ColorPickerSolidPreview() {
         Surface {
             ColorPicker(
                 modifier = Modifier.padding(16.dp),
-                selectedColor = ColorConfig.Solid(0xFFF44336),
+                selectedColor = ColorData.Solid(0xFFF44336),
                 onColorSelected = {},
             )
         }
@@ -779,7 +779,7 @@ private fun ColorPickerLinearGradientPreview() {
         Surface {
             ColorPicker(
                 modifier = Modifier.padding(16.dp),
-                selectedColor = ColorConfig.LinearGradient(
+                selectedColor = ColorData.LinearGradient(
                     colors = listOf(0xFF00E5FF, 0xFFFF00FF),
                     angleDegrees = 135f,
                 ),
@@ -796,7 +796,7 @@ private fun ColorPickerRadialGradientPreview() {
         Surface {
             ColorPicker(
                 modifier = Modifier.padding(16.dp),
-                selectedColor = ColorConfig.RadialGradient(
+                selectedColor = ColorData.RadialGradient(
                     colors = listOf(0xFFFF6B35, 0xFFD32F2F),
                 ),
                 onColorSelected = {},
@@ -812,7 +812,7 @@ private fun ColorPickerCustomPreview() {
         Surface {
             ColorPicker(
                 modifier = Modifier.padding(16.dp),
-                selectedColor = ColorConfig.Solid(0xFF123456),
+                selectedColor = ColorData.Solid(0xFF123456),
                 onColorSelected = {},
             )
         }

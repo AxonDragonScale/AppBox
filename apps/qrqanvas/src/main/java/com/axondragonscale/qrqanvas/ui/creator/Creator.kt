@@ -87,11 +87,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.axondragonscale.qrqanvas.model.ColorConfig
+import com.axondragonscale.qrqanvas.model.ColorData
 import com.axondragonscale.qrqanvas.model.DotStyle
 import com.axondragonscale.qrqanvas.model.ErrorCorrectionLevel
 import com.axondragonscale.qrqanvas.model.EyeStyle
-import com.axondragonscale.qrqanvas.model.LogoConfig
+import com.axondragonscale.qrqanvas.model.LogoData
 import com.axondragonscale.qrqanvas.model.LogoShape
 import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.model.Template
@@ -260,14 +260,14 @@ private fun Creator(
                 onEyeDotColorSelected = { onEvent(CreatorUiEvent.EyeDotColorSelected(it)) },
                 backgroundColor = uiState.style.backgroundColor,
                 onBackgroundColorSelected = { onEvent(CreatorUiEvent.BackgroundColorSelected(it)) },
-                logoConfig = uiState.style.logoConfig,
+                logoData = uiState.style.logoData,
                 onLogoSelected = { onEvent(CreatorUiEvent.LogoSelected(it)) },
                 onLogoSizeChanged = { onEvent(CreatorUiEvent.LogoSizeChanged(it)) },
                 onLogoPaddingChanged = { onEvent(CreatorUiEvent.LogoPaddingChanged(it)) },
                 onLogoShapeSelected = { onEvent(CreatorUiEvent.LogoShapeSelected(it)) },
                 errorCorrection = uiState.style.errorCorrection,
                 onErrorCorrectionSelected = { onEvent(CreatorUiEvent.ErrorCorrectionSelected(it)) },
-                hasLogo = uiState.style.logoConfig != null,
+                hasLogo = uiState.style.logoData != null,
                 quietZone = uiState.style.quietZone,
                 onQuietZoneChanged = { onEvent(CreatorUiEvent.QuietZoneChanged(it)) },
                 templates = uiState.templates,
@@ -391,17 +391,17 @@ private fun CustomizationPanel(
     onContentInputChanged: (ContentInputState) -> Unit,
     selectedDotStyle: DotStyle,
     onDotStyleSelected: (DotStyle) -> Unit,
-    dotColor: ColorConfig,
-    onDotColorSelected: (ColorConfig) -> Unit,
+    dotColor: ColorData,
+    onDotColorSelected: (ColorData) -> Unit,
     selectedEyeStyle: EyeStyle,
     onEyeStyleSelected: (EyeStyle) -> Unit,
-    eyeFrameColor: ColorConfig,
-    onEyeFrameColorSelected: (ColorConfig) -> Unit,
-    eyeDotColor: ColorConfig,
-    onEyeDotColorSelected: (ColorConfig) -> Unit,
-    backgroundColor: ColorConfig,
-    onBackgroundColorSelected: (ColorConfig) -> Unit,
-    logoConfig: LogoConfig?,
+    eyeFrameColor: ColorData,
+    onEyeFrameColorSelected: (ColorData) -> Unit,
+    eyeDotColor: ColorData,
+    onEyeDotColorSelected: (ColorData) -> Unit,
+    backgroundColor: ColorData,
+    onBackgroundColorSelected: (ColorData) -> Unit,
+    logoData: LogoData?,
     onLogoSelected: (String?) -> Unit,
     onLogoSizeChanged: (Float) -> Unit,
     onLogoPaddingChanged: (Float) -> Unit,
@@ -483,7 +483,7 @@ private fun CustomizationPanel(
         // Logo Section
         SectionHeader(text = "Logo")
         LogoSection(
-            logoConfig = logoConfig,
+            logoData = logoData,
             onLogoSelected = onLogoSelected,
             onLogoSizeChanged = onLogoSizeChanged,
             onLogoPaddingChanged = onLogoPaddingChanged,
@@ -654,7 +654,7 @@ private fun TemplateCard(
 @Composable
 private fun LogoSection(
     modifier: Modifier = Modifier,
-    logoConfig: LogoConfig?,
+    logoData: LogoData?,
     onLogoSelected: (String?) -> Unit,
     onLogoSizeChanged: (Float) -> Unit,
     onLogoPaddingChanged: (Float) -> Unit,
@@ -670,7 +670,7 @@ private fun LogoSection(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (logoConfig == null) {
+        if (logoData == null) {
             // No logo selected — show picker button
             Box(
                 modifier = Modifier
@@ -707,8 +707,8 @@ private fun LogoSection(
         } else {
             // Logo selected — show preview + controls
             LogoPreview(
-                logoUri = logoConfig.uri,
-                logoShape = logoConfig.shape,
+                logoUri = logoData.uri,
+                logoShape = logoData.shape,
                 onRemove = { onLogoSelected(null) },
                 onChangeImage = {
                     photoPickerLauncher.launch(
@@ -721,19 +721,19 @@ private fun LogoSection(
 
             // Shape selector
             LogoShapeSelector(
-                selectedShape = logoConfig.shape,
+                selectedShape = logoData.shape,
                 onShapeSelected = onLogoShapeSelected,
             )
 
             // Size slider
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Size: ${(logoConfig.size * 100).roundToInt()}%",
+                    text = "Size: ${(logoData.size * 100).roundToInt()}%",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Slider(
-                    value = logoConfig.size,
+                    value = logoData.size,
                     onValueChange = onLogoSizeChanged,
                     valueRange = 0.1f..0.4f,
                 )
@@ -742,12 +742,12 @@ private fun LogoSection(
             // Padding slider
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Padding: ${(logoConfig.padding * 100).roundToInt()}%",
+                    text = "Padding: ${(logoData.padding * 100).roundToInt()}%",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Slider(
-                    value = logoConfig.padding,
+                    value = logoData.padding,
                     onValueChange = onLogoPaddingChanged,
                     valueRange = 0f..0.1f,
                 )

@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
@@ -56,6 +58,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
+import com.axondragonscale.qrqanvas.model.QRContent
+import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -185,8 +189,8 @@ private fun QRCodeCard(
     thumbnail: Bitmap?,
     onClick: () -> Unit,
 ) {
-    val contentTypeIcon = remember(entity.contentJson) {
-        resolveContentTypeIcon(entity.contentJson)
+    val contentTypeIcon = remember(entity.content) {
+        resolveContentTypeIcon(entity.content)
     }
 
     Card(
@@ -293,18 +297,17 @@ private fun EmptyState(
 }
 
 /**
- * Resolves an icon for the content type by inspecting the serialized JSON content string.
- * Looks for the kotlinx.serialization `"type"` discriminator field.
+ * Resolves an icon for the given [QRContent] type.
  */
-private fun resolveContentTypeIcon(contentJson: String): ImageVector {
-    return when {
-        contentJson.contains("\"url\"") -> Icons.Filled.Link
-        contentJson.contains("\"wifi\"") -> Icons.Filled.Wifi
-        contentJson.contains("\"email\"") -> Icons.Filled.Email
-        contentJson.contains("\"phone\"") -> Icons.Filled.Phone
-        contentJson.contains("\"sms\"") -> Icons.Filled.Sms
-        else -> Icons.Filled.TextFields
-    }
+private fun resolveContentTypeIcon(content: QRContent): ImageVector = when (content) {
+    is QRContent.Url -> Icons.Filled.Link
+    is QRContent.WiFi -> Icons.Filled.Wifi
+    is QRContent.Email -> Icons.Filled.Email
+    is QRContent.Phone -> Icons.Filled.Phone
+    is QRContent.Sms -> Icons.Filled.Sms
+    is QRContent.Contact -> Icons.Filled.Person
+    is QRContent.Location -> Icons.Filled.LocationOn
+    is QRContent.Text -> Icons.Filled.TextFields
 }
 
 @Preview(name = "Light Mode", showBackground = true)
@@ -330,24 +333,24 @@ private fun HomeGridPreview() {
                     QRCodeEntity(
                         id = 1,
                         title = "My Website",
-                        contentJson = """{"type":"url","url":"https://example.com"}""",
-                        styleJson = "{}",
+                        content = QRContent.Url(url = "https://example.com"),
+                        style = QRStyle(),
                         createdAt = System.currentTimeMillis(),
                         modifiedAt = System.currentTimeMillis(),
                     ),
                     QRCodeEntity(
                         id = 2,
                         title = "Home Wi-Fi Network",
-                        contentJson = """{"type":"wifi","ssid":"MyWiFi","password":"pass"}""",
-                        styleJson = "{}",
+                        content = QRContent.WiFi(ssid = "MyWiFi", password = "pass"),
+                        style = QRStyle(),
                         createdAt = System.currentTimeMillis(),
                         modifiedAt = System.currentTimeMillis(),
                     ),
                     QRCodeEntity(
                         id = 3,
                         title = "Hello World",
-                        contentJson = """{"type":"text","value":"Hello"}""",
-                        styleJson = "{}",
+                        content = QRContent.Text(value = "Hello"),
+                        style = QRStyle(),
                         createdAt = System.currentTimeMillis(),
                         modifiedAt = System.currentTimeMillis(),
                     ),

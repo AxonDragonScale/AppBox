@@ -1,6 +1,6 @@
 package com.axondragonscale.qrqanvas.ui.detail
 
-import android.app.Application
+import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,16 +21,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
 /**
  * Created by Ronak Harkhani on 09/07/25
  */
 class DetailVM(
-    private val application: Application,
+    private val context: Context,
     private val qrCodeRepository: QRCodeRepository,
-    private val qrGenerator: QRGenerator,
-    private val qrRenderer: QRRenderer,
     private val qrExporter: QRExporter,
 ) : ViewModel() {
 
@@ -38,8 +35,6 @@ class DetailVM(
 
     private val _effects = Channel<DetailUiEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     private var qrCodeId: Long = 0L
     private var logoBitmap: Bitmap? = null
@@ -60,8 +55,8 @@ class DetailVM(
                 return@launch
             }
 
-            val content: QRContent = json.decodeFromString(entity.contentJson)
-            val style: QRStyle = json.decodeFromString(entity.styleJson)
+            val content = entity.content
+            val style = entity.style
 
             uiState.update {
                 it.copy(
@@ -74,8 +69,8 @@ class DetailVM(
             }
 
             // Load logo bitmap if present, otherwise render immediately
-            if (style.logoConfig != null) {
-                loadLogoBitmapAndRender(style.logoConfig.uri, content, style)
+            if (style.logoData != null) {
+                loadLogoBitmapAndRender(style.logoData.uri, content, style)
             } else {
                 renderQR(content, style, logoBitmap = null)
             }
@@ -152,8 +147,8 @@ class DetailVM(
     private fun loadLogoBitmapAndRender(uri: String, content: QRContent, style: QRStyle) {
         logoLoadJob?.cancel()
         logoLoadJob = viewModelScope.launch(Dispatchers.IO) {
-            val imageLoader = ImageLoader(application)
-            val request = ImageRequest.Builder(application)
+            val imageLoader = ImageLoader(context)
+            val request = ImageRequest.Builder(context)
                 .data(uri)
                 .size(512)
                 .build()
@@ -171,8 +166,8 @@ class DetailVM(
      */
     private fun renderQR(content: QRContent, style: QRStyle, logoBitmap: Bitmap?) {
         val effectiveStyle = style.withEnforcedLogoErrorCorrection()
-        val bitMatrix = qrGenerator.generate(content, effectiveStyle.errorCorrection)
-        val bitmap = qrRenderer.render(bitMatrix, effectiveStyle, logoBitmap)
+        val bitMatrix = QRGenerator.generate(content, effectiveStyle.errorCorrection)
+        val bitmap = QRRenderer.render(bitMatrix, effectiveStyle, logoBitmap)
         uiState.update { it.copy(qrBitmap = bitmap) }
     }
 }

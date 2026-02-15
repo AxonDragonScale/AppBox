@@ -1,9 +1,6 @@
 package com.axondragonscale.qrqanvas.di
 
-import com.axondragonscale.qrqanvas.core.QRContentParser
 import com.axondragonscale.qrqanvas.core.QRExporter
-import com.axondragonscale.qrqanvas.core.QRGenerator
-import com.axondragonscale.qrqanvas.core.QRRenderer
 import com.axondragonscale.qrqanvas.database.QRQanvasDatabase
 import com.axondragonscale.qrqanvas.repository.AppPrefsRepository
 import com.axondragonscale.qrqanvas.repository.QRCodeRepository
@@ -32,10 +29,7 @@ val QRQanvasModule = module {
     single { get<QRQanvasDatabase>().templateDao() }
 
     // Core
-    singleOf(::QRContentParser)
     singleOf(::QRExporter)
-    singleOf(::QRGenerator)
-    singleOf(::QRRenderer)
 
     // Repositories
     singleOf(::AppPrefsRepository)

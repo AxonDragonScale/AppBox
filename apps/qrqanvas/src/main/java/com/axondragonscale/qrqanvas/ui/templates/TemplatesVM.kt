@@ -99,7 +99,7 @@ class TemplatesVM(
     private fun renderThumbnail(template: Template): Bitmap? {
         return try {
             val dummyContent = QRContent.Text("QRQanvas")
-            val style = template.style.copy(size = THUMBNAIL_SIZE, quietZone = 1, logoConfig = null)
+            val style = template.style.copy(size = THUMBNAIL_SIZE, quietZone = 1, logoData = null)
             val bitMatrix = qrGenerator.generate(dummyContent, style.errorCorrection)
             qrRenderer.render(bitMatrix, style)
         } catch (e: Exception) {

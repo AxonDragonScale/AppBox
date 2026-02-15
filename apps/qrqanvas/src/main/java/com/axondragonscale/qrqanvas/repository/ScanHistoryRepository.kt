@@ -7,13 +7,4 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Created by Ronak Harkhani on 09/07/25
  */
-class ScanHistoryRepository(private val scanHistoryDao: ScanHistoryDao) {
-
-    fun getAll(): Flow<List<ScanHistoryEntity>> = scanHistoryDao.getAll()
-
-    suspend fun insert(entity: ScanHistoryEntity): Long = scanHistoryDao.insert(entity)
-
-    suspend fun delete(id: Long) = scanHistoryDao.delete(id)
-
-    suspend fun deleteAll() = scanHistoryDao.deleteAll()
-}
+class ScanHistoryRepository(private val scanHistoryDao: ScanHistoryDao): ScanHistoryDao by scanHistoryDao

@@ -4,9 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import com.axondragonscale.qrqanvas.database.QRQanvasDatabase.Companion.DB_VERSION
-import com.axondragonscale.qrqanvas.database.converter.QRConverters
 import com.axondragonscale.qrqanvas.database.dao.QRCodeDao
 import com.axondragonscale.qrqanvas.database.dao.ScanHistoryDao
 import com.axondragonscale.qrqanvas.database.dao.TemplateDao
@@ -27,9 +25,6 @@ import com.axondragonscale.qrqanvas.database.entity.TemplateEntity
     version = DB_VERSION,
     exportSchema = false,
 )
-@TypeConverters(
-    QRConverters::class,
-)
 internal abstract class QRQanvasDatabase : RoomDatabase() {
 
     companion object {
@@ -42,8 +37,8 @@ internal abstract class QRQanvasDatabase : RoomDatabase() {
                 klass = QRQanvasDatabase::class.java,
                 name = DB_NAME,
             )
-                .fallbackToDestructiveMigration(dropAllTables = true)
-                .build()
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
     }
 
     abstract fun qrCodeDao(): QRCodeDao

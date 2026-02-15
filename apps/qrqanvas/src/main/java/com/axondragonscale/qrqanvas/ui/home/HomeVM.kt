@@ -6,23 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.axondragonscale.qrqanvas.core.QRGenerator
 import com.axondragonscale.qrqanvas.core.QRRenderer
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
-import com.axondragonscale.qrqanvas.model.QRContent
-import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.repository.QRCodeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
 /**
  * Created by Ronak Harkhani on 09/07/25
  */
 class HomeVM(
     private val qrCodeRepository: QRCodeRepository,
-    private val qrGenerator: QRGenerator,
-    private val qrRenderer: QRRenderer,
-    private val json: Json,
 ) : ViewModel() {
 
     companion object {
@@ -85,15 +79,15 @@ class HomeVM(
     }
 
     /**
-     * Renders a small QR code thumbnail from the entity's serialized content and style.
+     * Renders a small QR code thumbnail from the entity's content and style.
      */
     private fun renderThumbnail(entity: QRCodeEntity): Bitmap? {
         return try {
-            val content: QRContent = json.decodeFromString(entity.contentJson)
-            val style: QRStyle = json.decodeFromString(entity.styleJson)
-            val thumbnailStyle = style.copy(size = THUMBNAIL_SIZE, logoConfig = null)
-            val bitMatrix = qrGenerator.generate(content, thumbnailStyle.errorCorrection)
-            qrRenderer.render(bitMatrix, thumbnailStyle)
+            val content = entity.content
+            val style = entity.style
+            val thumbnailStyle = style.copy(size = THUMBNAIL_SIZE, logoData = null)
+            val bitMatrix = QRGenerator.generate(content, thumbnailStyle.errorCorrection)
+            QRRenderer.render(bitMatrix, thumbnailStyle)
         } catch (e: Exception) {
             null
         }

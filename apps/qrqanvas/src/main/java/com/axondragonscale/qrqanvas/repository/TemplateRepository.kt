@@ -16,9 +16,10 @@ import kotlinx.serialization.json.Json
  * from Room into a unified [Template] list. Predefined templates always
  * appear first, followed by user templates in reverse chronological order.
  */
-class TemplateRepository(private val templateDao: TemplateDao) {
-
-    private val json = Json { ignoreUnknownKeys = true }
+class TemplateRepository(
+    private val templateDao: TemplateDao,
+    private val json: Json,
+) {
 
     /**
      * Returns a [Flow] of all templates — predefined first, then user templates.

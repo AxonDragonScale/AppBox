@@ -1,6 +1,6 @@
 package com.axondragonscale.qrqanvas.ui.creator
 
-import com.axondragonscale.qrqanvas.model.ColorConfig
+import com.axondragonscale.qrqanvas.model.ColorData
 import com.axondragonscale.qrqanvas.model.DotStyle
 import com.axondragonscale.qrqanvas.model.ErrorCorrectionLevel
 import com.axondragonscale.qrqanvas.model.EyeStyle
@@ -14,11 +14,11 @@ sealed interface CreatorUiEvent {
     data class ContentTypeSelected(val contentType: ContentType) : CreatorUiEvent
     data class ContentInputChanged(val contentInput: ContentInputState) : CreatorUiEvent
     data class DotStyleSelected(val dotStyle: DotStyle) : CreatorUiEvent
-    data class DotColorSelected(val color: ColorConfig) : CreatorUiEvent
+    data class DotColorSelected(val color: ColorData) : CreatorUiEvent
     data class EyeStyleSelected(val eyeStyle: EyeStyle) : CreatorUiEvent
-    data class EyeFrameColorSelected(val color: ColorConfig) : CreatorUiEvent
-    data class EyeDotColorSelected(val color: ColorConfig) : CreatorUiEvent
-    data class BackgroundColorSelected(val color: ColorConfig) : CreatorUiEvent
+    data class EyeFrameColorSelected(val color: ColorData) : CreatorUiEvent
+    data class EyeDotColorSelected(val color: ColorData) : CreatorUiEvent
+    data class BackgroundColorSelected(val color: ColorData) : CreatorUiEvent
     data class LogoSelected(val uri: String?) : CreatorUiEvent
     data class LogoSizeChanged(val size: Float) : CreatorUiEvent
     data class LogoPaddingChanged(val padding: Float) : CreatorUiEvent

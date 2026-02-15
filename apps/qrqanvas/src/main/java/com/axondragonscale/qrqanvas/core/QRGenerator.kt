@@ -15,7 +15,7 @@ import com.google.zxing.qrcode.QRCodeWriter
  * The returned BitMatrix has exactly 1 cell per QR module (no scaling, no margin).
  * The renderer is responsible for mapping modules to pixels at the desired output size.
  */
-class QRGenerator {
+object QRGenerator {
 
     private val writer = QRCodeWriter()
 
@@ -33,7 +33,7 @@ class QRGenerator {
         content: QRContent,
         errorCorrection: ErrorCorrectionLevel = ErrorCorrectionLevel.M,
     ): BitMatrix {
-        val encoded = content.encode()
+        val encoded = QRContentCodec.encode(content)
         val hints = mapOf(
             EncodeHintType.ERROR_CORRECTION to errorCorrection.toZxing(),
             EncodeHintType.MARGIN to 0,

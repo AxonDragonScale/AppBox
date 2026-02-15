@@ -1,10 +1,10 @@
 package com.axondragonscale.qrqanvas.ui.scanner
 
-import android.app.Application
+import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.qrqanvas.core.QRContentParser
+import com.axondragonscale.qrqanvas.core.QRContentCodec
 import com.axondragonscale.qrqanvas.repository.ScanHistoryRepository
 import com.axondragonscale.qrqanvas.database.entity.ScanHistoryEntity
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
@@ -24,8 +24,7 @@ import kotlinx.serialization.json.Json
  * Created by Ronak Harkhani on 09/07/25
  */
 class ScannerVM(
-    private val application: Application,
-    private val qrContentParser: QRContentParser,
+    private val context: Context,
     private val scanHistoryRepository: ScanHistoryRepository,
     private val json: Json,
 ) : ViewModel() {
@@ -54,7 +53,7 @@ class ScannerVM(
         // Don't process if already showing a result
         if (uiState.value.showResultSheet) return
 
-        val content = qrContentParser.parse(rawValue)
+        val content = QRContentCodec.decode(rawValue)
         uiState.update {
             it.copy(
                 isScanPaused = true,
@@ -84,7 +83,7 @@ class ScannerVM(
     private fun onGalleryImagePicked(uri: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val inputStream = application.contentResolver.openInputStream(
+                val inputStream = context.contentResolver.openInputStream(
                     android.net.Uri.parse(uri)
                 ) ?: run {
                     _effects.send(ScannerUiEffect.ShowSnackbar("Failed to read image"))

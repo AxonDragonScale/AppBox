@@ -6,10 +6,10 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import androidx.core.graphics.createBitmap
-import com.axondragonscale.qrqanvas.model.ColorConfig
+import com.axondragonscale.qrqanvas.model.ColorData
 import com.axondragonscale.qrqanvas.model.DotStyle
 import com.axondragonscale.qrqanvas.model.EyeStyle
-import com.axondragonscale.qrqanvas.model.LogoConfig
+import com.axondragonscale.qrqanvas.model.LogoData
 import com.axondragonscale.qrqanvas.model.LogoShape
 import com.axondragonscale.qrqanvas.model.QRStyle
 import com.google.zxing.common.BitMatrix
@@ -27,10 +27,7 @@ import kotlin.math.sin
  * - All [EyeStyle] shapes for finder patterns (Square, Circle, RoundedSquare, Leaf, Diamond)
  * - Logo embedding with shape clipping, padding, and automatic module exclusion
  */
-class QRRenderer {
-
-    private val modulePath = Path()
-    private val eyePath = Path()
+object QRRenderer {
 
     /**
      * Renders the given [bitMatrix] using the provided [style] into a [Bitmap].
@@ -41,7 +38,7 @@ class QRRenderer {
      * @param bitMatrix The QR code matrix where each cell is one module (from [QRGenerator]).
      * @param style The visual style configuration for rendering.
      * @param logoBitmap Optional logo bitmap to draw centered over the QR code.
-     *   When provided, [QRStyle.logoConfig] must also be non-null to configure size, padding, and shape.
+     *   When provided, [QRStyle.logoData] must also be non-null to configure size, padding, and shape ([LogoData]).
      * @return A rendered [Bitmap] of the QR code.
      */
     fun render(bitMatrix: BitMatrix, style: QRStyle, logoBitmap: Bitmap? = null): Bitmap {
@@ -55,33 +52,31 @@ class QRRenderer {
 
         // Draw background
         val bgRect = RectF(0f, 0f, outputSize.toFloat(), outputSize.toFloat())
-        drawBackground(canvas, style.backgroundColor, bgRect)
+        canvas.drawBackground(style.backgroundColor, bgRect)
 
         // The bounding rect of the actual QR code area (excluding quiet zone)
-        val qrLeft = style.quietZone * moduleSize
-        val qrTop = style.quietZone * moduleSize
-        val qrRight = qrLeft + matrixSize * moduleSize
-        val qrBottom = qrTop + matrixSize * moduleSize
-        val qrBounds = RectF(qrLeft, qrTop, qrRight, qrBottom)
+        val qrOffset = style.quietZone * moduleSize
+        val qrSize = matrixSize * moduleSize
+        val qrBounds = RectF(qrOffset, qrOffset, qrOffset + qrSize, qrOffset + qrSize)
 
         // Compute logo exclusion zone (if logo is present)
-        val logoExclusionRect = computeLogoExclusionRect(style.logoConfig, logoBitmap, qrBounds)
+        val logoExclusionRect = computeLogoExclusionRect(style.logoData, logoBitmap, qrBounds)
 
         // Identify finder pattern regions
         val finderRegions = getFinderPatternRegions(matrixSize)
 
         // Draw data modules (everything outside finder regions and logo exclusion zone)
-        drawDataModules(
-            canvas, bitMatrix, style, moduleSize, matrixSize,
+        canvas.drawDataModules(
+            bitMatrix, style, moduleSize, matrixSize,
             finderRegions, qrBounds, logoExclusionRect,
         )
 
         // Draw finder patterns separately
-        drawFinderPatterns(canvas, style, moduleSize, matrixSize, qrBounds)
+        canvas.drawFinderPatterns(style, moduleSize, matrixSize, qrBounds)
 
         // Draw logo on top of everything
-        if (logoBitmap != null && style.logoConfig != null) {
-            drawLogo(canvas, logoBitmap, style.logoConfig, style.backgroundColor, qrBounds)
+        if (logoBitmap != null && style.logoData != null) {
+            canvas.drawLogo(logoBitmap, style.logoData, style.backgroundColor, qrBounds)
         }
 
         return bitmap
@@ -95,18 +90,18 @@ class QRRenderer {
      * crowd right up against the logo edge.
      */
     private fun computeLogoExclusionRect(
-        logoConfig: LogoConfig?,
+        logoData: LogoData?,
         logoBitmap: Bitmap?,
         qrBounds: RectF,
     ): RectF? {
-        if (logoConfig == null || logoBitmap == null) return null
+        if (logoData == null || logoBitmap == null) return null
 
         val qrSize = qrBounds.width()
         val cx = qrBounds.centerX()
         val cy = qrBounds.centerY()
 
         // Total size includes the logo area + padding on each side
-        val totalFraction = logoConfig.size + logoConfig.padding * 2
+        val totalFraction = logoData.size + logoData.padding * 2
         val halfExclusion = qrSize * totalFraction / 2f
 
         return RectF(
@@ -117,12 +112,12 @@ class QRRenderer {
         )
     }
 
-    private fun drawBackground(canvas: Canvas, colorConfig: ColorConfig, rect: RectF) {
+    private fun Canvas.drawBackground(colorData: ColorData, rect: RectF) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
         }
-        applyColorConfig(paint, colorConfig, rect)
-        canvas.drawRect(rect, paint)
+        applyColorConfig(paint, colorData, rect)
+        drawRect(rect, paint)
     }
 
     /**
@@ -154,8 +149,7 @@ class QRRenderer {
     private fun packCoord(col: Int, row: Int): Long =
         (col.toLong() shl 32) or (row.toLong() and 0xFFFFFFFFL)
 
-    private fun drawDataModules(
-        canvas: Canvas,
+    private fun Canvas.drawDataModules(
         bitMatrix: BitMatrix,
         style: QRStyle,
         moduleSize: Float,
@@ -171,6 +165,7 @@ class QRRenderer {
 
         val quietZone = style.quietZone
         val rect = RectF()
+        val modulePath = Path()
 
         for (row in 0 until matrixSize) {
             for (col in 0 until matrixSize) {
@@ -188,7 +183,7 @@ class QRRenderer {
                     if (logoExclusionRect.contains(moduleCx, moduleCy)) continue
                 }
 
-                drawModule(canvas, rect, style.dotStyle, paint)
+                drawModule(rect, style.dotStyle, paint, modulePath)
             }
         }
     }
@@ -198,34 +193,34 @@ class QRRenderer {
     /**
      * Draws a single data module with the given [dotStyle] shape inside [rect].
      */
-    private fun drawModule(canvas: Canvas, rect: RectF, dotStyle: DotStyle, paint: Paint) {
+    private fun Canvas.drawModule(rect: RectF, dotStyle: DotStyle, paint: Paint, modulePath: Path) {
         when (dotStyle) {
-            DotStyle.Square -> drawSquareModule(canvas, rect, paint)
-            DotStyle.Circle -> drawCircleModule(canvas, rect, paint)
-            DotStyle.RoundedSquare -> drawRoundedSquareModule(canvas, rect, paint)
-            DotStyle.Diamond -> drawDiamondModule(canvas, rect, paint)
-            DotStyle.Star -> drawStarModule(canvas, rect, paint)
-            DotStyle.Heart -> drawHeartModule(canvas, rect, paint)
+            DotStyle.Square -> drawSquareModule(rect, paint)
+            DotStyle.Circle -> drawCircleModule(rect, paint)
+            DotStyle.RoundedSquare -> drawRoundedSquareModule(rect, paint)
+            DotStyle.Diamond -> drawDiamondModule(rect, paint, modulePath)
+            DotStyle.Star -> drawStarModule(rect, paint, modulePath)
+            DotStyle.Heart -> drawHeartModule(rect, paint, modulePath)
         }
     }
 
-    private fun drawSquareModule(canvas: Canvas, rect: RectF, paint: Paint) {
-        canvas.drawRect(rect, paint)
+    private fun Canvas.drawSquareModule(rect: RectF, paint: Paint) {
+        drawRect(rect, paint)
     }
 
-    private fun drawCircleModule(canvas: Canvas, rect: RectF, paint: Paint) {
+    private fun Canvas.drawCircleModule(rect: RectF, paint: Paint) {
         val cx = rect.centerX()
         val cy = rect.centerY()
         val radius = rect.width().coerceAtMost(rect.height()) / 2f
-        canvas.drawCircle(cx, cy, radius, paint)
+        drawCircle(cx, cy, radius, paint)
     }
 
-    private fun drawRoundedSquareModule(canvas: Canvas, rect: RectF, paint: Paint) {
+    private fun Canvas.drawRoundedSquareModule(rect: RectF, paint: Paint) {
         val cornerRadius = rect.width() * 0.3f
-        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
+        drawRoundRect(rect, cornerRadius, cornerRadius, paint)
     }
 
-    private fun drawDiamondModule(canvas: Canvas, rect: RectF, paint: Paint) {
+    private fun Canvas.drawDiamondModule(rect: RectF, paint: Paint, modulePath: Path) {
         val cx = rect.centerX()
         val cy = rect.centerY()
         modulePath.apply {
@@ -236,10 +231,10 @@ class QRRenderer {
             lineTo(rect.left, cy)           // Left
             close()
         }
-        canvas.drawPath(modulePath, paint)
+        drawPath(modulePath, paint)
     }
 
-    private fun drawStarModule(canvas: Canvas, rect: RectF, paint: Paint) {
+    private fun Canvas.drawStarModule(rect: RectF, paint: Paint, modulePath: Path) {
         val cx = rect.centerX()
         val cy = rect.centerY()
         val outerRadius = rect.width().coerceAtMost(rect.height()) / 2f
@@ -263,10 +258,10 @@ class QRRenderer {
             }
             close()
         }
-        canvas.drawPath(modulePath, paint)
+        drawPath(modulePath, paint)
     }
 
-    private fun drawHeartModule(canvas: Canvas, rect: RectF, paint: Paint) {
+    private fun Canvas.drawHeartModule(rect: RectF, paint: Paint, modulePath: Path) {
         val w = rect.width()
         val h = rect.height()
         val cx = rect.centerX()
@@ -310,7 +305,7 @@ class QRRenderer {
 
             close()
         }
-        canvas.drawPath(modulePath, paint)
+        drawPath(modulePath, paint)
     }
 
     // endregion
@@ -324,8 +319,7 @@ class QRRenderer {
      * - Inner separator: 5x5 shape (background color)
      * - Inner dot: 3x3 shape (dot color)
      */
-    private fun drawFinderPatterns(
-        canvas: Canvas,
+    private fun Canvas.drawFinderPatterns(
         style: QRStyle,
         moduleSize: Float,
         matrixSize: Int,
@@ -338,12 +332,11 @@ class QRRenderer {
         )
 
         for ((originCol, originRow) in finderOrigins) {
-            drawFinderPattern(canvas, style, moduleSize, originCol, originRow, qrBounds)
+            drawFinderPattern(style, moduleSize, originCol, originRow, qrBounds)
         }
     }
 
-    private fun drawFinderPattern(
-        canvas: Canvas,
+    private fun Canvas.drawFinderPattern(
         style: QRStyle,
         moduleSize: Float,
         originCol: Int,
@@ -381,38 +374,40 @@ class QRRenderer {
             x + 5 * moduleSize, y + 5 * moduleSize,
         )
 
+        val eyePath = Path()
+
         when (style.eyeStyle) {
             EyeStyle.Square -> {
-                canvas.drawRect(outerRect, framePaint)
-                canvas.drawRect(innerRect, bgPaint)
-                canvas.drawRect(dotRect, dotPaint)
+                drawRect(outerRect, framePaint)
+                drawRect(innerRect, bgPaint)
+                drawRect(dotRect, dotPaint)
             }
 
             EyeStyle.Circle -> {
-                canvas.drawOval(outerRect, framePaint)
-                canvas.drawOval(innerRect, bgPaint)
-                canvas.drawOval(dotRect, dotPaint)
+                drawOval(outerRect, framePaint)
+                drawOval(innerRect, bgPaint)
+                drawOval(dotRect, dotPaint)
             }
 
             EyeStyle.RoundedSquare -> {
                 val outerRadius = moduleSize * 2f
                 val innerRadius = moduleSize * 1.4f
                 val dotRadius = moduleSize * 0.9f
-                canvas.drawRoundRect(outerRect, outerRadius, outerRadius, framePaint)
-                canvas.drawRoundRect(innerRect, innerRadius, innerRadius, bgPaint)
-                canvas.drawRoundRect(dotRect, dotRadius, dotRadius, dotPaint)
+                drawRoundRect(outerRect, outerRadius, outerRadius, framePaint)
+                drawRoundRect(innerRect, innerRadius, innerRadius, bgPaint)
+                drawRoundRect(dotRect, dotRadius, dotRadius, dotPaint)
             }
 
             EyeStyle.Leaf -> {
-                drawLeafRect(canvas, outerRect, moduleSize * 2.5f, framePaint)
-                drawLeafRect(canvas, innerRect, moduleSize * 1.8f, bgPaint)
-                drawLeafRect(canvas, dotRect, moduleSize * 1.0f, dotPaint)
+                drawLeafRect(outerRect, moduleSize * 2.5f, framePaint, eyePath)
+                drawLeafRect(innerRect, moduleSize * 1.8f, bgPaint, eyePath)
+                drawLeafRect(dotRect, moduleSize * 1.0f, dotPaint, eyePath)
             }
 
             EyeStyle.Diamond -> {
-                drawDiamondRect(canvas, outerRect, framePaint)
-                drawDiamondRect(canvas, innerRect, bgPaint)
-                drawDiamondRect(canvas, dotRect, dotPaint)
+                drawDiamondRect(outerRect, framePaint, eyePath)
+                drawDiamondRect(innerRect, bgPaint, eyePath)
+                drawDiamondRect(dotRect, dotPaint, eyePath)
             }
         }
     }
@@ -421,7 +416,7 @@ class QRRenderer {
      * Draws a "leaf" shape: a rounded rect with only the top-left and
      * bottom-right corners rounded, giving an organic leaf appearance.
      */
-    private fun drawLeafRect(canvas: Canvas, rect: RectF, radius: Float, paint: Paint) {
+    private fun Canvas.drawLeafRect(rect: RectF, radius: Float, paint: Paint, eyePath: Path) {
         val r = radius
         val radii = floatArrayOf(
             r, r,       // top-left
@@ -434,11 +429,11 @@ class QRRenderer {
             addRoundRect(rect, radii, Path.Direction.CW)
             close()
         }
-        canvas.drawPath(eyePath, paint)
+        drawPath(eyePath, paint)
     }
 
     /** Draws a diamond (rotated square) inscribed in [rect]. */
-    private fun drawDiamondRect(canvas: Canvas, rect: RectF, paint: Paint) {
+    private fun Canvas.drawDiamondRect(rect: RectF, paint: Paint, eyePath: Path) {
         val cx = rect.centerX()
         val cy = rect.centerY()
         eyePath.apply {
@@ -449,7 +444,7 @@ class QRRenderer {
             lineTo(rect.left, cy)
             close()
         }
-        canvas.drawPath(eyePath, paint)
+        drawPath(eyePath, paint)
     }
 
     // endregion
@@ -462,17 +457,15 @@ class QRRenderer {
      * 2. Clipped to the configured [LogoShape] (Circle, RoundedRect, Square)
      * 3. Scaled to fit within the configured size fraction of the QR code
      *
-     * @param canvas The canvas to draw on.
      * @param logoBitmap The logo bitmap to draw.
-     * @param logoConfig Configuration for size, padding, and shape.
+     * @param logoData Configuration for size, padding, and shape ([LogoData]).
      * @param backgroundColor The QR background color, used for the padding area.
      * @param qrBounds The bounding rect of the QR code area (excluding quiet zone).
      */
-    private fun drawLogo(
-        canvas: Canvas,
+    private fun Canvas.drawLogo(
         logoBitmap: Bitmap,
-        logoConfig: LogoConfig,
-        backgroundColor: ColorConfig,
+        logoData: LogoData,
+        backgroundColor: ColorData,
         qrBounds: RectF,
     ) {
         val qrSize = qrBounds.width()
@@ -480,7 +473,7 @@ class QRRenderer {
         val cy = qrBounds.centerY()
 
         // Total area includes logo + padding on each side
-        val totalFraction = logoConfig.size + logoConfig.padding * 2
+        val totalFraction = logoData.size + logoData.padding * 2
         val totalHalf = qrSize * totalFraction / 2f
 
         // The outer rect covers logo + padding (background-filled border)
@@ -492,7 +485,7 @@ class QRRenderer {
         )
 
         // The inner rect is just the logo area (inside the padding)
-        val logoHalf = qrSize * logoConfig.size / 2f
+        val logoHalf = qrSize * logoData.size / 2f
         val logoRect = RectF(
             cx - logoHalf,
             cy - logoHalf,
@@ -505,43 +498,43 @@ class QRRenderer {
             style = Paint.Style.FILL
         }
         applyColorConfig(bgPaint, backgroundColor, outerRect)
-        drawShapedRect(canvas, outerRect, logoConfig.shape, bgPaint)
+        drawShapedRect(outerRect, logoData.shape, bgPaint)
 
         // Step 2: Clip to the logo shape and draw the bitmap
-        canvas.save()
-        clipToShape(canvas, logoRect, logoConfig.shape)
+        save()
+        clipToShape(logoRect, logoData.shape)
 
         val logoPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             isFilterBitmap = true
         }
-        canvas.drawBitmap(logoBitmap, null, logoRect, logoPaint)
-        canvas.restore()
+        drawBitmap(logoBitmap, null, logoRect, logoPaint)
+        restore()
     }
 
     /**
      * Draws a filled shape (Circle, RoundedRect, or Square) within the given [rect].
      */
-    private fun drawShapedRect(canvas: Canvas, rect: RectF, shape: LogoShape, paint: Paint) {
+    private fun Canvas.drawShapedRect(rect: RectF, shape: LogoShape, paint: Paint) {
         when (shape) {
             LogoShape.Circle -> {
-                canvas.drawOval(rect, paint)
+                drawOval(rect, paint)
             }
 
             LogoShape.RoundedRect -> {
                 val cornerRadius = rect.width() * 0.15f
-                canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
+                drawRoundRect(rect, cornerRadius, cornerRadius, paint)
             }
 
             LogoShape.Square -> {
-                canvas.drawRect(rect, paint)
+                drawRect(rect, paint)
             }
         }
     }
 
     /**
-     * Applies a clip to the [canvas] in the configured [shape] within the given [rect].
+     * Applies a clip to this [Canvas] in the configured [shape] within the given [rect].
      */
-    private fun clipToShape(canvas: Canvas, rect: RectF, shape: LogoShape) {
+    private fun Canvas.clipToShape(rect: RectF, shape: LogoShape) {
         val clipPath = Path()
         when (shape) {
             LogoShape.Circle -> {
@@ -557,7 +550,7 @@ class QRRenderer {
                 clipPath.addRect(rect, Path.Direction.CW)
             }
         }
-        canvas.clipPath(clipPath)
+        clipPath(clipPath)
     }
 
     // endregion
@@ -565,27 +558,27 @@ class QRRenderer {
     // region Color & Gradient Helpers
 
     /**
-     * Configures the given [paint] based on the [colorConfig].
+     * Configures the given [paint] based on the [colorData].
      *
-     * - [ColorConfig.Solid]: Sets the paint color directly, clears any shader.
-     * - [ColorConfig.LinearGradient]: Sets a linear gradient shader across the [bounds]
+     * - [ColorData.Solid]: Sets the paint color directly, clears any shader.
+     * - [ColorData.LinearGradient]: Sets a linear gradient shader across the [bounds]
      *   at the specified angle, so all elements sharing the same bounds get a continuous gradient.
-     * - [ColorConfig.RadialGradient]: Sets a radial gradient shader centered within the [bounds]
+     * - [ColorData.RadialGradient]: Sets a radial gradient shader centered within the [bounds]
      *   at the specified fractional center position.
      *
      * @param paint The [Paint] to configure.
-     * @param colorConfig The color configuration to apply.
+     * @param colorData The color configuration to apply.
      * @param bounds The bounding rectangle over which gradients are mapped.
      */
-    private fun applyColorConfig(paint: Paint, colorConfig: ColorConfig, bounds: RectF) {
-        when (colorConfig) {
-            is ColorConfig.Solid -> {
+    private fun applyColorConfig(paint: Paint, colorData: ColorData, bounds: RectF) {
+        when (colorData) {
+            is ColorData.Solid -> {
                 paint.shader = null
-                paint.color = colorConfig.color.toInt()
+                paint.color = colorData.color.toInt()
             }
 
-            is ColorConfig.LinearGradient -> {
-                val colors = colorConfig.colors.map { it.toInt() }.toIntArray()
+            is ColorData.LinearGradient -> {
+                val colors = colorData.colors.map { it.toInt() }.toIntArray()
                 if (colors.size < 2) {
                     // Fallback: treat as solid if fewer than 2 colors
                     paint.shader = null
@@ -594,7 +587,7 @@ class QRRenderer {
                 }
 
                 // Compute gradient start/end points from angle
-                val angleRad = Math.toRadians(colorConfig.angleDegrees.toDouble())
+                val angleRad = Math.toRadians(colorData.angleDegrees.toDouble())
                 val cx = bounds.centerX()
                 val cy = bounds.centerY()
                 val halfW = bounds.width() / 2f
@@ -622,16 +615,16 @@ class QRRenderer {
                 )
             }
 
-            is ColorConfig.RadialGradient -> {
-                val colors = colorConfig.colors.map { it.toInt() }.toIntArray()
+            is ColorData.RadialGradient -> {
+                val colors = colorData.colors.map { it.toInt() }.toIntArray()
                 if (colors.size < 2) {
                     paint.shader = null
                     paint.color = colors.firstOrNull() ?: 0xFF000000.toInt()
                     return
                 }
 
-                val cx = bounds.left + bounds.width() * colorConfig.centerX
-                val cy = bounds.top + bounds.height() * colorConfig.centerY
+                val cx = bounds.left + bounds.width() * colorData.centerX
+                val cy = bounds.top + bounds.height() * colorData.centerY
 
                 // Radius covers the entire bounds from the center point
                 val maxDx = maxOf(cx - bounds.left, bounds.right - cx)

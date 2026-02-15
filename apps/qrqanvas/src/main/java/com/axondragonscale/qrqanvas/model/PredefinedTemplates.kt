@@ -11,11 +11,11 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.Square,
-            dotColor = ColorConfig.Solid(0xFF000000),
+            dotColor = ColorData.Solid(0xFF000000),
             eyeStyle = EyeStyle.Square,
-            eyeFrameColor = ColorConfig.Solid(0xFF000000),
-            eyeDotColor = ColorConfig.Solid(0xFF000000),
-            backgroundColor = ColorConfig.Solid(0xFFFFFFFF),
+            eyeFrameColor = ColorData.Solid(0xFF000000),
+            eyeDotColor = ColorData.Solid(0xFF000000),
+            backgroundColor = ColorData.Solid(0xFFFFFFFF),
         ),
     )
 
@@ -25,11 +25,11 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.Circle,
-            dotColor = ColorConfig.Solid(0xFF000000),
+            dotColor = ColorData.Solid(0xFF000000),
             eyeStyle = EyeStyle.RoundedSquare,
-            eyeFrameColor = ColorConfig.Solid(0xFF000000),
-            eyeDotColor = ColorConfig.Solid(0xFF000000),
-            backgroundColor = ColorConfig.Solid(0xFFFFFFFF),
+            eyeFrameColor = ColorData.Solid(0xFF000000),
+            eyeDotColor = ColorData.Solid(0xFF000000),
+            backgroundColor = ColorData.Solid(0xFFFFFFFF),
         ),
     )
 
@@ -39,14 +39,14 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.Circle,
-            dotColor = ColorConfig.LinearGradient(
+            dotColor = ColorData.LinearGradient(
                 colors = listOf(0xFF00E5FF, 0xFFFF00FF),
                 angleDegrees = 135f,
             ),
             eyeStyle = EyeStyle.Circle,
-            eyeFrameColor = ColorConfig.Solid(0xFF00E5FF),
-            eyeDotColor = ColorConfig.Solid(0xFFFF00FF),
-            backgroundColor = ColorConfig.Solid(0xFF1A1A2E),
+            eyeFrameColor = ColorData.Solid(0xFF00E5FF),
+            eyeDotColor = ColorData.Solid(0xFFFF00FF),
+            backgroundColor = ColorData.Solid(0xFF1A1A2E),
         ),
     )
 
@@ -56,11 +56,11 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.RoundedSquare,
-            dotColor = ColorConfig.Solid(0xFF0D1B2A),
+            dotColor = ColorData.Solid(0xFF0D1B2A),
             eyeStyle = EyeStyle.Leaf,
-            eyeFrameColor = ColorConfig.Solid(0xFF0D1B2A),
-            eyeDotColor = ColorConfig.Solid(0xFF1B3A5C),
-            backgroundColor = ColorConfig.Solid(0xFFF5F0E8),
+            eyeFrameColor = ColorData.Solid(0xFF0D1B2A),
+            eyeDotColor = ColorData.Solid(0xFF1B3A5C),
+            backgroundColor = ColorData.Solid(0xFFF5F0E8),
         ),
     )
 
@@ -70,15 +70,15 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.Diamond,
-            dotColor = ColorConfig.RadialGradient(
+            dotColor = ColorData.RadialGradient(
                 colors = listOf(0xFFFF6B35, 0xFFD32F2F),
                 centerX = 0.5f,
                 centerY = 0.5f,
             ),
             eyeStyle = EyeStyle.Diamond,
-            eyeFrameColor = ColorConfig.Solid(0xFFFF6B35),
-            eyeDotColor = ColorConfig.Solid(0xFFD32F2F),
-            backgroundColor = ColorConfig.Solid(0xFFFFF8E1),
+            eyeFrameColor = ColorData.Solid(0xFFFF6B35),
+            eyeDotColor = ColorData.Solid(0xFFD32F2F),
+            backgroundColor = ColorData.Solid(0xFFFFF8E1),
         ),
     )
 
@@ -88,11 +88,11 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.Square,
-            dotColor = ColorConfig.Solid(0xFF424242),
+            dotColor = ColorData.Solid(0xFF424242),
             eyeStyle = EyeStyle.Square,
-            eyeFrameColor = ColorConfig.Solid(0xFF424242),
-            eyeDotColor = ColorConfig.Solid(0xFF616161),
-            backgroundColor = ColorConfig.Solid(0xFFE0E0E0),
+            eyeFrameColor = ColorData.Solid(0xFF424242),
+            eyeDotColor = ColorData.Solid(0xFF616161),
+            backgroundColor = ColorData.Solid(0xFFE0E0E0),
         ),
     )
 
@@ -102,14 +102,14 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.Circle,
-            dotColor = ColorConfig.LinearGradient(
+            dotColor = ColorData.LinearGradient(
                 colors = listOf(0xFF009688, 0xFF1565C0),
                 angleDegrees = 90f,
             ),
             eyeStyle = EyeStyle.Circle,
-            eyeFrameColor = ColorConfig.Solid(0xFF009688),
-            eyeDotColor = ColorConfig.Solid(0xFF1565C0),
-            backgroundColor = ColorConfig.Solid(0xFFFFFFFF),
+            eyeFrameColor = ColorData.Solid(0xFF009688),
+            eyeDotColor = ColorData.Solid(0xFF1565C0),
+            backgroundColor = ColorData.Solid(0xFFFFFFFF),
         ),
     )
 
@@ -119,11 +119,11 @@ object PredefinedTemplates {
         isPredefined = true,
         style = QRStyle(
             dotStyle = DotStyle.RoundedSquare,
-            dotColor = ColorConfig.Solid(0xFFFFFFFF),
+            dotColor = ColorData.Solid(0xFFFFFFFF),
             eyeStyle = EyeStyle.RoundedSquare,
-            eyeFrameColor = ColorConfig.Solid(0xFFFFFFFF),
-            eyeDotColor = ColorConfig.Solid(0xFFE0E0E0),
-            backgroundColor = ColorConfig.Solid(0xFF000000),
+            eyeFrameColor = ColorData.Solid(0xFFFFFFFF),
+            eyeDotColor = ColorData.Solid(0xFFE0E0E0),
+            backgroundColor = ColorData.Solid(0xFF000000),
         ),
     )
 
