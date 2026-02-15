@@ -165,6 +165,24 @@ items.filter {
 }
 ```
 
+### Nullability Idioms
+
+#### Prefer `.orEmpty()` over `?: ""`
+- Use `.orEmpty()` on nullable `String?`, `List?`, etc. instead of the Elvis operator with an empty default
+- This is more idiomatic and reads more naturally
+
+**Preferred:**
+```kotlin
+val name = user.name.orEmpty()
+val items = response.items.orEmpty()
+```
+
+**Avoid:**
+```kotlin
+val name = user.name ?: ""
+val items = response.items ?: emptyList()
+```
+
 ### Naming Conventions
 - ViewModels: Use `VM` suffix (e.g., `HomeVM`, `SettingsVM`)
 - UI State classes: Use `UiState` suffix (e.g., `HomeUiState`)
@@ -194,6 +212,54 @@ class MyVM(
     private fun handleAction1(event: MyUiEvent.Action1) {
         // Implementation
     }
+}
+```
+
+---
+
+## Code Organization
+
+### Region Comments for Large Files
+- Use `// region:` and `// endregion` comments to separate big, logically different chunks of code in large files
+- Only use regions for substantial sections — don't over-segment small files or trivially short blocks
+- Region names should be descriptive of the logical section they wrap
+
+**Example:**
+```kotlin
+class MyVM(
+    private val repository: MyRepository,
+) : ViewModel() {
+
+    companion object {
+        private const val TAG = "MyVM"
+    }
+
+    // region: State
+
+    val uiState = MutableStateFlow(MyUiState())
+
+    private val uiEffectChannel = Channel<MyUiEffect>()
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
+
+    // endregion
+
+    // region: Event Handling
+
+    fun onEvent(event: MyUiEvent): Any = when (event) {
+        is MyUiEvent.Search -> handleSearch(event)
+        is MyUiEvent.Delete -> handleDelete(event)
+        is MyUiEvent.Navigate -> Unit
+    }
+
+    private fun handleSearch(event: MyUiEvent.Search) {
+        // ...
+    }
+
+    private fun handleDelete(event: MyUiEvent.Delete) {
+        // ...
+    }
+
+    // endregion
 }
 ```
 
