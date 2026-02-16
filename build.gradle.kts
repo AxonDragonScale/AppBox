@@ -8,4 +8,6 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.room) apply false
     alias(libs.plugins.protobuf) apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.vanniktech.mavenPublish) apply false
 }
