@@ -19,4 +19,7 @@ object Route {
     @Serializable
     data class Editor(val habitId: Long? = null)
 
+    @Serializable
+    data object DevTools
+
 }

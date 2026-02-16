@@ -3,7 +3,6 @@ package com.axondragonscale.limitless.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.limitless.repository.AppPrefsRepository
-import com.axondragonscale.limitless.util.DevTools
 import com.axondragonscale.limitless.util.collect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +15,6 @@ import kotlinx.coroutines.launch
  */
 class SettingsVM(
     private val appPrefsRepository: AppPrefsRepository,
-    private val devTools: DevTools
 ): ViewModel() {
 
     val uiState = MutableStateFlow(SettingsUiState())
@@ -40,10 +38,10 @@ class SettingsVM(
     fun onEvent(event: SettingsUiEvent): Any = when (event) {
         is SettingsUiEvent.UIModeUpdated -> onUiModeUpdated(event)
         is SettingsUiEvent.DynamicThemeToggled -> onDynamicThemeToggled(event)
-        SettingsUiEvent.ClearData -> onClearData()
 
         // Handled in compose
         SettingsUiEvent.NavigateBack -> Unit
+        SettingsUiEvent.NavigateToDevTools -> Unit
     }
 
     private fun onUiModeUpdated(
@@ -56,10 +54,6 @@ class SettingsVM(
         event: SettingsUiEvent.DynamicThemeToggled
     ) = viewModelScope.launch(Dispatchers.IO) {
         appPrefsRepository.setDynamicTheme(event.dynamicTheme)
-    }
-
-    private fun onClearData() = viewModelScope.launch(Dispatchers.IO) {
-        devTools.clearData()
     }
 
 }

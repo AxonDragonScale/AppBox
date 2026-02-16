@@ -34,6 +34,8 @@ com.axondragonscale.limitless/
 │   ├── common/
 │   │   ├── AppBar.kt              # Custom app bar with leading/trailing icon items
 │   │   └── Dropdown.kt            # Generic dropdown selector component
+│   ├── devtools/
+│   │   └── LimitlessDevTools.kt   # Wraps common DevToolsScreen with app-specific tools
 │   ├── editor/
 │   │   ├── Editor.kt              # Habit create/edit screen
 │   │   ├── EditorUiEffect.kt      # One-shot effects (NavigateBack)
@@ -47,7 +49,7 @@ com.axondragonscale.limitless/
 │   │   └── HomeVM.kt              # Home ViewModel
 │   ├── settings/
 │   │   ├── Settings.kt            # Settings screen (appearance, behavior, about, dev tools)
-│   │   ├── SettingsUiEvent.kt     # User actions (UIModeUpdated, DynamicThemeToggled, ClearData)
+│   │   ├── SettingsUiEvent.kt     # User actions (UIModeUpdated, DynamicThemeToggled, NavigateToDevTools)
 │   │   ├── SettingsUiState.kt     # Settings state (uiMode, dynamicTheme)
 │   │   └── SettingsVM.kt          # Settings ViewModel
 │   ├── stats/
@@ -64,7 +66,6 @@ com.axondragonscale.limitless/
 │       ├── FlowExt.kt             # collectWithLifecycle composable for one-shot effects
 │       └── ModifierExt.kt         # Conditional modifier extension (thenIf)
 └── util/
-    ├── DevTools.kt                # Development utilities (clear app data)
     ├── FlowExt.kt                 # Flow.collect() no-op extension
     └── Log.kt                     # Logging utilities (logD, logE, logI, etc.)
 ```
@@ -72,7 +73,8 @@ com.axondragonscale.limitless/
 ## Architecture
 
 - **UI Framework**: Jetpack Compose with Material 3
-- **Navigation**: Navigation Compose with type-safe routes (kotlinx.serialization)
+- **Navigation**: Navigation Compose with type-safe routes (kotlinx.serialization) 
+- **Dev Tools**: Common `DevToolsScreen` from `:core:commons`
 - **Dependency Injection**: Koin
 - **State Management**: ViewModel + MutableStateFlow
 - **One-shot Effects**: Channel + receiveAsFlow (EditorVM)
@@ -85,11 +87,12 @@ com.axondragonscale.limitless/
 Entry point with edge-to-edge display. Reads initial theme preferences (UI mode + dynamic theme) synchronously during splash screen via `runBlocking`, then observes them reactively for runtime changes.
 
 ### Navigation (Routes)
-Four screens navigated via `NavHost`:
+Five screens navigated via `NavHost`:
 - **Home** (`Route.Home`): Main screen displaying habits with bottom app bar
 - **Settings** (`Route.Settings`): App preferences and about info
 - **Editor** (`Route.Editor`): Create or edit a habit (accepts optional `habitId`)
 - **Stats** (`Route.Stats`): Statistics view (currently a stub)
+- **DevTools** (`Route.DevTools`): Common developer tools screen with app-specific info
 
 Transitions use slide-up enter / fade-out exit animations with reverse pop transitions.
 
@@ -111,8 +114,6 @@ val LimitlessModule = module {
     viewModelOf(::StatsVM)
     viewModelOf(::SettingsVM)
 
-    // Tools
-    factoryOf(::DevTools)
 }
 ```
 
@@ -142,7 +143,7 @@ Consumed in Compose via a custom `Flow.collectWithLifecycle` extension.
 ## Dependencies
 
 ### Local Modules
-- `projects.core.commons` — Shared utilities, logger, network, DI module
+- `projects.core.commons` — Shared utilities, logger, network, DI module, DevToolsScreen
 
 ### Key Libraries
 - AndroidX Compose BOM + Material 3
@@ -200,6 +201,7 @@ Stored in `app_prefs_store`:
 6. `EditorVM` loads existing habit from `LimitlessRepository` or creates a blank `HabitEntity`
 7. On save → `LimitlessRepository.saveHabit()` upserts to Room → `EditorUiEffect.NavigateBack` emitted
 8. Settings changes flow through `AppPrefsRepository` → DataStore → observed reactively in Activity/VMs
+9. Settings → "Open Dev Tools" navigates to `Route.DevTools` → renders common `DevToolsScreen` with built-in utilities (Kill App, Clear Data, Permissions) + Limitless app info
 
 ## Resources
 

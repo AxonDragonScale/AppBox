@@ -7,8 +7,6 @@ import com.axondragonscale.limitless.ui.editor.EditorVM
 import com.axondragonscale.limitless.ui.home.HomeVM
 import com.axondragonscale.limitless.ui.settings.SettingsVM
 import com.axondragonscale.limitless.ui.stats.StatsVM
-import com.axondragonscale.limitless.util.DevTools
-import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -33,8 +31,5 @@ val LimitlessModule = module {
     viewModelOf(::EditorVM)
     viewModelOf(::StatsVM)
     viewModelOf(::SettingsVM)
-
-    // Tools
-    factoryOf(::DevTools)
 
 }

@@ -16,11 +16,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.HorizontalDivider
@@ -50,6 +50,7 @@ import com.axondragonscale.limitless.BuildConfig
 import com.axondragonscale.limitless.Link
 import com.axondragonscale.limitless.R
 import com.axondragonscale.limitless.model.UIMode
+import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.common.Dropdown
@@ -76,6 +77,7 @@ fun Settings(
         onEvent = { event ->
             when (event) {
                 SettingsUiEvent.NavigateBack -> navController.popBackStack()
+                SettingsUiEvent.NavigateToDevTools -> navController.navigate(Route.DevTools)
 
                 else -> vm.onEvent(event)
             }
@@ -111,7 +113,7 @@ private fun Settings(
 
             DevToolsSection(
                 modifier = Modifier.padding(top = 16.dp),
-                onClearData = { onEvent(SettingsUiEvent.ClearData) }
+                onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) },
             )
         }
 
@@ -236,13 +238,14 @@ private fun AboutSection(
 @Composable
 private fun DevToolsSection(
     modifier: Modifier = Modifier,
-    onClearData: () -> Unit,
+    onOpenDevTools: () -> Unit,
 ) = Section(modifier = modifier, title = "Dev Tools") {
     Item(
-        leadingContent = { Icon(Icons.Default.DeleteForever, null) },
-        headlineContent = { Text("Clear Data") },
-        onClick = onClearData,
-        showDivider = false
+        leadingContent = { Icon(Icons.Default.Android, null) },
+        headlineContent = { Text("Open Dev Tools") },
+        trailingContent = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
+        onClick = onOpenDevTools,
+        showDivider = false,
     )
 }
 
