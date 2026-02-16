@@ -1,8 +1,6 @@
 package com.axondragonscale.limitless.ui.editor
 
 import android.content.res.Configuration
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,12 +31,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
-import com.axondragonscale.limitless.ui.util.collectWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 

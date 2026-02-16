@@ -20,19 +20,16 @@ class AppPrefsRepository(
     private val context: Context,
 ) {
 
-    // MARK: UI Mode -------------------------------------------------------------------------------
     val uiMode = context.appPrefs.enumSetting(
         key = stringPreferencesKey("uiMode"),
         default = UIMode.DEFAULT,
     )
 
-    // MARK: Dynamic Theme -------------------------------------------------------------------------
     val dynamicTheme = context.appPrefs.setting(
         key = booleanPreferencesKey("dynamicTheme"),
         default = false,
     )
 
-    // MARK: UI Align ------------------------------------------------------------------------------
     val uiAlign = context.appPrefs.enumSetting(
         key = stringPreferencesKey("uiAlign"),
         default = UIAlign.DEFAULT,
