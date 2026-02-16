@@ -43,4 +43,7 @@ dependencies {
 
     // Datastore
     implementation(libs.datastore.prefs)
+
+    // DateTime
+    implementation(libs.kotlinx.datetime)
 }

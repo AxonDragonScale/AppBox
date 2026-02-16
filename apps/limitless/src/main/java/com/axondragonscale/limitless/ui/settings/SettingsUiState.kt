@@ -8,4 +8,5 @@ import com.axondragonscale.commons.UIMode
 data class SettingsUiState(
     val uiMode: UIMode = UIMode.DEFAULT,
     val dynamicTheme: Boolean = false,
+    val highlightCurrentDay: Boolean = true,
 )

@@ -9,5 +9,6 @@ sealed interface SettingsUiEvent {
     data object NavigateBack : SettingsUiEvent
     data class UIModeUpdated(val uiMode: UIMode) : SettingsUiEvent
     data class DynamicThemeToggled(val dynamicTheme: Boolean) : SettingsUiEvent
+    data class HighlightCurrentDayToggled(val highlightCurrentDay: Boolean) : SettingsUiEvent
     data object NavigateToDevTools : SettingsUiEvent
 }

@@ -107,7 +107,11 @@ private fun Settings(
                 onDynamicThemeToggled = { onEvent(SettingsUiEvent.DynamicThemeToggled(it)) }
             )
 
-            BehaviorSection(modifier = Modifier.padding(top = 16.dp))
+            BehaviorSection(
+                modifier = Modifier.padding(top = 16.dp),
+                highlightCurrentDay = uiState.highlightCurrentDay,
+                onHighlightCurrentDayToggled = { onEvent(SettingsUiEvent.HighlightCurrentDayToggled(it)) },
+            )
 
             AboutSection(modifier = Modifier.padding(top = 16.dp))
 
@@ -169,6 +173,8 @@ private fun AppearanceSection(
 @Composable
 private fun BehaviorSection(
     modifier: Modifier = Modifier,
+    highlightCurrentDay: Boolean,
+    onHighlightCurrentDayToggled: (Boolean) -> Unit,
 ) = Section(modifier = modifier, title = "Behavior") {
     Item(
         leadingContent = { Icon(Icons.Default.CalendarToday, null) },
@@ -182,8 +188,8 @@ private fun BehaviorSection(
         trailingContent = {
             Switch(
                 modifier = Modifier.height(32.dp),
-                checked = true,
-                onCheckedChange = { }
+                checked = highlightCurrentDay,
+                onCheckedChange = onHighlightCurrentDayToggled,
             )
         },
         showDivider = false,

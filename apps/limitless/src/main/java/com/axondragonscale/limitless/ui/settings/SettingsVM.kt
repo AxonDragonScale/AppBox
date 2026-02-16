@@ -23,12 +23,14 @@ class SettingsVM(
         viewModelScope.launch(Dispatchers.IO) {
             combine(
                 appPrefsRepository.uiMode.flow,
-                appPrefsRepository.dynamicTheme.flow
-            ) { uiMode, dynamicTheme ->
+                appPrefsRepository.dynamicTheme.flow,
+                appPrefsRepository.highlightCurrentDay.flow,
+            ) { uiMode, dynamicTheme, highlightCurrentDay ->
                 uiState.update {
                     it.copy(
                         uiMode = uiMode,
-                        dynamicTheme = dynamicTheme
+                        dynamicTheme = dynamicTheme,
+                        highlightCurrentDay = highlightCurrentDay,
                     )
                 }
             }.collect()
@@ -38,6 +40,7 @@ class SettingsVM(
     fun onEvent(event: SettingsUiEvent): Any = when (event) {
         is SettingsUiEvent.UIModeUpdated -> onUiModeUpdated(event)
         is SettingsUiEvent.DynamicThemeToggled -> onDynamicThemeToggled(event)
+        is SettingsUiEvent.HighlightCurrentDayToggled -> onHighlightCurrentDayToggled(event)
 
         // Handled in compose
         SettingsUiEvent.NavigateBack -> Unit
@@ -54,6 +57,12 @@ class SettingsVM(
         event: SettingsUiEvent.DynamicThemeToggled
     ) = viewModelScope.launch(Dispatchers.IO) {
         appPrefsRepository.dynamicTheme.set(event.dynamicTheme)
+    }
+
+    private fun onHighlightCurrentDayToggled(
+        event: SettingsUiEvent.HighlightCurrentDayToggled
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        appPrefsRepository.highlightCurrentDay.set(event.highlightCurrentDay)
     }
 
 }

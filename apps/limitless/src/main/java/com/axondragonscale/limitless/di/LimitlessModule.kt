@@ -3,6 +3,7 @@ package com.axondragonscale.limitless.di
 import com.axondragonscale.limitless.database.LimitlessDatabase
 import com.axondragonscale.limitless.repository.AppPrefsRepository
 import com.axondragonscale.limitless.repository.LimitlessRepository
+import com.axondragonscale.limitless.ui.devtools.SampleDataSeeder
 import com.axondragonscale.limitless.ui.editor.EditorVM
 import com.axondragonscale.limitless.ui.home.HomeVM
 import com.axondragonscale.limitless.ui.settings.SettingsVM
@@ -25,6 +26,9 @@ val LimitlessModule = module {
     // Repository
     singleOf(::AppPrefsRepository)
     singleOf(::LimitlessRepository)
+
+    // Dev Tools
+    singleOf(::SampleDataSeeder)
 
     // ViewModel
     viewModelOf(::HomeVM)

@@ -35,4 +35,9 @@ class AppPrefsRepository(
         default = UIAlign.DEFAULT,
     )
 
+    val highlightCurrentDay = context.appPrefs.setting(
+        key = booleanPreferencesKey("highlightCurrentDay"),
+        default = true,
+    )
+
 }
