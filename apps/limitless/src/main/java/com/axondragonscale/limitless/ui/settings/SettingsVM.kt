@@ -2,8 +2,8 @@ package com.axondragonscale.limitless.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.commons.collect
 import com.axondragonscale.limitless.repository.AppPrefsRepository
-import com.axondragonscale.limitless.util.collect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine

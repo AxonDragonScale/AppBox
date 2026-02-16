@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -23,10 +24,13 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -78,7 +82,9 @@ private fun Editor(
     uiState: EditorUiState,
     onEvent: (EditorUiEvent) -> Unit,
 ) = Surface(
-    modifier = modifier.systemBarsPadding(),
+    modifier = modifier
+        .systemBarsPadding()
+        .imePadding(),
     color = MaterialTheme.colorScheme.background,
 ) {
     Column(
@@ -87,11 +93,15 @@ private fun Editor(
     ) {
         HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
 
+        val focusRequester = remember { FocusRequester() }
+        LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
         val scrollState = rememberScrollState()
         EditorFields(
             modifier = Modifier
                 .padding(top = 8.dp, bottom = 16.dp)
                 .verticalScroll(scrollState),
+            focusRequester = focusRequester,
             habit = uiState.habit,
             onHabitUpdated = { onEvent(EditorUiEvent.UpdateHabit(it)) },
         )
@@ -117,6 +127,7 @@ private fun Editor(
 @Composable
 private fun EditorFields(
     modifier: Modifier = Modifier,
+    focusRequester: FocusRequester,
     habit: HabitEntity,
     onHabitUpdated: (HabitEntity) -> Unit,
 ) = Column(
@@ -126,7 +137,9 @@ private fun EditorFields(
     verticalArrangement = Arrangement.Bottom,
 ) {
     OutlinedTextField(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester),
         value = habit.name,
         onValueChange = { onHabitUpdated(habit.copy(name = it)) },
         leadingIcon = { Icon(Icons.Default.Flag, null) },
