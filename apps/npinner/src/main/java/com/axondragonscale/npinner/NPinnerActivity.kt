@@ -32,7 +32,7 @@ class NPinnerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val uiMode by appPrefsRepository.uiModeFlow.collectAsStateWithLifecycle(initialValue = UIMode.AUTO)
+            val uiMode by appPrefsRepository.uiMode.flow.collectAsStateWithLifecycle(initialValue = UIMode.AUTO)
             NPinnerTheme(darkTheme = uiMode.isDarkTheme()) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

@@ -29,10 +29,10 @@ class ThemePickerViewModel(
 
 
     fun onUiModeChange(uiMode: UIMode) = viewModelScope.launch {
-        repository.setUiMode(uiMode)
+        repository.uiMode.set(uiMode)
     }
 
     private fun themePickerUiState(): Flow<ThemePickerUiState> =
-        repository.uiModeFlow.map { ThemePickerUiState.Success(it) }
+        repository.uiMode.flow.map { ThemePickerUiState.Success(it) }
 
 }

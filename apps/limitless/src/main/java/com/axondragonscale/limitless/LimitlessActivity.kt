@@ -12,7 +12,6 @@ import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.limitless.repository.AppPrefsRepository
 import com.axondragonscale.limitless.ui.LimitlessApp
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
@@ -28,19 +27,13 @@ class LimitlessActivity : ComponentActivity() {
         var keepSplashScreen = true
         splashScreen.setKeepOnScreenCondition { keepSplashScreen }
 
-        val (initialUiMode, initialDynamicTheme) = runBlocking {
-            Pair(
-                appPrefsRepository.uiModeFlow.first(),
-                appPrefsRepository.dynamicThemeFlow.first(),
-            )
-        }
+        val initialUiMode = runBlocking { appPrefsRepository.uiMode.get() }
+        val initialDynamicTheme = runBlocking { appPrefsRepository.dynamicTheme.get() }
         keepSplashScreen = false
 
         setContent {
-            val uiMode by appPrefsRepository.uiModeFlow
-                .collectAsStateWithLifecycle(initialValue = initialUiMode)
-            val dynamicTheme by appPrefsRepository.dynamicThemeFlow
-                .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
+            val uiMode by appPrefsRepository.uiMode.flow.collectAsStateWithLifecycle(initialValue = initialUiMode)
+            val dynamicTheme by appPrefsRepository.dynamicTheme.flow.collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
 
             LimitlessTheme(
                 darkTheme = uiMode.isDarkTheme(),

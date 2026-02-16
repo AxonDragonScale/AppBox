@@ -22,8 +22,8 @@ class SettingsVM(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             combine(
-                appPrefsRepository.uiModeFlow,
-                appPrefsRepository.dynamicThemeFlow
+                appPrefsRepository.uiMode.flow,
+                appPrefsRepository.dynamicTheme.flow
             ) { uiMode, dynamicTheme ->
                 uiState.update {
                     it.copy(
@@ -47,13 +47,13 @@ class SettingsVM(
     private fun onUiModeUpdated(
         event: SettingsUiEvent.UIModeUpdated
     ) = viewModelScope.launch(Dispatchers.IO) {
-        appPrefsRepository.setUiMode(event.uiMode)
+        appPrefsRepository.uiMode.set(event.uiMode)
     }
 
     private fun onDynamicThemeToggled(
         event: SettingsUiEvent.DynamicThemeToggled
     ) = viewModelScope.launch(Dispatchers.IO) {
-        appPrefsRepository.setDynamicTheme(event.dynamicTheme)
+        appPrefsRepository.dynamicTheme.set(event.dynamicTheme)
     }
 
 }
