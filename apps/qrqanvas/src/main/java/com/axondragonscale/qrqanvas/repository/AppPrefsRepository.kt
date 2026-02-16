@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.axondragonscale.commons.enumSetting
 import com.axondragonscale.commons.setting
-import com.axondragonscale.qrqanvas.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 09/07/25

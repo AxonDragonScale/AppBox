@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
-import com.axondragonscale.topty.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 29/10/24

@@ -1,6 +1,6 @@
 package com.axondragonscale.limitless.ui.settings
 
-import com.axondragonscale.limitless.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 01/11/24

@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.axondragonscale.topty.backup.BackupFormat
 import com.axondragonscale.topty.model.CodeDesign
 import com.axondragonscale.topty.model.UIFont
-import com.axondragonscale.topty.model.UIMode
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 

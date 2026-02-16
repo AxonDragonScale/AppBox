@@ -2,7 +2,7 @@ package com.axondragonscale.topty.ui.settings
 
 import com.axondragonscale.topty.model.CodeDesign
 import com.axondragonscale.topty.model.UIFont
-import com.axondragonscale.topty.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 13/10/24

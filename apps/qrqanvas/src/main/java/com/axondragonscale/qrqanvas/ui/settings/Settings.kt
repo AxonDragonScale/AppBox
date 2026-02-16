@@ -53,7 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.qrqanvas.BuildConfig
-import com.axondragonscale.qrqanvas.model.UIMode
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import org.koin.androidx.compose.koinViewModel
 

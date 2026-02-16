@@ -8,12 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.jest.model.UIMode
+import com.axondragonscale.commons.UIMode
+import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.jest.repository.PrefsRepository
 import com.axondragonscale.jest.ui.JestApp
 import com.axondragonscale.jest.ui.theme.JestTheme
@@ -43,7 +42,7 @@ class JestActivity : ComponentActivity() {
                 .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
 
             JestTheme(
-                darkTheme = isDarkTheme(uiMode),
+                darkTheme = uiMode.isDarkTheme(),
                 dynamicColor = dynamicTheme,
             ) {
                 JestApp()
@@ -59,13 +58,6 @@ class JestActivity : ComponentActivity() {
             if (status != PackageManager.PERMISSION_GRANTED)
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-    }
-
-    @Composable
-    private fun isDarkTheme(uiMode: UIMode) = when (uiMode) {
-        UIMode.LIGHT -> false
-        UIMode.DARK -> true
-        UIMode.AUTO -> isSystemInDarkTheme()
     }
 
 }

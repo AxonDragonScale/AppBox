@@ -11,7 +11,7 @@ import com.axondragonscale.commons.setting
 import com.axondragonscale.topty.model.CodeDesign
 import com.axondragonscale.topty.model.SortOrder
 import com.axondragonscale.topty.model.UIFont
-import com.axondragonscale.topty.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 private val Context.appPrefs: DataStore<Preferences> by preferencesDataStore("topty_prefs")
 

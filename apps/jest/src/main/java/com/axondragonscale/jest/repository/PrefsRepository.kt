@@ -12,7 +12,7 @@ import com.axondragonscale.commons.setting
 import com.axondragonscale.jest.model.BlacklistFlag
 import com.axondragonscale.jest.model.Category
 import com.axondragonscale.jest.model.JokeType
-import com.axondragonscale.jest.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 private val Context.appPrefs: DataStore<Preferences> by preferencesDataStore("jest_prefs")
 

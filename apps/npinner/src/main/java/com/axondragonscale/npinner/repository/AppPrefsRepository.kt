@@ -6,7 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.axondragonscale.npinner.model.DarkModeConfig
+import com.axondragonscale.commons.UIMode
 import kotlinx.coroutines.flow.map
 
 /**
@@ -20,15 +20,15 @@ class AppPrefsRepository(
     private val context: Context,
 ) {
 
-    private val darkModeConfigKey = intPreferencesKey("darkModeConfig")
-    val darkModeConfigFlow = context.appPrefs.data.map { prefs ->
-        val ordinal = prefs[darkModeConfigKey] ?: DarkModeConfig.AUTO.ordinal
-        DarkModeConfig.fromOrdinal(ordinal)
+    private val uiModeKey = intPreferencesKey("uiMode")
+    val uiModeFlow = context.appPrefs.data.map { prefs ->
+        val ordinal = prefs[uiModeKey] ?: UIMode.DEFAULT.ordinal
+        UIMode.fromOrdinal(ordinal)
     }
 
-    suspend fun setDarkModeConfig(darkModeConfig: DarkModeConfig) {
+    suspend fun setUiMode(uiMode: UIMode) {
         context.appPrefs.edit { prefs ->
-            prefs[darkModeConfigKey] = darkModeConfig.ordinal
+            prefs[uiModeKey] = uiMode.ordinal
         }
     }
 

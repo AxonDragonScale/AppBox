@@ -4,8 +4,6 @@ import android.os.Bundle
 import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,7 +12,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.topty.auth.BiometricAuthManager
-import com.axondragonscale.topty.model.UIMode
+import com.axondragonscale.commons.UIMode
+import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.ui.BiometricLockScreen
 import com.axondragonscale.topty.ui.Route
@@ -64,7 +63,7 @@ class ToptyActivity : FragmentActivity() {
             }
 
             ToptyTheme(
-                darkTheme = isDarkTheme(uiMode),
+                darkTheme = uiMode.isDarkTheme(),
                 dynamicColor = dynamicTheme,
                 uiFont = uiFont,
             ) {
@@ -81,10 +80,4 @@ class ToptyActivity : FragmentActivity() {
         }
     }
 
-    @Composable
-    private fun isDarkTheme(uiMode: UIMode) = when (uiMode) {
-        UIMode.LIGHT -> false
-        UIMode.DARK -> true
-        UIMode.AUTO -> isSystemInDarkTheme()
-    }
 }

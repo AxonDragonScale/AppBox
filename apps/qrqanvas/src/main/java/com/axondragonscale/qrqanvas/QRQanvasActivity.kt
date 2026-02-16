@@ -4,12 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.qrqanvas.model.UIMode
+import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.qrqanvas.repository.AppPrefsRepository
 import com.axondragonscale.qrqanvas.ui.QRQanvasApp
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
@@ -36,7 +34,7 @@ class QRQanvasActivity : ComponentActivity() {
             val dynamicTheme by appPrefsRepository.dynamicTheme.flow.collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
 
             QRQanvasTheme(
-                darkTheme = isDarkTheme(uiMode),
+                darkTheme = uiMode.isDarkTheme(),
                 dynamicColor = dynamicTheme,
             ) {
                 QRQanvasApp()
@@ -44,10 +42,4 @@ class QRQanvasActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun isDarkTheme(uiMode: UIMode) = when (uiMode) {
-        UIMode.LIGHT -> false
-        UIMode.DARK -> true
-        UIMode.AUTO -> isSystemInDarkTheme()
-    }
 }

@@ -1,6 +1,6 @@
 package com.axondragonscale.wallmatic.ui.settings
 
-import com.axondragonscale.wallmatic.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 09/06/24

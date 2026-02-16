@@ -1,6 +1,6 @@
 package com.axondragonscale.qrqanvas.ui.settings
 
-import com.axondragonscale.qrqanvas.model.UIMode
+import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 09/07/25

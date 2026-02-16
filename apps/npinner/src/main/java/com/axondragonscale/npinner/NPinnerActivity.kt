@@ -4,18 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.WorkManager
+import com.axondragonscale.commons.UIMode
+import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.npinner.core.NPinnerNotificationMonitor
-import com.axondragonscale.npinner.model.DarkModeConfig
 import com.axondragonscale.npinner.repository.AppPrefsRepository
 import com.axondragonscale.npinner.ui.NPinnerApp
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
@@ -33,9 +32,8 @@ class NPinnerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val darkModeConfig by appPrefsRepository.darkModeConfigFlow
-                .collectAsStateWithLifecycle(initialValue = DarkModeConfig.AUTO)
-            NPinnerTheme(darkTheme = isDarkMode(darkModeConfig = darkModeConfig)) {
+            val uiMode by appPrefsRepository.uiModeFlow.collectAsStateWithLifecycle(initialValue = UIMode.AUTO)
+            NPinnerTheme(darkTheme = uiMode.isDarkTheme()) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
@@ -56,11 +54,4 @@ class NPinnerActivity : ComponentActivity() {
         }
     }
 
-}
-
-@Composable
-fun isDarkMode(darkModeConfig: DarkModeConfig) = when (darkModeConfig) {
-    DarkModeConfig.AUTO -> isSystemInDarkTheme()
-    DarkModeConfig.ON -> true
-    DarkModeConfig.OFF -> false
 }

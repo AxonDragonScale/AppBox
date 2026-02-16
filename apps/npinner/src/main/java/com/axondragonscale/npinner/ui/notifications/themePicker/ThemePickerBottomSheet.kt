@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.koin.androidx.compose.koinViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.npinner.model.DarkModeConfig
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.npinner.ui.common.NPinnerModalBottomSheet
 import com.axondragonscale.npinner.ui.common.SegmentedToggleButton
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
@@ -41,7 +41,7 @@ fun ThemePickerBottomSheet(
     NPinnerModalBottomSheet(onDismiss = onDismiss) {
         ThemePicker(
             uiState = uiState,
-            onDarkModeConfigChange = viewModel::onDarkModeConfigChange,
+            onUiModeChange = viewModel::onUiModeChange,
         )
     }
 }
@@ -49,7 +49,7 @@ fun ThemePickerBottomSheet(
 @Composable
 private fun ThemePicker(
     uiState: ThemePickerUiState,
-    onDarkModeConfigChange: (DarkModeConfig) -> Unit,
+    onUiModeChange: (UIMode) -> Unit,
 ) {
     if (uiState is ThemePickerUiState.Success) {
         Column(modifier = Modifier.padding(24.dp)) {
@@ -74,10 +74,10 @@ private fun ThemePicker(
             Spacer(modifier = Modifier.height(16.dp))
 
             SegmentedToggleButton(
-                items = DarkModeConfig.stringValues,
-                defaultSelectedItemIndex = uiState.darkModeConfig.ordinal,
+                items = UIMode.entries.map { it.displayName },
+                defaultSelectedItemIndex = uiState.uiMode.ordinal,
                 onItemSelected = {
-                    onDarkModeConfigChange(DarkModeConfig.fromOrdinal(it))
+                    onUiModeChange(UIMode.fromOrdinal(it))
                 },
             )
         }
@@ -91,8 +91,8 @@ fun ThemePickerBottomSheetPreview() {
     NPinnerTheme {
         Surface(color = MaterialTheme.colorScheme.surface) {
             ThemePicker(
-                uiState = ThemePickerUiState.Success(DarkModeConfig.AUTO),
-                onDarkModeConfigChange = {},
+                uiState = ThemePickerUiState.Success(UIMode.AUTO),
+                onUiModeChange = {},
             )
         }
     }

@@ -2,7 +2,7 @@ package com.axondragonscale.npinner.ui.notifications.themePicker
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.npinner.model.DarkModeConfig
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.npinner.repository.AppPrefsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,11 +28,11 @@ class ThemePickerViewModel(
             )
 
 
-    fun onDarkModeConfigChange(darkModeConfig: DarkModeConfig) = viewModelScope.launch {
-        repository.setDarkModeConfig(darkModeConfig)
+    fun onUiModeChange(uiMode: UIMode) = viewModelScope.launch {
+        repository.setUiMode(uiMode)
     }
 
     private fun themePickerUiState(): Flow<ThemePickerUiState> =
-        repository.darkModeConfigFlow.map { ThemePickerUiState.Success(it) }
+        repository.uiModeFlow.map { ThemePickerUiState.Success(it) }
 
 }

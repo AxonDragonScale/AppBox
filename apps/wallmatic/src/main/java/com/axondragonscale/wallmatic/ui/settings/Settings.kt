@@ -52,7 +52,7 @@ import org.koin.androidx.compose.koinViewModel
 import com.axondragonscale.wallmatic.BuildConfig
 import com.axondragonscale.wallmatic.util.Link
 import com.axondragonscale.wallmatic.R
-import com.axondragonscale.wallmatic.model.UIMode
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.wallmatic.ui.bottombar.BOTTOM_BAR_HEIGHT
 import com.axondragonscale.wallmatic.ui.common.SettingsCard
 import com.axondragonscale.wallmatic.ui.common.TabHeader

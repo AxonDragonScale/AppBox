@@ -58,7 +58,7 @@ import com.axondragonscale.topty.Link
 import com.axondragonscale.topty.R
 import com.axondragonscale.topty.model.CodeDesign
 import com.axondragonscale.topty.model.UIFont
-import com.axondragonscale.topty.model.UIMode
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.topty.ui.common.Dropdown
 import com.axondragonscale.topty.ui.common.DropdownItem
 import com.axondragonscale.topty.ui.common.Switch

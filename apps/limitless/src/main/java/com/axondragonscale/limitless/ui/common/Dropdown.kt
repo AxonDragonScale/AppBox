@@ -36,7 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.limitless.model.UIMode
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 
 /**
