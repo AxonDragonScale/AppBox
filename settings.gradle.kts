@@ -38,6 +38,7 @@ include(":apps:wallmatic")
 include(":apps:topty")
 include(":apps:npinner")
 include(":apps:qrqanvas")
+include(":apps:limitless")
 
 // Library modules (KMP)
 include(":libraries:tlv")

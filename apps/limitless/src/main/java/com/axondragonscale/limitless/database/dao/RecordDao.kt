@@ -1,0 +1,46 @@
+package com.axondragonscale.limitless.database.dao
+
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Query
+import androidx.room.Upsert
+import com.axondragonscale.limitless.database.entity.RecordEntity
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Created by Ronak Harkhani on 02/11/24
+ */
+@Dao
+interface RecordDao {
+
+    // MARK: Getters -------------------------------------------------------------------------------
+
+    @Query("SELECT * FROM record WHERE habitId = :habitId")
+    fun getRecords(habitId: Long): Flow<List<RecordEntity>>
+
+    @Query("SELECT * FROM record WHERE habitId = :habitId")
+    suspend fun getAllRecords(habitId: Long): List<RecordEntity>
+
+    @Query("SELECT * FROM record")
+    fun getRecords(): Flow<List<RecordEntity>>
+
+    @Query("SELECT * FROM record")
+    suspend fun getAllRecords(): List<RecordEntity>
+
+    @Query("SELECT * FROM record WHERE id = :id")
+    suspend fun getRecord(id: Long): RecordEntity?
+
+    // MARK: Upserts -------------------------------------------------------------------------------
+
+    @Upsert
+    suspend fun upsert(record: RecordEntity)
+
+    // MARK: Delete --------------------------------------------------------------------------------
+
+    @Query("DELETE FROM record WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Delete
+    suspend fun delete(record: RecordEntity)
+
+}
