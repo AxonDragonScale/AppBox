@@ -9,9 +9,13 @@ import com.axondragonscale.limitless.database.LimitlessDatabase.Companion.DB_VER
 import com.axondragonscale.limitless.database.dao.HabitDao
 import com.axondragonscale.limitless.database.dao.HabitDayCountDao
 import com.axondragonscale.limitless.database.dao.RecordDao
+import com.axondragonscale.limitless.database.dao.ReminderDao
 import com.axondragonscale.limitless.database.converter.LocalDateConverter
+import com.axondragonscale.limitless.database.converter.LocalTimeConverter
+import com.axondragonscale.limitless.database.converter.ReminderTypeConverter
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
+import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.database.view.HabitDayCountView
 
 /**
@@ -21,6 +25,7 @@ import com.axondragonscale.limitless.database.view.HabitDayCountView
     entities = [
         HabitEntity::class,
         RecordEntity::class,
+        ReminderEntity::class,
     ],
     views = [
         HabitDayCountView::class,
@@ -28,7 +33,11 @@ import com.axondragonscale.limitless.database.view.HabitDayCountView
     version = DB_VERSION,
     exportSchema = true,
 )
-@TypeConverters(LocalDateConverter::class)
+@TypeConverters(
+    LocalDateConverter::class,
+    LocalTimeConverter::class,
+    ReminderTypeConverter::class,
+)
 abstract class LimitlessDatabase : RoomDatabase() {
 
     companion object {
@@ -50,5 +59,6 @@ abstract class LimitlessDatabase : RoomDatabase() {
     abstract fun habitDao(): HabitDao
     abstract fun recordDao(): RecordDao
     abstract fun habitDayCountDao(): HabitDayCountDao
+    abstract fun reminderDao(): ReminderDao
 
 }

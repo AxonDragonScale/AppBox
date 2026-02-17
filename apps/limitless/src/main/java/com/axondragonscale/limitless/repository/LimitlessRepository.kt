@@ -4,8 +4,10 @@ import androidx.compose.ui.util.fastMaxOfOrDefault
 import com.axondragonscale.limitless.database.dao.HabitDao
 import com.axondragonscale.limitless.database.dao.HabitDayCountDao
 import com.axondragonscale.limitless.database.dao.RecordDao
+import com.axondragonscale.limitless.database.dao.ReminderDao
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
+import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.database.view.HabitDayCountView
 import com.axondragonscale.limitless.model.HabitHeatMapData
 import kotlinx.coroutines.flow.Flow
@@ -18,7 +20,8 @@ import kotlinx.datetime.LocalDate
 class LimitlessRepository(
     private val habitDao: HabitDao,
     private val recordDao: RecordDao,
-    private val habitDayCountDao: HabitDayCountDao
+    private val habitDayCountDao: HabitDayCountDao,
+    private val reminderDao: ReminderDao,
 ) {
 
     fun getHabits(): Flow<List<HabitEntity>> = habitDao.getHabits()
@@ -32,10 +35,32 @@ class LimitlessRepository(
 
     fun getHabitFlow(id: Long) = habitDao.getHabitFlow(id)
 
-    suspend fun saveHabit(habit: HabitEntity) = habitDao.upsert(habit)
+    suspend fun saveHabit(habit: HabitEntity): Long = habitDao.upsert(habit)
 
     suspend fun recordHabit(habitId: Long, message: String) =
         recordDao.upsert(RecordEntity.new(habitId, message))
+
+    // MARK: Reminders -----------------------------------------------------------------------------
+
+    fun getRemindersForHabit(habitId: Long): Flow<List<ReminderEntity>> =
+        reminderDao.getRemindersForHabit(habitId)
+
+    suspend fun getRemindersForHabitOnce(habitId: Long): List<ReminderEntity> =
+        reminderDao.getRemindersForHabitOnce(habitId)
+
+    suspend fun getReminder(id: Long): ReminderEntity? = reminderDao.getReminder(id)
+
+    suspend fun getAllReminders(): List<ReminderEntity> = reminderDao.getAllReminders()
+
+    suspend fun saveReminder(reminder: ReminderEntity): Long = reminderDao.upsert(reminder)
+
+    suspend fun saveReminders(reminders: List<ReminderEntity>) = reminderDao.upsertAll(reminders)
+
+    suspend fun deleteReminder(reminderId: Long) = reminderDao.delete(reminderId)
+
+    suspend fun deleteReminders(reminderIds: List<Long>) = reminderDao.deleteByIds(reminderIds)
+
+    suspend fun deleteRemindersForHabit(habitId: Long) = reminderDao.deleteAllForHabit(habitId)
 
     // MARK: Heat Map Data -------------------------------------------------------------------------
 

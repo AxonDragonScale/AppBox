@@ -12,8 +12,8 @@ import kotlinx.datetime.LocalDate
 object LocalDateConverter {
 
     @TypeConverter
-    fun fromLocalDate(date: LocalDate): String = date.toString()
+    fun fromLocalDate(date: LocalDate?): String? = date?.toString()
 
     @TypeConverter
-    fun toLocalDate(dateString: String): LocalDate = LocalDate.parse(dateString)
+    fun toLocalDate(dateString: String?): LocalDate? = dateString?.let { LocalDate.parse(it) }
 }

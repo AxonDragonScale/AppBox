@@ -30,7 +30,7 @@ interface HabitDao {
     // MARK: Upserts -------------------------------------------------------------------------------
 
     @Upsert
-    suspend fun upsert(habit: HabitEntity)
+    suspend fun upsert(habit: HabitEntity): Long
 
     // MARK: Delete --------------------------------------------------------------------------------
 

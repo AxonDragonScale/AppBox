@@ -177,6 +177,27 @@ private fun MyComponentPreview() {
 
 ## General Kotlin
 
+### Date/Time
+
+#### Use `kotlin.time.Clock` Instead of `kotlinx.datetime.Clock`
+- **Always use `kotlin.time.Clock`** (`kotlin.time.Clock.System.now()`) instead of `kotlinx.datetime.Clock` (`kotlinx.datetime.Clock.System.now()`)
+- `kotlinx.datetime.Clock` is deprecated in favor of the Kotlin stdlib version
+- The rest of the `kotlinx.datetime` library (e.g., `LocalDate`, `LocalTime`, `TimeZone`, `toLocalDateTime()`, `Instant` extensions) is still used normally — only `Clock` moved to `kotlin.time`
+
+**Preferred:**
+```kotlin
+import kotlin.time.Clock
+
+val now = Clock.System.now()
+```
+
+**Avoid:**
+```kotlin
+import kotlinx.datetime.Clock
+
+val now = Clock.System.now() // Deprecated
+```
+
 ### Class Organization
 
 #### Companion Object Placement

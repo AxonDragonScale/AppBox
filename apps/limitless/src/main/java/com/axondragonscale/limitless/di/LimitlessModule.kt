@@ -1,5 +1,7 @@
 package com.axondragonscale.limitless.di
 
+import com.axondragonscale.limitless.core.ReminderNotificationManager
+import com.axondragonscale.limitless.core.ReminderScheduler
 import com.axondragonscale.limitless.database.LimitlessDatabase
 import com.axondragonscale.limitless.repository.AppPrefsRepository
 import com.axondragonscale.limitless.repository.LimitlessRepository
@@ -24,10 +26,15 @@ val LimitlessModule = module {
     singleOf(LimitlessDatabase::habitDao)
     singleOf(LimitlessDatabase::recordDao)
     singleOf(LimitlessDatabase::habitDayCountDao)
+    singleOf(LimitlessDatabase::reminderDao)
 
     // Repository
     singleOf(::AppPrefsRepository)
     singleOf(::LimitlessRepository)
+
+    // Core
+    singleOf(::ReminderScheduler)
+    singleOf(::ReminderNotificationManager)
 
     // Dev Tools
     singleOf(::SampleDataSeeder)
