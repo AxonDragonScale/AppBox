@@ -32,6 +32,9 @@ class LimitlessRepository(
 
     suspend fun saveHabit(habit: HabitEntity) = habitDao.upsert(habit)
 
+    suspend fun recordHabit(habitId: Long, message: String) =
+        recordDao.upsert(RecordEntity.new(habitId, message))
+
     // MARK: Heat Map Data -------------------------------------------------------------------------
 
     /**

@@ -20,7 +20,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -62,7 +65,7 @@ fun Home(
                 HomeUiEvent.NavigateToStats -> navController.navigate(Route.Stats)
                 HomeUiEvent.AddHabit -> navController.navigate(Route.Editor())
 
-                else -> Unit
+                else -> vm.onEvent(event)
             }
         }
     )
@@ -74,6 +77,19 @@ private fun Home(
     uiState: HomeUiState,
     onEvent: (HomeUiEvent) -> Unit,
 ) {
+    var selectedHabit by remember { mutableStateOf<HabitHeatMapData?>(null) }
+
+    selectedHabit?.let { habit ->
+        RecordHabitSheet(
+            habitName = habit.habitName,
+            onRecord = { message ->
+                onEvent(HomeUiEvent.RecordHabit(habit.habitId, message))
+                selectedHabit = null
+            },
+            onDismiss = { selectedHabit = null },
+        )
+    }
+
     Scaffold(
         modifier = modifier.systemBarsPadding(),
         bottomBar = {
@@ -136,6 +152,7 @@ private fun Home(
                             modifier = Modifier.padding(16.dp),
                             data = habitData,
                             highlightCurrentDay = uiState.highlightCurrentDay,
+                            onRecordClick = { selectedHabit = habitData },
                         )
                     }
                 }

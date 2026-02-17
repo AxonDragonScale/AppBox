@@ -18,6 +18,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,6 +73,7 @@ fun HabitHeatMap(
     data: HabitHeatMapData,
     highlightCurrentDay: Boolean = true,
     totalWeeks: Int = 26,
+    onRecordClick: () -> Unit = {},
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val weeks = remember(today, totalWeeks) { buildWeeks(today, totalWeeks) }
@@ -81,13 +86,32 @@ fun HabitHeatMap(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Habit name
-        Text(
-            text = data.habitName,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
+        // Habit name + record button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier.weight(1f),
+                text = data.habitName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            IconButton(
+                onClick = onRecordClick,
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = "Record habit",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
 
         // Month labels row
         MonthLabelsRow(

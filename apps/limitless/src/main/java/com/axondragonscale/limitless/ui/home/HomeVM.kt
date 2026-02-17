@@ -38,11 +38,17 @@ class HomeVM(
     }
 
     fun onEvent(event: HomeUiEvent) = when (event) {
+        is HomeUiEvent.RecordHabit -> recordHabit(event)
 
         // Handled in Compose
-        HomeUiEvent.NavigateToSettings -> Unit
-        HomeUiEvent.NavigateToStats -> Unit
-        HomeUiEvent.AddHabit -> Unit
+        is HomeUiEvent.NavigateToSettings -> Unit
+        is HomeUiEvent.NavigateToStats -> Unit
+        is HomeUiEvent.AddHabit -> Unit
     }
+
+    private fun recordHabit(event: HomeUiEvent.RecordHabit) =
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.recordHabit(event.habitId, event.message)
+        }
 
 }
