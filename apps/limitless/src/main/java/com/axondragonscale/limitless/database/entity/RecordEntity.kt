@@ -21,6 +21,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index("habitId"),
         Index("timestamp"),
+        Index(value = ["habitId", "timestamp"]), // Composite index for better query performance
     ],
 )
 data class RecordEntity(

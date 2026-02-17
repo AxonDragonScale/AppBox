@@ -22,6 +22,7 @@ val LimitlessModule = module {
     singleOf(LimitlessDatabase::create)
     singleOf(LimitlessDatabase::habitDao)
     singleOf(LimitlessDatabase::recordDao)
+    singleOf(LimitlessDatabase::habitDayCountDao)
 
     // Repository
     singleOf(::AppPrefsRepository)

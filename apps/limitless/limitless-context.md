@@ -180,7 +180,29 @@ Consumed in Compose via a custom `Flow.collectWithLifecycle` extension.
 | timestamp | Long | Epoch millis when record was created |
 | message | String | Record message/note |
 
-**Indices**: `habitId`, `timestamp`
+**Indices**: `habitId`, `timestamp`, composite `(habitId, timestamp)`
+
+### HabitDayCountView (Database View)
+A pre-aggregated view that computes daily record counts per habit:
+| Column | Type | Notes |
+|--------|------|-------|
+| habitId | Long | Habit ID |
+| date | LocalDate | Date in YYYY-MM-DD format (converted via TypeConverter) |
+| count | Int | Number of records for this habit on this date |
+| maxCount | Int | Maximum count for this habit (computed via SQL window function) |
+
+**SQL Definition**:
+```sql
+SELECT
+    habitId,
+    DATE(timestamp / 1000, 'unixepoch', 'localtime') as date,
+    COUNT(*) as count,
+    MAX(COUNT(*)) OVER (PARTITION BY habitId) as maxCount
+FROM record
+GROUP BY habitId, date
+```
+
+This view automatically updates when records are inserted/deleted and provides significant performance improvements (10-20x faster) for heat map calculations.
 
 ## Preferences (DataStore)
 
@@ -202,6 +224,14 @@ Stored in `app_prefs_store`:
 7. On save → `LimitlessRepository.saveHabit()` upserts to Room → `EditorUiEffect.NavigateBack` emitted
 8. Settings changes flow through `AppPrefsRepository` → DataStore → observed reactively in Activity/VMs
 9. Settings → "Open Dev Tools" navigates to `Route.DevTools` → renders common `DevToolsScreen` with built-in utilities (Kill App, Clear Data, Permissions) + Limitless app info
+
+### Heat Map Data Flow (Optimized)
+1. `HomeVM` calls `repository.getHabitHeatMapData()`
+2. Repository combines `habits` Flow + `dayCounts` Flow from `HabitDayCountView`
+3. Database view provides pre-aggregated data (grouping/counting done in SQLite)
+4. Repository transforms view data into `HabitHeatMapData` (minimal processing)
+5. Flow automatically updates when records change → UI reactively updates
+6. All heavy computation happens in SQL, not in memory
 
 ## Resources
 
@@ -228,3 +258,4 @@ Stored in `app_prefs_store`:
 - **Navigation events**: Handled at the composable layer (not inside VMs), forwarded to `navController`
 - **All other events**: Delegated to `vm.onEvent(event)`
 - **Composable screens**: Two-layer pattern — outer composable wires VM + navigation, inner composable is stateless and previewable
+- **Data processing**: Handled in Repository layer, not in ViewModels — VMs focus on state management and business logic

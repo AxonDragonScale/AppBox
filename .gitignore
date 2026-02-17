@@ -25,3 +25,4 @@ local.properties
 /.idea/compiler.xml
 /.idea/AndroidProjectSystem.xml
 /.idea/markdown.xml
+.idea/artifacts

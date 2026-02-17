@@ -37,7 +37,6 @@ import com.axondragonscale.commons.compose.thenIf
 import com.axondragonscale.limitless.model.HabitHeatMapData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus

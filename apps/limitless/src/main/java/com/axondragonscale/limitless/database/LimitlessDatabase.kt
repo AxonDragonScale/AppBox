@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.axondragonscale.limitless.database.LimitlessDatabase.Companion.DB_VERSION
 import com.axondragonscale.limitless.database.dao.HabitDao
+import com.axondragonscale.limitless.database.dao.HabitDayCountDao
 import com.axondragonscale.limitless.database.dao.RecordDao
+import com.axondragonscale.limitless.database.converter.LocalDateConverter
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
+import com.axondragonscale.limitless.database.view.HabitDayCountView
 
 /**
  * Created by Ronak Harkhani on 01/11/24
@@ -18,9 +22,13 @@ import com.axondragonscale.limitless.database.entity.RecordEntity
         HabitEntity::class,
         RecordEntity::class,
     ],
+    views = [
+        HabitDayCountView::class,
+    ],
     version = DB_VERSION,
     exportSchema = true,
 )
+@TypeConverters(LocalDateConverter::class)
 abstract class LimitlessDatabase : RoomDatabase() {
 
     companion object {
@@ -41,5 +49,6 @@ abstract class LimitlessDatabase : RoomDatabase() {
 
     abstract fun habitDao(): HabitDao
     abstract fun recordDao(): RecordDao
+    abstract fun habitDayCountDao(): HabitDayCountDao
 
 }
