@@ -30,6 +30,8 @@ class LimitlessRepository(
 
     suspend fun getHabit(id: Long) = habitDao.getHabit(id)
 
+    fun getHabitFlow(id: Long) = habitDao.getHabitFlow(id)
+
     suspend fun saveHabit(habit: HabitEntity) = habitDao.upsert(habit)
 
     suspend fun recordHabit(habitId: Long, message: String) =

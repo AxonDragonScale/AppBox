@@ -1,7 +1,9 @@
 package com.axondragonscale.limitless.ui.editor
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.repository.LimitlessRepository
 import com.axondragonscale.limitless.ui.Route
@@ -17,9 +19,11 @@ import kotlinx.coroutines.launch
  * Created by Ronak Harkhani on 03/11/24
  */
 class EditorVM(
-    private val editorRoute: Route.Editor,
+    savedStateHandle: SavedStateHandle,
     private val repository: LimitlessRepository
 ) : ViewModel() {
+
+    private val editorRoute = savedStateHandle.toRoute<Route.Editor>()
 
     val uiState = MutableStateFlow(EditorUiState())
 

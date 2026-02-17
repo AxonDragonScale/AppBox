@@ -24,6 +24,9 @@ interface HabitDao {
     @Query("SELECT * FROM habit WHERE id = :id")
     suspend fun getHabit(id: Long): HabitEntity?
 
+    @Query("SELECT * FROM habit WHERE id = :id")
+    fun getHabitFlow(id: Long): Flow<HabitEntity?>
+
     // MARK: Upserts -------------------------------------------------------------------------------
 
     @Upsert

@@ -7,5 +7,6 @@ sealed interface HomeUiEvent {
     data object NavigateToSettings : HomeUiEvent
     data object NavigateToStats : HomeUiEvent
     data object AddHabit : HomeUiEvent
+    data class NavigateToHabit(val habitId: Long) : HomeUiEvent
     data class RecordHabit(val habitId: Long, val message: String) : HomeUiEvent
 }

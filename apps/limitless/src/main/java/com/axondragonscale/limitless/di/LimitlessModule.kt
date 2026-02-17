@@ -5,6 +5,7 @@ import com.axondragonscale.limitless.repository.AppPrefsRepository
 import com.axondragonscale.limitless.repository.LimitlessRepository
 import com.axondragonscale.limitless.ui.devtools.SampleDataSeeder
 import com.axondragonscale.limitless.ui.editor.EditorVM
+import com.axondragonscale.limitless.ui.habit.HabitVM
 import com.axondragonscale.limitless.ui.home.HomeVM
 import com.axondragonscale.limitless.ui.settings.SettingsVM
 import com.axondragonscale.limitless.ui.stats.StatsVM
@@ -34,6 +35,7 @@ val LimitlessModule = module {
     // ViewModel
     viewModelOf(::HomeVM)
     viewModelOf(::EditorVM)
+    viewModelOf(::HabitVM)
     viewModelOf(::StatsVM)
     viewModelOf(::SettingsVM)
 

@@ -37,12 +37,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.limitless.database.entity.HabitEntity
-import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import org.koin.androidx.compose.koinViewModel
-import org.koin.core.parameter.parametersOf
 
 /**
  * Created by Ronak Harkhani on 03/11/24
@@ -52,9 +50,8 @@ import org.koin.core.parameter.parametersOf
 fun Editor(
     modifier: Modifier = Modifier,
     navController: NavController,
-    editorRoute: Route.Editor,
 ) {
-    val vm: EditorVM = koinViewModel(parameters = { parametersOf(editorRoute) })
+    val vm: EditorVM = koinViewModel()
     val uiState = vm.uiState.collectAsStateWithLifecycle()
 
     vm.uiEffect.collectWithLifecycle { effect ->

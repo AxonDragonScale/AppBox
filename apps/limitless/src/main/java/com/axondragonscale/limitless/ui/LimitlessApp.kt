@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.axondragonscale.limitless.ui.devtools.LimitlessDevTools
 import com.axondragonscale.limitless.ui.editor.Editor
+import com.axondragonscale.limitless.ui.habit.Habit
 import com.axondragonscale.limitless.ui.home.Home
 import com.axondragonscale.limitless.ui.settings.Settings
 import com.axondragonscale.limitless.ui.stats.Stats
@@ -45,10 +46,14 @@ fun LimitlessApp(modifier: Modifier = Modifier) {
         }
 
         composable<Route.Editor> {
-            val editorRoute = it.toRoute<Route.Editor>()
-            Editor(
+            Editor(navController = navController)
+        }
+
+        composable<Route.Habit> {
+            val habitRoute = it.toRoute<Route.Habit>()
+            Habit(
                 navController = navController,
-                editorRoute = editorRoute
+                habitId = habitRoute.habitId,
             )
         }
 

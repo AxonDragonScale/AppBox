@@ -61,9 +61,10 @@ fun Home(
         uiState = uiState.value,
         onEvent = { event ->
             when (event) {
-                HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
-                HomeUiEvent.NavigateToStats -> navController.navigate(Route.Stats)
-                HomeUiEvent.AddHabit -> navController.navigate(Route.Editor())
+                is HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
+                is HomeUiEvent.NavigateToStats -> navController.navigate(Route.Stats)
+                is HomeUiEvent.AddHabit -> navController.navigate(Route.Editor())
+                is HomeUiEvent.NavigateToHabit -> navController.navigate(Route.Habit(event.habitId))
 
                 else -> vm.onEvent(event)
             }
@@ -144,12 +145,15 @@ private fun Home(
                 ) { habitData ->
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
+                        onClick = { onEvent(HomeUiEvent.NavigateToHabit(habitData.habitId)) },
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceContainer,
                         tonalElevation = 1.dp,
                     ) {
                         HabitHeatMap(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp, bottom = 16.dp),
                             data = habitData,
                             highlightCurrentDay = uiState.highlightCurrentDay,
                             onRecordClick = { selectedHabit = habitData },

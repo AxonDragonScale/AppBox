@@ -17,6 +17,9 @@ object Route {
     data object Stats
 
     @Serializable
+    data class Habit(val habitId: Long)
+
+    @Serializable
     data class Editor(val habitId: Long? = null)
 
     @Serializable
