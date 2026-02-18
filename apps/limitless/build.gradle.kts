@@ -40,10 +40,8 @@ dependencies {
     // Kotlin
     implementation(libs.bundles.coroutines)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.datetime)
 
     // Datastore
     implementation(libs.datastore.prefs)
-
-    // DateTime
-    implementation(libs.kotlinx.datetime)
 }

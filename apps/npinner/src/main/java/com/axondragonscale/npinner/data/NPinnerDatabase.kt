@@ -5,8 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.axondragonscale.npinner.data.converter.LocalDateTypeConverter
-import com.axondragonscale.npinner.data.converter.LocalTimeTypeConverter
+import com.axondragonscale.commons.room.LocalDateConverter
+import com.axondragonscale.commons.room.LocalTimeConverter
 import com.axondragonscale.npinner.data.converter.ScheduleTypeConverter
 import com.axondragonscale.npinner.data.dao.NotificationDao
 import com.axondragonscale.npinner.data.entity.NotificationEntity
@@ -23,8 +23,8 @@ import com.axondragonscale.npinner.data.entity.NotificationEntity
     autoMigrations = [],
 )
 @TypeConverters(
-    LocalDateTypeConverter::class,
-    LocalTimeTypeConverter::class,
+    LocalDateConverter::class,
+    LocalTimeConverter::class,
     ScheduleTypeConverter::class,
 )
 abstract class NPinnerDatabase : RoomDatabase() {

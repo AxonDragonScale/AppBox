@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.database.converter
+package com.axondragonscale.commons.room
 
 import androidx.room.TypeConverter
 import kotlinx.datetime.LocalTime
