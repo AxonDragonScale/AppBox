@@ -11,14 +11,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,12 +34,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
+import com.axondragonscale.limitless.model.GoalStatus
+import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
@@ -184,6 +193,93 @@ private fun Habit(
                     }
                 }
             }
+
+            if (uiState.goals.isNotEmpty()) {
+                GoalsSection(
+                    modifier = Modifier.padding(top = 16.dp),
+                    goals = uiState.goals
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoalsSection(
+    modifier: Modifier = Modifier,
+    goals: List<GoalStatus>,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "Goals",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        goals.forEach { goalStatus ->
+            GoalCard(
+                modifier = Modifier.padding(bottom = 8.dp),
+                goalStatus = goalStatus,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GoalCard(
+    modifier: Modifier = Modifier,
+    goalStatus: GoalStatus,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 1.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    modifier = Modifier.padding(end = 8.dp).size(18.dp),
+                    imageVector = if (goalStatus.isAchieved) Icons.Default.CheckCircle else Icons.Outlined.Circle,
+                    contentDescription = "Goal achieved",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+
+                Text(
+                    text = "${goalStatus.goal.type.displayName} Goal",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "${goalStatus.current} / ${goalStatus.goal.target}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (goalStatus.isAchieved) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            LinearProgressIndicator(
+                progress = { goalStatus.progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(CircleShape),
+            )
         }
     }
 }
@@ -202,6 +298,27 @@ private fun Preview() {
                     description = "10 minutes of mindfulness every day",
                 ),
                 todayCount = 3,
+                goals = listOf(
+                    GoalStatus(GoalEntity(habitId = 1, type = GoalType.DAILY, target = 1), current = 3),
+                    GoalStatus(GoalEntity(habitId = 1, type = GoalType.WEEKLY, target = 4), current = 3),
+                    GoalStatus(GoalEntity(habitId = 1, type = GoalType.MONTHLY, target = 20), current = 12),
+                ),
+            )
+        }
+        Habit(uiState = uiState, onEvent = {})
+    }
+}
+
+@Preview(name = "No Goals", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun NoGoalsPreview() {
+    LimitlessTheme {
+        val uiState = remember {
+            HabitUiState(
+                isLoading = false,
+                habit = HabitEntity(id = 2, name = "Exercise", description = ""),
+                todayCount = 1,
             )
         }
         Habit(uiState = uiState, onEvent = {})
@@ -209,6 +326,7 @@ private fun Preview() {
 }
 
 @Preview(name = "No Activity", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun EmptyPreview() {
     LimitlessTheme {
