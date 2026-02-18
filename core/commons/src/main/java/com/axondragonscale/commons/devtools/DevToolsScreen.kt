@@ -33,7 +33,9 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.ShieldMoon
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +57,8 @@ import com.axondragonscale.commons.PermissionState
 import com.axondragonscale.commons.clearAppData
 import com.axondragonscale.commons.getDangerousPermissions
 import com.axondragonscale.commons.getMissingPermissions
+import com.axondragonscale.commons.openAppSettings
+import com.axondragonscale.commons.revokeGrantedPermissionsOnKill
 import kotlin.system.exitProcess
 
 /**
@@ -112,6 +116,7 @@ fun DevToolsScreen(
 
         item { KillAppTool() }
         item { ClearDataTool() }
+        item { OpenAppSettingsTool() }
 
         // Permissions Section
         item {
@@ -183,6 +188,23 @@ private fun KillAppTool() {
                 (context as? Activity)?.finishAffinity()
                 exitProcess(0)
             },
+        )
+    )
+}
+
+/**
+ * Open App Settings tool - opens the system app info page.
+ */
+@Composable
+private fun OpenAppSettingsTool() {
+    val context = LocalContext.current
+
+    DevToolActionItem(
+        tool = DevTool.Action(
+            title = "Open App Settings",
+            subtitle = "Manage permissions and app info",
+            icon = Icons.Rounded.Settings,
+            onClick = { context.openAppSettings() },
         )
     )
 }
@@ -260,9 +282,10 @@ private fun PermissionsSection() {
                         PermissionItem(permission = permission)
                     }
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     val missingPermissions = permissions.getMissingPermissions()
                     if (missingPermissions.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
                         FilledTonalButton(
                             onClick = { launcher.launch(missingPermissions) },
                             modifier = Modifier.fillMaxWidth(),
@@ -276,6 +299,26 @@ private fun PermissionsSection() {
                             Text("Request Missing Permissions")
                         }
                     }
+
+                    if (grantedCount > 0) {
+                        FilledTonalButton(
+                            onClick = {
+                                context.revokeGrantedPermissionsOnKill(permissions)
+                                exitProcess(0)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.ShieldMoon,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Revoke Runtime Permissions & Kill")
+                        }
+                    }
+
+
                 }
             }
         }

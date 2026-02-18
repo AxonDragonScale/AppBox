@@ -52,3 +52,14 @@ fun Context.isPermissionGranted(permission: String): Boolean =
  */
 fun List<PermissionState>.getMissingPermissions(): Array<String> =
     filter { !it.granted }.map { it.name }.toTypedArray()
+
+/**
+ * Marks all currently granted runtime permissions to be revoked when the process is next killed.
+ * Has no effect below API 31.
+ */
+fun Context.revokeGrantedPermissionsOnKill(permissions: List<PermissionState>) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val granted = permissions.filter { it.granted }.map { it.name }.toSet()
+        if (granted.isNotEmpty()) revokeSelfPermissionsOnKill(granted)
+    }
+}

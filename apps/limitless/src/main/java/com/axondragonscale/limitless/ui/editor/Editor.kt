@@ -1,6 +1,10 @@
 package com.axondragonscale.limitless.ui.editor
 
+import android.Manifest
 import android.content.res.Configuration
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -40,6 +44,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,7 +64,6 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,11 +71,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -79,9 +82,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.canPostNotifications
+import com.axondragonscale.commons.canScheduleExactAlarms
 import com.axondragonscale.commons.collectWithLifecycle
+import com.axondragonscale.commons.openExactAlarmSettings
 import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
@@ -152,9 +160,6 @@ private fun Editor(
     ) {
         HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
 
-        val focusRequester = remember { FocusRequester() }
-        LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
         val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
@@ -163,7 +168,6 @@ private fun Editor(
         ) {
             EditorFields(
                 modifier = Modifier.padding(top = 16.dp),
-                focusRequester = focusRequester,
                 habit = uiState.habit,
                 onHabitUpdated = { onEvent(EditorUiEvent.UpdateHabit(it)) },
             )
@@ -206,7 +210,6 @@ private fun Editor(
 @Composable
 private fun EditorFields(
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester,
     habit: HabitEntity,
     onHabitUpdated: (HabitEntity) -> Unit,
 ) = Column(
@@ -217,9 +220,7 @@ private fun EditorFields(
     verticalArrangement = Arrangement.Bottom,
 ) {
     OutlinedTextField(
-        modifier = Modifier
-            .fillMaxWidth()
-            .focusRequester(focusRequester),
+        modifier = Modifier.fillMaxWidth(),
         value = habit.name,
         onValueChange = { onHabitUpdated(habit.copy(name = it)) },
         leadingIcon = { Icon(Icons.Default.Flag, null) },
@@ -267,24 +268,21 @@ private fun GoalsSection(
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.RadioButtonChecked,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text = "Goals",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+        Icon(
+            modifier = Modifier.padding(end = 8.dp).size(20.dp),
+            imageVector = Icons.Default.RadioButtonChecked,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+
+        Text(
+            text = "Goals",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
 
         IconButton(
             modifier = Modifier.size(32.dp),
@@ -483,78 +481,155 @@ private fun RemindersSection(
     onAddReminder: () -> Unit,
     onUpdateReminder: (ReminderEntity) -> Unit,
     onDeleteReminder: (Long) -> Unit,
-) = Column(
-    modifier = modifier
-        .fillMaxWidth()
-        .padding(horizontal = 12.dp)
-        .padding(bottom = if (reminders.isEmpty()) 16.dp else 8.dp),
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+    val context = LocalContext.current
+    var canScheduleExactAlarms by remember { mutableStateOf(context.canScheduleExactAlarms) }
+    var canPostNotifications by remember { mutableStateOf(context.canPostNotifications) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        canPostNotifications = granted
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        canScheduleExactAlarms = context.canScheduleExactAlarms
+        canPostNotifications = context.canPostNotifications
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = if (reminders.isEmpty()) 16.dp else 8.dp),
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
+                modifier = Modifier.padding(end = 8.dp).size(20.dp),
                 imageVector = Icons.Default.Notifications,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
             )
             Text(
                 text = "Reminders",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            IconButton(
+                modifier = Modifier.size(32.dp),
+                onClick = onAddReminder,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = "Add Reminder",
+                )
+            }
         }
 
-        IconButton(
-            modifier = Modifier.size(32.dp),
-            onClick = onAddReminder,
-        ) {
-            Icon(
-                imageVector = Icons.Default.AddCircle,
-                contentDescription = "Add Reminder",
-            )
-        }
-    }
+        Spacer(modifier = Modifier.height(8.dp))
 
-    Spacer(modifier = Modifier.height(8.dp))
-
-    if (reminders.isEmpty()) {
-        OutlinedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            Text(
+        if (!canPostNotifications) {
+            OutlinedCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                text = "No reminders set",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                    .padding(bottom = 8.dp)
+                    .clickable {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    },
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "Notification permission required for reminders to appear. Tap to grant.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
         }
-    }
 
-    reminders.forEach { reminder ->
-        AnimatedVisibility(
-            visible = true,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
-            ReminderCard(
-                modifier = Modifier.padding(bottom = 8.dp),
-                reminder = reminder,
-                onUpdate = onUpdateReminder,
-                onDelete = { onDeleteReminder(reminder.id) },
-            )
+        if (!canScheduleExactAlarms) {
+            OutlinedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .clickable { context.openExactAlarmSettings() },
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "Alarm permission required for reminders to fire on time. Tap to grant.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
         }
-    }
-}
+
+        if (reminders.isEmpty()) {
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    text = "No reminders set",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        reminders.forEach { reminder ->
+            AnimatedVisibility(
+                visible = true,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                ReminderCard(
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    reminder = reminder,
+                    onUpdate = onUpdateReminder,
+                    onDelete = { onDeleteReminder(reminder.id) },
+                )
+            }
+        }
+    } // Column
+} // RemindersSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

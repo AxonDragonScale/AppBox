@@ -4,6 +4,8 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.getSystemService
+import com.axondragonscale.commons.canScheduleExactAlarms
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.repository.LimitlessRepository
@@ -31,17 +33,18 @@ class ReminderScheduler(
     private val repository: LimitlessRepository,
 ) {
 
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val alarmManager = context.getSystemService<AlarmManager>()
 
     /**
      * Schedules an exact alarm for the given reminder.
      * If the computed next trigger time is in the past, the alarm is not scheduled.
      */
     fun schedule(reminder: ReminderEntity) {
+        if (!context.canScheduleExactAlarms) return
         val triggerAtMillis = computeNextTriggerMillis(reminder) ?: return
         val pendingIntent = createPendingIntent(reminder.id, reminder.habitId)
 
-        alarmManager.setExactAndAllowWhileIdle(
+        alarmManager?.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerAtMillis,
             pendingIntent,
@@ -53,7 +56,7 @@ class ReminderScheduler(
      */
     fun cancel(reminderId: Long, habitId: Long) {
         val pendingIntent = createPendingIntent(reminderId, habitId)
-        alarmManager.cancel(pendingIntent)
+        alarmManager?.cancel(pendingIntent)
     }
 
     /**
@@ -180,15 +183,5 @@ class ReminderScheduler(
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getBroadcast(context, reminderId.toInt(), intent, flags)
-    }
-
-    companion object {
-        /**
-         * Checks if the app can schedule exact alarms.
-         */
-        fun canScheduleExactAlarms(context: Context): Boolean {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            return alarmManager.canScheduleExactAlarms()
-        }
     }
 }
