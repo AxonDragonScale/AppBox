@@ -85,8 +85,7 @@ import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
-import com.axondragonscale.limitless.database.entity.isDaySelected
-import com.axondragonscale.limitless.database.entity.toggleDay
+import com.axondragonscale.limitless.model.BitWeek
 import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.ui.common.AppBar
@@ -597,21 +596,21 @@ private fun ReminderCard(
                                 type = selected.value,
                                 date = Clock.System.now()
                                     .toLocalDateTime(TimeZone.currentSystemDefault()).date,
-                                daysOfWeekBitmask = null,
+                                daysOfWeek = null,
                                 dayOfMonth = null,
                             )
 
                             ReminderType.DAILY -> reminder.copy(
                                 type = selected.value,
                                 date = null,
-                                daysOfWeekBitmask = null,
+                                daysOfWeek = null,
                                 dayOfMonth = null,
                             )
 
                             ReminderType.WEEKLY -> reminder.copy(
                                 type = selected.value,
                                 date = null,
-                                daysOfWeekBitmask = ReminderEntity.dayToBit(
+                                daysOfWeek = BitWeek.of(
                                     Clock.System.now()
                                         .toLocalDateTime(TimeZone.currentSystemDefault())
                                         .date.dayOfWeek.isoDayNumber
@@ -622,10 +621,10 @@ private fun ReminderCard(
                             ReminderType.MONTHLY -> reminder.copy(
                                 type = selected.value,
                                 date = null,
-                                daysOfWeekBitmask = null,
+                                daysOfWeek = null,
                                 dayOfMonth = Clock.System.now()
                                     .toLocalDateTime(TimeZone.currentSystemDefault())
-                                    .date.dayOfMonth,
+                                    .date.day,
                             )
                         }
                         onUpdate(updated)
@@ -687,8 +686,8 @@ private fun ReminderCard(
                         onClick = { showTimePicker = true },
                     )
                     DayOfWeekSelector(
-                        selectedBitmask = reminder.daysOfWeekBitmask ?: 0,
-                        onBitmaskChanged = { onUpdate(reminder.copy(daysOfWeekBitmask = it)) },
+                        selectedBitmask = reminder.daysOfWeek ?: BitWeek.EMPTY,
+                        onBitmaskChanged = { onUpdate(reminder.copy(daysOfWeek = it)) },
                     )
                 }
 
@@ -812,8 +811,8 @@ private fun ReminderDatePickerDialog(
 @Composable
 private fun DayOfWeekSelector(
     modifier: Modifier = Modifier,
-    selectedBitmask: Int,
-    onBitmaskChanged: (Int) -> Unit,
+    selectedBitmask: BitWeek,
+    onBitmaskChanged: (BitWeek) -> Unit,
 ) {
     val days = remember {
         listOf(
@@ -1037,9 +1036,7 @@ private fun PreviewWithGoalsAndReminders() {
                             habitId = 1,
                             type = ReminderType.WEEKLY,
                             time = LocalTime(18, 30),
-                            daysOfWeekBitmask = ReminderEntity.dayToBit(1) or
-                                    ReminderEntity.dayToBit(3) or
-                                    ReminderEntity.dayToBit(5),
+                            daysOfWeek = BitWeek.of(1, 3, 5),
                         ),
                     ),
                 )

@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.axondragonscale.limitless.database.entity.ReminderEntity
-import com.axondragonscale.limitless.database.entity.selectedDays
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.repository.LimitlessRepository
 import kotlinx.datetime.DateTimeUnit
@@ -94,8 +93,8 @@ class ReminderScheduler(
             }
 
             ReminderType.WEEKLY -> {
-                val bitmask = reminder.daysOfWeekBitmask ?: return null
-                val selectedDays = bitmask.selectedDays()
+                val bitWeek = reminder.daysOfWeek ?: return null
+                val selectedDays = bitWeek.selectedDays()
                 if (selectedDays.isEmpty()) return null
                 computeNextWeeklyTrigger(nowLocal, reminder.time, selectedDays, tz, now)
             }
