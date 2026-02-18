@@ -193,15 +193,10 @@ class ReminderScheduler(
     companion object {
         /**
          * Checks if the app can schedule exact alarms.
-         * On API 31+, users can revoke the SCHEDULE_EXACT_ALARM permission.
          */
         fun canScheduleExactAlarms(context: Context): Boolean {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                alarmManager.canScheduleExactAlarms()
-            } else {
-                true
-            }
+            return alarmManager.canScheduleExactAlarms()
         }
     }
 }

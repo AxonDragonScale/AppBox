@@ -204,6 +204,34 @@ val now = Clock.System.now() // Deprecated
 - **Keep `companion object` at the top of its enclosing class/interface/object**, before any other members
 - This ensures constants and factory methods are immediately visible when reading the class
 
+**Preferred:**
+```kotlin
+class MyVM : ViewModel() {
+
+    companion object {
+        private const val TAG = "MyVM"
+    }
+
+    val uiState = MutableStateFlow(MyUiState())
+
+    fun onEvent(event: MyUiEvent) { ... }
+}
+```
+
+**Avoid:**
+```kotlin
+class MyVM : ViewModel() {
+
+    val uiState = MutableStateFlow(MyUiState())
+
+    fun onEvent(event: MyUiEvent) { ... }
+
+    companion object {  // ❌ Should be at the top
+        private const val TAG = "MyVM"
+    }
+}
+```
+
 ### Coroutine Launch Style
 
 #### Prefer Expression Body for Coroutine-Launching Functions
