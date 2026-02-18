@@ -151,11 +151,11 @@ private fun Editor(
         val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
-                .padding(top = 8.dp, bottom = 16.dp)
                 .verticalScroll(scrollState)
                 .weight(1f, fill = false),
         ) {
             EditorFields(
+                modifier = Modifier.padding(top = 16.dp),
                 focusRequester = focusRequester,
                 habit = uiState.habit,
                 onHabitUpdated = { onEvent(EditorUiEvent.UpdateHabit(it)) },
@@ -243,7 +243,7 @@ private fun RemindersSection(
     modifier = modifier
         .fillMaxWidth()
         .padding(horizontal = 12.dp)
-        .padding(top = 20.dp),
+        .padding(top = 20.dp, bottom = if (reminders.isEmpty()) 16.dp else 8.dp),
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -286,12 +286,10 @@ private fun RemindersSection(
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 text = "No reminders set",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
             )
         }
     }
