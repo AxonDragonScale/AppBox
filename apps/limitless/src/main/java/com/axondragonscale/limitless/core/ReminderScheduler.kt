@@ -4,7 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.database.entity.selectedDays
 import com.axondragonscale.limitless.model.ReminderType
@@ -20,6 +19,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Created by Ronak Harkhani on 26/06/25
@@ -114,7 +114,7 @@ class ReminderScheduler(
         time: LocalTime,
         selectedDays: List<Int>,
         tz: TimeZone,
-        now: kotlinx.datetime.Instant,
+        now: Instant,
     ): LocalDateTime {
         val currentDayOfWeek = nowLocal.date.dayOfWeek.isoDayNumber
 
@@ -146,14 +146,11 @@ class ReminderScheduler(
         tz: TimeZone,
         now: kotlinx.datetime.Instant,
     ): LocalDateTime {
-        // Try this month first
         val clampedDay = clampDayOfMonth(nowLocal.date.year, nowLocal.date.monthNumber, targetDayOfMonth)
         val thisMonthDate = LocalDate(nowLocal.date.year, nowLocal.date.monthNumber, clampedDay)
         val thisMonthTrigger = thisMonthDate.atTime(time)
 
-        if (thisMonthTrigger.toInstant(tz) > now) {
-            return thisMonthTrigger
-        }
+        if (thisMonthTrigger.toInstant(tz) > now) return thisMonthTrigger
 
         // Otherwise try next month
         val nextMonthDate = nowLocal.date.plus(1, DateTimeUnit.MONTH)
@@ -182,12 +179,8 @@ class ReminderScheduler(
             putExtra(ReminderReceiver.EXTRA_REMINDER_ID, reminderId)
             putExtra(ReminderReceiver.EXTRA_HABIT_ID, habitId)
         }
-        return PendingIntent.getBroadcast(
-            context,
-            reminderId.toInt(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getBroadcast(context, reminderId.toInt(), intent, flags)
     }
 
     companion object {

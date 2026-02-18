@@ -22,6 +22,12 @@ import org.koin.core.component.inject
  */
 class ReminderReceiver : BroadcastReceiver(), KoinComponent {
 
+    companion object {
+        const val ACTION_REMINDER = "com.axondragonscale.limitless.ACTION_REMINDER"
+        const val EXTRA_REMINDER_ID = "extra_reminder_id"
+        const val EXTRA_HABIT_ID = "extra_habit_id"
+    }
+
     private val repository: LimitlessRepository by inject()
     private val scheduler: ReminderScheduler by inject()
     private val notificationManager: ReminderNotificationManager by inject()
@@ -49,27 +55,15 @@ class ReminderReceiver : BroadcastReceiver(), KoinComponent {
 
                 // Handle recurring vs one-time
                 when (reminder.type) {
-                    ReminderType.ONE_TIME -> {
-                        // One-time reminder has fired, delete it
-                        repository.deleteReminder(reminderId)
-                    }
+                    ReminderType.ONE_TIME -> repository.deleteReminder(reminderId) // One-time reminder has fired, delete it
 
                     ReminderType.DAILY,
                     ReminderType.WEEKLY,
-                    ReminderType.MONTHLY -> {
-                        // Schedule the next occurrence
-                        scheduler.schedule(reminder)
-                    }
+                    ReminderType.MONTHLY -> scheduler.schedule(reminder) // Schedule the next occurrence
                 }
             } finally {
                 pendingResult.finish()
             }
         }
-    }
-
-    companion object {
-        const val ACTION_REMINDER = "com.axondragonscale.limitless.ACTION_REMINDER"
-        const val EXTRA_REMINDER_ID = "extra_reminder_id"
-        const val EXTRA_HABIT_ID = "extra_habit_id"
     }
 }

@@ -10,20 +10,26 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.axondragonscale.limitless.LimitlessActivity
 import com.axondragonscale.limitless.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Created by Ronak Harkhani on 26/06/25
  *
  * Manages the notification channel and posting of habit reminder notifications.
  */
-
-private const val CHANNEL_ID = "Limitless_Habit_Reminders_Channel"
-private const val CHANNEL_NAME = "Habit Reminders"
-private const val CHANNEL_DESC = "Reminders for your tracked habits"
-
 class ReminderNotificationManager(
     private val context: Context,
 ) {
+
+    companion object {
+        private const val CHANNEL_ID = "LIMITLESS_HABIT_REMINDERS_CHANNEL"
+        private const val CHANNEL_NAME = "Habit Reminders"
+        private const val CHANNEL_DESC = "Reminders for your tracked habits"
+
+        const val EXTRA_HABIT_ID = "extra_habit_id"
+    }
 
     private val notificationManager = NotificationManagerCompat.from(context)
 
@@ -70,15 +76,11 @@ class ReminderNotificationManager(
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(EXTRA_HABIT_ID, habitId)
         }
-        return PendingIntent.getActivity(
-            context,
-            habitId.toInt(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val flags =  PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getActivity(context, habitId.toInt(), intent, flags)
     }
 
-    private fun createNotificationChannel() {
+    private fun createNotificationChannel() = CoroutineScope(Dispatchers.IO).launch {
         val channel = NotificationChannelCompat
             .Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_HIGH)
             .setName(CHANNEL_NAME)
@@ -87,9 +89,5 @@ class ReminderNotificationManager(
             .build()
 
         notificationManager.createNotificationChannel(channel)
-    }
-
-    companion object {
-        const val EXTRA_HABIT_ID = "extra_habit_id"
     }
 }
