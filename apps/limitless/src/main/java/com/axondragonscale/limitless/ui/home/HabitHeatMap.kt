@@ -107,8 +107,6 @@ fun HabitHeatMap(
                 Icon(
                     imageVector = Icons.Default.AddCircle,
                     contentDescription = "Record habit",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
                 )
             }
         }

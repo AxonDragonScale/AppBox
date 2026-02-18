@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -64,6 +65,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -264,14 +267,13 @@ private fun RemindersSection(
             )
         }
 
-        FilledTonalIconButton(
-            onClick = onAddReminder,
+        IconButton(
             modifier = Modifier.size(32.dp),
+            onClick = onAddReminder,
         ) {
             Icon(
-                imageVector = Icons.Default.Add,
+                imageVector = Icons.Default.AddCircle,
                 contentDescription = "Add Reminder",
-                modifier = Modifier.size(18.dp),
             )
         }
     }
@@ -493,11 +495,11 @@ private fun ReminderCard(
 @Composable
 private fun PickerChip(
     modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit,
-    containerColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.secondaryContainer,
-    contentColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSecondaryContainer,
+    containerColor: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     Surface(
         onClick = onClick,
@@ -607,7 +609,7 @@ private fun DayOfWeekSelector(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -627,11 +629,12 @@ private fun DayOfMonthSelector(
     val currentDay = selectedDay ?: 1
 
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().padding(start = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
+            modifier = Modifier.width(120.dp),
             text = "Day of Month",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -643,7 +646,7 @@ private fun DayOfMonthSelector(
             selectedItem = dayItems.first { it.value == currentDay },
             items = dayItems,
             onItemSelected = { onDaySelected(it.value) },
-            size = DpSize(88.dp, 32.dp),
+            size = DpSize(160.dp, 32.dp),
         )
     }
 }
@@ -779,6 +782,13 @@ private fun PreviewWithReminders() {
                         description = "Daily mindfulness practice",
                     ),
                     reminders = listOf(
+                        ReminderEntity(
+                            id = 4,
+                            habitId = 4,
+                            type = ReminderType.MONTHLY,
+                            time = LocalTime(14, 0),
+                            dayOfMonth = 12,
+                        ),
                         ReminderEntity(
                             id = 1,
                             habitId = 1,

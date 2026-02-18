@@ -180,8 +180,6 @@ private fun Habit(
                         Icon(
                             imageVector = Icons.Default.AddCircle,
                             contentDescription = "Record habit",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(36.dp),
                         )
                     }
                 }
