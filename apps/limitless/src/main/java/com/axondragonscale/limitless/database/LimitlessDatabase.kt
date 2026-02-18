@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.axondragonscale.limitless.database.LimitlessDatabase.Companion.DB_VERSION
 import com.axondragonscale.limitless.database.converter.GoalTypeConverter
+import com.axondragonscale.limitless.database.converter.HabitColorConverter
 import com.axondragonscale.commons.room.LocalDateConverter
 import com.axondragonscale.commons.room.LocalTimeConverter
 import com.axondragonscale.limitless.database.converter.ReminderTypeConverter
@@ -42,6 +43,7 @@ import com.axondragonscale.limitless.database.view.HabitDayCountView
     LocalTimeConverter::class,
     ReminderTypeConverter::class,
     GoalTypeConverter::class,
+    HabitColorConverter::class,
 )
 abstract class LimitlessDatabase : RoomDatabase() {
 
@@ -58,7 +60,9 @@ abstract class LimitlessDatabase : RoomDatabase() {
                 context = context,
                 klass = LimitlessDatabase::class.java,
                 name = DB_NAME
-            ).build()
+            )
+                .fallbackToDestructiveMigration(dropAllTables = true)
+                .build()
     }
 
     abstract fun habitDao(): HabitDao

@@ -44,6 +44,7 @@ import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.model.GoalStatus
 import com.axondragonscale.limitless.model.GoalType
+import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
@@ -296,6 +297,7 @@ private fun Preview() {
                     id = 1,
                     name = "Meditation",
                     description = "10 minutes of mindfulness every day",
+                    color = HabitColor.RED,
                 ),
                 todayCount = 3,
                 goals = listOf(
@@ -317,7 +319,12 @@ private fun NoGoalsPreview() {
         val uiState = remember {
             HabitUiState(
                 isLoading = false,
-                habit = HabitEntity(id = 2, name = "Exercise", description = ""),
+                habit = HabitEntity(
+                    id = 2,
+                    name = "Exercise",
+                    description = "",
+                    color = HabitColor.BLUE,
+                ),
                 todayCount = 1,
             )
         }
@@ -337,6 +344,7 @@ private fun EmptyPreview() {
                     id = 2,
                     name = "Exercise",
                     description = "",
+                    color = HabitColor.GREEN,
                 ),
                 todayCount = 0,
             )

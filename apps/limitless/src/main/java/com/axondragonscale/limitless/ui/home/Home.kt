@@ -31,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.HabitHeatMapData
 import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.Route
@@ -193,18 +194,21 @@ private fun Preview() {
                         habitName = "Meditation",
                         dayCounts = sampleCounts,
                         maxCount = 4,
+                        color = HabitColor.RED,
                     ),
                     HabitHeatMapData(
                         habitId = 2,
                         habitName = "Exercise",
                         dayCounts = sampleCounts.filterKeys { it.dayOfMonth % 2 == 0 },
                         maxCount = 4,
+                        color = HabitColor.BLUE,
                     ),
                     HabitHeatMapData(
                         habitId = 3,
                         habitName = "Reading",
                         dayCounts = emptyMap(),
                         maxCount = 0,
+                        color = HabitColor.GREEN,
                     ),
                 )
             )

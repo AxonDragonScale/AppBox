@@ -11,7 +11,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +39,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
@@ -95,12 +98,14 @@ import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.model.BitWeek
 import com.axondragonscale.limitless.model.GoalType
+import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.common.Dropdown
 import com.axondragonscale.limitless.ui.common.DropdownItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
+import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -246,6 +251,75 @@ private fun EditorFields(
             focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
         ),
     )
+
+    ColorPicker(
+        modifier = Modifier.padding(top = 12.dp),
+        selected = habit.color,
+        onColorSelected = { onHabitUpdated(habit.copy(color = it)) },
+    )
+}
+
+@Composable
+private fun ColorPicker(
+    modifier: Modifier = Modifier,
+    selected: HabitColor,
+    onColorSelected: (HabitColor) -> Unit,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                modifier = Modifier.padding(end = 8.dp).size(20.dp),
+                imageVector = Icons.Default.Circle,
+                contentDescription = null,
+                tint = selected.color,
+            )
+            Text(
+                text = "Color",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            HabitColor.entries.forEach { habitColor ->
+                val isSelected = habitColor == selected
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(color = habitColor.color)
+                        .then(
+                            if (isSelected) Modifier.border(
+                                width = 2.5.dp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                shape = CircleShape,
+                            ) else Modifier
+                        )
+                        .clickable { onColorSelected(habitColor) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 // region Goals Section
@@ -1094,6 +1168,7 @@ private fun PreviewWithGoalsAndReminders() {
                         id = 1,
                         name = "Meditation",
                         description = "Daily mindfulness practice",
+                        color = HabitColor.RED,
                     ),
                     goals = listOf(
                         GoalEntity(id = 1, habitId = 1, type = GoalType.DAILY, target = 1),

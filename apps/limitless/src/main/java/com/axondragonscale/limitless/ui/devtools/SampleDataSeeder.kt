@@ -10,6 +10,7 @@ import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.model.BitWeek
 import com.axondragonscale.limitless.model.GoalType
+import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.ReminderType
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -65,6 +66,7 @@ class SampleDataSeeder(
             description = "Daily mindfulness practice",
             frequency = 0.75f,
             maxPerDay = 2,
+            color = HabitColor.TEAL,
         )
 
         // Goal: meditate at least once every day
@@ -81,6 +83,7 @@ class SampleDataSeeder(
             description = "Workout or physical activity",
             frequency = 0.45f,
             maxPerDay = 1,
+            color = HabitColor.ORANGE,
         )
 
         // Goal: work out 4 times a week
@@ -103,6 +106,7 @@ class SampleDataSeeder(
             description = "Read at least 20 pages",
             frequency = 0.55f,
             maxPerDay = 3,
+            color = HabitColor.BLUE,
         )
 
         // Goals: read daily + hit 20 sessions a month
@@ -131,6 +135,7 @@ class SampleDataSeeder(
             description = "Write daily reflections",
             frequency = 0.35f,
             maxPerDay = 1,
+            color = HabitColor.PURPLE,
         )
 
         // Goal: journal 5 times a week
@@ -159,8 +164,9 @@ class SampleDataSeeder(
         description: String,
         frequency: Float,
         maxPerDay: Int,
+        color: HabitColor,
     ): HabitEntity {
-        habitDao.upsert(HabitEntity(name = name, description = description))
+        habitDao.upsert(HabitEntity(name = name, description = description, color = color))
         val habit = habitDao.getAllHabits().first { it.name == name }
         seedRecords(habit.id, frequency, maxPerDay)
         return habit

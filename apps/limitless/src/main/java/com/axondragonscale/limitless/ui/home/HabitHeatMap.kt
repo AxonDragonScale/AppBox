@@ -38,8 +38,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.axondragonscale.commons.compose.thenIf
+import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.HabitHeatMapData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
+import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -137,6 +139,7 @@ fun HabitHeatMap(
                         maxCount = data.maxCount,
                         today = today,
                         highlightCurrentDay = highlightCurrentDay,
+                        habitColor = data.color.color,
                     )
                 }
             }
@@ -222,9 +225,9 @@ private fun WeekColumn(
     maxCount: Int,
     today: LocalDate,
     highlightCurrentDay: Boolean,
+    habitColor: Color,
 ) {
     val emptyColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    val primaryColor = MaterialTheme.colorScheme.primary
     val highlightColor = MaterialTheme.colorScheme.onSurface
 
     Column(
@@ -233,7 +236,7 @@ private fun WeekColumn(
         week.days.forEach { date ->
             if (date != null && date <= today) {
                 val count = dayCounts[date] ?: 0
-                val color = cellColor(count, maxCount, emptyColor, primaryColor)
+                val color = cellColor(count, maxCount, emptyColor, habitColor)
                 val isToday = highlightCurrentDay && date == today
                 HeatMapCell(color = color, highlighted = isToday, highlightColor = highlightColor)
             } else {
@@ -379,6 +382,7 @@ private fun HabitHeatMapPreview() {
                     habitName = "Meditation",
                     dayCounts = sampleCounts,
                     maxCount = 4,
+                    color = HabitColor.TEAL,
                 ),
                 highlightCurrentDay = true,
             )
@@ -398,6 +402,7 @@ private fun EmptyHabitHeatMapPreview() {
                     habitName = "Exercise",
                     dayCounts = emptyMap(),
                     maxCount = 0,
+                    color = HabitColor.ORANGE,
                 ),
             )
         }

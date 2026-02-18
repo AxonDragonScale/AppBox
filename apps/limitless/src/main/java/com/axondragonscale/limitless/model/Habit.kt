@@ -7,5 +7,6 @@ data class Habit(
     val id: Long,
     val name: String,
     val description: String,
+    val color: HabitColor,
 )
 // TODO: Is this needed?

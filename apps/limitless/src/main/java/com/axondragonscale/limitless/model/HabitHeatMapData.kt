@@ -10,4 +10,5 @@ data class HabitHeatMapData(
     val habitName: String,
     val dayCounts: Map<LocalDate, Int>,
     val maxCount: Int,
+    val color: HabitColor,
 )
