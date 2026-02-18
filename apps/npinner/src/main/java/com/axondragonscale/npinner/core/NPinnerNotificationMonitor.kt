@@ -2,7 +2,7 @@ package com.axondragonscale.npinner.core
 
 import android.content.Context
 import com.axondragonscale.npinner.repository.NotificationRepository
-import com.axondragonscale.npinner.util.systemNotificationManager
+import com.axondragonscale.commons.notificationManager
 
 /**
  * Created by Ronak Harkhani on 01/05/23
@@ -16,9 +16,7 @@ class NPinnerNotificationMonitor(
 
     suspend fun ensurePinnedNotificationVisibility() {
         val pinnedNotifications = repository.getPinnedNotifications()
-
-        val systemNotificationManager = context.systemNotificationManager
-        val activeNotifications = systemNotificationManager.activeNotifications
+        val activeNotifications = context.notificationManager?.activeNotifications ?: return
 
         pinnedNotifications.forEach { notification ->
             val isVisible = activeNotifications.any { it.id == notification.id.hashCode() }
