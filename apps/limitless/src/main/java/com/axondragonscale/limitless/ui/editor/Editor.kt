@@ -102,7 +102,6 @@ import com.axondragonscale.limitless.ui.common.Dropdown
 import com.axondragonscale.limitless.ui.common.DropdownItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -111,6 +110,7 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Created by Ronak Harkhani on 03/11/24

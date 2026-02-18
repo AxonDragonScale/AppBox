@@ -16,6 +16,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
@@ -146,7 +147,7 @@ class ReminderScheduler(
         time: LocalTime,
         targetDayOfMonth: Int,
         tz: TimeZone,
-        now: kotlinx.datetime.Instant,
+        now: Instant,
     ): LocalDateTime {
         val clampedDay = clampDayOfMonth(nowLocal.date.year, nowLocal.date.monthNumber, targetDayOfMonth)
         val thisMonthDate = LocalDate(nowLocal.date.year, nowLocal.date.monthNumber, clampedDay)
@@ -156,8 +157,8 @@ class ReminderScheduler(
 
         // Otherwise try next month
         val nextMonthDate = nowLocal.date.plus(1, DateTimeUnit.MONTH)
-        val nextClampedDay = clampDayOfMonth(nextMonthDate.year, nextMonthDate.monthNumber, targetDayOfMonth)
-        val nextDate = LocalDate(nextMonthDate.year, nextMonthDate.monthNumber, nextClampedDay)
+        val nextClampedDay = clampDayOfMonth(nextMonthDate.year, nextMonthDate.month.number, targetDayOfMonth)
+        val nextDate = LocalDate(nextMonthDate.year, nextMonthDate.month.number, nextClampedDay)
         return nextDate.atTime(time)
     }
 
