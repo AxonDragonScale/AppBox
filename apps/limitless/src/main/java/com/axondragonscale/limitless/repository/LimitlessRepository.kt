@@ -1,10 +1,12 @@
 package com.axondragonscale.limitless.repository
 
 import androidx.compose.ui.util.fastMaxOfOrDefault
+import com.axondragonscale.limitless.database.dao.GoalDao
 import com.axondragonscale.limitless.database.dao.HabitDao
 import com.axondragonscale.limitless.database.dao.HabitDayCountDao
 import com.axondragonscale.limitless.database.dao.RecordDao
 import com.axondragonscale.limitless.database.dao.ReminderDao
+import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
@@ -22,6 +24,7 @@ class LimitlessRepository(
     private val recordDao: RecordDao,
     private val habitDayCountDao: HabitDayCountDao,
     private val reminderDao: ReminderDao,
+    private val goalDao: GoalDao,
 ) {
 
     fun getHabits(): Flow<List<HabitEntity>> = habitDao.getHabits()
@@ -39,6 +42,24 @@ class LimitlessRepository(
 
     suspend fun recordHabit(habitId: Long, message: String) =
         recordDao.upsert(RecordEntity.new(habitId, message))
+
+    // MARK: Goals ---------------------------------------------------------------------------------
+
+    fun getGoalsForHabit(habitId: Long): Flow<List<GoalEntity>> =
+        goalDao.getGoalsForHabit(habitId)
+
+    suspend fun getGoalsForHabitOnce(habitId: Long): List<GoalEntity> =
+        goalDao.getGoalsForHabitOnce(habitId)
+
+    suspend fun saveGoal(goal: GoalEntity): Long = goalDao.upsert(goal)
+
+    suspend fun saveGoals(goals: List<GoalEntity>) = goalDao.upsertAll(goals)
+
+    suspend fun deleteGoal(goalId: Long) = goalDao.delete(goalId)
+
+    suspend fun deleteGoals(goalIds: List<Long>) = goalDao.deleteByIds(goalIds)
+
+    suspend fun deleteGoalsForHabit(habitId: Long) = goalDao.deleteAllForHabit(habitId)
 
     // MARK: Reminders -----------------------------------------------------------------------------
 

@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.axondragonscale.limitless.core.ReminderScheduler
+import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
+import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.repository.LimitlessRepository
 import com.axondragonscale.limitless.ui.Route
@@ -39,12 +41,14 @@ class EditorVM(
     private val uiEffectChannel = Channel<EditorUiEffect>()
     val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
-    // Track original reminder IDs so we can diff on save
+    // Track original IDs so we can diff on save
     private var originalReminderIds: Set<Long> = emptySet()
+    private var originalGoalIds: Set<Long> = emptySet()
 
-    // Counter for temporary IDs assigned to unsaved reminders.
+    // Counters for temporary IDs assigned to unsaved entities.
     // Starts at -1 and decrements so they never collide with Room's auto-generated positive IDs.
-    private val tempIdCounter = AtomicLong(-1L)
+    private val reminderTempIdCounter = AtomicLong(-1L)
+    private val goalTempIdCounter = AtomicLong(-1L)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -54,9 +58,15 @@ class EditorVM(
             } else {
                 emptyList()
             }
+            val goals = if (editorRoute.habitId != null) {
+                repository.getGoalsForHabitOnce(editorRoute.habitId)
+            } else {
+                emptyList()
+            }
             originalReminderIds = reminders.map { it.id }.toSet()
+            originalGoalIds = goals.map { it.id }.toSet()
             uiState.update {
-                it.copy(isLoading = false, habit = habit, reminders = reminders)
+                it.copy(isLoading = false, habit = habit, reminders = reminders, goals = goals)
             }
         }
     }
@@ -67,26 +77,32 @@ class EditorVM(
         is EditorUiEvent.AddReminder -> addReminder()
         is EditorUiEvent.UpdateReminder -> updateReminder(event)
         is EditorUiEvent.DeleteReminder -> deleteReminder(event)
+        is EditorUiEvent.AddGoal -> addGoal()
+        is EditorUiEvent.UpdateGoal -> updateGoal(event)
+        is EditorUiEvent.DeleteGoal -> deleteGoal(event)
 
         // Handled in compose
         EditorUiEvent.NavigateBack -> Unit
     }
 
+    // region: Habit
+
     private fun updateHabit(event: EditorUiEvent.UpdateHabit) {
         uiState.update { it.copy(habit = event.habit) }
     }
 
+    // endregion
+
+    // region: Reminders
+
     private fun addReminder() {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        // Default to a daily reminder at the next full hour
         val defaultTime = LocalTime(
             hour = (now.hour + 1) % 24,
             minute = 0,
         )
         val newReminder = ReminderEntity(
-            // Assign a temporary negative ID so each unsaved reminder is uniquely identifiable.
-            // On save, these are reset to 0 so Room auto-generates the real ID.
-            id = tempIdCounter.getAndDecrement(),
+            id = reminderTempIdCounter.getAndDecrement(),
             habitId = uiState.value.habit.id,
             type = ReminderType.DAILY,
             time = defaultTime,
@@ -110,6 +126,42 @@ class EditorVM(
         }
     }
 
+    // endregion
+
+    // region: Goals
+
+    private fun addGoal() {
+        val usedTypes = uiState.value.goals.map { it.type }.toSet()
+        val nextType = GoalType.entries.firstOrNull { it !in usedTypes } ?: return
+        val newGoal = GoalEntity(
+            id = goalTempIdCounter.getAndDecrement(),
+            habitId = uiState.value.habit.id,
+            type = nextType,
+            target = 1,
+        )
+        uiState.update { it.copy(goals = it.goals + newGoal) }
+    }
+
+    private fun updateGoal(event: EditorUiEvent.UpdateGoal) {
+        uiState.update { state ->
+            state.copy(
+                goals = state.goals.map { existing ->
+                    if (existing.id == event.goal.id) event.goal else existing
+                }
+            )
+        }
+    }
+
+    private fun deleteGoal(event: EditorUiEvent.DeleteGoal) {
+        uiState.update { state ->
+            state.copy(goals = state.goals.filter { it.id != event.goalId })
+        }
+    }
+
+    // endregion
+
+    // region: Save
+
     private fun saveHabit(
         event: EditorUiEvent.SaveHabit
     ) = viewModelScope.launch(Dispatchers.IO) {
@@ -119,37 +171,45 @@ class EditorVM(
         // For existing habits, Room returns the existing ID.
         val habitId = if (event.habit.id == 0L) savedHabitId else event.habit.id
 
+        saveReminders(habitId)
+        saveGoals(habitId)
+
+        uiEffectChannel.send(EditorUiEffect.NavigateBack)
+    }
+
+    private suspend fun saveReminders(habitId: Long) {
         val currentReminders = uiState.value.reminders
         val currentReminderIds = currentReminders.filter { it.id > 0 }.map { it.id }.toSet()
 
-        // Delete reminders that were removed by the user
         val deletedIds = originalReminderIds - currentReminderIds
         if (deletedIds.isNotEmpty()) {
-            // Cancel alarms for deleted reminders
             deletedIds.forEach { id -> reminderScheduler.cancel(id, habitId) }
             repository.deleteReminders(deletedIds.toList())
         }
 
-        // Upsert all current reminders, associating them with the habit ID.
-        // Reset negative temp IDs to 0 so Room auto-generates real IDs on insert.
         val remindersToSave = currentReminders.map {
-            it.copy(
-                habitId = habitId,
-                id = if (it.id < 0) 0L else it.id,
-            )
+            it.copy(habitId = habitId, id = if (it.id < 0) 0L else it.id)
         }
         for (reminder in remindersToSave) {
             val savedId = repository.saveReminder(reminder)
-            // Schedule the alarm (use saved ID for new reminders that had id=0)
-            val scheduledReminder = if (reminder.id == 0L) {
-                reminder.copy(id = savedId)
-            } else {
-                reminder
-            }
+            val scheduledReminder = if (reminder.id == 0L) reminder.copy(id = savedId) else reminder
             reminderScheduler.schedule(scheduledReminder)
         }
-
-        uiEffectChannel.send(EditorUiEffect.NavigateBack)
     }
+
+    private suspend fun saveGoals(habitId: Long) {
+        val currentGoals = uiState.value.goals
+        val currentGoalIds = currentGoals.filter { it.id > 0 }.map { it.id }.toSet()
+
+        val deletedIds = originalGoalIds - currentGoalIds
+        if (deletedIds.isNotEmpty()) repository.deleteGoals(deletedIds.toList())
+
+        val goalsToSave = currentGoals.map {
+            it.copy(habitId = habitId, id = if (it.id < 0) 0L else it.id)
+        }
+        repository.saveGoals(goalsToSave)
+    }
+
+    // endregion
 
 }

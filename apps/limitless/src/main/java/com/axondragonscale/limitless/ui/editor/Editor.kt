@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
@@ -35,15 +37,17 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
@@ -65,9 +69,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
@@ -76,10 +82,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
+import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.database.entity.isDaySelected
 import com.axondragonscale.limitless.database.entity.toggleDay
+import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
@@ -161,7 +169,16 @@ private fun Editor(
                 onHabitUpdated = { onEvent(EditorUiEvent.UpdateHabit(it)) },
             )
 
+            GoalsSection(
+                modifier = Modifier.padding(top = 8.dp),
+                goals = uiState.goals,
+                onAddGoal = { onEvent(EditorUiEvent.AddGoal) },
+                onUpdateGoal = { onEvent(EditorUiEvent.UpdateGoal(it)) },
+                onDeleteGoal = { onEvent(EditorUiEvent.DeleteGoal(it)) },
+            )
+
             RemindersSection(
+                modifier = Modifier.padding(top = 8.dp),
                 reminders = uiState.reminders,
                 onAddReminder = { onEvent(EditorUiEvent.AddReminder) },
                 onUpdateReminder = { onEvent(EditorUiEvent.UpdateReminder(it)) },
@@ -196,7 +213,8 @@ private fun EditorFields(
 ) = Column(
     modifier = modifier
         .fillMaxWidth()
-        .padding(horizontal = 12.dp),
+        .padding(horizontal = 12.dp)
+        .padding(bottom = 16.dp),
     verticalArrangement = Arrangement.Bottom,
 ) {
     OutlinedTextField(
@@ -230,6 +248,233 @@ private fun EditorFields(
     )
 }
 
+// region Goals Section
+
+@Composable
+private fun GoalsSection(
+    modifier: Modifier = Modifier,
+    goals: List<GoalEntity>,
+    onAddGoal: () -> Unit,
+    onUpdateGoal: (GoalEntity) -> Unit,
+    onDeleteGoal: (Long) -> Unit,
+) = Column(
+    modifier = modifier
+        .fillMaxWidth()
+        .padding(horizontal = 12.dp)
+        .padding(bottom = if (goals.isEmpty()) 16.dp else 8.dp),
+) {
+    val allTypesUsed = goals.size >= GoalType.entries.size
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.RadioButtonChecked,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = "Goals",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+
+        IconButton(
+            modifier = Modifier.size(32.dp),
+            onClick = onAddGoal,
+            enabled = !allTypesUsed,
+        ) {
+            Icon(
+                imageVector = Icons.Default.AddCircle,
+                contentDescription = "Add Goal",
+                tint = if (allTypesUsed) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                       else LocalContentColor.current,
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    if (goals.isEmpty()) {
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                text = "No goals set",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    goals.forEach { goal ->
+        AnimatedVisibility(
+            visible = true,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            GoalCard(
+                modifier = Modifier.padding(bottom = 8.dp),
+                goal = goal,
+                usedTypes = goals.map { it.type }.toSet(),
+                onUpdate = onUpdateGoal,
+                onDelete = { onDeleteGoal(goal.id) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun GoalCard(
+    modifier: Modifier = Modifier,
+    goal: GoalEntity,
+    usedTypes: Set<GoalType>,
+    onUpdate: (GoalEntity) -> Unit,
+    onDelete: () -> Unit,
+) {
+    // Available types = all types minus those already used by other goals (current type always selectable)
+    val typeItems = remember(usedTypes, goal.type) {
+        GoalType.entries
+            .filter { it == goal.type || it !in usedTypes }
+            .map { DropdownItem(name = it.displayName, value = it) }
+    }
+
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Dropdown(
+                    selectedItem = typeItems.first { it.value == goal.type },
+                    items = typeItems,
+                    onItemSelected = { onUpdate(goal.copy(type = it.value)) },
+                    size = DpSize(width = 128.dp, height = 36.dp),
+                )
+
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Goal",
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+
+            TargetCounter(
+                modifier = Modifier.fillMaxWidth(),
+                value = goal.target,
+                onValueChange = { onUpdate(goal.copy(target = it)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TargetCounter(
+    modifier: Modifier = Modifier,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+) {
+    var textValue by remember(value) { mutableStateOf(value.toString()) }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primary,
+    ) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .clip(RoundedCornerShape(8.dp)),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            IconButton(
+                modifier = Modifier.padding(horizontal = 12.dp).size(32.dp),
+                onClick = {
+                    val newVal = value - 1
+                    if (newVal >= 1) onValueChange(newVal)
+                },
+                enabled = value > 1,
+            ) {
+                Icon(
+                    modifier = Modifier.size(14.dp),
+                    imageVector = Icons.Default.Remove,
+                    contentDescription = "Decrease target",
+                )
+            }
+
+            BasicTextField(
+                modifier = Modifier
+                    .weight(1f)
+                    .onFocusChanged { focusState ->
+                        if (!focusState.isFocused) {
+                            val parsed = textValue.toIntOrNull()
+                            textValue = if (parsed != null && parsed >= 1) parsed.toString()
+                            else value.toString()
+                        }
+                    },
+                value = textValue,
+                onValueChange = { raw ->
+                    val filtered = raw.filter { it.isDigit() }
+                    textValue = filtered
+                    val parsed = filtered.toIntOrNull()
+                    if (parsed != null && parsed >= 1) onValueChange(parsed)
+                },
+                textStyle = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            IconButton(
+                modifier = Modifier.padding(horizontal = 12.dp).size(32.dp),
+                onClick = { onValueChange(value + 1) },
+            ) {
+                Icon(
+                    modifier = Modifier.size(14.dp),
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Increase target",
+                )
+            }
+        }
+    }
+}
+
+// endregion
+
 // region Reminders Section
 
 @Composable
@@ -243,7 +488,7 @@ private fun RemindersSection(
     modifier = modifier
         .fillMaxWidth()
         .padding(horizontal = 12.dp)
-        .padding(top = 20.dp, bottom = if (reminders.isEmpty()) 16.dp else 8.dp),
+        .padding(bottom = if (reminders.isEmpty()) 16.dp else 8.dp),
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -286,7 +531,9 @@ private fun RemindersSection(
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 text = "No reminders set",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -404,7 +651,6 @@ private fun ReminderCard(
             // Type-specific pickers
             when (reminder.type) {
                 ReminderType.ONE_TIME -> {
-                    // Date + Time side by side, full width
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -442,9 +688,7 @@ private fun ReminderCard(
                     )
                     DayOfWeekSelector(
                         selectedBitmask = reminder.daysOfWeekBitmask ?: 0,
-                        onBitmaskChanged = {
-                            onUpdate(reminder.copy(daysOfWeekBitmask = it))
-                        },
+                        onBitmaskChanged = { onUpdate(reminder.copy(daysOfWeekBitmask = it)) },
                     )
                 }
 
@@ -500,8 +744,8 @@ private fun PickerChip(
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     Surface(
-        onClick = onClick,
         modifier = modifier,
+        onClick = onClick,
         shape = RoundedCornerShape(8.dp),
         color = containerColor,
     ) {
@@ -598,9 +842,7 @@ private fun DayOfWeekSelector(
                         shape = CircleShape,
                     )
                     .clip(CircleShape)
-                    .clickable {
-                        onBitmaskChanged(selectedBitmask.toggleDay(dayOfWeek.isoDayNumber))
-                    },
+                    .clickable { onBitmaskChanged(selectedBitmask.toggleDay(dayOfWeek.isoDayNumber)) },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -756,19 +998,19 @@ private fun Preview() {
         val uiState by remember { mutableStateOf(EditorUiState()) }
         Editor(
             uiState = uiState,
-            onEvent = { },
+            onEvent = {},
         )
     }
 }
 
-@Preview(name = "Light Mode - With Reminders", showBackground = true)
+@Preview(name = "Light Mode - With Goals and Reminders", showBackground = true)
 @Preview(
-    name = "Dark Mode - With Reminders",
+    name = "Dark Mode - With Goals and Reminders",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
 )
 @Composable
-private fun PreviewWithReminders() {
+private fun PreviewWithGoalsAndReminders() {
     LimitlessTheme {
         val uiState by remember {
             mutableStateOf(
@@ -779,14 +1021,11 @@ private fun PreviewWithReminders() {
                         name = "Meditation",
                         description = "Daily mindfulness practice",
                     ),
+                    goals = listOf(
+                        GoalEntity(id = 1, habitId = 1, type = GoalType.DAILY, target = 1),
+                        GoalEntity(id = 2, habitId = 1, type = GoalType.WEEKLY, target = 5),
+                    ),
                     reminders = listOf(
-                        ReminderEntity(
-                            id = 4,
-                            habitId = 4,
-                            type = ReminderType.MONTHLY,
-                            time = LocalTime(14, 0),
-                            dayOfMonth = 12,
-                        ),
                         ReminderEntity(
                             id = 1,
                             habitId = 1,
@@ -798,14 +1037,9 @@ private fun PreviewWithReminders() {
                             habitId = 1,
                             type = ReminderType.WEEKLY,
                             time = LocalTime(18, 30),
-                            daysOfWeekBitmask = ReminderEntity.dayToBit(1) or ReminderEntity.dayToBit(3) or ReminderEntity.dayToBit(5),
-                        ),
-                        ReminderEntity(
-                            id = 3,
-                            habitId = 1,
-                            type = ReminderType.ONE_TIME,
-                            time = LocalTime(14, 0),
-                            date = LocalDate(2025, 7, 1),
+                            daysOfWeekBitmask = ReminderEntity.dayToBit(1) or
+                                    ReminderEntity.dayToBit(3) or
+                                    ReminderEntity.dayToBit(5),
                         ),
                     ),
                 )
@@ -813,7 +1047,7 @@ private fun PreviewWithReminders() {
         }
         Editor(
             uiState = uiState,
-            onEvent = { },
+            onEvent = {},
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.axondragonscale.limitless.ui.editor
 
+import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 
@@ -15,4 +16,9 @@ sealed interface EditorUiEvent {
     data object AddReminder : EditorUiEvent
     data class UpdateReminder(val reminder: ReminderEntity) : EditorUiEvent
     data class DeleteReminder(val reminderId: Long) : EditorUiEvent
+
+    // Goal events
+    data object AddGoal : EditorUiEvent
+    data class UpdateGoal(val goal: GoalEntity) : EditorUiEvent
+    data class DeleteGoal(val goalId: Long) : EditorUiEvent
 }

@@ -6,13 +6,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.axondragonscale.limitless.database.LimitlessDatabase.Companion.DB_VERSION
+import com.axondragonscale.limitless.database.converter.GoalTypeConverter
+import com.axondragonscale.limitless.database.converter.LocalDateConverter
+import com.axondragonscale.limitless.database.converter.LocalTimeConverter
+import com.axondragonscale.limitless.database.converter.ReminderTypeConverter
+import com.axondragonscale.limitless.database.dao.GoalDao
 import com.axondragonscale.limitless.database.dao.HabitDao
 import com.axondragonscale.limitless.database.dao.HabitDayCountDao
 import com.axondragonscale.limitless.database.dao.RecordDao
 import com.axondragonscale.limitless.database.dao.ReminderDao
-import com.axondragonscale.limitless.database.converter.LocalDateConverter
-import com.axondragonscale.limitless.database.converter.LocalTimeConverter
-import com.axondragonscale.limitless.database.converter.ReminderTypeConverter
+import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
@@ -26,6 +29,7 @@ import com.axondragonscale.limitless.database.view.HabitDayCountView
         HabitEntity::class,
         RecordEntity::class,
         ReminderEntity::class,
+        GoalEntity::class,
     ],
     views = [
         HabitDayCountView::class,
@@ -37,6 +41,7 @@ import com.axondragonscale.limitless.database.view.HabitDayCountView
     LocalDateConverter::class,
     LocalTimeConverter::class,
     ReminderTypeConverter::class,
+    GoalTypeConverter::class,
 )
 abstract class LimitlessDatabase : RoomDatabase() {
 
@@ -60,5 +65,6 @@ abstract class LimitlessDatabase : RoomDatabase() {
     abstract fun recordDao(): RecordDao
     abstract fun habitDayCountDao(): HabitDayCountDao
     abstract fun reminderDao(): ReminderDao
+    abstract fun goalDao(): GoalDao
 
 }
