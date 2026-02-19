@@ -54,8 +54,8 @@ import com.axondragonscale.commons.compose.thenIf
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
-import com.axondragonscale.limitless.ui.common.Dropdown
-import com.axondragonscale.limitless.ui.common.DropdownItem
+import com.axondragonscale.commons.compose.Dropdown
+import com.axondragonscale.commons.compose.DropdownItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -147,6 +147,7 @@ private fun AppearanceSection(
         headlineContent = { Text("UI Mode") },
         trailingContent = {
             Dropdown(
+                modifier = Modifier.size(width = 128.dp, height = 32.dp),
                 selectedItem = DropdownItem(uiMode.displayName, uiMode, leadingIcon = uiMode.icon),
                 items = UIMode.entries.map {
                     DropdownItem(name = it.displayName, value = it, leadingIcon = it.icon)

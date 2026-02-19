@@ -59,8 +59,8 @@ import com.axondragonscale.topty.R
 import com.axondragonscale.topty.model.CodeDesign
 import com.axondragonscale.topty.model.UIFont
 import com.axondragonscale.commons.UIMode
-import com.axondragonscale.topty.ui.common.Dropdown
-import com.axondragonscale.topty.ui.common.DropdownItem
+import com.axondragonscale.commons.compose.Dropdown
+import com.axondragonscale.commons.compose.DropdownItem
 import com.axondragonscale.topty.ui.common.Switch
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.Route
@@ -207,11 +207,13 @@ private fun AppearanceSection(
         supportingContent = { Text(text = "Ease your eyes") },
         trailingContent = {
             Dropdown(
+                modifier = Modifier.size(width = 128.dp, height = 32.dp),
                 selectedItem = DropdownItem(uiMode.displayName, uiMode),
                 items = UIMode.entries.map {
                     DropdownItem(name = it.displayName, value = it, leadingIcon = it.icon)
                 },
                 onItemSelected = { onUiModeUpdated(it.value) },
+                shape = DefaultShape,
             )
         }
     )
@@ -246,9 +248,11 @@ private fun AppearanceSection(
         supportingContent = { Text(text = "Set Font to your taste") },
         trailingContent = {
             Dropdown(
+                modifier = Modifier.size(width = 128.dp, height = 32.dp),
                 selectedItem = DropdownItem(uiFont.displayName, uiFont),
                 items = UIFont.entries.map { DropdownItem(name = it.displayName, value = it) },
                 onItemSelected = { onUiFontUpdated(it.value) },
+                shape = DefaultShape,
             )
         }
     )
@@ -265,9 +269,11 @@ private fun AppearanceSection(
         supportingContent = { Text(text = "Make it look cool!") },
         trailingContent = {
             Dropdown(
+                modifier = Modifier.size(width = 128.dp, height = 32.dp),
                 selectedItem = DropdownItem(codeDesign.name, codeDesign),
                 items = CodeDesign.entries.map { DropdownItem(name = it.name, value = it) },
                 onItemSelected = { onCodeDesignUpdated(it.value) },
+                shape = DefaultShape,
             )
         }
     )

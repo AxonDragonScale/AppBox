@@ -83,7 +83,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.Lifecycle
@@ -104,8 +103,8 @@ import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
-import com.axondragonscale.limitless.ui.common.Dropdown
-import com.axondragonscale.limitless.ui.common.DropdownItem
+import com.axondragonscale.commons.compose.Dropdown
+import com.axondragonscale.commons.compose.DropdownItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DayOfWeek
@@ -453,8 +452,8 @@ private fun GoalCard(
                 Dropdown(
                     selectedItem = typeItems.first { it.value == goal.type },
                     items = typeItems,
+                    modifier = Modifier.size(width = 128.dp, height = 36.dp),
                     onItemSelected = { onUpdate(goal.copy(type = it.value)) },
-                    size = DpSize(width = 128.dp, height = 36.dp),
                 )
 
                 IconButton(
@@ -750,6 +749,7 @@ private fun ReminderCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Dropdown(
+                    modifier = Modifier.size(width = 128.dp, height = 36.dp),
                     selectedItem = typeItems.first { it.value == reminder.type },
                     items = typeItems,
                     onItemSelected = { selected ->
@@ -791,7 +791,6 @@ private fun ReminderCard(
                         }
                         onUpdate(updated)
                     },
-                    size = DpSize(width = 128.dp, height = 36.dp),
                 )
 
                 IconButton(
@@ -1044,10 +1043,10 @@ private fun DayOfMonthSelector(
         Spacer(modifier = Modifier.weight(1f))
 
         Dropdown(
+            modifier = Modifier.size(160.dp, 32.dp),
             selectedItem = dayItems.first { it.value == currentDay },
             items = dayItems,
             onItemSelected = { onDaySelected(it.value) },
-            size = DpSize(160.dp, 32.dp),
         )
     }
 }

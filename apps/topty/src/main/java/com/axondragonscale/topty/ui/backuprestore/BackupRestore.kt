@@ -42,16 +42,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.compose.Dropdown
+import com.axondragonscale.commons.compose.DropdownItem
 import com.axondragonscale.topty.backup.BackupFormat
-import com.axondragonscale.topty.ui.common.Dropdown
-import com.axondragonscale.topty.ui.common.DropdownItem
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 import com.axondragonscale.topty.util.generateSuggestedFileName
@@ -276,6 +275,7 @@ private fun BackupActionSection(
                 DropdownItem(name = it.displayName, value = it)
             },
             onItemSelected = { onFormatSelected(it.value) },
+            shape = DefaultShape,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
