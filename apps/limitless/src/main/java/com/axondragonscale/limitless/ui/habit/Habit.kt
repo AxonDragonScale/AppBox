@@ -34,6 +34,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,6 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,6 +68,7 @@ import com.axondragonscale.limitless.ui.home.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import kotlin.math.roundToInt
 
 /**
  * Created by Ronak Harkhani on 17/02/26
@@ -134,14 +143,55 @@ private fun Habit(
             )
         },
     ) { padding ->
+        var headerHeightPx by remember { mutableFloatStateOf(0f) }
+        var headerOffsetPx by remember { mutableFloatStateOf(0f) }
+
+        val nestedScrollConnection = remember {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    // Scrolling up → collapse header first, then let inner content scroll
+                    if (available.y < 0f) {
+                        val newOffset = (headerOffsetPx + available.y).coerceIn(-headerHeightPx, 0f)
+                        val consumed = newOffset - headerOffsetPx
+                        headerOffsetPx = newOffset
+                        return Offset(0f, consumed)
+                    }
+                    return Offset.Zero
+                }
+
+                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                    // Scrolling down → inner content scrolls first, then expand header with leftovers
+                    if (available.y > 0f) {
+                        val newOffset = (headerOffsetPx + available.y).coerceIn(-headerHeightPx, 0f)
+                        val expandedBy = newOffset - headerOffsetPx
+                        headerOffsetPx = newOffset
+                        return Offset(0f, expandedBy)
+                    }
+                    return Offset.Zero
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .nestedScroll(nestedScrollConnection),
         ) {
-            // Header
+            // Collapsible header
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 12.dp),
+                modifier = Modifier
+                    .clipToBounds()
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val height = (placeable.height + headerOffsetPx.roundToInt()).coerceAtLeast(0)
+                        layout(placeable.width, height) {
+                            placeable.place(0, headerOffsetPx.roundToInt())
+                        }
+                    }
+                    .onSizeChanged { headerHeightPx = it.height.toFloat() }
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 12.dp),
             ) {
                 Text(
                     text = uiState.habit.name,
@@ -172,11 +222,11 @@ private fun Habit(
                         goals = uiState.goals,
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            HabitTabPager()
+            HabitTabPager(modifier = Modifier.weight(1f))
         }
     }
 }
