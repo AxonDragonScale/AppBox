@@ -13,8 +13,9 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,7 +40,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
@@ -92,6 +93,7 @@ import androidx.navigation.NavController
 import com.axondragonscale.commons.canPostNotifications
 import com.axondragonscale.commons.canScheduleExactAlarms
 import com.axondragonscale.commons.collectWithLifecycle
+import com.axondragonscale.commons.compose.thenIf
 import com.axondragonscale.commons.openExactAlarmSettings
 import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
@@ -177,6 +179,12 @@ private fun Editor(
                 onHabitUpdated = { onEvent(EditorUiEvent.UpdateHabit(it)) },
             )
 
+            ColorSection(
+                modifier = Modifier.padding(top = 8.dp),
+                selected = uiState.habit.color,
+                onColorSelected = { onEvent(EditorUiEvent.UpdateHabit(uiState.habit.copy(color = it))) },
+            )
+
             GoalsSection(
                 modifier = Modifier.padding(top = 8.dp),
                 goals = uiState.goals,
@@ -186,7 +194,7 @@ private fun Editor(
             )
 
             RemindersSection(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
                 reminders = uiState.reminders,
                 onAddReminder = { onEvent(EditorUiEvent.AddReminder) },
                 onUpdateReminder = { onEvent(EditorUiEvent.UpdateReminder(it)) },
@@ -221,7 +229,7 @@ private fun EditorFields(
     modifier = modifier
         .fillMaxWidth()
         .padding(horizontal = 12.dp)
-        .padding(bottom = 16.dp),
+        .padding(bottom = 8.dp),
     verticalArrangement = Arrangement.Bottom,
 ) {
     OutlinedTextField(
@@ -252,44 +260,49 @@ private fun EditorFields(
         ),
     )
 
-    ColorPicker(
-        modifier = Modifier.padding(top = 12.dp),
-        selected = habit.color,
-        onColorSelected = { onHabitUpdated(habit.copy(color = it)) },
-    )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ColorPicker(
+private fun ColorSection(
     modifier: Modifier = Modifier,
     selected: HabitColor,
     onColorSelected: (HabitColor) -> Unit,
+) = Column(
+    modifier = modifier
+        .fillMaxWidth()
+        .padding(horizontal = 12.dp)
+        .padding(bottom = 8.dp),
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                modifier = Modifier.padding(end = 8.dp).size(20.dp),
-                imageVector = Icons.Default.Circle,
-                contentDescription = null,
-                tint = selected.color,
-            )
-            Text(
-                text = "Color",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+    Row(
+        modifier = Modifier.fillMaxWidth().height(32.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            modifier = Modifier.padding(end = 8.dp).size(20.dp),
+            imageVector = Icons.Default.Palette,
+            contentDescription = null,
+            tint = selected.color,
+        )
+        Text(
+            text = "Color",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
 
-        Spacer(modifier = Modifier.height(10.dp))
+    Spacer(modifier = Modifier.height(8.dp))
 
-        Row(
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+                .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             HabitColor.entries.forEach { habitColor ->
                 val isSelected = habitColor == selected
@@ -298,13 +311,13 @@ private fun ColorPicker(
                         .size(32.dp)
                         .clip(CircleShape)
                         .background(color = habitColor.color)
-                        .then(
-                            if (isSelected) Modifier.border(
+                        .thenIf(isSelected) {
+                            this.border(
                                 width = 2.5.dp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 shape = CircleShape,
-                            ) else Modifier
-                        )
+                            )
+                        }
                         .clickable { onColorSelected(habitColor) },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -335,7 +348,7 @@ private fun GoalsSection(
     modifier = modifier
         .fillMaxWidth()
         .padding(horizontal = 12.dp)
-        .padding(bottom = if (goals.isEmpty()) 16.dp else 8.dp),
+        .padding(bottom = if (goals.isEmpty()) 8.dp else 0.dp),
 ) {
     val allTypesUsed = goals.size >= GoalType.entries.size
 
@@ -575,7 +588,7 @@ private fun RemindersSection(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = if (reminders.isEmpty()) 16.dp else 8.dp),
+            .padding(bottom = if (reminders.isEmpty()) 8.dp else 0.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
