@@ -13,6 +13,8 @@ The `commons` module is a shared Android library that provides common utilities,
 ```
 com.axondragonscale.commons/
 ├── compose/
+│   ├── ComposeUtils.kt      # Window inset height helpers
+│   ├── Dropdown.kt          # Reusable Dropdown composable + DropdownItem
 │   └── ModifierExt.kt       # Compose Modifier extensions
 ├── devtools/
 │   ├── DevTool.kt           # DevTool sealed interface definitions
@@ -23,12 +25,21 @@ com.axondragonscale.commons/
 │   └── CommonsModule.kt     # Koin DI module
 ├── network/
 │   └── HttpClient.kt        # Ktor HTTP client setup
+├── qr/
+│   └── QRGenerator.kt       # QR code bitmap generation via ZXing
+├── room/
+│   ├── IntListConverter.kt      # Room TypeConverter for List<Int>
+│   ├── LocalDateConverter.kt    # Room TypeConverter for kotlinx.datetime.LocalDate
+│   ├── LocalTimeConverter.kt    # Room TypeConverter for kotlinx.datetime.LocalTime
+│   └── StringListConverter.kt   # Room TypeConverter for List<String>
 ├── ContextExt.kt            # Android Context extensions
+├── FlowExt.kt               # Flow collection helpers and multi-flow combine
 ├── Logger.kt                # Logging utilities
 ├── PermissionExt.kt         # Runtime permission helpers
 ├── PreferenceExt.kt         # DataStore preference wrappers
 ├── Result.kt                # Result type for error handling
-└── Serialization.kt         # JSON serialization setup
+├── Serialization.kt         # JSON serialization setup
+└── UIMode.kt                # Common Light/Auto/Dark theme enum
 ```
 
 ## Koin DI Module (`CommonsModule`)
@@ -103,6 +114,76 @@ result
 val dataOrNull = result.getSuccessResultOrNull()
 ```
 
+### Flow Extensions (`FlowExt.kt`)
+
+Helpers for Flow collection and multi-flow combining:
+
+```kotlin
+// No-op collection — triggers flow without handling emissions
+suspend fun <T> Flow<T>.collect() = this.collect {}
+
+// Lifecycle-aware one-shot effect collection (for UiEffect channels)
+// Starts on STARTED, stops on STOPPED, dispatches on Main.immediate
+@Composable
+fun <T> Flow<T>.collectWithLifecycle(
+    context: CoroutineContext = Dispatchers.Main.immediate,
+    onEffect: suspend (T) -> Unit,
+)
+
+// Usage in a screen composable:
+viewModel.uiEffect.collectWithLifecycle { effect ->
+    when (effect) {
+        is MyUiEffect.NavigateBack -> navController.popBackStack()
+    }
+}
+
+// Combine 6 flows
+fun <T1, T2, T3, T4, T5, T6, R> combine(
+    flow1, flow2, flow3, flow4, flow5, flow6, transform
+): Flow<R>
+
+// Combine 7 flows
+fun <T1, T2, T3, T4, T5, T6, T7, R> combine(
+    flow1, flow2, flow3, flow4, flow5, flow6, flow7, transform
+): Flow<R>
+```
+
+The multi-flow `combine` functions extend Kotlin's standard library which only supports up to 5 flows. They use internal `Tuple5`/`Tuple6` data classes to chain standard `combine` calls.
+
+### UIMode (`UIMode.kt`)
+
+Common enum for Light/Dark/Auto theme control, shared across all apps:
+
+```kotlin
+enum class UIMode(val displayName: String, val icon: ImageVector) {
+    LIGHT("Light", Icons.Default.LightMode),
+    AUTO("Auto", Icons.Default.BrightnessAuto),
+    DARK("Dark", Icons.Default.DarkMode);
+
+    companion object {
+        val DEFAULT get() = AUTO
+        fun fromOrdinal(ordinal: Int) = entries[ordinal]
+    }
+}
+
+// Composable extension to resolve to a dark theme boolean
+@Composable
+fun UIMode.isDarkTheme(): Boolean  // AUTO delegates to isSystemInDarkTheme()
+```
+
+Usage in apps:
+```kotlin
+// In a preferences repository
+val uiMode = dataStore.enumSetting(
+    key = stringPreferencesKey("ui_mode"),
+    default = UIMode.AUTO
+)
+
+// In a theme composable
+val isDark = uiMode.isDarkTheme()
+MyAppTheme(darkTheme = isDark) { ... }
+```
+
 ### DataStore Preferences (`PreferenceExt.kt`)
 
 Typed wrappers for DataStore preference access:
@@ -174,6 +255,89 @@ Modifier.thenIfNotNull(borderColor) { color ->
 }
 ```
 
+### Compose Utilities (`compose/ComposeUtils.kt`)
+
+Composable helpers for window inset measurements:
+
+```kotlin
+// Get the navigation bar height as Dp
+@Composable
+fun navigationBarsHeight(): Dp
+
+// Get the status bar height as Dp
+@Composable
+fun statusBarHeight(): Dp
+```
+
+Useful for manual padding calculations when not using `Scaffold` or `WindowInsets` modifiers directly.
+
+### Dropdown (`compose/Dropdown.kt`)
+
+A reusable, generic dropdown selector composable used across multiple apps (topty settings, limitless editor, backup format selection, etc.):
+
+```kotlin
+data class DropdownItem<T>(
+    val name: String,
+    val value: T,
+    val leadingIcon: ImageVector? = null,
+    val trailingIcon: ImageVector? = null,
+)
+
+@Composable
+fun <T> Dropdown(
+    modifier: Modifier = Modifier,
+    selectedItem: DropdownItem<T>,
+    items: List<DropdownItem<T>>,
+    onItemSelected: (DropdownItem<T>) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(start = 12.dp, end = 8.dp),
+    shape: Shape = RoundedCornerShape(16.dp),
+    borderWidth: Dp = 1.dp,
+    borderColor: Color = MaterialTheme.colorScheme.outline,
+)
+```
+
+Features:
+- Generic type parameter — works with any value type
+- Optional leading/trailing icons per item
+- Customizable shape, border width/color, and content padding
+- Auto-sizes the dropdown menu to match the trigger width
+- Shows a down-arrow indicator
+
+Usage:
+```kotlin
+// UIMode picker with icons
+Dropdown(
+    modifier = Modifier.size(width = 128.dp, height = 32.dp),
+    selectedItem = DropdownItem(uiMode.displayName, uiMode, leadingIcon = uiMode.icon),
+    items = UIMode.entries.map { DropdownItem(it.displayName, it, leadingIcon = it.icon) },
+    onItemSelected = { onEvent(MyUiEvent.UIModeChanged(it.value)) },
+)
+
+// Simple text dropdown
+Dropdown(
+    modifier = Modifier.size(width = 128.dp, height = 32.dp),
+    selectedItem = DropdownItem(selected.name, selected),
+    items = options.map { DropdownItem(it.name, it) },
+    onItemSelected = { onEvent(MyUiEvent.OptionChanged(it.value)) },
+    shape = RoundedCornerShape(4.dp),
+)
+```
+
+### QR Code Generation (`qr/QRGenerator.kt`)
+
+Simple QR code bitmap generator using ZXing:
+
+```kotlin
+object QRGenerator {
+    fun generateQRCode(content: String, size: Int = 512): Bitmap
+}
+```
+
+- Uses `QRCodeWriter` from ZXing to encode content as a `BitMatrix`
+- Renders a black-and-white `Bitmap` (RGB_565 format)
+- Default size: 512×512 pixels
+- Used by topty for token sharing QR codes
+
 ### Networking (`network/HttpClient.kt`)
 
 Pre-configured Ktor HTTP client provided via Koin:
@@ -199,6 +363,15 @@ val json: Json by inject()
 // - ignoreUnknownKeys = true (lenient parsing)
 // - encodeDefaults = true (include default values in output)
 ```
+
+## Room TypeConverters (`room/`)
+
+Shared Room TypeConverters — register with `@TypeConverters(...)` on your `RoomDatabase` class. All handle nullability.
+
+- **`IntListConverter`** — `List<Int>` ↔ JSON string (e.g. `"[1,2,3]"`)
+- **`StringListConverter`** — `List<String>` ↔ JSON string
+- **`LocalDateConverter`** — `kotlinx.datetime.LocalDate?` ↔ ISO-8601 string (`YYYY-MM-DD`)
+- **`LocalTimeConverter`** — `kotlinx.datetime.LocalTime?` ↔ ISO-8601 string (`HH:MM:SS`)
 
 ## Developer Tools (`devtools/`)
 
@@ -266,6 +439,11 @@ dependencies {
 4. **Modifiers**: Use `thenIf` extensions to keep modifier chains readable
 5. **DI**: Always include `CommonsModule` when setting up Koin in your app
 6. **DevTools**: Create an app-specific wrapper around `DevToolsScreen` to add custom tools
+7. **UIMode**: Use the shared `UIMode` enum instead of defining app-specific theme mode enums
+8. **Room Converters**: Use the shared converters from `commons.room` instead of duplicating them per app
+9. **Flow Effects**: Use `Flow.collectWithLifecycle` for one-shot UiEffect collection in composables
+10. **QR Codes**: Use `QRGenerator` for simple black-and-white QR codes; for customized QR rendering (colors, shapes, logos), build on top of ZXing's `BitMatrix` directly
+11. **Dropdown**: Use the shared `Dropdown` composable for all selector/picker UI instead of building custom ones per app
 
 ## Related Context
 
