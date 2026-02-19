@@ -43,6 +43,12 @@ class LimitlessRepository(
     suspend fun recordHabit(habitId: Long, message: String) =
         recordDao.upsert(RecordEntity.new(habitId, message))
 
+    suspend fun getRecordsPaginated(habitId: Long, limit: Int, offset: Int): List<RecordEntity> =
+        recordDao.getRecordsPaginated(habitId, limit, offset)
+
+    suspend fun getRecordCount(habitId: Long): Int =
+        recordDao.getRecordCount(habitId)
+
     // MARK: Goals ---------------------------------------------------------------------------------
 
     fun getGoalsForHabit(habitId: Long): Flow<List<GoalEntity>> =

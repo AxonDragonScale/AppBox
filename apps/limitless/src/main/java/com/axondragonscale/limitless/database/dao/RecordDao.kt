@@ -30,6 +30,17 @@ interface RecordDao {
     @Query("SELECT * FROM record WHERE id = :id")
     suspend fun getRecord(id: Long): RecordEntity?
 
+    @Query("""
+        SELECT * FROM record
+        WHERE habitId = :habitId
+        ORDER BY timestamp DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    suspend fun getRecordsPaginated(habitId: Long, limit: Int, offset: Int): List<RecordEntity>
+
+    @Query("SELECT COUNT(*) FROM record WHERE habitId = :habitId")
+    suspend fun getRecordCount(habitId: Long): Int
+
     // MARK: Upserts -------------------------------------------------------------------------------
 
     @Upsert
