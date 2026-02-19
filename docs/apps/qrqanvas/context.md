@@ -1,4 +1,6 @@
-# QRQanvas - LLM/Agent Context
+> Context: [Main](../../context.md) > QRQanvas
+
+# QRQanvas - QR Code Generator & Scanner
 
 ## Overview
 
@@ -24,15 +26,10 @@ QRQanvas is a customizable QR code generator and scanner app within the AppBox m
 | Async | Coroutines + Flow (`libs.bundles.coroutines`) | |
 | UI | Jetpack Compose + Material 3 (`libs.bundles.compose`) | Via Compose BOM — never specify individual Compose versions |
 
-## Project Conventions (Critical)
+## Planned Architecture
 
-### Build
-- Convention plugin: `id("app-convention")` — provides AGP, Kotlin, Compose, signing, SDK versions
-- Min SDK 31, Target SDK 36, JVM 21
-- Room uses **KSP**, not KAPT
-- Typesafe project accessor: `implementation(projects.core.commons)`
+Follow the same patterns as wallmatic/topty/jest:
 
-### Architecture Pattern (follow wallmatic/topty/jest patterns)
 ```
 com.axondragonscale.qrqanvas/
 ├── QRQanvasActivity.kt          # Single Activity, installs splash screen
@@ -61,21 +58,21 @@ com.axondragonscale.qrqanvas/
 └── util/                        # Extension functions, helpers
 ```
 
-### UI Layer Conventions
-- **Modifier is always the first parameter** with default `Modifier = Modifier` in ALL composables
-- **Two-tier composable pattern**: Top-level handles ViewModel + navigation; private inner is pure UI for previews
-- **ViewModel naming**: `HomeVM`, `CreatorVM` (suffix `VM`, not `ViewModel`)
-- **State files per screen**: `HomeUiState.kt`, `HomeUiEvent.kt`, optionally `HomeUiEffect.kt`
-- **UiEvent is a sealed interface**; ViewModel has `fun onEvent(event: UiEvent)`
-- **UiState is a data class** with `MutableStateFlow` in ViewModel
-- **UiEffect** (one-shot events like navigation): `Channel` + `receiveAsFlow().flowOn(Dispatchers.Main.immediate)`
-- Navigation events that are purely handled in Compose should return `Unit` in `onEvent`
-- Use `koinViewModel()` for ViewModel injection in composables, `koinInject()` for other deps
-- Use `collectAsStateWithLifecycle()` to collect state flows
-- Include light + dark `@Preview` annotations for major composables
-- File header: `// Created by [Name] on DD/MM/YY`
+## Navigation Routes (Planned)
 
-### Koin DI Setup
+```kotlin
+object Route {
+    @Serializable data object Home
+    @Serializable data object Creator
+    @Serializable data class Detail(val qrCodeId: Long)
+    @Serializable data object Scanner
+    @Serializable data object Settings
+    @Serializable data object DevTools
+}
+```
+
+## Koin DI Setup (Planned)
+
 ```kotlin
 // QRQanvasApplication.kt
 class QRQanvasApplication : Application() {
@@ -97,7 +94,8 @@ val QRQanvasModule = module {
 }
 ```
 
-### Activity Setup
+## Activity Setup (Planned)
+
 ```kotlin
 class QRQanvasActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,19 +109,8 @@ class QRQanvasActivity : ComponentActivity() {
 }
 ```
 
-### Navigation (Type-Safe Routes)
-```kotlin
-object Route {
-    @Serializable data object Home
-    @Serializable data object Creator
-    @Serializable data class Detail(val qrCodeId: Long)
-    @Serializable data object Scanner
-    @Serializable data object Settings
-    @Serializable data object DevTools
-}
-```
+## Room Database Pattern
 
-### Room Database Pattern
 ```kotlin
 @Database(entities = [...], version = DB_VERSION)
 abstract class QRQanvasDatabase : RoomDatabase() {
@@ -136,26 +123,6 @@ abstract class QRQanvasDatabase : RoomDatabase() {
     abstract fun qrCodeDao(): QRCodeDao
 }
 ```
-
-### Proto DataStore (if needed for settings)
-- Proto file goes in `src/main/proto/`
-- build.gradle.kts needs `protobuf` plugin and protoc config (not yet added — must be added when implementing)
-- See wallmatic's `config.proto` for pattern
-
-## Core Commons Utilities Available
-
-Import from `com.axondragonscale.commons`:
-
-| Utility | Usage |
-|---------|-------|
-| `Logger` | `TAG.logD { "message" }`, `this.logD { }` |
-| `Result<S, F>` | `Result.Success(data)` / `Result.Failure(error)` with `.onSuccess {}` / `.onFailure {}` |
-| `PreferenceExt` | `dataStore.setting(key, default)`, `.enumSetting()`, `.serializedSetting()` |
-| `ModifierExt` | `Modifier.thenIf(cond) { }`, `.thenIfElse()`, `.thenIfNotNull()` |
-| `PermissionExt` | `context.getDangerousPermissions()`, `context.isPermissionGranted()` |
-| `ContextExt` | `context.clearAppData()` |
-| `DevToolsScreen` | Built-in kill/clear/permissions tools + custom tools via `buildDevTools { }` DSL |
-| `CommonsModule` | Koin module providing `Json` and `HttpClient` instances |
 
 ## QR Generation with ZXing — Key Technical Notes
 
@@ -186,9 +153,8 @@ The Application class must be registered:
 <application android:name=".QRQanvasApplication" ... >
 ```
 
-## What Needs to Be Built (Everything)
+## What Currently Exists
 
-The module currently only has:
 - `QRQanvasActivity.kt` — default template, needs splash screen + proper setup
 - `ui/theme/Color.kt`, `Theme.kt`, `Type.kt` — default template colors, need app-specific theming
 - `AndroidManifest.xml` — missing Application class, camera permission
@@ -196,3 +162,18 @@ The module currently only has:
 - App icons exist (mipmap + drawable foreground/background)
 
 Everything else — Application class, Koin module, database, Room entities, DAOs, repositories, all UI screens, navigation, QR generation engine, QR scanning, settings — needs to be created from scratch.
+
+## Build Info
+
+- **Namespace**: `com.axondragonscale.qrqanvas`
+- **Min SDK**: 31 (Android 12)
+- **Target SDK**: 36
+- **Java/Kotlin**: JVM 21
+- **Convention Plugin**: `id("app-convention")`
+
+## Related Context
+
+- [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
+- [Commons Module](../../core/commons/context.md) — Shared utilities available to all apps (Logger, Result, DevToolsScreen, etc.)
+- [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming conventions
+- [Build System](../../build-system.md) — Convention plugins, version catalog, build commands

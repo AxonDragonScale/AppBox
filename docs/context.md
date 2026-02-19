@@ -1,5 +1,43 @@
 # AppBox - Project Context
 
+> **This is the entry point of the AppBox context graph.**
+> If you are an AI agent or LLM, read the [Agent Context Guidelines](#agent-context-guidelines) section first.
+
+## Agent Context Guidelines
+
+### How to Use This Context System
+
+This project uses a **context graph** — a set of interlinked markdown files that provide project knowledge. Each file covers a specific scope. You navigate by following links as needed, loading only the context relevant to your current task.
+
+1. **Always start here** — this file is your entry point. It gives you the project overview, tech stack, architecture patterns, and links to everything else.
+2. **Load the module context when working on a module** — follow the link in the [Module Index](#module-index) below.
+3. **Always load [commons context](./core/commons/context.md)** — every app module depends on `:core:commons`. Know what utilities are available before writing new code.
+4. **Follow sub-context links only when needed** — some modules have sub-context files for deep subsystems (e.g., topty's security or backup systems). Only read these when your task touches that subsystem.
+5. **Load [coding-conventions.md](./coding-conventions.md) before writing code** — it defines Compose patterns, Kotlin idioms, naming conventions, and state management patterns you must follow.
+6. **Load [build-system.md](./build-system.md) only for build/config tasks** — convention plugins, version catalog, signing, and build commands. Not needed for typical feature work.
+
+### Context Loading by Task
+
+| Task | Load These (in order) |
+|------|----------------------|
+| Feature work on a specific app | This file → App context → Commons context → Coding conventions |
+| Working on topty security/encryption | This file → [Topty context](./apps/topty/context.md) → [Topty security](./apps/topty/security.md) → Commons context |
+| Working on topty backup/restore | This file → [Topty context](./apps/topty/context.md) → [Topty backup-restore](./apps/topty/backup-restore.md) → Commons context |
+| Working on wallmatic background services | This file → [Wallmatic context](./apps/wallmatic/context.md) → [Wallmatic background-services](./apps/wallmatic/background-services.md) → Commons context |
+| Working on npinner notifications/scheduling | This file → [NPinner context](./apps/npinner/context.md) → [NPinner notification-system](./apps/npinner/notification-system.md) → Commons context |
+| Adding a new app or module | This file → [Build system](./build-system.md) → Coding conventions → Commons context |
+| Cross-cutting changes | This file → All affected module contexts → Commons context |
+| Build configuration changes | This file → [Build system](./build-system.md) |
+
+### Navigation Conventions
+
+- Every context file has a **breadcrumb** at the top showing its position in the graph.
+- Every context file has a **Related Context** section at the bottom with links to relevant docs.
+- Sub-context files always link back to their parent module context.
+- When you encounter a section that says *"See [link] for details"*, follow that link only if your task requires those details.
+
+---
+
 ## Overview
 
 AppBox is a monorepo containing multiple standalone Android applications that share common utilities and build configuration. Each app is independently installable and publishable while benefiting from shared code and consistent architecture.
@@ -20,179 +58,89 @@ AppBox is a monorepo containing multiple standalone Android applications that sh
 | Widgets | Jetpack Glance |
 | Build System | Gradle (Kotlin DSL) with Version Catalogs + Convention Plugins |
 
+## Key Technology Decisions
+
+These are **non-negotiable** choices across the entire project:
+
+1. **Koin** for dependency injection — never Hilt or Dagger
+2. **Ktor** for networking — never Retrofit
+3. **kotlinx.serialization** for JSON — never Gson or Moshi
+4. **Room with KSP** — never KAPT
+5. **JVM 21** — modern Kotlin features are available
+6. **Compose BOM** — never specify individual Compose versions
+7. **Proto DataStore** for complex/typed settings, Preferences DataStore for simple key-value
+
 ## Project Structure
 
 ```
 AppBox/
-├── apps/                   # Standalone Android applications
-│   ├── jest/              # Jokes/humor app with widget support
-│   ├── wallmatic/         # Wallpaper auto-changer app
-│   └── topty/             # 2FA authenticator app
-├── core/                   # Shared library modules
-│   └── commons/           # Shared utilities, network, DI setup
-├── build-logic/           # Convention plugins for build configuration
-│   └── src/main/kotlin/
-│       ├── app-convention.gradle.kts      # For app modules
-│       └── library-convention.gradle.kts  # For library modules
-├── gradle/                # Version catalog (libs.versions.toml)
-└── keystore/              # Signing configuration
-```
-
-## App Modules
-
-### `:apps:jest` (Jokes App)
-- **Package**: `com.axondragonscale.jest`
-- **Application Class**: `JestApplication`
-- **Purpose**: Daily jokes/humor content with home screen widget
-- **Key Tech**: Ktor (API calls), Room (caching), Glance (widget)
-
-### `:apps:wallmatic` (Wallpaper Manager)
-- **Package**: `com.axondragonscale.wallmatic`
-- **Application Class**: `WallmaticApplication`
-- **Purpose**: Auto-change wallpapers on schedule
-- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), Quick Settings Tiles
-
-### `:apps:topty` (Authenticator)
-- **Package**: `com.axondragonscale.topty`
-- **Application Class**: `ToptyApplication`
-- **Purpose**: TOTP-based 2FA code manager
-- **Key Tech**: Room (storage), CameraX + ML Kit (QR scanning)
-
-## Core Modules
-
-### `:core:commons` (Shared Library)
-- **Package**: `com.axondragonscale.commons`
-- **Purpose**: Shared utilities across all apps
-- **Contains**: 
-  - Logger utilities
-  - Result wrapper
-  - Serialization helpers
-  - Network setup (Ktor client)
-  - Common Compose utilities
-  - CommonsModule (Koin DI module)
-
-## Build Configuration
-
-### Convention Plugins
-
-**`app-convention`** - Applied to all app modules:
-- Android Application plugin
-- Kotlin Android + Compose
-- Signing configuration (shared keystore)
-- Common SDK versions and compile options
-- BuildConfig and Compose features enabled
-
-**`library-convention`** - Applied to library modules:
-- Android Library plugin
-- Kotlin Android
-- Common SDK versions and compile options
-
-### Dependency Injection Setup
-
-Each app has its own `Application` class that initializes Koin:
-
-```kotlin
-class JestApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        startKoin {
-            androidLogger()
-            androidContext(this@JestApplication)
-            modules(
-                CommonsModule,  // From :core:commons
-                JestModule,     // App-specific module
-            )
-        }
-    }
-}
+├── apps/                        # Standalone Android applications
+│   ├── jest/                   # Jokes/humor app with widget support
+│   ├── limitless/              # Habit tracking app
+│   ├── npinner/                # Notification pinner app
+│   ├── qrqanvas/               # QR code generator/scanner app
+│   ├── topty/                  # 2FA authenticator app
+│   └── wallmatic/              # Wallpaper auto-changer app
+├── core/                        # Shared library modules
+│   └── commons/                # Shared utilities, network, DI setup
+├── build-logic/                 # Convention plugins for build configuration
+├── docs/                        # Context graph (you are here)
+├── gradle/                      # Version catalog (libs.versions.toml)
+├── keystore/                    # Signing configuration
+└── libraries/                   # Standalone publishable libraries
+    └── tlv/                    # BER-TLV encoding/decoding (Kotlin Multiplatform)
 ```
 
 ## Architecture Patterns
 
+All apps follow these patterns consistently:
+
 - **UI Layer**: Jetpack Compose with Material 3
-- **State Management**: ViewModel + StateFlow
-- **Dependency Injection**: Koin (not Hilt/Dagger)
-- **Navigation**: Navigation Compose
+- **State Management**: ViewModel (`*VM` suffix) + `MutableStateFlow<UiState>`
+- **Events**: Sealed interface `UiEvent` → `fun onEvent(event): Any`
+- **One-shot Effects**: `Channel<UiEffect>` → `receiveAsFlow().flowOn(Dispatchers.Main.immediate)`
+- **Dependency Injection**: Koin — `singleOf`, `viewModelOf`, `factoryOf`
+- **Navigation**: Navigation Compose with `@Serializable` type-safe routes
 - **Async**: Kotlin Coroutines + Flow
 - **Networking**: Ktor Client with Kotlinx Serialization JSON
 
-## Coding Conventions
+### Module Dependency Rules
 
-### Module Guidelines
-- Each app is fully self-contained with its own Application class
+- Each app is fully self-contained with its own `Application` class
 - Shared code goes in `:core:commons`
-- App modules depend on `:core:commons`, not on each other
-- Use typesafe project accessors (`projects.core.commons`)
+- App modules depend on `:core:commons`, never on each other
+- Use typesafe project accessors: `implementation(projects.core.commons)`
 
-## Building
+See [coding-conventions.md](./coding-conventions.md) for detailed code patterns.
+See [build-system.md](./build-system.md) for convention plugins and build configuration.
 
-```bash
-# Build all apps
-./gradlew assembleDebug
+## Module Index
 
-# Build specific app
-./gradlew :apps:jest:assembleDebug
-./gradlew :apps:wallmatic:assembleDebug
-./gradlew :apps:topty:assembleDebug
-```
+### App Modules
 
-## Key Dependencies Reference
+| Module | Package | Purpose | Context |
+|--------|---------|---------|---------|
+| `:apps:jest` | `com.axondragonscale.jest` | Daily jokes/humor with home screen widget | [context](./apps/jest/context.md) |
+| `:apps:limitless` | `com.axondragonscale.limitless` | Habit tracking with statistics | [context](./apps/limitless/context.md) |
+| `:apps:npinner` | `com.axondragonscale.npinner` | Persistent notification pinning with scheduling | [context](./apps/npinner/context.md) ∙ [notification-system](./apps/npinner/notification-system.md) |
+| `:apps:qrqanvas` | `com.axondragonscale.qrqanvas` | Customizable QR code generator & scanner | [context](./apps/qrqanvas/context.md) |
+| `:apps:topty` | `com.axondragonscale.topty` | TOTP-based 2FA code manager | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
+| `:apps:wallmatic` | `com.axondragonscale.wallmatic` | Auto-change wallpapers on schedule | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md) |
 
-```kotlin
-// Convention plugin (for apps)
-plugins {
-    id("app-convention")
-}
+### Core Modules
 
-// DI
-implementation(platform(libs.koin.bom))
-implementation(libs.bundles.koin)
+| Module | Package | Purpose | Context |
+|--------|---------|---------|---------|
+| `:core:commons` | `com.axondragonscale.commons` | Shared utilities, networking, DI, DevTools | [context](./core/commons/context.md) |
 
-// Networking
-implementation(libs.bundles.ktor)
+### Libraries
 
-// Database
-implementation(libs.androidx.room.runtime)
-implementation(libs.androidx.room.ktx)
-ksp(libs.androidx.room.compiler)
+| Module | Package | Purpose | Context |
+|--------|---------|---------|---------|
+| `:libraries:tlv` | `io.github.axondragonscale.tlv` | BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md) |
 
-// Compose
-implementation(platform(libs.androidx.compose.bom))
-implementation(libs.bundles.compose)
+## Related Context
 
-// Images
-implementation(libs.bundles.coil)
-
-// Widgets
-implementation(libs.bundles.glance)
-
-// Core module
-implementation(projects.core.commons)
-```
-
-## Splash Screen Configuration
-
-Each app has its own splash screen theme defined in `res/values/themes.xml`:
-
-```xml
-<style name="Theme.AppName" parent="android:Theme.Material.Light.NoActionBar">
-    <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-    <item name="android:windowSplashScreenAnimatedIcon">@drawable/app_icon_foreground</item>
-</style>
-```
-
-Activities call `installSplashScreen()` before `super.onCreate()`.
-
-## Notes for AI Assistance
-
-1. **Always use Koin** for dependency injection, not Hilt or Dagger
-2. **Prefer Ktor** for networking, not Retrofit
-3. **Use kotlinx.serialization** for JSON, not Gson or Moshi
-4. **Target JVM 21** - modern Kotlin features are available
-5. **Room with KSP** - not KAPT
-6. **Proto DataStore** is used in wallmatic for typed settings
-7. When creating new features, check if similar patterns exist in other apps
-8. The project uses **Compose BOM** - don't specify individual Compose versions
-9. Each app is independent - no shared Application class
-10. Use convention plugins (`app-convention`, `library-convention`) for new modules
-11. Apps are in `apps/` directory, libraries are in `core/` directory
+- [Coding Conventions](./coding-conventions.md) — Compose patterns, Kotlin idioms, naming, state management
+- [Build System](./build-system.md) — Convention plugins, version catalog, build commands
+- [Commons Module](./core/commons/context.md) — Shared utilities available to all apps

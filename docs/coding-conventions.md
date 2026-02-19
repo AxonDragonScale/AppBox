@@ -1,3 +1,5 @@
+> Context: [Main](./context.md) > Coding Conventions
+
 # AppBox Coding Conventions
 
 ---
@@ -267,3 +269,11 @@ di/         - Dependency injection modules
 ---
 
 *This document is a living guide and will be updated as new conventions are established.*
+
+---
+
+## Related Context
+
+- [Main Context](./context.md) — Project overview, tech stack, module index, agent guidelines
+- [Build System](./build-system.md) — Convention plugins, version catalog, module setup
+- [Commons Module](./core/commons/context.md) — Shared utilities, DI module, DevToolsScreen

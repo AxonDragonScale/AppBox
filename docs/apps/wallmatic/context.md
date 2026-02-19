@@ -1,15 +1,31 @@
-# Wallmatic - Module Context
+> Context: [Main](../../context.md) > Wallmatic
+
+# Wallmatic - Wallpaper Auto-Changer App
 
 ## Overview
 
-Wallmatic is an automatic wallpaper changer sub-app within AppBox. It allows users to create albums of wallpapers from device folders and automatically cycles through them on a schedule. Supports separate configurations for home and lock screens, quick settings tiles, and boot-persistent scheduling.
+Wallmatic is an automatic wallpaper changer app within AppBox. It allows users to create albums of wallpapers from device folders and automatically cycles through them on a schedule. Supports separate configurations for home and lock screens, quick settings tiles, and boot-persistent scheduling.
+
+- **Package**: `com.axondragonscale.wallmatic`
+- **Module path**: `:apps:wallmatic`
+- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), AlarmManager (scheduling), Quick Settings Tiles
+
+## Architecture
+
+- **UI**: Jetpack Compose with Material3
+- **Navigation**: Jetpack Navigation Compose (type-safe routes with `@Serializable`)
+- **DI**: Koin (`WallmaticApplication` initializes `CommonsModule` + `WallmaticModule`)
+- **State Management**: ViewModel + StateFlow
+- **Persistence**: Room database + Proto DataStore
+- **Background Work**: AlarmManager + BroadcastReceiver + Service — see [Background Services sub-context](./background-services.md) for details
+- **Image Loading**: Coil
 
 ## Package Structure
 
 ```
 com.axondragonscale.wallmatic/
-├── WallmaticActivity.kt              # Entry point activity
-├── background/
+├── WallmaticActivity.kt              # Entry point with edge-to-edge display
+├── background/                       # See background-services.md for details
 │   ├── HomeTileService.kt            # Quick settings tile (home screen)
 │   ├── LockTileService.kt            # Quick settings tile (lock screen)
 │   ├── WallmaticReceiver.kt          # Boot/time change broadcast receiver
@@ -58,19 +74,29 @@ com.axondragonscale.wallmatic/
     └── DevTools.kt                   # Development utilities
 ```
 
-## Architecture
+## Navigation Routes
 
-- **UI Framework**: Jetpack Compose with Material3
-- **Navigation**: Jetpack Navigation Compose (type-safe routes)
-- **Dependency Injection**: Koin
-- **State Management**: ViewModel + StateFlow
-- **Persistence**: Room database + Proto DataStore
-- **Background Work**: AlarmManager + BroadcastReceiver + Service
-- **Image Loading**: Coil
+```kotlin
+object Route {
+    @Serializable data class Dashboard(val tab: Int = Tab.Home.position)
+    @Serializable data class Album(val albumId: Int)
+    @Serializable data class Folder(val folderId: Int)
+    @Serializable data class Wallpaper(val wallpaperId: Int)
+}
+```
 
-## Key Components
+### Main Screens
 
-### WallmaticActivity
+- **Dashboard**: Tabbed container (Home, Albums, Settings)
+- **Home**: Current wallpaper display, quick actions
+- **Albums**: List of user-created albums
+- **Album**: Album detail with folders and wallpapers
+- **Folder**: Folder contents
+- **Wallpaper**: Full-screen wallpaper preview
+- **Settings**: App configuration
+
+## WallmaticActivity
+
 Entry point activity with edge-to-edge display. Syncs albums on start and applies theme preferences.
 
 ```kotlin
@@ -83,27 +109,9 @@ companion object {
 }
 ```
 
-### Navigation Routes
-Type-safe navigation using kotlinx.serialization:
-```kotlin
-object Route {
-    data class Dashboard(val tab: Int = Tab.Home.position)
-    data class Album(val albumId: Int)
-    data class Folder(val folderId: Int)
-    data class Wallpaper(val wallpaperId: Int)
-}
-```
+## Database
 
-### Main Screens
-- **Dashboard**: Tabbed container (Home, Albums, Settings)
-- **Home**: Current wallpaper display, quick actions
-- **Albums**: List of user-created albums
-- **Album**: Album detail with folders and wallpapers
-- **Folder**: Folder contents
-- **Wallpaper**: Full-screen wallpaper preview
-- **Settings**: App configuration
-
-### Database Entities
+### Entities
 
 **Album**
 ```kotlin
@@ -123,7 +131,13 @@ data class Album(
 
 **Wallpaper**: Individual wallpaper with URI, parent folder ID, whitelist status
 
-### Configuration (Proto DataStore)
+### Models
+
+- `FullAlbum`: Album with its resolved folders and wallpapers (joined data)
+- `FullFolder`: Folder with its resolved wallpapers (joined data)
+- `TargetScreen`: Enum — `Home`, `Lock`, `Both`
+
+## Configuration (Proto DataStore)
 
 ```protobuf
 message Config {
@@ -142,55 +156,31 @@ message WallpaperConfig {
 }
 ```
 
-### WallpaperUpdater
-Core logic for changing wallpapers:
-- Checks if update interval has passed
-- Supports separate home/lock configurations
-- Mirroring option (same wallpaper for both)
-- Selects random wallpaper from whitelisted pool
-- Uses `WallpaperManager.setStream()` with appropriate flags
-- Schedules next update after completion
+Key settings:
+- **`mirrorHomeConfigForLock`**: When true, lock screen uses the same wallpaper as home screen
+- **`autoCycleEnabled`**: Per-screen toggle for automatic wallpaper cycling
+- **`updateInterval`**: Time between automatic wallpaper changes (milliseconds)
 
-### Background Services
+## Data Flow
 
-**WallmaticScheduler**: Schedules exact alarms for auto-cycle updates
-
-**WallmaticReceiver**: Handles boot completion, time/timezone changes to reschedule alarms
-
-**WallmaticService**: Foreground service for wallpaper updates
-
-**Quick Settings Tiles**:
-- `WallmaticTileService`: Change both wallpapers
-- `HomeTileService`: Change home screen only
-- `LockTileService`: Change lock screen only
+### Album Creation
+1. User creates album → inserted into Room
+2. User adds folder → folder URI persisted, wallpapers scanned from filesystem
+3. Wallpapers inserted into Room with folder reference
+4. Album updated with folder/wallpaper IDs
 
 ### SyncManager
-Synchronizes album contents with filesystem:
+Synchronizes album contents with filesystem on app start:
 - Detects added/removed wallpapers in folders
 - Updates database to reflect current state
-- Called on app start
+- Called automatically in `WallmaticActivity`
 
-## Dependencies
+### Wallpaper Auto-Cycle (Summary)
+1. `WallmaticScheduler` sets exact alarm for next update
+2. Alarm triggers → `WallmaticReceiver` → `WallmaticService` → `WallpaperUpdater`
+3. Random wallpaper selected from whitelisted pool → applied → next update scheduled
 
-### Local Modules
-- `projects.commons` - Shared utilities
-
-### Key Libraries
-- AndroidX Compose BOM + Material3
-- Navigation Compose
-- Coil (image loading)
-- Koin (DI)
-- Room (database)
-- Proto DataStore (typed preferences)
-- DocumentFile (SAF support)
-- kotlinx.serialization
-
-## Build Configuration
-
-- **Namespace**: `com.axondragonscale.wallmatic`
-- **Min SDK**: 31 (Android 12)
-- **Java/Kotlin**: 21
-- **Protobuf**: Uses protobuf-kotlin-lite
+For full details on scheduling, tiles, receivers, and the update lifecycle, see [Background Services](./background-services.md).
 
 ## Permissions
 
@@ -212,34 +202,34 @@ Synchronizes album contents with filesystem:
 - `ic_home_replace_image`: Home screen
 - `ic_lock_replace_image`: Lock screen
 
-## Data Flow
+## Dependencies
 
-### Album Creation
-1. User creates album → inserted into Room
-2. User adds folder → folder URI persisted, wallpapers scanned
-3. Wallpapers inserted into Room with folder reference
-4. Album updated with folder/wallpaper IDs
+- **Local Modules**: `projects.core.commons`
+- **AndroidX**: Compose BOM + Material3, Navigation Compose, Room, Proto DataStore, DocumentFile
+- **Koin**: DI
+- **Coil**: Image loading
+- **kotlinx**: serialization, coroutines
+- **Protobuf**: protobuf-kotlin-lite
 
-### Wallpaper Auto-Cycle
-1. `WallmaticScheduler` sets exact alarm for next update
-2. Alarm triggers → `WallmaticReceiver` receives broadcast
-3. Receiver starts `WallmaticService`
-4. Service calls `WallpaperUpdater.updateWallpaper()`
-5. Updater checks config, selects random wallpaper
-6. `WallpaperManager.setStream()` applies wallpaper
-7. Config updated with new wallpaper ID and timestamp
-8. Next update scheduled
+## Build Info
 
-### Quick Settings Tile
-1. User taps tile → `TileService.onClick()`
-2. Service calls `WallpaperUpdater.updateWallpaper(target)`
-3. Wallpaper changed immediately
-4. Next scheduled update remains unchanged
+- **Namespace**: `com.axondragonscale.wallmatic`
+- **Min SDK**: 31 (Android 12)
+- **Java/Kotlin**: JVM 21
 
-## Code Style
+## Code Conventions
 
 - ViewModels: `HomeVM`, `AlbumsVM`, `AlbumVM`, `FolderVM`, `WallpaperVM`, `SettingsVM`
 - Type-safe navigation with `@Serializable` route classes
 - Proto DataStore for complex configuration
-- Manager classes for domain logic (`AlbumManager`, `FolderManager`, etc.)
+- Manager classes for domain logic (`AlbumManager`, `FolderManager`, `SyncManager`, `WallpaperManager`)
 - Extension functions for config manipulation (`homeConfig {}`, `lockConfig {}`)
+
+## Related Context
+
+- [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
+- [Commons Module](../../core/commons/context.md) — Shared utilities, networking, DI module
+- [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming
+- [Build System](../../build-system.md) — Convention plugins, version catalog
+- **Sub-context:**
+  - [Background Services](./background-services.md) — Scheduling, tiles, receivers, wallpaper update lifecycle

@@ -1,4 +1,6 @@
-# TLV Library - Context for Agents
+> Context: [Main](../../context.md) > TLV Library
+
+# TLV Library — `:libraries:tlv`
 
 ## Overview
 
@@ -16,14 +18,6 @@ This library is **independently publishable** to Maven Central via the Vanniktec
 | Testing        | kotlin-test                         |
 | Targets        | JVM, Android, iOS (x64/arm64/simulatorArm64), Linux x64 |
 
-## Module Location
-
-```
-libraries/tlv/
-```
-
-Gradle path: `:libraries:tlv`
-
 ## Project Structure
 
 ```
@@ -32,7 +26,7 @@ libraries/tlv/
 └── src/
     ├── commonMain/kotlin/        # All source code (KMP common)
     │   ├── Tag.kt                # Tag parsing and construction
-    │   ├── Length.kt              # Length encoding/decoding
+    │   ├── Length.kt             # Length encoding/decoding
     │   ├── Value.kt              # Value wrapper
     │   ├── TLV.kt                # Combined TLV with parsing
     │   ├── TLVList.kt            # List of TLV elements
@@ -75,29 +69,35 @@ Raw bytes. If the Tag's form is Constructed, the value contains nested TLV eleme
 ## Core Types
 
 ### `Tag` (value class wrapping `ByteArray`)
+
 - **Construction**: `Tag.from(tagBytes)`, `Tag.from(tagHex)`, `Tag.from(tagNumber, tagClass, tagForm)`
 - **Validation**: `Tag.isValidTag(bytes)` / `Tag.isValidTag(hex)`
 - **Properties**: `tagClass`, `tagForm`, `isPrimitive`, `isConstructed`, `tagNumberBytes`, `tagNumberLong`, `tagNumberInt`, `size`, `asBytes`, `asHex`
 - **Enums**: `Tag.Class` (Universal, Application, ContextSpecific, Private), `Tag.Form` (Primitive, Constructed)
 
 ### `Length` (value class wrapping `ByteArray`)
+
 - **Construction**: `Length.from(lengthBytes)`, `Length.from(lengthHex)`, `Length.from(lengthLong)`, `Length.from(lengthInt)`
 - **Validation**: `Length.isValid(bytes)` / `Length.isValid(hex)`
 - **Properties**: `size` (byte count of the length field itself), `lengthAsBytes`, `lengthAsLong`, `lengthAsInt`, `lengthAsHex`
 
 ### `Value` (value class wrapping `ByteArray`)
+
 - **Construction**: `Value(bytes)`, `Value.from(bytes)`, `Value.from(hex)`
 - **Properties**: `size`, `asHex`, `valueBytes`
 
 ### `TLV` (data class)
+
 - **Construction**: `TLV.from(tag, value)` (auto-calculates length), `TLV.from(tlvHex)`, `TLV.from(tlvBytes)`
 - **Properties**: `tag`, `length`, `value`, `size`, `bytes`, `hex`, `isNested`, `nestedTlvs`
 
 ### `TLVList` (value class wrapping `MutableList<TLV>`)
+
 - **Construction**: `TLVList.from(mutableListOf(...))`, `TLVList.from(bytes)`
 - **Properties**: `tlvList`, `size`, `bytes`, `hex`
 
-### Utility Extensions (in `Utils.kt`)
+### Utility Extensions (`Utils.kt`)
+
 - `Byte.asInt()` / `Byte.asLong()` — unsigned conversion (masks sign extension)
 - `ByteArray.toInt()` / `ByteArray.toLong()` — big-endian byte array to numeric
 - `Long.toByteArray()` — to 8-byte array
@@ -162,3 +162,8 @@ Raw bytes. If the Tag's form is Constructed, the value contains nested TLV eleme
 7. Use `@OptIn(ExperimentalStdlibApi::class)` for `hexToByteArray()` / `toHexString()` usage
 8. Value classes cannot override `equals`/`hashCode` — fixing the equality issue requires converting to regular classes
 9. Files currently have no package — when adding one, use `io.github.axondragonscale.tlv` (matches the namespace and Android namespace in build.gradle.kts)
+
+## Related Context
+
+- [Main Context](../../context.md) — Project overview, module index
+- [Build System](../../build-system.md) — Gradle, version catalog, convention plugins
