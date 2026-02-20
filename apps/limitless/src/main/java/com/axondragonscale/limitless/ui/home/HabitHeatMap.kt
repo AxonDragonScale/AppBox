@@ -66,7 +66,7 @@ private val DayLabels = listOf("", "M", "", "W", "", "F", "")
 /**
  * A week column in the heatmap grid.
  */
-private data class WeekColumn(
+private data class WeekData(
     val days: List<LocalDate?>, // 7 entries, null for days outside the range
     val weekStartDate: LocalDate,
 )
@@ -136,7 +136,7 @@ fun HabitHeatMap(
             ) {
                 items(weeks) { week ->
                     WeekColumn(
-                        week = week,
+                        weekData = week,
                         dayCounts = data.dayCounts,
                         maxCount = data.maxCount,
                         today = today,
@@ -153,7 +153,7 @@ fun HabitHeatMap(
 private fun MonthLabelsRow(
     monthLabels: List<Pair<Int, String>>, // weekIndex to month name
     listState: LazyListState,
-    weeks: List<WeekColumn>,
+    weeks: List<WeekData>,
 ) {
     // We need to figure out which weeks are visible and show month labels accordingly.
     // For simplicity, render a static row of month labels aligned with the LazyRow.
@@ -222,7 +222,7 @@ private fun DayLabelsColumn() {
 
 @Composable
 private fun WeekColumn(
-    week: WeekColumn,
+    weekData: WeekData,
     dayCounts: Map<LocalDate, Int>,
     maxCount: Int,
     today: LocalDate,
@@ -235,7 +235,7 @@ private fun WeekColumn(
     Column(
         verticalArrangement = Arrangement.spacedBy(CellSpacing),
     ) {
-        week.days.forEach { date ->
+        weekData.days.forEach { date ->
             if (date != null && date <= today) {
                 val count = dayCounts[date] ?: 0
                 val color = cellColor(count, maxCount, emptyColor, habitColor)
@@ -299,11 +299,11 @@ private fun cellColor(
 }
 
 /**
- * Builds a list of [WeekColumn]s covering `totalWeeks` weeks ending on [today].
+ * Builds a list of [WeekData]s covering `totalWeeks` weeks ending on [today].
  * Each week starts on Sunday (to match GitHub's contribution graph layout).
  * The rows represent: Sun, Mon, Tue, Wed, Thu, Fri, Sat.
  */
-private fun buildWeeks(today: LocalDate, totalWeeks: Int): List<WeekColumn> {
+private fun buildWeeks(today: LocalDate, totalWeeks: Int): List<WeekData> {
     // Find the Sunday of the current week
     val daysSinceSunday = (today.dayOfWeek.ordinal + 1) % 7 // Monday=0 in Kotlin, so Sunday=6 -> offset 0
     val currentWeekSunday = today.minus(daysSinceSunday, DateTimeUnit.DAY)
@@ -317,7 +317,7 @@ private fun buildWeeks(today: LocalDate, totalWeeks: Int): List<WeekColumn> {
             val date = weekStart.plus(dayOffset, DateTimeUnit.DAY)
             date
         }
-        WeekColumn(days = days, weekStartDate = weekStart)
+        WeekData(days = days, weekStartDate = weekStart)
     }
 }
 
@@ -325,7 +325,7 @@ private fun buildWeeks(today: LocalDate, totalWeeks: Int): List<WeekColumn> {
  * Builds month labels: returns a list of (weekIndex, monthAbbreviation) for weeks
  * where a new month starts (i.e., the week contains the 1st of a month).
  */
-private fun buildMonthLabels(weeks: List<WeekColumn>): List<Pair<Int, String>> {
+private fun buildMonthLabels(weeks: List<WeekData>): List<Pair<Int, String>> {
     val labels = mutableListOf<Pair<Int, String>>()
     var lastMonth = -1
 

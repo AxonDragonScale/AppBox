@@ -89,9 +89,7 @@ private fun HabitDay(
             showTimePicker = true,
             initialDate = uiState.date,
             onRecord = { message, timestamp ->
-                if (timestamp != null) {
-                    onEvent(HabitDayUiEvent.AddRecord(message, timestamp))
-                }
+                onEvent(HabitDayUiEvent.AddRecord(message, timestamp))
                 showRecordSheet = false
             },
             onDismiss = { showRecordSheet = false },

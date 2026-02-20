@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.home.RecordHabitSheet
 import com.axondragonscale.commons.displayName
+import com.axondragonscale.commons.daysInMonth
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
@@ -95,9 +96,7 @@ private fun HabitCalendar(
             showTimePicker = true,
             initialDate = date,
             onRecord = { message, timestamp ->
-                if (timestamp != null) {
-                    onEvent(HabitCalendarUiEvent.AddRecord(message, timestamp))
-                }
+                onEvent(HabitCalendarUiEvent.AddRecord(message, timestamp))
                 longPressedDate = null
             },
             onDismiss = { longPressedDate = null },
@@ -345,17 +344,6 @@ private fun MonthNavigationRow(
             }
         }
     }
-}
-
-// endregion
-
-// region Helpers
-
-private fun daysInMonth(year: Int, month: Int): Int = when (month) {
-    1, 3, 5, 7, 8, 10, 12 -> 31
-    4, 6, 9, 11 -> 30
-    2 -> if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) 29 else 28
-    else -> throw IllegalArgumentException("Invalid month: $month")
 }
 
 // endregion

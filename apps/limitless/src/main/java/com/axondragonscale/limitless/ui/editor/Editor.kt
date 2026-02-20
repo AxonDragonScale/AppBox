@@ -5,11 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -347,7 +343,8 @@ private fun GoalsSection(
     modifier = modifier
         .fillMaxWidth()
         .padding(horizontal = 12.dp)
-        .padding(bottom = if (goals.isEmpty()) 8.dp else 0.dp),
+        .padding(bottom = if (goals.isEmpty()) 8.dp else 0.dp)
+        .animateContentSize(),
 ) {
     val allTypesUsed = goals.size >= GoalType.entries.size
 
@@ -403,19 +400,13 @@ private fun GoalsSection(
     }
 
     goals.forEach { goal ->
-        AnimatedVisibility(
-            visible = true,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
-            GoalCard(
-                modifier = Modifier.padding(bottom = 8.dp),
-                goal = goal,
-                usedTypes = goals.map { it.type }.toSet(),
-                onUpdate = onUpdateGoal,
-                onDelete = { onDeleteGoal(goal.id) },
-            )
-        }
+        GoalCard(
+            modifier = Modifier.padding(bottom = 8.dp),
+            goal = goal,
+            usedTypes = goals.map { it.type }.toSet(),
+            onUpdate = onUpdateGoal,
+            onDelete = { onDeleteGoal(goal.id) },
+        )
     }
 }
 
@@ -584,7 +575,8 @@ private fun RemindersSection(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = if (reminders.isEmpty()) 8.dp else 0.dp),
+            .padding(bottom = if (reminders.isEmpty()) 8.dp else 0.dp)
+            .animateContentSize(),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -698,18 +690,12 @@ private fun RemindersSection(
         }
 
         reminders.forEach { reminder ->
-            AnimatedVisibility(
-                visible = true,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                ReminderCard(
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    reminder = reminder,
-                    onUpdate = onUpdateReminder,
-                    onDelete = { onDeleteReminder(reminder.id) },
-                )
-            }
+            ReminderCard(
+                modifier = Modifier.padding(bottom = 8.dp),
+                reminder = reminder,
+                onUpdate = onUpdateReminder,
+                onDelete = { onDeleteReminder(reminder.id) },
+            )
         }
     } // Column
 } // RemindersSection

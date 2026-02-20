@@ -1,9 +1,12 @@
 package com.axondragonscale.commons
 
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
@@ -32,6 +35,16 @@ val Month.displayName: String
  */
 fun LocalDate.formatShort(): String =
     "${month.abbreviated} $day, $year"
+
+/**
+ * Returns the number of days in the given [month] of [year], correctly handling leap years.
+ * Delegates entirely to [kotlinx.datetime] — no manual leap-year arithmetic needed.
+ */
+fun daysInMonth(year: Int, month: Int): Int =
+    LocalDate(year, month, 1)
+        .plus(1, DateTimeUnit.MONTH)
+        .minus(1, DateTimeUnit.DAY)
+        .day
 
 // endregion
 
