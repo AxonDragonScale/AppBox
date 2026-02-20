@@ -74,12 +74,13 @@ class HabitVM(
         is HabitUiEvent.RecordHabit -> recordHabit(event)
 
         // Handled in Compose
-        HabitUiEvent.NavigateBack -> Unit
-        HabitUiEvent.NavigateToEditor -> Unit
+        is HabitUiEvent.NavigateBack -> Unit
+        is HabitUiEvent.NavigateToEditor -> Unit
+        is HabitUiEvent.NavigateToDayDetail -> Unit
     }
 
     private fun recordHabit(event: HabitUiEvent.RecordHabit) = viewModelScope.launch(Dispatchers.IO) {
-        repository.recordHabit(habitRoute.habitId, event.message)
+        repository.recordHabit(habitRoute.habitId, event.timestamp, event.message)
     }
 
 }

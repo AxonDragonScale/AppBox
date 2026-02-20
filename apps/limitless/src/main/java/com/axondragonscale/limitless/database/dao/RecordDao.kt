@@ -41,6 +41,23 @@ interface RecordDao {
     @Query("SELECT COUNT(*) FROM record WHERE habitId = :habitId")
     suspend fun getRecordCount(habitId: Long): Int
 
+    @Query("""
+        SELECT * FROM record
+        WHERE habitId = :habitId
+        AND DATE(timestamp / 1000, 'unixepoch', 'localtime') = :date
+        ORDER BY timestamp DESC
+        LIMIT 1
+    """)
+    suspend fun getMostRecentRecordForDate(habitId: Long, date: String): RecordEntity?
+
+    @Query("""
+        SELECT * FROM record
+        WHERE habitId = :habitId
+        AND DATE(timestamp / 1000, 'unixepoch', 'localtime') = :date
+        ORDER BY timestamp DESC
+    """)
+    fun getRecordsForDate(habitId: Long, date: String): Flow<List<RecordEntity>>
+
     // MARK: Upserts -------------------------------------------------------------------------------
 
     @Upsert

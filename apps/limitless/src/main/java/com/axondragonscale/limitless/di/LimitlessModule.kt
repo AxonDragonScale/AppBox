@@ -8,6 +8,8 @@ import com.axondragonscale.limitless.repository.LimitlessRepository
 import com.axondragonscale.limitless.ui.devtools.SampleDataSeeder
 import com.axondragonscale.limitless.ui.editor.EditorVM
 import com.axondragonscale.limitless.ui.habit.HabitVM
+import com.axondragonscale.limitless.ui.habit.calendar.HabitCalendarVM
+import com.axondragonscale.limitless.ui.day.HabitDayVM
 import com.axondragonscale.limitless.ui.habit.history.HistoryVM
 import com.axondragonscale.limitless.ui.home.HomeVM
 import com.axondragonscale.limitless.ui.settings.SettingsVM
@@ -46,6 +48,8 @@ val LimitlessModule = module {
     viewModelOf(::EditorVM)
     viewModelOf(::HabitVM)
     viewModelOf(::HistoryVM)
+    viewModelOf(::HabitCalendarVM)
+    viewModelOf(::HabitDayVM)
     viewModelOf(::StatsVM)
     viewModelOf(::SettingsVM)
 

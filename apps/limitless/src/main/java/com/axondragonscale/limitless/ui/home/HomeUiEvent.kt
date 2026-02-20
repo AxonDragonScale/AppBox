@@ -8,5 +8,5 @@ sealed interface HomeUiEvent {
     data object NavigateToStats : HomeUiEvent
     data object AddHabit : HomeUiEvent
     data class NavigateToHabit(val habitId: Long) : HomeUiEvent
-    data class RecordHabit(val habitId: Long, val message: String) : HomeUiEvent
+    data class RecordHabit(val habitId: Long, val message: String, val timestamp: Long) : HomeUiEvent
 }

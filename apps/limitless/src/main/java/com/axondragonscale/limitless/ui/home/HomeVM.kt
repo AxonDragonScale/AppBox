@@ -49,7 +49,7 @@ class HomeVM(
 
     private fun recordHabit(event: HomeUiEvent.RecordHabit) =
         viewModelScope.launch(Dispatchers.IO) {
-            repository.recordHabit(event.habitId, event.message)
+            repository.recordHabit(event.habitId, event.timestamp, event.message)
         }
 
 }

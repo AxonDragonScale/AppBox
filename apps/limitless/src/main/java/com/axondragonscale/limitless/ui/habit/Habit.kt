@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Circle
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -63,10 +62,12 @@ import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.habit.calendar.HabitCalendar
 import com.axondragonscale.limitless.ui.habit.history.History
 import com.axondragonscale.limitless.ui.home.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.roundToInt
 
@@ -96,6 +97,7 @@ fun Habit(
             when (event) {
                 is HabitUiEvent.NavigateBack -> navController.popBackStack()
                 is HabitUiEvent.NavigateToEditor -> navController.navigate(Route.Editor(habitId = habitId))
+                is HabitUiEvent.NavigateToDayDetail -> navController.navigate(Route.HabitDay(habitId = habitId, date = event.date.toString()))
 
                 else -> vm.onEvent(event)
             }
@@ -114,8 +116,8 @@ private fun Habit(
     if (showRecordSheet) {
         RecordHabitSheet(
             habitName = uiState.habit.name,
-            onRecord = { message ->
-                onEvent(HabitUiEvent.RecordHabit(message))
+            onRecord = { message, timestamp ->
+                onEvent(HabitUiEvent.RecordHabit(message, timestamp))
                 showRecordSheet = false
             },
             onDismiss = { showRecordSheet = false },
@@ -226,7 +228,10 @@ private fun Habit(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            HabitTabPager(modifier = Modifier.weight(1f))
+            HabitTabPager(
+                modifier = Modifier.weight(1f),
+                onNavigateToDayDetail = { onEvent(HabitUiEvent.NavigateToDayDetail(it)) },
+            )
         }
     }
 }
@@ -369,7 +374,10 @@ private fun GoalCard(
 }
 
 @Composable
-private fun HabitTabPager(modifier: Modifier = Modifier) {
+private fun HabitTabPager(
+    modifier: Modifier = Modifier,
+    onNavigateToDayDetail: (date: LocalDate) -> Unit,
+) {
     val pagerState = rememberPagerState(pageCount = { HabitTab.entries.size })
     val scope = rememberCoroutineScope()
 
@@ -391,17 +399,8 @@ private fun HabitTabPager(modifier: Modifier = Modifier) {
             when (HabitTab.entries[page]) {
                 HabitTab.History -> History()
 
-                HabitTab.Calendar -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "Calendar — Coming soon",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
+                HabitTab.Calendar -> Box(modifier = Modifier.fillMaxSize()) {
+                    HabitCalendar(onNavigateToDayDetail = onNavigateToDayDetail)
                 }
 
                 HabitTab.Stats -> {

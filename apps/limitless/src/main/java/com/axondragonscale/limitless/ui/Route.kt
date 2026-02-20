@@ -23,6 +23,9 @@ object Route {
     data class Editor(val habitId: Long? = null)
 
     @Serializable
+    data class HabitDay(val habitId: Long, val date: String)
+
+    @Serializable
     data object DevTools
 
 }

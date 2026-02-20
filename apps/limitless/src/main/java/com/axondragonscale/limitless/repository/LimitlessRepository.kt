@@ -15,6 +15,9 @@ import com.axondragonscale.limitless.model.HabitHeatMapData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.toInstant
 
 /**
  * Created by Ronak Harkhani on 09/11/24
@@ -40,14 +43,33 @@ class LimitlessRepository(
 
     suspend fun saveHabit(habit: HabitEntity): Long = habitDao.upsert(habit)
 
-    suspend fun recordHabit(habitId: Long, message: String) =
-        recordDao.upsert(RecordEntity.new(habitId, message))
+    suspend fun recordHabit(habitId: Long, timestamp: Long, message: String) =
+        recordDao.upsert(RecordEntity(habitId = habitId, timestamp = timestamp, message = message))
 
     suspend fun getRecordsPaginated(habitId: Long, limit: Int, offset: Int): List<RecordEntity> =
         recordDao.getRecordsPaginated(habitId, limit, offset)
 
     suspend fun getRecordCount(habitId: Long): Int =
         recordDao.getRecordCount(habitId)
+
+    fun getRecordsForDate(habitId: Long, date: LocalDate): Flow<List<RecordEntity>> =
+        recordDao.getRecordsForDate(habitId, date.toString())
+
+    suspend fun deleteRecord(id: Long) = recordDao.delete(id)
+
+    suspend fun recordHabitForDate(habitId: Long, date: LocalDate) {
+        // Use noon to avoid timezone boundary issues
+        val timestamp = date.atTime(12, 0)
+            .toInstant(TimeZone.currentSystemDefault())
+            .toEpochMilliseconds()
+        recordDao.upsert(RecordEntity(habitId = habitId, timestamp = timestamp, message = ""))
+    }
+
+    suspend fun deleteLatestRecordForDate(habitId: Long, date: LocalDate) {
+        val dateString = date.toString() // "YYYY-MM-DD"
+        val record = recordDao.getMostRecentRecordForDate(habitId, dateString)
+        if (record != null) recordDao.delete(record.id)
+    }
 
     // MARK: Goals ---------------------------------------------------------------------------------
 
