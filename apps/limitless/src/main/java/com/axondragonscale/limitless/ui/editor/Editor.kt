@@ -494,10 +494,7 @@ private fun TargetCounter(
         color = MaterialTheme.colorScheme.primary,
     ) {
         Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primary)
-                .clip(RoundedCornerShape(8.dp)),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {

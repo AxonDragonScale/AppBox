@@ -30,7 +30,7 @@ class HabitCalendarVM(
 ) : ViewModel() {
 
     private val habitRoute = savedStateHandle.toRoute<Route.Habit>()
-    val habitId: Long = habitRoute.habitId
+    private val habitId: Long = habitRoute.habitId
 
     val uiState = MutableStateFlow(
         run {

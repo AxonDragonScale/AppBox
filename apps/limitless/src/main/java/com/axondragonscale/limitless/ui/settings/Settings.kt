@@ -50,7 +50,7 @@ import com.axondragonscale.limitless.BuildConfig
 import com.axondragonscale.limitless.Link
 import com.axondragonscale.limitless.R
 import com.axondragonscale.commons.UIMode
-import com.axondragonscale.commons.compose.thenIf
+import com.axondragonscale.commons.compose.thenIfNotNull
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
@@ -69,11 +69,11 @@ fun Settings(
     navController: NavController,
 ) {
     val vm: SettingsVM = koinViewModel()
-    val uiState = vm.uiState.collectAsStateWithLifecycle()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     Settings(
         modifier = modifier,
-        uiState = uiState.value,
+        uiState = uiState,
         onEvent = { event ->
             when (event) {
                 SettingsUiEvent.NavigateBack -> navController.popBackStack()
@@ -284,7 +284,7 @@ private fun Item(
     showDivider: Boolean = true,
 ) {
     ListItem(
-        modifier = modifier.thenIf(onClick != null) { clickable(onClick = onClick!!) },
+        modifier = modifier.thenIfNotNull(onClick) { clickable(onClick = it) },
         leadingContent = leadingContent,
         headlineContent = {
             val style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)

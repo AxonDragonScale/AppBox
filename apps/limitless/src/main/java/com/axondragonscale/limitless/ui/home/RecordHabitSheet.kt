@@ -328,7 +328,7 @@ private fun RecordDatePickerDialog(
     }
 }
 
-// MARK: Previews ----------------------------------------------------------------------------------
+// region Previews
 
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -388,3 +388,5 @@ private fun RecordHabitSheetDateTimePreview() {
         }
     }
 }
+
+// endregion

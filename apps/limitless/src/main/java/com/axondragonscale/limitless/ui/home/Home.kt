@@ -55,11 +55,11 @@ fun Home(
     navController: NavController,
 ) {
     val vm: HomeVM = koinViewModel()
-    val uiState = vm.uiState.collectAsStateWithLifecycle()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     Home(
         modifier = modifier,
-        uiState = uiState.value,
+        uiState = uiState,
         onEvent = { event ->
             when (event) {
                 is HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)

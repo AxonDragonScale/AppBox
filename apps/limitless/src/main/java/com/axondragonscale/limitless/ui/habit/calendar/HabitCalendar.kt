@@ -145,7 +145,7 @@ private fun HabitCalendar(
     }
 }
 
-// MARK: Day-of-week header ------------------------------------------------------------------------
+// region Day-of-week header
 
 @Composable
 private fun DayOfWeekHeader(modifier: Modifier = Modifier) {
@@ -166,7 +166,9 @@ private fun DayOfWeekHeader(modifier: Modifier = Modifier) {
     }
 }
 
-// MARK: Calendar grid -----------------------------------------------------------------------------
+// endregion
+
+// region Calendar grid
 
 @Composable
 private fun CalendarGrid(
@@ -285,7 +287,9 @@ private fun DayCell(
     }
 }
 
-// MARK: Month navigation --------------------------------------------------------------------------
+// endregion
+
+// region Month navigation
 
 @Composable
 private fun MonthNavigationRow(
@@ -343,7 +347,9 @@ private fun MonthNavigationRow(
     }
 }
 
-// MARK: Helpers -----------------------------------------------------------------------------------
+// endregion
+
+// region Helpers
 
 private fun daysInMonth(year: Int, month: Int): Int = when (month) {
     1, 3, 5, 7, 8, 10, 12 -> 31
@@ -352,7 +358,9 @@ private fun daysInMonth(year: Int, month: Int): Int = when (month) {
     else -> throw IllegalArgumentException("Invalid month: $month")
 }
 
-// MARK: Previews ----------------------------------------------------------------------------------
+// endregion
+
+// region Previews
 
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -401,3 +409,5 @@ private fun HabitCalendarLoadingPreview() {
         }
     }
 }
+
+// endregion
