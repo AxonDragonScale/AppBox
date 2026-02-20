@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,9 +55,8 @@ private fun History(
 ) {
     val listState = rememberLazyListState()
 
-    // Trigger load-more when the user is within 5 items of the end of the loaded records,
-    // rather than waiting for the sentinel item to be composed (which is fragile).
-    val shouldLoadMore by remember {
+    // Trigger load-more when the user is within 5 items of the end of the loaded records
+    val shouldLoadMore by remember(uiState) {
         derivedStateOf {
             val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             uiState.hasMore && !uiState.isLoadingMore && lastVisible >= uiState.records.size - 5
