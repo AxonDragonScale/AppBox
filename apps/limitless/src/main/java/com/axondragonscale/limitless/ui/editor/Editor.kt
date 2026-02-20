@@ -64,9 +64,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,14 +75,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -101,10 +97,14 @@ import com.axondragonscale.limitless.model.BitWeek
 import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.ReminderType
-import com.axondragonscale.limitless.ui.common.AppBar
-import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.commons.compose.Dropdown
 import com.axondragonscale.commons.compose.DropdownItem
+import com.axondragonscale.commons.compose.TimePickerDialog
+import com.axondragonscale.commons.formatShort
+import com.axondragonscale.commons.formatAmPm
+import com.axondragonscale.limitless.ui.common.AppBar
+import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.common.PickerChip
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DayOfWeek
@@ -818,14 +818,18 @@ private fun ReminderCard(
                         PickerChip(
                             modifier = Modifier.weight(1f),
                             icon = Icons.Default.CalendarMonth,
-                            label = reminder.date?.let { formatDate(it) } ?: "Select date",
+                            label = reminder.date?.formatShort() ?: "Select date",
                             onClick = { showDatePicker = true },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
                         )
                         PickerChip(
                             modifier = Modifier.weight(1f),
                             icon = Icons.Default.Schedule,
-                            label = formatTime(reminder.time),
+                            label = reminder.time.formatAmPm(),
                             onClick = { showTimePicker = true },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
                 }
@@ -834,8 +838,10 @@ private fun ReminderCard(
                     PickerChip(
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Default.Schedule,
-                        label = formatTime(reminder.time),
+                        label = reminder.time.formatAmPm(),
                         onClick = { showTimePicker = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
 
@@ -843,8 +849,10 @@ private fun ReminderCard(
                     PickerChip(
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Default.Schedule,
-                        label = formatTime(reminder.time),
+                        label = reminder.time.formatAmPm(),
                         onClick = { showTimePicker = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                     )
                     DayOfWeekSelector(
                         selectedBitmask = reminder.daysOfWeek ?: BitWeek.EMPTY,
@@ -856,8 +864,10 @@ private fun ReminderCard(
                     PickerChip(
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Default.Schedule,
-                        label = formatTime(reminder.time),
+                        label = reminder.time.formatAmPm(),
                         onClick = { showTimePicker = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                     )
                     DayOfMonthSelector(
                         selectedDay = reminder.dayOfMonth,
@@ -894,42 +904,7 @@ private fun ReminderCard(
     }
 }
 
-@Composable
-private fun PickerChip(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    containerColor: Color = MaterialTheme.colorScheme.primary,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-) {
-    Surface(
-        modifier = modifier,
-        onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
-        color = containerColor,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = contentColor,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
-                color = contentColor,
-            )
-        }
-    }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1054,99 +1029,6 @@ private fun DayOfMonthSelector(
 // endregion
 
 // region Dialogs
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerDialog(
-    initialHour: Int,
-    initialMinute: Int,
-    onConfirm: (hour: Int, minute: Int) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val timePickerState = rememberTimePickerState(
-        initialHour = initialHour,
-        initialMinute = initialMinute,
-        is24Hour = false,
-    )
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Select Time",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                )
-
-                TimePicker(state = timePickerState)
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Surface(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(20.dp),
-                    ) {
-                        Text(
-                            text = "Cancel",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Surface(
-                        onClick = { onConfirm(timePickerState.hour, timePickerState.minute) },
-                        shape = RoundedCornerShape(20.dp),
-                    ) {
-                        Text(
-                            text = "OK",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// endregion
-
-// region Utilities
-
-private fun formatTime(time: LocalTime): String {
-    val hour12 = when {
-        time.hour == 0 -> 12
-        time.hour > 12 -> time.hour - 12
-        else -> time.hour
-    }
-    val amPm = if (time.hour < 12) "AM" else "PM"
-    return "%d:%02d %s".format(hour12, time.minute, amPm)
-}
-
-private fun formatDate(date: LocalDate): String {
-    val monthNames = listOf(
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    )
-    return "${monthNames[date.monthNumber - 1]} ${date.dayOfMonth}, ${date.year}"
-}
 
 // endregion
 

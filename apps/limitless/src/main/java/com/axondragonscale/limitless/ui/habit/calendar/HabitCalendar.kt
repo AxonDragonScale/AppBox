@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.home.RecordHabitSheet
+import com.axondragonscale.commons.displayName
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
@@ -295,9 +296,7 @@ private fun MonthNavigationRow(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val monthName = remember(month) {
-        Month(month).name.lowercase().replaceFirstChar { it.uppercase() }
-    }
+    val monthName = remember(month) { Month(month).displayName }
 
     Surface(
         modifier = modifier.fillMaxWidth(),

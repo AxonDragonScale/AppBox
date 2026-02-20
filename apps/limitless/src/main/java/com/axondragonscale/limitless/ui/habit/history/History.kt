@@ -2,12 +2,9 @@ package com.axondragonscale.limitless.ui.habit.history
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,18 +17,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.limitless.database.entity.RecordEntity
+import com.axondragonscale.limitless.ui.common.RecordItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -127,57 +120,7 @@ private fun History(
     }
 }
 
-@Composable
-private fun RecordItem(
-    modifier: Modifier = Modifier,
-    record: RecordEntity,
-) {
-    val formattedDateTime = remember(record.timestamp) { formatTimestamp(record.timestamp) }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-    ) {
-        Text(
-            text = formattedDateTime,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        if (record.message.isNotBlank()) {
-            Text(
-                text = record.message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-        } else {
-            Text(
-                text = "No description",
-                style = MaterialTheme.typography.bodyMedium,
-                fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-            )
-        }
-    }
-}
-
-private fun formatTimestamp(epochMillis: Long): String {
-    val instant = kotlin.time.Instant.fromEpochMilliseconds(epochMillis)
-    val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-
-    val month = dateTime.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
-    val day = dateTime.day
-    val year = dateTime.year
-    val hour = if (dateTime.hour % 12 == 0) 12 else dateTime.hour % 12
-    val minute = dateTime.minute.toString().padStart(2, '0')
-    val amPm = if (dateTime.hour < 12) "AM" else "PM"
-
-    return "$month $day, $year at $hour:$minute $amPm"
-}
 
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)

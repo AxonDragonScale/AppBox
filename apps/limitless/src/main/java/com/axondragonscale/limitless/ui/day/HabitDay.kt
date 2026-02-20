@@ -32,21 +32,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.formatShort
+import com.axondragonscale.commons.formatTime
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.common.RecordItem
 import com.axondragonscale.limitless.ui.home.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Instant
 
@@ -80,7 +80,7 @@ private fun HabitDay(
     uiState: HabitDayUiState,
     onEvent: (HabitDayUiEvent) -> Unit,
 ) {
-    val formattedDate = remember(uiState.date) { uiState.date?.let { formatDate(it) } ?: "" }
+    val formattedDate = remember(uiState.date) { uiState.date?.formatShort() ?: "" }
     var showRecordSheet by remember { mutableStateOf(false) }
 
     if (showRecordSheet) {
@@ -201,10 +201,10 @@ private fun DaySummaryCard(
 ) {
     val count = records.size
     val firstTime = remember(records) {
-        records.minOfOrNull { it.timestamp }?.let { formatTimestamp(it, timeOnly = true) }
+        records.minOfOrNull { it.timestamp }?.let { Instant.fromEpochMilliseconds(it).formatTime() }
     }
     val lastTime = remember(records) {
-        records.maxOfOrNull { it.timestamp }?.let { formatTimestamp(it, timeOnly = true) }
+        records.maxOfOrNull { it.timestamp }?.let { Instant.fromEpochMilliseconds(it).formatTime() }
     }
 
     Surface(
@@ -269,66 +269,6 @@ private fun DaySummaryCard(
             }
         }
     }
-}
-
-@Composable
-private fun RecordItem(
-    modifier: Modifier = Modifier,
-    record: RecordEntity,
-) {
-    val formattedDateTime = remember(record.timestamp) { formatTimestamp(record.timestamp) }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-    ) {
-        Text(
-            text = formattedDateTime,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        if (record.message.isNotBlank()) {
-            Text(
-                text = record.message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-        } else {
-            Text(
-                text = "No description",
-                style = MaterialTheme.typography.bodyMedium,
-                fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-            )
-        }
-    }
-}
-
-// MARK: Helpers -----------------------------------------------------------------------------------
-
-private fun formatDate(date: LocalDate): String {
-    val month = date.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
-    return "$month ${date.day}, ${date.year}"
-}
-
-private fun formatTimestamp(epochMillis: Long, timeOnly: Boolean = false): String {
-    val instant = Instant.fromEpochMilliseconds(epochMillis)
-    val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    val hour = if (dateTime.hour % 12 == 0) 12 else dateTime.hour % 12
-    val minute = dateTime.minute.toString().padStart(2, '0')
-    val amPm = if (dateTime.hour < 12) "AM" else "PM"
-
-    if (timeOnly) return "$hour:$minute $amPm"
-
-    val month = dateTime.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
-    val day = dateTime.day
-    val year = dateTime.year
-    return "$month $day, $year at $hour:$minute $amPm"
 }
 
 // MARK: Previews ----------------------------------------------------------------------------------

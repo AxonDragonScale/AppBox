@@ -43,9 +43,11 @@ import com.axondragonscale.limitless.model.HabitHeatMapData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
+import com.axondragonscale.commons.abbreviated
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
+import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
@@ -324,25 +326,20 @@ private fun buildWeeks(today: LocalDate, totalWeeks: Int): List<WeekColumn> {
  * where a new month starts (i.e., the week contains the 1st of a month).
  */
 private fun buildMonthLabels(weeks: List<WeekColumn>): List<Pair<Int, String>> {
-    val monthNames = listOf(
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    )
-
     val labels = mutableListOf<Pair<Int, String>>()
     var lastMonth = -1
 
     weeks.forEachIndexed { index, week ->
         // Check if any day in this week is the first occurrence of a new month
         for (date in week.days) {
-            if (date != null && date.monthNumber != lastMonth) {
+            if (date != null && date.month.number != lastMonth) {
                 // Only add label if the month actually starts in/near this week
-                if (date.dayOfMonth <= 7 || lastMonth == -1) {
-                    labels.add(index to monthNames[date.monthNumber - 1])
-                    lastMonth = date.monthNumber
+                if (date.day <= 7 || lastMonth == -1) {
+                    labels.add(index to date.month.abbreviated)
+                    lastMonth = date.month.number
                     break
                 } else {
-                    lastMonth = date.monthNumber
+                    lastMonth = date.month.number
                 }
             }
         }
