@@ -75,29 +75,22 @@ import kotlin.math.roundToInt
  * Created by Ronak Harkhani on 17/02/26
  */
 
-private enum class HabitTab(val title: String) {
-    History("History"),
-    Calendar("Calendar"),
-    Stats("Stats"),
-}
-
 @Composable
 fun Habit(
     modifier: Modifier = Modifier,
     navController: NavController,
-    habitId: Long,
 ) {
     val vm: HabitVM = koinViewModel()
-    val uiState = vm.uiState.collectAsStateWithLifecycle()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     Habit(
         modifier = modifier,
-        uiState = uiState.value,
+        uiState = uiState,
         onEvent = { event ->
             when (event) {
                 is HabitUiEvent.NavigateBack -> navController.popBackStack()
-                is HabitUiEvent.NavigateToEditor -> navController.navigate(Route.Editor(habitId = habitId))
-                is HabitUiEvent.NavigateToDayDetail -> navController.navigate(Route.HabitDay(habitId = habitId, date = event.date.toString()))
+                is HabitUiEvent.NavigateToEditor -> navController.navigate(Route.Editor(habitId = uiState.habit.id))
+                is HabitUiEvent.NavigateToDayDetail -> navController.navigate(Route.HabitDay(habitId = uiState.habit.id, date = event.date.toString()))
 
                 else -> vm.onEvent(event)
             }
