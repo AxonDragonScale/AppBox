@@ -118,6 +118,8 @@ import kotlin.time.Instant
  * Created by Ronak Harkhani on 03/11/24
  */
 
+private val reminderTypeItems = ReminderType.entries.map { DropdownItem(name = it.displayName, value = it) }
+
 @Composable
 fun Editor(
     modifier: Modifier = Modifier,
@@ -711,9 +713,7 @@ private fun ReminderCard(
     var showTimePicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    val typeItems = remember {
-        ReminderType.entries.map { DropdownItem(name = it.displayName, value = it) }
-    }
+    val typeItems = reminderTypeItems
 
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),

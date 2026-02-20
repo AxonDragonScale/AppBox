@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +17,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,6 +52,20 @@ private fun History(
     uiState: HistoryUiState,
     onEvent: (HistoryUiEvent) -> Unit,
 ) {
+    val listState = rememberLazyListState()
+
+    // Trigger load-more when the user is within 5 items of the end of the loaded records,
+    // rather than waiting for the sentinel item to be composed (which is fragile).
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            uiState.hasMore && !uiState.isLoadingMore && lastVisible >= uiState.records.size - 5
+        }
+    }
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) onEvent(HistoryUiEvent.LoadMore)
+    }
+
     when {
         uiState.isLoading -> {
             Box(
@@ -75,6 +92,7 @@ private fun History(
         else -> {
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
+                state = listState,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 items(items = uiState.records, key = { it.id }) { record ->
@@ -87,9 +105,6 @@ private fun History(
 
                 if (uiState.hasMore) {
                     item(key = "load_more") {
-                        LaunchedEffect(uiState.records.size) {
-                            onEvent(HistoryUiEvent.LoadMore)
-                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()

@@ -134,7 +134,7 @@ fun HabitHeatMap(
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(CellSpacing),
             ) {
-                items(weeks) { week ->
+                items(weeks, key = { it.weekStartDate }) { week ->
                     WeekColumn(
                         weekData = week,
                         dayCounts = data.dayCounts,
@@ -176,7 +176,7 @@ private fun MonthLabelsRow(
             userScrollEnabled = false,
             horizontalArrangement = Arrangement.spacedBy(CellSpacing),
         ) {
-            items(weeks.size) { weekIndex ->
+            items(weeks.size, key = { it }) { weekIndex ->
                 val label = monthLabels.find { it.first == weekIndex }
                 Box(
                     modifier = Modifier
