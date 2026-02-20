@@ -235,35 +235,26 @@ private fun DaySummaryCard(
 
                 if (count > 0 && firstTime != null && lastTime != null) {
                     Spacer(modifier = Modifier.height(2.dp))
-                    if (count == 1 || firstTime == lastTime) {
-                        Text(
-                            text = firstTime,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        )
-                    } else {
-                        Text(
-                            text = "$firstTime – $lastTime",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        )
-                    }
+
+                    Text(
+                        text = if (count == 1 || firstTime == lastTime) firstTime else "$firstTime – $lastTime",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
                 }
             }
 
-            if (count > 0) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                ) {
-                    Text(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        text = count.toString(),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            ) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    text = count.toString(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
