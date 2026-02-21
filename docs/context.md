@@ -36,6 +36,18 @@ This project uses a **context graph** — a set of interlinked markdown files th
 - Sub-context files always link back to their parent module context.
 - When you encounter a section that says *"See [link] for details"*, follow that link only if your task requires those details.
 
+### Agent Efficiency Guidelines
+
+- Don't re-read files you just wrote or edited — you already know the contents.
+- When making changes to an existing file, edit only the lines required. Don't replace the whole file.
+- Don't re-run commands to "verify" unless the outcome was genuinely uncertain (e.g., a complex build, a flaky test).
+- Don't echo back large blocks of code or file contents unless asked.
+- Batch related edits into single operations. Don't make 5 edits when 1 handles it.
+- If a task needs 1 tool call, don't use 3. Plan before acting.
+- Don't provide verbose summaries of what you just did. A one-line confirmation is fine; a paragraph recap is not. Skip the summary entirely if the result is obvious.
+- Parallelize independent tool calls — when multiple reads, searches, or edits don't depend on each other, make them all in one round.
+- Scope searches using known project structure — once you know which module you're in, narrow searches to that subtree instead of searching the entire project.
+
 ---
 
 ## Overview
