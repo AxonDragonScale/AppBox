@@ -65,7 +65,7 @@ class StatsVM(
                     streakData = computeStreaks(dayCounts, today),
                     dailyHistoryData = computeDailyHistory(dayCounts),
                     timeOfDayData = computeTimeOfDay(hourCounts),
-                    weeklyPatternData = computeWeeklyPattern(dayCounts),
+                    weeklyPatternData = computeWeeklyPattern(dayCounts, today),
                     monthlyTrendData = computeMonthlyTrend(dayCounts),
                     goalCompletionData = computeGoalCompletion(goals, dayCounts, today),
                     summaryData = computeSummary(dayCounts),
@@ -84,10 +84,7 @@ class StatsVM(
 
     // region Streak Computation
 
-    private fun computeStreaks(
-        dayCounts: List<HabitDayCountView>,
-        today: LocalDate,
-    ): StreakData {
+    private fun computeStreaks(dayCounts: List<HabitDayCountView>, today: LocalDate): StreakData {
         if (dayCounts.isEmpty()) return StreakData(currentStreak = 0, bestStreak = 0)
 
         val activeDates = dayCounts.map { it.date }.toSortedSet()
@@ -143,21 +140,20 @@ class StatsVM(
 
     // region Weekly Pattern
 
-    private fun computeWeeklyPattern(dayCounts: List<HabitDayCountView>): WeeklyPatternData {
-        // Group by ISO day number (1=Mon .. 7=Sun), compute average count per day-of-week.
-        // dayCounts has one entry per (date, count). We need:
-        //   sum of counts per day-of-week / number of distinct weeks that day-of-week appears in.
-        val sumByDay = FloatArray(7)  // index 0=Mon .. 6=Sun
-        val occurrencesByDay = IntArray(7)
+    private fun computeWeeklyPattern(dayCounts: List<HabitDayCountView>, today: LocalDate): WeeklyPatternData {
+        if (dayCounts.isEmpty()) return WeeklyPatternData(dayAverages = List(7) { 0f })
 
+        // Sum total records per day-of-week index (0=Mon .. 6=Sun).
+        val sumByDay = FloatArray(7)
         for (dc in dayCounts) {
-            val index = dc.date.dayOfWeek.isoDayNumber - 1  // 0=Mon .. 6=Sun
-            sumByDay[index] += dc.count.toFloat()
-            occurrencesByDay[index]++
+            sumByDay[dc.date.dayOfWeek.isoDayNumber - 1] += dc.count.toFloat()
         }
 
+        val firstDate = dayCounts.minOf { it.date }
+        val completeWeeks = (daysBetween(firstDate, today) + 1) / 7
+
         val averages = List(7) { i ->
-            if (occurrencesByDay[i] > 0) sumByDay[i] / occurrencesByDay[i] else 0f
+            if (completeWeeks > 0) sumByDay[i] / completeWeeks else 0f
         }
 
         return WeeklyPatternData(dayAverages = averages)

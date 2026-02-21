@@ -50,11 +50,12 @@ private fun Stats(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Ordering follows the Component Ordering spec in stats-tab-plan.md.
-        // Reorder by moving item blocks — no other change needed.
-
         uiState.streakData?.let { data ->
             item { StreakCards(data = data, habitColor = uiState.habitColor) }
+        }
+
+        uiState.summaryData?.let { data ->
+            item { SummaryStatsGrid(data = data, habitColor = uiState.habitColor) }
         }
 
         uiState.dailyHistoryData?.let { data ->
@@ -75,10 +76,6 @@ private fun Stats(
 
         uiState.goalCompletionData?.let { data ->
             item { GoalCompletionRings(data = data, habitColor = uiState.habitColor) }
-        }
-
-        uiState.summaryData?.let { data ->
-            item { SummaryStatsGrid(data = data, habitColor = uiState.habitColor) }
         }
     }
 }
