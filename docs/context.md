@@ -16,19 +16,6 @@ This project uses a **context graph** — a set of interlinked markdown files th
 5. **Load [coding-conventions.md](./coding-conventions.md) before writing code** — it defines Compose patterns, Kotlin idioms, naming conventions, and state management patterns you must follow.
 6. **Load [build-system.md](./build-system.md) only for build/config tasks** — convention plugins, version catalog, signing, and build commands. Not needed for typical feature work.
 
-### Context Loading by Task
-
-| Task | Load These (in order) |
-|------|----------------------|
-| Feature work on a specific app | This file → App context → Commons context → Coding conventions |
-| Working on topty security/encryption | This file → [Topty context](./apps/topty/context.md) → [Topty security](./apps/topty/security.md) → Commons context |
-| Working on topty backup/restore | This file → [Topty context](./apps/topty/context.md) → [Topty backup-restore](./apps/topty/backup-restore.md) → Commons context |
-| Working on wallmatic background services | This file → [Wallmatic context](./apps/wallmatic/context.md) → [Wallmatic background-services](./apps/wallmatic/background-services.md) → Commons context |
-| Working on npinner notifications/scheduling | This file → [NPinner context](./apps/npinner/context.md) → [NPinner notification-system](./apps/npinner/notification-system.md) → Commons context |
-| Adding a new app or module | This file → [Build system](./build-system.md) → Coding conventions → Commons context |
-| Cross-cutting changes | This file → All affected module contexts → Commons context |
-| Build configuration changes | This file → [Build system](./build-system.md) |
-
 ### Navigation Conventions
 
 - Every context file has a **breadcrumb** at the top showing its position in the graph.
@@ -36,7 +23,32 @@ This project uses a **context graph** — a set of interlinked markdown files th
 - Sub-context files always link back to their parent module context.
 - When you encounter a section that says *"See [link] for details"*, follow that link only if your task requires those details.
 
-### Agent Efficiency Guidelines
+### Module Index
+
+#### App Modules
+
+| Module | Package | Purpose | Context |
+|--------|---------|---------|---------|
+| `:apps:jest` | `com.axondragonscale.jest` | Daily jokes/humor with home screen widget | [context](./apps/jest/context.md) |
+| `:apps:limitless` | `com.axondragonscale.limitless` | Habit tracking with statistics | [context](./apps/limitless/context.md) |
+| `:apps:npinner` | `com.axondragonscale.npinner` | Persistent notification pinning with scheduling | [context](./apps/npinner/context.md) ∙ [notification-system](./apps/npinner/notification-system.md) |
+| `:apps:qrqanvas` | `com.axondragonscale.qrqanvas` | Customizable QR code generator & scanner | [context](./apps/qrqanvas/context.md) |
+| `:apps:topty` | `com.axondragonscale.topty` | TOTP-based 2FA code manager | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
+| `:apps:wallmatic` | `com.axondragonscale.wallmatic` | Auto-change wallpapers on schedule | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md) |
+
+#### Core Modules
+
+| Module | Package | Purpose | Context |
+|--------|---------|---------|---------|
+| `:core:commons` | `com.axondragonscale.commons` | Shared utilities, networking, DI, DevTools | [context](./core/commons/context.md) |
+
+#### Libraries
+
+| Module | Package | Purpose | Context |
+|--------|---------|---------|---------|
+| `:libraries:tlv` | `io.github.axondragonscale.tlv` | BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md) |
+
+## Agent Efficiency Guidelines
 
 - Don't re-read files you just wrote or edited — you already know the contents.
 - When making changes to an existing file, edit only the lines required. Don't replace the whole file.
@@ -125,31 +137,6 @@ All apps follow these patterns consistently:
 
 See [coding-conventions.md](./coding-conventions.md) for detailed code patterns.
 See [build-system.md](./build-system.md) for convention plugins and build configuration.
-
-## Module Index
-
-### App Modules
-
-| Module | Package | Purpose | Context |
-|--------|---------|---------|---------|
-| `:apps:jest` | `com.axondragonscale.jest` | Daily jokes/humor with home screen widget | [context](./apps/jest/context.md) |
-| `:apps:limitless` | `com.axondragonscale.limitless` | Habit tracking with statistics | [context](./apps/limitless/context.md) |
-| `:apps:npinner` | `com.axondragonscale.npinner` | Persistent notification pinning with scheduling | [context](./apps/npinner/context.md) ∙ [notification-system](./apps/npinner/notification-system.md) |
-| `:apps:qrqanvas` | `com.axondragonscale.qrqanvas` | Customizable QR code generator & scanner | [context](./apps/qrqanvas/context.md) |
-| `:apps:topty` | `com.axondragonscale.topty` | TOTP-based 2FA code manager | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
-| `:apps:wallmatic` | `com.axondragonscale.wallmatic` | Auto-change wallpapers on schedule | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md) |
-
-### Core Modules
-
-| Module | Package | Purpose | Context |
-|--------|---------|---------|---------|
-| `:core:commons` | `com.axondragonscale.commons` | Shared utilities, networking, DI, DevTools | [context](./core/commons/context.md) |
-
-### Libraries
-
-| Module | Package | Purpose | Context |
-|--------|---------|---------|---------|
-| `:libraries:tlv` | `io.github.axondragonscale.tlv` | BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md) |
 
 ## Related Context
 
