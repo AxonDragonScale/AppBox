@@ -51,7 +51,7 @@ This project uses a **context graph** — a set of interlinked markdown files th
 ## Agent Efficiency Guidelines
 
 - Don't re-read files you just wrote or edited — you already know the contents.
-- When making changes to an existing file, edit only the lines required. Don't replace the whole file.
+- When making changes to an existing file, edit only the lines required. Don't replace the whole file. **Never use overwrite mode** — always use edit mode targeting the specific lines that need to change.
 - Don't re-run commands to "verify" unless the outcome was genuinely uncertain (e.g., a complex build, a flaky test).
 - Don't echo back large blocks of code or file contents unless asked.
 - Batch related edits into single operations. Don't make 5 edits when 1 handles it.

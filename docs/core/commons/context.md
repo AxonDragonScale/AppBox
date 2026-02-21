@@ -13,6 +13,10 @@ The `commons` module is a shared Android library that provides common utilities,
 ```
 com.axondragonscale.commons/
 ├── compose/
+│   ├── chart/
+│   │   ├── BarChart.kt       # Configurable bar chart (vertical/horizontal, labels, highlight)
+│   │   ├── RingChart.kt      # Circular progress arc with center label
+│   │   └── TrendLine.kt      # Smoothed line overlay (Catmull-Rom spline)
 │   ├── ComposeUtils.kt      # Window inset height helpers
 │   ├── Dropdown.kt          # Reusable Dropdown composable + DropdownItem
 │   └── ModifierExt.kt       # Compose Modifier extensions
@@ -323,6 +327,133 @@ Dropdown(
 )
 ```
 
+### Chart Primitives (`compose/chart/`)
+
+Reusable, data-agnostic chart composables shared across apps. All use `Modifier.drawWithCache` internally so draw commands and `Path` objects are only recomputed when input data changes.
+
+#### BarChart
+
+Configurable bar chart supporting both vertical and horizontal orientations:
+
+```kotlin
+data class BarEntry(
+    val value: Float,
+    val label: String = "",
+    val color: Color = Color.Unspecified,      // falls back to style.barColor
+    val labelColor: Color = Color.Unspecified,  // falls back to style.labelColor
+)
+
+enum class BarChartOrientation { Vertical, Horizontal }
+
+data class BarChartStyle(
+    val orientation: BarChartOrientation,
+    val barColor: Color,
+    val barCornerRadius: Dp,
+    val barSpacing: Dp,
+    val labelStyle: TextStyle,
+    val labelColor: Color,
+) {
+    companion object {
+        @Composable
+        fun default(
+            orientation: BarChartOrientation = BarChartOrientation.Vertical,
+            barColor: Color = MaterialTheme.colorScheme.primary,
+            barCornerRadius: Dp = 4.dp,
+            barSpacing: Dp = 4.dp,
+            labelStyle: TextStyle = MaterialTheme.typography.labelSmall,
+            labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+        ) = BarChartStyle(...)
+    }
+}
+
+@Composable
+fun BarChart(
+    modifier: Modifier = Modifier,
+    bars: List<BarEntry>,
+    style: BarChartStyle = BarChartStyle.default(),
+)
+```
+
+- **`BarEntry`**: each bar carries its own value, label, and optional color overrides (`Color.Unspecified` falls back to `style.barColor`/`style.labelColor`)
+- **`BarChartStyle`**: groups all visual config. `@Composable default()` factory resolves theme-aware defaults from `MaterialTheme`; override only the fields you need
+- **Vertical**: bars grow upward, labels below bars
+- **Horizontal**: bars grow rightward, labels to the left
+- Per-bar colors make highlighting trivial — just set colors directly on the entries
+- Labels are rendered via `TextMeasurer` — set `BarEntry.label` per bar, or leave empty for no labels
+
+#### RingChart
+
+Circular progress arc with optional center label (Apple Watch ring style):
+
+```kotlin
+data class RingChartTrackStyle(
+    val color: Color,                   // progress arc color
+    val trackColor: Color,              // defaults to color at 15% alpha
+    val strokeWidth: Dp = 8.dp,
+    val strokeCap: StrokeCap = StrokeCap.Round,
+) {
+    companion object {
+        @Composable
+        fun default(
+            color: Color = MaterialTheme.colorScheme.primary,
+            trackColor: Color = color.copy(alpha = 0.15f),
+            strokeWidth: Dp = 8.dp,
+            strokeCap: StrokeCap = StrokeCap.Round,
+        ) = RingChartTrackStyle(...)
+    }
+}
+
+data class RingChartLabelStyle(
+    val style: TextStyle,
+    val color: Color,
+) {
+    companion object {
+        @Composable
+        fun default(
+            style: TextStyle = MaterialTheme.typography.titleMedium,
+            color: Color = MaterialTheme.colorScheme.onSurface,
+        ) = RingChartLabelStyle(...)
+    }
+}
+
+@Composable
+fun RingChart(
+    modifier: Modifier = Modifier,
+    progress: Float,                    // 0f..1f, coerced
+    startAngle: Float = -90f,           // top (12 o'clock)
+    label: String = "",
+    trackStyle: RingChartTrackStyle = RingChartTrackStyle.default(),
+    labelStyle: RingChartLabelStyle = RingChartLabelStyle.default(),
+)
+```
+
+- **`RingChartTrackStyle`**: arc color, track color, stroke geometry. `trackColor` defaults to `color.copy(alpha = 0.15f)` via preceding param reference in the factory. `@Composable default()` factory resolves arc color from `MaterialTheme`.
+- `startAngle` stays top-level — it's a layout concern, not a style property
+- **`RingChartLabelStyle`**: center label text appearance. `@Composable default()` factory resolves from `MaterialTheme`.
+- Center label (e.g., "82%") rendered via `TextMeasurer`
+- Starts from top (-90°) by default with round stroke caps
+
+#### TrendLine
+
+Smoothed line overlay for layering on top of bar charts:
+
+```kotlin
+@Composable
+fun TrendLine(
+    modifier: Modifier = Modifier,
+    points: List<Float>,                // ≥ 2 points required
+    color: Color = MaterialTheme.colorScheme.primary,
+    strokeWidth: Dp = 2.dp,
+    strokeCap: StrokeCap = StrokeCap.Round,
+    smooth: Boolean = true,
+)
+```
+
+- Points are evenly spaced across the composable width
+- `smooth = true` uses Catmull-Rom spline → cubic Bézier interpolation
+- `smooth = false` draws straight line segments
+- Give it the same size as a `BarChart` to overlay aligned trend lines
+
 ### QR Code Generation (`qr/QRGenerator.kt`)
 
 Simple QR code bitmap generator using ZXing:
@@ -444,6 +575,7 @@ dependencies {
 9. **Flow Effects**: Use `Flow.collectWithLifecycle` for one-shot UiEffect collection in composables
 10. **QR Codes**: Use `QRGenerator` for simple black-and-white QR codes; for customized QR rendering (colors, shapes, logos), build on top of ZXing's `BitMatrix` directly
 11. **Dropdown**: Use the shared `Dropdown` composable for all selector/picker UI instead of building custom ones per app
+12. **Charts**: Use the shared `BarChart`, `RingChart`, and `TrendLine` composables from `commons.compose.chart` instead of writing custom Canvas code per app
 
 ## Related Context
 
