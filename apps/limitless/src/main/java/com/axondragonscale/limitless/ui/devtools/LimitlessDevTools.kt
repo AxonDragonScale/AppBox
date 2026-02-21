@@ -34,7 +34,7 @@ fun LimitlessDevTools(
             section("Test Data", Icons.Rounded.Science)
             action(
                 title = "Seed Sample Data",
-                subtitle = "Create 4 habits with ~6 months of records",
+                subtitle = "Create 7 habits with different records",
                 icon = Icons.Rounded.Dataset,
                 completionAlert = "Sample data seeded successfully",
                 onClick = { seeder.seed() },

@@ -65,6 +65,7 @@ import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.habit.calendar.HabitCalendar
 import com.axondragonscale.limitless.ui.habit.history.History
 import com.axondragonscale.limitless.ui.home.RecordHabitSheet
+import com.axondragonscale.limitless.ui.stats.Stats
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -396,18 +397,7 @@ private fun HabitTabPager(
                     HabitCalendar(onNavigateToDayDetail = onNavigateToDayDetail)
                 }
 
-                HabitTab.Stats -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "Stats — Coming soon",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                }
+                HabitTab.Stats -> Stats()
             }
         }
     }

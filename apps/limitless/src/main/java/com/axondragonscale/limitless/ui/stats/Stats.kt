@@ -1,14 +1,25 @@
 package com.axondragonscale.limitless.ui.stats
 
 import android.content.res.Configuration
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import com.axondragonscale.limitless.ui.stats.widget.DailyHistoryChart
+import com.axondragonscale.limitless.ui.stats.widget.GoalCompletionRings
+import com.axondragonscale.limitless.ui.stats.widget.MonthlyTrendChart
+import com.axondragonscale.limitless.ui.stats.widget.StreakCards
+import com.axondragonscale.limitless.ui.stats.widget.SummaryStatsGrid
+import com.axondragonscale.limitless.ui.stats.widget.TimeOfDayChart
+import com.axondragonscale.limitless.ui.stats.widget.WeeklyPatternChart
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -17,17 +28,14 @@ import org.koin.androidx.compose.koinViewModel
  */
 
 @Composable
-fun Stats(
-    modifier: Modifier = Modifier,
-    navController: NavController,
-) {
+fun Stats(modifier: Modifier = Modifier) {
     val vm: StatsVM = koinViewModel()
-    val uiState = vm.uiState.collectAsStateWithLifecycle()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     Stats(
         modifier = modifier,
-        uiState = uiState.value,
-        onEvent = vm::onEvent
+        uiState = uiState,
+        onEvent = vm::onEvent,
     )
 }
 
@@ -37,7 +45,42 @@ private fun Stats(
     uiState: StatsUiState,
     onEvent: (StatsUiEvent) -> Unit,
 ) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Ordering follows the Component Ordering spec in stats-tab-plan.md.
+        // Reorder by moving item blocks — no other change needed.
 
+        uiState.streakData?.let { data ->
+            item { StreakCards(data = data, habitColor = uiState.habitColor) }
+        }
+
+        uiState.dailyHistoryData?.let { data ->
+            item { DailyHistoryChart(data = data, habitColor = uiState.habitColor) }
+        }
+
+        uiState.timeOfDayData?.let { data ->
+            item { TimeOfDayChart(data = data, habitColor = uiState.habitColor) }
+        }
+
+        uiState.weeklyPatternData?.let { data ->
+            item { WeeklyPatternChart(data = data, habitColor = uiState.habitColor) }
+        }
+
+        uiState.monthlyTrendData?.let { data ->
+            item { MonthlyTrendChart(data = data, habitColor = uiState.habitColor) }
+        }
+
+        uiState.goalCompletionData?.let { data ->
+            item { GoalCompletionRings(data = data, habitColor = uiState.habitColor) }
+        }
+
+        uiState.summaryData?.let { data ->
+            item { SummaryStatsGrid(data = data, habitColor = uiState.habitColor) }
+        }
+    }
 }
 
 @Preview(name = "Light Mode", showBackground = true)
@@ -48,7 +91,7 @@ private fun Preview() {
         val uiState by remember { mutableStateOf(StatsUiState()) }
         Stats(
             uiState = uiState,
-            onEvent = { },
+            onEvent = {},
         )
     }
 }

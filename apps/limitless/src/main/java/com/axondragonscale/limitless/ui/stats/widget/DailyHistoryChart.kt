@@ -129,6 +129,7 @@ fun DailyHistoryChart(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             HistoryPeriod.entries.forEach { period ->
                 FilterChip(
+                    modifier = Modifier.height(24.dp),
                     selected = period == selectedPeriod,
                     onClick = { selectedPeriod = period },
                     label = {

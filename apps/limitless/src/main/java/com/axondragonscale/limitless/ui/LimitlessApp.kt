@@ -59,7 +59,7 @@ fun LimitlessApp(modifier: Modifier = Modifier) {
         }
 
         composable<Route.Stats> {
-            Stats(navController = navController)
+            Stats()
         }
 
         composable<Route.DevTools> {
