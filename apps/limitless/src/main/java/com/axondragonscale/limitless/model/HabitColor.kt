@@ -5,20 +5,29 @@ package com.axondragonscale.limitless.model
  *
  * Colors are stored as ARGB [Long] values so this model stays free of Compose dependencies.
  * Use the `HabitColor.color` Compose extension (in `ui/theme/Color.kt`) to get a [Color].
+ *
+ * Each color is chosen to work well as a `seedColor` for MaterialKolor palette generation —
+ * moderately saturated, mid-range lightness, and evenly distributed across the hue wheel.
  */
 enum class HabitColor(val argb: Long) {
-    PURPLE(0xFF6650A4),
-    PINK(0xFFD81B60),
-    ROSE(0xFFEC407A),
     RED(0xFFD32F2F),
-    ORANGE(0xFFEF6C00),
-    YELLOW(0xFFF9A825),
-    LIME(0xFF7CB342),
-    GREEN(0xFF2E7D32),
+    ROSE(0xFFD81B60),
+    PINK(0xFFEC407A),
+    FUCHSIA(0xFFAB47BC),
+    PURPLE(0xFF7E57C2),
+    VIOLET(0xFF5C6BC0),
+    INDIGO(0xFF3949AB),
+    BLUE(0xFF1E88E5),
+    SKY(0xFF039BE5),
+    CYAN(0xFF00ACC1),
     TEAL(0xFF00897B),
-    BLUE(0xFF1565C0),
-    INDIGO(0xFF283593),
-    CYAN(0xFF00838F),
+    GREEN(0xFF43A047),
+    LIME(0xFF7CB342),
+    YELLOW(0xFFF9A825),
+    AMBER(0xFFFFB300),
+    ORANGE(0xFFEF6C00),
+    VERMILION(0xFFF4511E),
+    BROWN(0xFF8D6E63),
     ;
 
     companion object {
