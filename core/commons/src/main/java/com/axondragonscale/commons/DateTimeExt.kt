@@ -3,6 +3,7 @@ package com.axondragonscale.commons
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
@@ -16,6 +17,27 @@ import kotlin.time.Instant
  * DateTime formatting extensions shared across all apps.
  */
 
+// region Month & DayOfWeek Label Lists
+
+/**
+ * Month abbreviations in calendar order (index 0 = January).
+ * Matches [Month.abbreviated] for each entry.
+ */
+val monthAbbreviations: List<String> = listOf(
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+)
+
+/**
+ * ISO day-of-week abbreviations in order (index 0 = Monday).
+ * Matches [DayOfWeek.abbreviated] for each entry.
+ */
+val dayOfWeekAbbreviations: List<String> = listOf(
+    "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
+)
+
+// endregion
+
 // region Month Extensions
 
 /** Short 3-letter month abbreviation: "Jan", "Feb", … */
@@ -28,6 +50,28 @@ val Month.displayName: String
 
 // endregion
 
+// region DayOfWeek Extensions
+
+/** Short 3-letter day abbreviation: "Mon", "Tue", … */
+val DayOfWeek.abbreviated: String
+    get() = name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
+
+// endregion
+
+// region Hour Display
+
+/**
+ * Converts a 24-hour [hour] value (0–23) to a 12-hour AM/PM display string.
+ * Examples: 0 → "12 AM", 7 → "7 AM", 12 → "12 PM", 15 → "3 PM", 23 → "11 PM"
+ */
+fun hourLabel(hour: Int): String {
+    val h = if (hour % 12 == 0) 12 else hour % 12
+    val amPm = if (hour < 12) "AM" else "PM"
+    return "$h $amPm"
+}
+
+// endregion
+
 // region LocalDate Extensions
 
 /**
@@ -35,6 +79,13 @@ val Month.displayName: String
  */
 fun LocalDate.formatShort(): String =
     "${month.abbreviated} $day, $year"
+
+/**
+ * Formats a [LocalDate] as "Jan 2025" (month abbreviation + year, no day).
+ * Useful for "tracking since" labels and other month-precision displays.
+ */
+fun LocalDate.formatMonthYear(): String =
+    "${month.abbreviated} $year"
 
 /**
  * Returns the number of days in the given [month] of [year], correctly handling leap years.
