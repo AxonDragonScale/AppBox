@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.limitless.ui.stats.widget.DailyHistoryChart
 import com.axondragonscale.limitless.ui.stats.widget.GoalCompletionRings
 import com.axondragonscale.limitless.ui.stats.widget.MonthlyTrendChart
 import com.axondragonscale.limitless.ui.stats.widget.StreakCards
@@ -58,9 +57,9 @@ private fun Stats(
             item { SummaryStatsGrid(data = data, habitColor = uiState.habitColor) }
         }
 
-        uiState.dailyHistoryData?.let { data ->
-            item { DailyHistoryChart(data = data, habitColor = uiState.habitColor) }
-        }
+//        uiState.dailyHistoryData?.let { data ->
+//            item { DailyHistoryChart(data = data, habitColor = uiState.habitColor) }
+//        }
 
         uiState.timeOfDayData?.let { data ->
             item { TimeOfDayChart(data = data, habitColor = uiState.habitColor) }

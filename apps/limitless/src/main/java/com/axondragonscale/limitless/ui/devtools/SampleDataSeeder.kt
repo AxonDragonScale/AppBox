@@ -83,7 +83,7 @@ class SampleDataSeeder(
             name = "Meditation",
             description = "Daily mindfulness and breathing practice",
             color = HabitColor.TEAL,
-            totalDays = 180,
+            totalDays = 360,
             random = Random(seed = 101),
             frequencyForDay = { _, _ -> 0.78f },
             maxPerDay = 1,
@@ -99,7 +99,7 @@ class SampleDataSeeder(
     // Description  : yes
     // Goals        : 2 — WEEKLY target=3, MONTHLY target=12
     // Reminders    : 1 — WEEKLY Mon/Wed/Fri/Sat 6:30 AM
-    // Record pattern: 180 days, growing trend (sparse→dense), Mon/Wed/Fri dominant,
+    // Record pattern: 360 days, growing trend (sparse→dense), Mon/Wed/Fri dominant,
     //                 bimodal hours (early morning 6–8 AM OR late afternoon 17–19 PM)
     // Stats highlights: weekday-heavy weekly pattern, growing monthly bars, bimodal ToD chart
     // -------------------------------------------------------------------------
@@ -108,11 +108,11 @@ class SampleDataSeeder(
             name = "Exercise",
             description = "Workout: run, lift, or any physical activity",
             color = HabitColor.ORANGE,
-            totalDays = 180,
+            totalDays = 360,
             random = Random(seed = 202),
             frequencyForDay = { daysAgo, date ->
                 // Frequency grows toward today: 0.30 six months ago → 0.80 today
-                val trend = 0.30f + 0.50f * (1f - daysAgo / 180f)
+                val trend = 0.30f + 0.50f * (1f - daysAgo / 360f)
                 when (date.dayOfWeek.isoDayNumber) {
                     1, 3, 5 -> trend             // Mon / Wed / Fri — primary days
                     6       -> trend * 0.55f     // Sat — occasional
@@ -139,7 +139,7 @@ class SampleDataSeeder(
     // Description  : yes
     // Goals        : 3 — DAILY target=1, WEEKLY target=5, MONTHLY target=20  (all 3 types)
     // Reminders    : 3 — DAILY 21:30, MONTHLY 1st 8:00, ONE_TIME next week 20:00
-    // Record pattern: 180 days, declining trend (dense→sparse), evening peak 20–22,
+    // Record pattern: 360 days, declining trend (dense→sparse), evening peak 20–22,
     //                 slight weekend lean, up to 2 records/day
     // Stats highlights: all 3 goal rings, declining monthly bars, evening ToD peak
     // -------------------------------------------------------------------------
@@ -151,11 +151,11 @@ class SampleDataSeeder(
             name = "Reading",
             description = "Read at least 20 pages of a book",
             color = HabitColor.BLUE,
-            totalDays = 180,
+            totalDays = 360,
             random = Random(seed = 303),
             frequencyForDay = { daysAgo, date ->
                 // Frequency declines toward today: ~0.85 six months ago → ~0.35 today
-                val trend = 0.85f - 0.50f * (1f - daysAgo / 180f)
+                val trend = 0.85f - 0.50f * (1f - daysAgo / 360f)
                 val weekendBonus = if (date.dayOfWeek.isoDayNumber in 6..7) 0.15f else 0f
                 (trend + weekendBonus).coerceIn(0.05f, 0.95f)
             },
@@ -202,7 +202,7 @@ class SampleDataSeeder(
     // Description  : none  ← no-description case
     // Goals        : 0     ← zero-goals case
     // Reminders    : 0     ← zero-reminders case
-    // Record pattern: 180 days, very consistent ~97%, 2–6 records/day, all-day spread 7–21
+    // Record pattern: 360 days, very consistent ~97%, 2–6 records/day, all-day spread 7–21
     // Stats highlights: very long current streak, huge total records, flat even ToD histogram,
     //                   consistent weekly pattern across all 7 days
     // -------------------------------------------------------------------------
@@ -211,7 +211,7 @@ class SampleDataSeeder(
             name = "Hydration",
             description = "",
             color = HabitColor.CYAN,
-            totalDays = 180,
+            totalDays = 360,
             random = Random(seed = 505),
             frequencyForDay = { _, _ -> 0.97f },
             maxPerDay = 6,
@@ -249,7 +249,7 @@ class SampleDataSeeder(
     // Description  : yes
     // Goals        : 2 — DAILY target=1, WEEKLY target=4
     // Reminders    : 0   ← zero-reminders with goals
-    // Record pattern: 180 days, variable monthly frequency (cycles: active→moderate→lazy),
+    // Record pattern: 360 days, variable monthly frequency (cycles: active→moderate→lazy),
     //                 bimodal hours (morning 6–8 AM OR evening 18–20 PM), up to 2/day
     // Stats highlights: variable monthly bars (peaks and troughs), bimodal ToD chart,
     //                   no reminders configured
@@ -259,7 +259,7 @@ class SampleDataSeeder(
             name = "Stretching",
             description = "Morning or evening stretching routine",
             color = HabitColor.LIME,
-            totalDays = 180,
+            totalDays = 360,
             random = Random(seed = 707),
             frequencyForDay = { daysAgo, _ ->
                 // Cycles every ~30 days: active (70%) → moderate (35%) → lazy (12%)

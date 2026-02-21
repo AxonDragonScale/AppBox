@@ -14,7 +14,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -42,14 +41,18 @@ enum class BarChartOrientation {
  *
  * @param value The numeric value this bar represents. Bar size is proportional to the max value.
  * @param label Optional label displayed alongside the bar (below for vertical, left for horizontal).
+ * @param valueLabel Optional label drawn above the bar (vertical only). Typically the raw count.
  * @param color Optional per-bar color override. `null` falls back to [BarChartStyle.barColor].
  * @param labelColor Optional per-label color override. `null` falls back to [BarChartStyle.labelColor].
+ * @param valueLabelColor Optional per-value-label color override. `null` falls back to [BarChartStyle.valueLabelColor].
  */
 data class BarEntry(
     val value: Float,
     val label: String = "",
+    val valueLabel: String = "",
     val color: Color? = null,
     val labelColor: Color? = null,
+    val valueLabelColor: Color? = null,
 )
 
 /**
@@ -62,8 +65,10 @@ data class BarEntry(
  * @param barColor Default color for bars that don't specify [BarEntry.color].
  * @param barCornerRadius Corner radius applied to bar ends.
  * @param barSpacing Space between adjacent bars.
- * @param labelStyle [TextStyle] used for label rendering.
+ * @param labelStyle [TextStyle] used for category label rendering (below/left of bar).
  * @param labelColor Default color for labels that don't specify [BarEntry.labelColor].
+ * @param valueLabelStyle [TextStyle] used for value labels drawn above each bar (vertical only).
+ * @param valueLabelColor Default color for value labels that don't specify [BarEntry.valueLabelColor].
  */
 data class BarChartStyle(
     val orientation: BarChartOrientation,
@@ -72,6 +77,8 @@ data class BarChartStyle(
     val barSpacing: Dp,
     val labelStyle: TextStyle,
     val labelColor: Color,
+    val valueLabelStyle: TextStyle,
+    val valueLabelColor: Color,
 ) {
     companion object {
         @Composable
@@ -82,7 +89,18 @@ data class BarChartStyle(
             barSpacing: Dp = 4.dp,
             labelStyle: TextStyle = MaterialTheme.typography.labelSmall,
             labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-        ) = BarChartStyle(orientation, barColor, barCornerRadius, barSpacing, labelStyle, labelColor)
+            valueLabelStyle: TextStyle = labelStyle,
+            valueLabelColor: Color = labelColor,
+        ) = BarChartStyle(
+            orientation = orientation,
+            barColor = barColor,
+            barCornerRadius = barCornerRadius,
+            barSpacing = barSpacing,
+            labelStyle = labelStyle,
+            labelColor = labelColor,
+            valueLabelStyle = valueLabelStyle,
+            valueLabelColor = valueLabelColor
+        )
     }
 }
 
@@ -113,6 +131,7 @@ fun BarChart(
             val count = bars.size
             val maxValue = bars.maxOf { it.value }.coerceAtLeast(1f)
             val hasLabels = bars.any { it.label.isNotEmpty() }
+            val hasValueLabels = bars.any { it.valueLabel.isNotEmpty() }
             val cornerRadiusPx = style.barCornerRadius.toPx()
             val spacingPx = style.barSpacing.toPx()
             val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
@@ -120,10 +139,12 @@ fun BarChart(
             // Pre-resolve per-bar colors so the draw lambda just indexes into lists
             val barColors = bars.map { it.color ?: style.barColor }
             val labelColors = bars.map { it.labelColor ?: style.labelColor }
+            val valueLabelColors = bars.map { it.valueLabelColor ?: style.valueLabelColor }
 
             when (style.orientation) {
                 BarChartOrientation.Vertical -> {
-                    // Measure labels to reserve space at the bottom
+
+                    // Measure category labels (below bars)
                     val labelResults = if (hasLabels) {
                         bars.mapIndexed { index, bar ->
                             textMeasurer.measure(
@@ -138,12 +159,29 @@ fun BarChart(
                         }
                     } else emptyList()
 
-                    val labelHeight = if (hasLabels) {
-                        labelResults.maxOf { it.size.height }.toFloat()
-                    } else 0f
-                    val labelPadding = if (hasLabels) 4.dp.toPx() else 0f
+                    // Measure value labels (above bars) to reserve space at the top
+                    val valueLabelResults = if (hasValueLabels) {
+                        bars.mapIndexed { index, bar ->
+                            textMeasurer.measure(
+                                text = bar.valueLabel,
+                                style = style.valueLabelStyle.copy(
+                                    textAlign = TextAlign.Center,
+                                    color = valueLabelColors[index],
+                                ),
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 1,
+                            )
+                        }
+                    } else emptyList()
 
-                    val chartHeight = size.height - labelHeight - labelPadding
+                    val labelHeight = if (hasLabels) labelResults.maxOf { it.size.height }.toFloat() else 0f
+                    val labelPadding = if (hasLabels) 4.dp.toPx() else 0f
+                    val valueLabelHeight = if (hasValueLabels) valueLabelResults.maxOf { it.size.height }.toFloat() else 0f
+                    val valueLabelPadding = if (hasValueLabels) 3.dp.toPx() else 0f
+
+                    // Bar zone sits between the value label space at the top and category label space at the bottom
+                    val chartOffsetY = valueLabelHeight + valueLabelPadding
+                    val chartHeight = size.height - chartOffsetY - labelHeight - labelPadding
                     val totalSpacing = spacingPx * (count - 1)
                     val barWidth = ((size.width - totalSpacing) / count).coerceAtLeast(1f)
 
@@ -152,7 +190,7 @@ fun BarChart(
                             val fraction = bar.value / maxValue
                             val bHeight = (chartHeight * fraction).coerceAtLeast(0f)
                             val x = index * (barWidth + spacingPx)
-                            val y = chartHeight - bHeight
+                            val y = chartOffsetY + chartHeight - bHeight
 
                             drawRoundRect(
                                 color = barColors[index],
@@ -161,10 +199,20 @@ fun BarChart(
                                 cornerRadius = cornerRadius,
                             )
 
+                            if (hasValueLabels && bar.valueLabel.isNotEmpty()) {
+                                val valueLabelResult = valueLabelResults[index]
+                                val valueLabelX = x + (barWidth - valueLabelResult.size.width) / 2f
+                                val valueLabelY = y - valueLabelResult.size.height - valueLabelPadding
+                                drawText(
+                                    textLayoutResult = valueLabelResult,
+                                    topLeft = Offset(valueLabelX, valueLabelY),
+                                )
+                            }
+
                             if (hasLabels) {
                                 val labelResult = labelResults[index]
                                 val labelX = x + (barWidth - labelResult.size.width) / 2f
-                                val labelY = chartHeight + labelPadding
+                                val labelY = chartOffsetY + chartHeight + labelPadding
                                 drawText(
                                     textLayoutResult = labelResult,
                                     topLeft = Offset(labelX, labelY),
@@ -306,7 +354,7 @@ private fun BarChartPerBarColorsPreview() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp),
-                bars = values.indices.map { i -> BarEntry(values[i], days[i], colors[i]) },
+                bars = values.indices.map { i -> BarEntry(value = values[i], label = days[i], color = colors[i]) },
                 style = BarChartStyle.default(barSpacing = 6.dp),
             )
         }
