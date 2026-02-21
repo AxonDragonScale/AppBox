@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats
+package com.axondragonscale.limitless.ui.habit.stats
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -13,12 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.limitless.ui.stats.widget.GoalCompletionRings
-import com.axondragonscale.limitless.ui.stats.widget.MonthlyTrendChart
-import com.axondragonscale.limitless.ui.stats.widget.StreakCards
-import com.axondragonscale.limitless.ui.stats.widget.SummaryStatsGrid
-import com.axondragonscale.limitless.ui.stats.widget.TimeOfDayChart
-import com.axondragonscale.limitless.ui.stats.widget.WeeklyPatternChart
+import com.axondragonscale.limitless.ui.habit.stats.widget.GoalCompletionRings
+import com.axondragonscale.limitless.ui.habit.stats.widget.MonthlyTrendChart
+import com.axondragonscale.limitless.ui.habit.stats.widget.StreakCards
+import com.axondragonscale.limitless.ui.habit.stats.widget.SummaryStatsGrid
+import com.axondragonscale.limitless.ui.habit.stats.widget.TimeOfDayChart
+import com.axondragonscale.limitless.ui.habit.stats.widget.WeeklyPatternChart
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import org.koin.androidx.compose.koinViewModel
 

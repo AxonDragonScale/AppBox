@@ -299,11 +299,7 @@ private fun Preview() {
 }
 
 @Preview(name = "Light Mode - With Goals and Reminders", showBackground = true)
-@Preview(
-    name = "Dark Mode - With Goals and Reminders",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES,
-)
+@Preview(name = "Dark Mode - With Goals and Reminders", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES,)
 @Composable
 private fun PreviewWithGoalsAndReminders() {
     LimitlessTheme {

@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats.widget
+package com.axondragonscale.limitless.ui.habit.stats.widget
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -22,8 +22,8 @@ import com.axondragonscale.commons.compose.chart.RingChartLabelStyle
 import com.axondragonscale.commons.compose.chart.RingChartTrackStyle
 import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.model.HabitColor
-import com.axondragonscale.limitless.ui.stats.model.GoalCompletionData
-import com.axondragonscale.limitless.ui.stats.model.GoalCompletionRate
+import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionData
+import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionRate
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlin.math.roundToInt

@@ -18,7 +18,7 @@ import com.axondragonscale.limitless.ui.habit.Habit
 import com.axondragonscale.limitless.ui.day.HabitDay
 import com.axondragonscale.limitless.ui.home.Home
 import com.axondragonscale.limitless.ui.settings.Settings
-import com.axondragonscale.limitless.ui.stats.Stats
+import com.axondragonscale.limitless.ui.habit.stats.Stats
 
 /**
  * Created by Ronak Harkhani on 31/10/24

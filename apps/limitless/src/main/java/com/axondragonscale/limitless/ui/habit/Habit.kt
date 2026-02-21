@@ -65,7 +65,7 @@ import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.habit.calendar.HabitCalendar
 import com.axondragonscale.limitless.ui.habit.history.History
 import com.axondragonscale.limitless.ui.home.RecordHabitSheet
-import com.axondragonscale.limitless.ui.stats.Stats
+import com.axondragonscale.limitless.ui.habit.stats.Stats
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate

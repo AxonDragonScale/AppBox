@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats.widget
+package com.axondragonscale.limitless.ui.habit.stats.widget
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -27,8 +27,8 @@ import com.axondragonscale.commons.compose.chart.BarChartStyle
 import com.axondragonscale.commons.compose.chart.BarEntry
 import com.axondragonscale.commons.compose.chart.TrendLine
 import com.axondragonscale.limitless.model.HabitColor
-import com.axondragonscale.limitless.ui.stats.HistoryPeriod
-import com.axondragonscale.limitless.ui.stats.model.DailyHistoryData
+import com.axondragonscale.limitless.ui.habit.stats.HistoryPeriod
+import com.axondragonscale.limitless.ui.habit.stats.model.DailyHistoryData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit

@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats
+package com.axondragonscale.limitless.ui.habit.stats
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -10,15 +10,15 @@ import com.axondragonscale.limitless.database.view.HabitHourCountView
 import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.repository.LimitlessRepository
 import com.axondragonscale.limitless.ui.Route
-import com.axondragonscale.limitless.ui.stats.model.DailyHistoryData
-import com.axondragonscale.limitless.ui.stats.model.GoalCompletionData
-import com.axondragonscale.limitless.ui.stats.model.GoalCompletionRate
-import com.axondragonscale.limitless.ui.stats.model.MonthCount
-import com.axondragonscale.limitless.ui.stats.model.MonthlyTrendData
-import com.axondragonscale.limitless.ui.stats.model.StreakData
-import com.axondragonscale.limitless.ui.stats.model.SummaryData
-import com.axondragonscale.limitless.ui.stats.model.TimeOfDayData
-import com.axondragonscale.limitless.ui.stats.model.WeeklyPatternData
+import com.axondragonscale.limitless.ui.habit.stats.model.DailyHistoryData
+import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionData
+import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionRate
+import com.axondragonscale.limitless.ui.habit.stats.model.MonthCount
+import com.axondragonscale.limitless.ui.habit.stats.model.MonthlyTrendData
+import com.axondragonscale.limitless.ui.habit.stats.model.StreakData
+import com.axondragonscale.limitless.ui.habit.stats.model.SummaryData
+import com.axondragonscale.limitless.ui.habit.stats.model.TimeOfDayData
+import com.axondragonscale.limitless.ui.habit.stats.model.WeeklyPatternData
 import com.axondragonscale.commons.daysBetween
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

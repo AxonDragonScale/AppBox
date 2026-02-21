@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats.model
+package com.axondragonscale.limitless.ui.habit.stats.model
 
 /**
  * Created by Ronak Harkhani on 21/07/25

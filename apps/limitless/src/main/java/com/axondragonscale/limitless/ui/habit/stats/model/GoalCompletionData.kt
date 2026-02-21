@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats.model
+package com.axondragonscale.limitless.ui.habit.stats.model
 
 import com.axondragonscale.limitless.model.GoalType
 

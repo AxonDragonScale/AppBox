@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats.widget
+package com.axondragonscale.limitless.ui.habit.stats.widget
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.commons.compose.StatCard
 import com.axondragonscale.limitless.model.HabitColor
-import com.axondragonscale.limitless.ui.stats.model.StreakData
+import com.axondragonscale.limitless.ui.habit.stats.model.StreakData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 

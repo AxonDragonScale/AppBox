@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.stats.widget
+package com.axondragonscale.limitless.ui.habit.stats.widget
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +18,7 @@ import com.axondragonscale.commons.compose.chart.BarChartOrientation
 import com.axondragonscale.commons.compose.chart.BarChartStyle
 import com.axondragonscale.commons.compose.chart.BarEntry
 import com.axondragonscale.limitless.model.HabitColor
-import com.axondragonscale.limitless.ui.stats.model.TimeOfDayData
+import com.axondragonscale.limitless.ui.habit.stats.model.TimeOfDayData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 
