@@ -46,6 +46,13 @@ fun daysInMonth(year: Int, month: Int): Int =
         .minus(1, DateTimeUnit.DAY)
         .day
 
+/**
+ * Returns the number of days between [start] (inclusive) and [end] (exclusive).
+ * A negative result means [end] is before [start].
+ */
+fun daysBetween(start: LocalDate, end: LocalDate): Int =
+    (end.toEpochDays() - start.toEpochDays()).toInt()
+
 // endregion
 
 // region LocalTime Extensions

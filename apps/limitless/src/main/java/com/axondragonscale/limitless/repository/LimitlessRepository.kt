@@ -4,6 +4,7 @@ import androidx.compose.ui.util.fastMaxOfOrDefault
 import com.axondragonscale.limitless.database.dao.GoalDao
 import com.axondragonscale.limitless.database.dao.HabitDao
 import com.axondragonscale.limitless.database.dao.HabitDayCountDao
+import com.axondragonscale.limitless.database.dao.HabitHourCountDao
 import com.axondragonscale.limitless.database.dao.RecordDao
 import com.axondragonscale.limitless.database.dao.ReminderDao
 import com.axondragonscale.limitless.database.entity.GoalEntity
@@ -11,6 +12,7 @@ import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.database.view.HabitDayCountView
+import com.axondragonscale.limitless.database.view.HabitHourCountView
 import com.axondragonscale.limitless.model.HabitHeatMapData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -26,6 +28,7 @@ class LimitlessRepository(
     private val habitDao: HabitDao,
     private val recordDao: RecordDao,
     private val habitDayCountDao: HabitDayCountDao,
+    private val habitHourCountDao: HabitHourCountDao,
     private val reminderDao: ReminderDao,
     private val goalDao: GoalDao,
 ) {
@@ -110,6 +113,34 @@ class LimitlessRepository(
     suspend fun deleteReminders(reminderIds: List<Long>) = reminderDao.deleteByIds(reminderIds)
 
     suspend fun deleteRemindersForHabit(habitId: Long) = reminderDao.deleteAllForHabit(habitId)
+
+    // MARK: Stats ---------------------------------------------------------------------------------
+
+    /**
+     * Get pre-aggregated hour-of-day counts for a specific habit.
+     * Returns at most 24 rows (one per active hour).
+     */
+    fun getHourCountsForHabit(habitId: Long): Flow<List<HabitHourCountView>> =
+        habitHourCountDao.getHourCountsForHabit(habitId)
+
+    /**
+     * Get total record count for a habit as a reactive Flow.
+     */
+    fun getRecordCountFlow(habitId: Long): Flow<Int> =
+        recordDao.getRecordCountFlow(habitId)
+
+    /**
+     * Get the number of unique active days for a habit as a reactive Flow.
+     */
+    fun getActiveDayCount(habitId: Long): Flow<Int> =
+        recordDao.getActiveDayCount(habitId)
+
+    /**
+     * Get the timestamp of the first record for a habit as a reactive Flow.
+     * Returns null if no records exist.
+     */
+    fun getFirstRecordTimestamp(habitId: Long): Flow<Long?> =
+        recordDao.getFirstRecordTimestamp(habitId)
 
     // MARK: Heat Map Data -------------------------------------------------------------------------
 

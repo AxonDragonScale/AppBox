@@ -85,7 +85,7 @@ class EditorVM(
         EditorUiEvent.NavigateBack -> Unit
     }
 
-    // region: Habit
+    // region Habit
 
     private fun updateHabit(event: EditorUiEvent.UpdateHabit) {
         uiState.update { it.copy(habit = event.habit) }
@@ -93,7 +93,7 @@ class EditorVM(
 
     // endregion
 
-    // region: Reminders
+    // region Reminders
 
     private fun addReminder() {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -128,7 +128,7 @@ class EditorVM(
 
     // endregion
 
-    // region: Goals
+    // region Goals
 
     private fun addGoal() {
         val usedTypes = uiState.value.goals.map { it.type }.toSet()
@@ -160,7 +160,7 @@ class EditorVM(
 
     // endregion
 
-    // region: Save
+    // region Save
 
     private fun saveHabit(
         event: EditorUiEvent.SaveHabit

@@ -216,13 +216,13 @@ class MyVM(
 ## Code Organization
 
 ### Region Comments for Large Files
-- Use `// region:` and `// endregion` to separate logically distinct sections in large files
+- Use `// region <section-name>` and `// endregion` to separate logically distinct sections in large files
 - Only use in substantial files — don't over-segment small ones
 
 ```kotlin
 class MyVM : ViewModel() {
 
-    // region: State
+    // region State
 
     val uiState = MutableStateFlow(MyUiState())
     private val uiEffectChannel = Channel<MyUiEffect>()
@@ -230,7 +230,7 @@ class MyVM : ViewModel() {
 
     // endregion
 
-    // region: Event Handling
+    // region Event Handling
 
     fun onEvent(event: MyUiEvent): Any = when (event) {
         is MyUiEvent.Search -> handleSearch(event)
