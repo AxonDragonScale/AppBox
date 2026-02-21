@@ -29,6 +29,7 @@ val LimitlessModule = module {
     singleOf(LimitlessDatabase::habitDao)
     singleOf(LimitlessDatabase::recordDao)
     singleOf(LimitlessDatabase::habitDayCountDao)
+    singleOf(LimitlessDatabase::habitHourCountDao)
     singleOf(LimitlessDatabase::reminderDao)
     singleOf(LimitlessDatabase::goalDao)
 

@@ -41,6 +41,15 @@ interface RecordDao {
     @Query("SELECT COUNT(*) FROM record WHERE habitId = :habitId")
     suspend fun getRecordCount(habitId: Long): Int
 
+    @Query("SELECT COUNT(*) FROM record WHERE habitId = :habitId")
+    fun getRecordCountFlow(habitId: Long): Flow<Int>
+
+    @Query("SELECT MIN(timestamp) FROM record WHERE habitId = :habitId")
+    fun getFirstRecordTimestamp(habitId: Long): Flow<Long?>
+
+    @Query("SELECT COUNT(DISTINCT date) FROM habit_day_count_view WHERE habitId = :habitId")
+    fun getActiveDayCount(habitId: Long): Flow<Int>
+
     @Query("""
         SELECT * FROM record
         WHERE habitId = :habitId

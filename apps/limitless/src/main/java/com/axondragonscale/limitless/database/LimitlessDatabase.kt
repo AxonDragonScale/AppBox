@@ -14,6 +14,7 @@ import com.axondragonscale.limitless.database.converter.ReminderTypeConverter
 import com.axondragonscale.limitless.database.dao.GoalDao
 import com.axondragonscale.limitless.database.dao.HabitDao
 import com.axondragonscale.limitless.database.dao.HabitDayCountDao
+import com.axondragonscale.limitless.database.dao.HabitHourCountDao
 import com.axondragonscale.limitless.database.dao.RecordDao
 import com.axondragonscale.limitless.database.dao.ReminderDao
 import com.axondragonscale.limitless.database.entity.GoalEntity
@@ -21,6 +22,7 @@ import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.database.view.HabitDayCountView
+import com.axondragonscale.limitless.database.view.HabitHourCountView
 
 /**
  * Created by Ronak Harkhani on 01/11/24
@@ -34,6 +36,7 @@ import com.axondragonscale.limitless.database.view.HabitDayCountView
     ],
     views = [
         HabitDayCountView::class,
+        HabitHourCountView::class,
     ],
     version = DB_VERSION,
     exportSchema = true,
@@ -49,7 +52,7 @@ abstract class LimitlessDatabase : RoomDatabase() {
 
     companion object {
         const val DB_NAME = "limitless"
-        const val DB_VERSION = 1
+        const val DB_VERSION = 2
 
         /**
          * Create a new instance of [LimitlessDatabase]
@@ -68,6 +71,7 @@ abstract class LimitlessDatabase : RoomDatabase() {
     abstract fun habitDao(): HabitDao
     abstract fun recordDao(): RecordDao
     abstract fun habitDayCountDao(): HabitDayCountDao
+    abstract fun habitHourCountDao(): HabitHourCountDao
     abstract fun reminderDao(): ReminderDao
     abstract fun goalDao(): GoalDao
 
