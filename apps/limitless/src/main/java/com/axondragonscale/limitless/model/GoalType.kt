@@ -12,6 +12,13 @@ enum class GoalType {
             MONTHLY -> "Monthly"
         }
 
+    val unit: String
+        get() = when (this) {
+            DAILY -> "day"
+            WEEKLY -> "week"
+            MONTHLY -> "month"
+        }
+
     companion object {
         fun fromOrdinal(ordinal: Int) = entries[ordinal]
     }
