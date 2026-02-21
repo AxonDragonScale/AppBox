@@ -28,7 +28,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun Stats(modifier: Modifier = Modifier) {
-    val vm: StatsVM = koinViewModel()
+    val vm: HabitStatsVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     Stats(
@@ -41,7 +41,7 @@ fun Stats(modifier: Modifier = Modifier) {
 @Composable
 private fun Stats(
     modifier: Modifier = Modifier,
-    uiState: StatsUiState,
+    uiState: HabitStatsUiState,
     onEvent: (StatsUiEvent) -> Unit,
 ) {
     LazyColumn(
@@ -84,7 +84,7 @@ private fun Stats(
 @Composable
 private fun Preview() {
     LimitlessTheme {
-        val uiState by remember { mutableStateOf(StatsUiState()) }
+        val uiState by remember { mutableStateOf(HabitStatsUiState()) }
         Stats(
             uiState = uiState,
             onEvent = {},

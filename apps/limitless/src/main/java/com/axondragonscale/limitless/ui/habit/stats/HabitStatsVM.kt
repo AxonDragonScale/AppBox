@@ -39,7 +39,7 @@ import kotlin.time.Clock
 /**
  * Created by Ronak Harkhani on 03/11/24
  */
-class StatsVM(
+class HabitStatsVM(
     savedStateHandle: SavedStateHandle,
     private val repository: LimitlessRepository,
 ) : ViewModel() {
@@ -47,7 +47,7 @@ class StatsVM(
     private val habitRoute = savedStateHandle.toRoute<Route.Habit>()
     private val habitId: Long = habitRoute.habitId
 
-    val uiState = MutableStateFlow(StatsUiState())
+    val uiState = MutableStateFlow(HabitStatsUiState())
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -59,7 +59,7 @@ class StatsVM(
             ) { habit, dayCounts, hourCounts, goals ->
                 val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
-                StatsUiState(
+                HabitStatsUiState(
                     isLoading = false,
                     habitColor = habit.color,
                     streakData = computeStreaks(dayCounts, today),

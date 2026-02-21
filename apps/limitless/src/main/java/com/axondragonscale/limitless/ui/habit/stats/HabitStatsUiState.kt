@@ -12,7 +12,7 @@ import com.axondragonscale.limitless.ui.habit.stats.model.WeeklyPatternData
 /**
  * Created by Ronak Harkhani on 03/11/24
  */
-data class StatsUiState(
+data class HabitStatsUiState(
     val isLoading: Boolean = true,
     val habitColor: HabitColor = HabitColor.PURPLE,
     val streakData: StreakData? = null,
