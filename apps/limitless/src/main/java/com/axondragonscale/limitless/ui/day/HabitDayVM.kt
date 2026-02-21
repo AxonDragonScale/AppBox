@@ -43,7 +43,7 @@ class HabitDayVM(
         repository.getHabitFlow(habitId)
             .filterNotNull()
             .collect { habit ->
-                uiState.update { it.copy(habitName = habit.name) }
+                uiState.update { it.copy(habit = habit) }
             }
     }
 

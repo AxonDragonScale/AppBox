@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.axondragonscale.commons.compose.thenIf
+import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.HabitHeatMapData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
@@ -99,7 +100,7 @@ fun HabitHeatMap(
         ) {
             Text(
                 modifier = Modifier.weight(1f),
-                text = data.habitName,
+                text = data.habit.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -141,7 +142,7 @@ fun HabitHeatMap(
                         maxCount = data.maxCount,
                         today = today,
                         highlightCurrentDay = highlightCurrentDay,
-                        habitColor = data.color.color,
+                        habitColor = data.habit.color.color,
                     )
                 }
             }
@@ -375,11 +376,9 @@ private fun HabitHeatMapPreview() {
             HabitHeatMap(
                 modifier = Modifier.padding(16.dp),
                 data = HabitHeatMapData(
-                    habitId = 1,
-                    habitName = "Meditation",
+                    habit = HabitEntity(id = 1, name = "Meditation", description = "", color = HabitColor.TEAL),
                     dayCounts = sampleCounts,
                     maxCount = 4,
-                    color = HabitColor.TEAL,
                 ),
                 highlightCurrentDay = true,
             )
@@ -395,11 +394,9 @@ private fun EmptyHabitHeatMapPreview() {
             HabitHeatMap(
                 modifier = Modifier.padding(16.dp),
                 data = HabitHeatMapData(
-                    habitId = 2,
-                    habitName = "Exercise",
+                    habit = HabitEntity(id = 2, name = "Exercise", description = "", color = HabitColor.ORANGE),
                     dayCounts = emptyMap(),
                     maxCount = 0,
-                    color = HabitColor.ORANGE,
                 ),
             )
         }

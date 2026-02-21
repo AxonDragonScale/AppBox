@@ -44,4 +44,7 @@ dependencies {
 
     // Datastore
     implementation(libs.datastore.prefs)
+
+    // MaterialKolor
+    implementation(libs.materialkolor)
 }

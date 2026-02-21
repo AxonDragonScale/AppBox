@@ -187,7 +187,7 @@ class LimitlessRepository(
                 val dayCountsMap = habitDayCounts.associate { dc -> dc.date to dc.count }
                 val maxCount = habitDayCounts.fastMaxOfOrDefault(0) { it.count }
 
-                HabitHeatMapData(habit.id, habit.name, dayCountsMap, maxCount, habit.color)
+                HabitHeatMapData(habit, dayCountsMap, maxCount)
             }
         }
 

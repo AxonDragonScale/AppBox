@@ -31,12 +31,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.HabitHeatMapData
 import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -79,16 +81,16 @@ private fun Home(
     uiState: HomeUiState,
     onEvent: (HomeUiEvent) -> Unit,
 ) {
-    var selectedHabit by remember { mutableStateOf<HabitHeatMapData?>(null) }
+    var selectedHabitData by remember { mutableStateOf<HabitHeatMapData?>(null) }
 
-    selectedHabit?.let { habit ->
+    selectedHabitData?.let { habitData ->
         RecordHabitSheet(
-            habitName = habit.habitName,
+            habit = habitData.habit,
             onRecord = { message, timestamp ->
-                onEvent(HomeUiEvent.RecordHabit(habit.habitId, message, timestamp))
-                selectedHabit = null
+                onEvent(HomeUiEvent.RecordHabit(habitData.habit.id, message, timestamp))
+                selectedHabitData = null
             },
-            onDismiss = { selectedHabit = null },
+            onDismiss = { selectedHabitData = null },
         )
     }
 
@@ -142,11 +144,11 @@ private fun Home(
             ) {
                 items(
                     items = uiState.habits,
-                    key = { it.habitId },
+                    key = { it.habit.id },
                 ) { habitData ->
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = { onEvent(HomeUiEvent.NavigateToHabit(habitData.habitId)) },
+                        onClick = { onEvent(HomeUiEvent.NavigateToHabit(habitData.habit.id)) },
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceContainer,
                         tonalElevation = 1.dp,
@@ -157,7 +159,7 @@ private fun Home(
                                 .padding(top = 8.dp, bottom = 16.dp),
                             data = habitData,
                             highlightCurrentDay = uiState.highlightCurrentDay,
-                            onRecordClick = { selectedHabit = habitData },
+                            onRecordClick = { selectedHabitData = habitData },
                         )
                     }
                 }
@@ -190,25 +192,19 @@ private fun Preview() {
             HomeUiState(
                 habits = listOf(
                     HabitHeatMapData(
-                        habitId = 1,
-                        habitName = "Meditation",
+                        habit = HabitEntity(id = 1, name = "Meditation", description = "", color = HabitColor.RED),
                         dayCounts = sampleCounts,
                         maxCount = 4,
-                        color = HabitColor.RED,
                     ),
                     HabitHeatMapData(
-                        habitId = 2,
-                        habitName = "Exercise",
+                        habit = HabitEntity(id = 2, name = "Exercise", description = "", color = HabitColor.BLUE),
                         dayCounts = sampleCounts.filterKeys { it.dayOfMonth % 2 == 0 },
                         maxCount = 4,
-                        color = HabitColor.BLUE,
                     ),
                     HabitHeatMapData(
-                        habitId = 3,
-                        habitName = "Reading",
+                        habit = HabitEntity(id = 3, name = "Reading", description = "", color = HabitColor.GREEN),
                         dayCounts = emptyMap(),
                         maxCount = 0,
-                        color = HabitColor.GREEN,
                     ),
                 )
             )

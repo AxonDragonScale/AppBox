@@ -40,7 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
-import com.axondragonscale.limitless.ui.home.RecordHabitSheet
+import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.commons.displayName
 import com.axondragonscale.commons.daysInMonth
 import kotlinx.datetime.LocalDate
@@ -92,7 +92,7 @@ private fun HabitCalendar(
 
     longPressedDate?.let { date ->
         RecordHabitSheet(
-            habitName = uiState.habitName,
+            habit = uiState.habit,
             showTimePicker = true,
             initialDate = date,
             onRecord = { message, timestamp ->

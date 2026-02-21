@@ -1,6 +1,7 @@
 package com.axondragonscale.limitless.ui.day
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,10 +42,13 @@ import com.axondragonscale.commons.formatShort
 import com.axondragonscale.commons.formatTime
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.model.UIAlign
+import com.axondragonscale.limitless.database.entity.HabitEntity
+import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.common.RecordItem
-import com.axondragonscale.limitless.ui.home.RecordHabitSheet
+import com.axondragonscale.limitless.ui.common.RecordHabitSheet
+import com.axondragonscale.limitless.ui.theme.HabitTheme
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.LocalDate
 import org.koin.androidx.compose.koinViewModel
@@ -62,16 +66,18 @@ fun HabitDay(
     val vm: HabitDayVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
-    HabitDay(
-        modifier = modifier,
-        uiState = uiState,
-        onEvent = { event ->
-            when (event) {
-                is HabitDayUiEvent.NavigateBack -> navController.popBackStack()
-                else -> vm.onEvent(event)
-            }
-        },
-    )
+    HabitTheme(habitColor = uiState.habit.color) {
+        HabitDay(
+            modifier = modifier.background(MaterialTheme.colorScheme.background),
+            uiState = uiState,
+            onEvent = { event ->
+                when (event) {
+                    is HabitDayUiEvent.NavigateBack -> navController.popBackStack()
+                    else -> vm.onEvent(event)
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -85,7 +91,7 @@ private fun HabitDay(
 
     if (showRecordSheet) {
         RecordHabitSheet(
-            habitName = uiState.habitName,
+            habit = uiState.habit,
             showTimePicker = true,
             initialDate = uiState.date,
             onRecord = { message, timestamp ->
@@ -270,7 +276,7 @@ private fun HabitDayPreview() {
         Surface {
             HabitDay(
                 uiState = HabitDayUiState(
-                    habitName = "Meditation",
+                    habit = HabitEntity(id = 1, name = "Meditation", description = "", color = HabitColor.TEAL),
                     date = LocalDate(2026, 2, 12),
                     isLoading = false,
                     records = listOf(
@@ -293,7 +299,7 @@ private fun HabitDayEmptyPreview() {
         Surface {
             HabitDay(
                 uiState = HabitDayUiState(
-                    habitName = "Meditation",
+                    habit = HabitEntity(id = 1, name = "Meditation", description = "", color = HabitColor.TEAL),
                     date = LocalDate(2026, 2, 5),
                     isLoading = false,
                     records = emptyList(),

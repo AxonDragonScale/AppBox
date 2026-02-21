@@ -1,6 +1,7 @@
 package com.axondragonscale.limitless.ui.habit
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,8 +65,9 @@ import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.habit.calendar.HabitCalendar
 import com.axondragonscale.limitless.ui.habit.history.History
-import com.axondragonscale.limitless.ui.home.RecordHabitSheet
+import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.limitless.ui.habit.stats.Stats
+import com.axondragonscale.limitless.ui.theme.HabitTheme
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -84,19 +86,21 @@ fun Habit(
     val vm: HabitVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
-    Habit(
-        modifier = modifier,
-        uiState = uiState,
-        onEvent = { event ->
-            when (event) {
-                is HabitUiEvent.NavigateBack -> navController.popBackStack()
-                is HabitUiEvent.NavigateToEditor -> navController.navigate(Route.Editor(habitId = uiState.habit.id))
-                is HabitUiEvent.NavigateToDayDetail -> navController.navigate(Route.HabitDay(habitId = uiState.habit.id, date = event.date.toString()))
+    HabitTheme(habitColor = uiState.habit.color) {
+        Habit(
+            modifier = modifier.background(MaterialTheme.colorScheme.background),
+            uiState = uiState,
+            onEvent = { event ->
+                when (event) {
+                    is HabitUiEvent.NavigateBack -> navController.popBackStack()
+                    is HabitUiEvent.NavigateToEditor -> navController.navigate(Route.Editor(habitId = uiState.habit.id))
+                    is HabitUiEvent.NavigateToDayDetail -> navController.navigate(Route.HabitDay(habitId = uiState.habit.id, date = event.date.toString()))
 
-                else -> vm.onEvent(event)
-            }
-        },
-    )
+                    else -> vm.onEvent(event)
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -109,7 +113,7 @@ private fun Habit(
 
     if (showRecordSheet) {
         RecordHabitSheet(
-            habitName = uiState.habit.name,
+            habit = uiState.habit,
             onRecord = { message, timestamp ->
                 onEvent(HabitUiEvent.RecordHabit(message, timestamp))
                 showRecordSheet = false

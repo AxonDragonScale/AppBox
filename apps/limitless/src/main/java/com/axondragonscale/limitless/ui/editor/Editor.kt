@@ -61,6 +61,7 @@ import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.theme.HabitTheme
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.LocalTime
@@ -76,7 +77,7 @@ fun Editor(
     navController: NavController,
 ) {
     val vm: EditorVM = koinViewModel()
-    val uiState = vm.uiState.collectAsStateWithLifecycle()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     vm.uiEffect.collectWithLifecycle { effect ->
         when (effect) {
@@ -84,17 +85,19 @@ fun Editor(
         }
     }
 
-    Editor(
-        modifier = modifier,
-        uiState = uiState.value,
-        onEvent = { event ->
-            when (event) {
-                EditorUiEvent.NavigateBack -> navController.popBackStack()
+    HabitTheme(habitColor = uiState.habit.color) {
+        Editor(
+            modifier = modifier.background(MaterialTheme.colorScheme.background),
+            uiState = uiState,
+            onEvent = { event ->
+                when (event) {
+                    EditorUiEvent.NavigateBack -> navController.popBackStack()
 
-                else -> vm.onEvent(event)
+                    else -> vm.onEvent(event)
+                }
             }
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -103,9 +106,7 @@ private fun Editor(
     uiState: EditorUiState,
     onEvent: (EditorUiEvent) -> Unit,
 ) = Surface(
-    modifier = modifier
-        .systemBarsPadding()
-        .imePadding(),
+    modifier = modifier.systemBarsPadding().imePadding(),
     color = MaterialTheme.colorScheme.background,
 ) {
     Column(
@@ -228,7 +229,7 @@ private fun ColorSection(
             modifier = Modifier.padding(end = 8.dp).size(20.dp),
             imageVector = Icons.Default.Palette,
             contentDescription = null,
-            tint = selected.color,
+            tint = MaterialTheme.colorScheme.primary,
         )
         Text(
             text = "Color",

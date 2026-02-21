@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.home
+package com.axondragonscale.limitless.ui.common
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -47,7 +47,8 @@ import androidx.compose.ui.unit.dp
 import com.axondragonscale.commons.compose.TimePickerDialog
 import com.axondragonscale.commons.formatAmPm
 import com.axondragonscale.commons.formatShort
-import com.axondragonscale.limitless.ui.common.PickerChip
+import com.axondragonscale.limitless.database.entity.HabitEntity
+import com.axondragonscale.limitless.ui.theme.HabitTheme
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -67,40 +68,42 @@ import kotlin.time.Instant
 @Composable
 fun RecordHabitSheet(
     modifier: Modifier = Modifier,
-    habitName: String,
+    habit: HabitEntity,
     showDatePicker: Boolean = false,
     showTimePicker: Boolean = false,
     initialDate: LocalDate? = null,
     onRecord: (message: String, timestamp: Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(
-        modifier = modifier,
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = { },
-    ) {
-        // Custom drag handle
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(vertical = 16.dp)
-                .size(width = 48.dp, height = 4.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(2.dp),
-                ),
-        )
+    HabitTheme(habit.color) {
+        ModalBottomSheet(
+            modifier = modifier,
+            onDismissRequest = onDismiss,
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { },
+        ) {
+            // Custom drag handle
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(vertical = 16.dp)
+                    .size(width = 48.dp, height = 4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(2.dp),
+                    ),
+            )
 
-        RecordHabitSheetContent(
-            habitName = habitName,
-            showDatePicker = showDatePicker,
-            showTimePicker = showTimePicker,
-            initialDate = initialDate,
-            onRecord = onRecord,
-        )
+            RecordHabitSheetContent(
+                habitName = habit.name,
+                showDatePicker = showDatePicker,
+                showTimePicker = showTimePicker,
+                initialDate = initialDate,
+                onRecord = onRecord,
+            )
 
-        Spacer(modifier = Modifier.navigationBarsPadding())
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
     }
 }
 
