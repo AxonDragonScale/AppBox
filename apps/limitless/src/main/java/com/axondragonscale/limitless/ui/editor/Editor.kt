@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
-import com.axondragonscale.commons.compose.thenIf
 import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.ReminderEntity
@@ -106,7 +105,9 @@ private fun Editor(
     uiState: EditorUiState,
     onEvent: (EditorUiEvent) -> Unit,
 ) = Surface(
-    modifier = modifier.systemBarsPadding().imePadding(),
+    modifier = modifier
+        .systemBarsPadding()
+        .imePadding(),
     color = MaterialTheme.colorScheme.background,
 ) {
     Column(
@@ -161,7 +162,8 @@ private fun Editor(
             trailingItems = listOf(
                 AppBarItem(
                     icon = Icons.Default.Check,
-                    onClick = { onEvent(EditorUiEvent.SaveHabit(uiState.habit)) }
+                    onClick = { onEvent(EditorUiEvent.SaveHabit(uiState.habit)) },
+                    enabled = uiState.habit.name.isNotBlank(),
                 )
             )
         )
@@ -222,11 +224,15 @@ private fun ColorSection(
         .padding(bottom = 8.dp),
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(32.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            modifier = Modifier.padding(end = 8.dp).size(20.dp),
+            modifier = Modifier
+                .padding(end = 8.dp)
+                .size(20.dp),
             imageVector = Icons.Default.Palette,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
@@ -252,30 +258,28 @@ private fun ColorSection(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             HabitColor.entries.forEach { habitColor ->
-                val isSelected = habitColor == selected
+                val selectedTint = if (habitColor.color.luminance() > 0.5f) Color.Black else Color.White
                 Box(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
                         .background(color = habitColor.color)
-                        .thenIf(isSelected) {
-                            this.border(
-                                width = 2.5.dp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                shape = CircleShape,
-                            )
-                        }
                         .clickable { onColorSelected(habitColor) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (isSelected) {
-                        // Use a contrast-aware tint so the check is visible on both
-                        val checkTint = if (habitColor.color.luminance() > 0.5f) Color.Black else Color.White
+                    if (habitColor == selected) {
                         Icon(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .border(
+                                    width = 1.dp,
+                                    color = selectedTint,
+                                    shape = CircleShape,
+                                )
+                                .padding(6.dp),
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            tint = checkTint,
-                            modifier = Modifier.size(16.dp),
+                            tint = selectedTint,
                         )
                     }
                 }

@@ -36,6 +36,7 @@ import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 data class AppBarItem(
     val icon: ImageVector,
     val onClick: () -> Unit,
+    val enabled: Boolean = true,
 )
 
 @Composable
@@ -65,6 +66,7 @@ fun AppBar(
             IconButton(
                 modifier = Modifier,
                 onClick = item.onClick,
+                enabled = item.enabled,
             ) {
                 Icon(
                     imageVector = item.icon,
@@ -86,6 +88,7 @@ fun AppBar(
             IconButton(
                 modifier = Modifier,
                 onClick = item.onClick,
+                enabled = item.enabled,
             ) {
                 Icon(
                     imageVector = item.icon,
