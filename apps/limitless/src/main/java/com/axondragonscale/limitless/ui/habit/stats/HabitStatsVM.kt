@@ -13,12 +13,12 @@ import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.habit.stats.model.DailyHistoryData
 import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionData
 import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionRate
-import com.axondragonscale.limitless.ui.habit.stats.model.MonthCount
-import com.axondragonscale.limitless.ui.habit.stats.model.MonthlyTrendData
+import com.axondragonscale.limitless.ui.model.MonthCount
+import com.axondragonscale.limitless.ui.model.MonthlyTrendData
 import com.axondragonscale.limitless.ui.habit.stats.model.StreakData
 import com.axondragonscale.limitless.ui.habit.stats.model.SummaryData
 import com.axondragonscale.limitless.ui.habit.stats.model.TimeOfDayData
-import com.axondragonscale.limitless.ui.habit.stats.model.WeeklyPatternData
+import com.axondragonscale.limitless.ui.model.WeeklyPatternData
 import com.axondragonscale.commons.daysBetween
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.commons.compose.StatCard
@@ -14,7 +15,7 @@ import com.axondragonscale.commons.compose.chart.BarChartOrientation
 import com.axondragonscale.commons.compose.chart.BarChartStyle
 import com.axondragonscale.commons.compose.chart.BarEntry
 import com.axondragonscale.limitless.model.HabitColor
-import com.axondragonscale.limitless.ui.habit.stats.model.WeeklyPatternData
+import com.axondragonscale.limitless.ui.model.WeeklyPatternData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.commons.compose.ChartEmptyState
 import com.axondragonscale.commons.dayOfWeekAbbreviations
@@ -24,21 +25,22 @@ import com.axondragonscale.limitless.ui.theme.color
  * Created by Ronak Harkhani on 21/07/25
  *
  * A card showing a horizontal bar chart of average records per day of the week (Mon–Sun).
- * The day with the highest average is highlighted at full habit color opacity; all other
+ * The day with the highest average is highlighted at full color opacity; all other
  * bars are shown at reduced opacity so the peak day stands out at a glance.
  */
 @Composable
 fun WeeklyPatternChart(
     modifier: Modifier = Modifier,
     data: WeeklyPatternData,
-    habitColor: HabitColor,
+    color: Color,
+    title: String = "Weekly Pattern",
 ) {
     val maxAvg = data.dayAverages.maxOrNull() ?: 0f
     val isEmpty = maxAvg == 0f
 
     StatCard(
         modifier = modifier,
-        title = "Weekly Pattern",
+        title = title,
     ) {
         if (isEmpty) {
             ChartEmptyState()
@@ -47,7 +49,7 @@ fun WeeklyPatternChart(
                 BarEntry(
                     value = avg,
                     label = dayOfWeekAbbreviations[index],
-                    color = habitColor.color.copy(alpha = if (avg == maxAvg) 1f else 0.5f),
+                    color = color.copy(alpha = if (avg == maxAvg) 1f else 0.5f),
                 )
             }
             BarChart(
@@ -77,7 +79,7 @@ private fun Preview() {
             data = WeeklyPatternData(
                 dayAverages = listOf(2.5f, 3.1f, 1.8f, 4.2f, 3.7f, 5.0f, 2.0f),
             ),
-            habitColor = HabitColor.PURPLE,
+            color = HabitColor.PURPLE.color,
         )
     }
 }
@@ -92,7 +94,7 @@ private fun SinglePeakPreview() {
             data = WeeklyPatternData(
                 dayAverages = listOf(1.0f, 1.2f, 0.8f, 1.5f, 2.0f, 8.0f, 6.5f),
             ),
-            habitColor = HabitColor.ORANGE,
+            color = HabitColor.ORANGE.color,
         )
     }
 }
@@ -107,7 +109,23 @@ private fun NoDataPreview() {
             data = WeeklyPatternData(
                 dayAverages = listOf(0f, 0f, 0f, 0f, 0f, 0f, 0f),
             ),
-            habitColor = HabitColor.GREEN,
+            color = HabitColor.GREEN.color,
+        )
+    }
+}
+
+@Preview(name = "Custom Title — Light", showBackground = true)
+@Preview(name = "Custom Title — Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun CustomTitlePreview() {
+    LimitlessTheme {
+        WeeklyPatternChart(
+            modifier = Modifier.padding(16.dp),
+            data = WeeklyPatternData(
+                dayAverages = listOf(3.0f, 2.5f, 4.1f, 3.8f, 5.0f, 4.5f, 2.0f),
+            ),
+            color = HabitColor.TEAL.color,
+            title = "Weekly Rhythm",
         )
     }
 }

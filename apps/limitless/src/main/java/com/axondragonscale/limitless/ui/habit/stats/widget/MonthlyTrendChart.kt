@@ -2,6 +2,7 @@ package com.axondragonscale.limitless.ui.habit.stats.widget
 
 import android.content.res.Configuration
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,8 +22,8 @@ import com.axondragonscale.commons.compose.chart.BarChartStyle
 import com.axondragonscale.commons.compose.chart.BarEntry
 import com.axondragonscale.commons.monthAbbreviations
 import com.axondragonscale.limitless.model.HabitColor
-import com.axondragonscale.limitless.ui.habit.stats.model.MonthCount
-import com.axondragonscale.limitless.ui.habit.stats.model.MonthlyTrendData
+import com.axondragonscale.limitless.ui.model.MonthCount
+import com.axondragonscale.limitless.ui.model.MonthlyTrendData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
@@ -67,9 +68,8 @@ private const val MinMonths = 12
 fun MonthlyTrendChart(
     modifier: Modifier = Modifier,
     data: MonthlyTrendData,
-    habitColor: HabitColor,
+    color: Color,
 ) {
-    val color = habitColor.color
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val scrollState = rememberScrollState()
@@ -159,7 +159,7 @@ private fun Preview() {
                     MonthCount(year = 2025, month = 7, count = 12),
                 ),
             ),
-            habitColor = HabitColor.PURPLE,
+            color = HabitColor.PURPLE.color,
         )
     }
 }
@@ -177,7 +177,7 @@ private fun FewMonthsPreview() {
                     MonthCount(year = 2025, month = 7, count = 21),
                 ),
             ),
-            habitColor = HabitColor.TEAL,
+            color = HabitColor.TEAL.color,
         )
     }
 }
@@ -194,7 +194,7 @@ private fun SingleMonthPreview() {
                     MonthCount(year = 2025, month = 7, count = 14),
                 ),
             ),
-            habitColor = HabitColor.ORANGE,
+            color = HabitColor.ORANGE.color,
         )
     }
 }
@@ -220,7 +220,7 @@ private fun YearSpanningPreview() {
                     MonthCount(year = 2025, month = 7, count = 17),
                 ),
             ),
-            habitColor = HabitColor.GREEN,
+            color = HabitColor.GREEN.color,
         )
     }
 }
@@ -242,7 +242,7 @@ private fun GrowingTrendPreview() {
                     MonthCount(year = 2025, month = 7, count = 44),
                 ),
             ),
-            habitColor = HabitColor.GREEN,
+            color = HabitColor.GREEN.color,
         )
     }
 }
@@ -255,7 +255,7 @@ private fun EmptyPreview() {
         MonthlyTrendChart(
             modifier = Modifier.padding(16.dp),
             data = MonthlyTrendData(monthCounts = emptyList()),
-            habitColor = HabitColor.BLUE,
+            color = HabitColor.BLUE.color,
         )
     }
 }
