@@ -38,7 +38,10 @@ import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.stats.model.TodayHabitStatus
 import com.axondragonscale.limitless.ui.stats.model.TodayProgressData
+import com.axondragonscale.limitless.ui.stats.model.HabitConsistencyData
+import com.axondragonscale.limitless.ui.stats.model.HabitConsistencyItem
 import com.axondragonscale.limitless.ui.stats.model.WeekComparisonData
+import com.axondragonscale.limitless.ui.stats.widget.HabitConsistencyRanking
 import com.axondragonscale.limitless.ui.stats.widget.TodayProgress
 import com.axondragonscale.limitless.ui.stats.widget.WeekComparison
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
@@ -169,7 +172,11 @@ private fun StatsList(
             item { WeekComparison(data = data) }
         }
 
-        // Sections 3–6 will be added in subsequent steps
+        uiState.habitConsistency?.let { data ->
+            item { HabitConsistencyRanking(data = data) }
+        }
+
+        // Sections 4–6 will be added in subsequent steps
     }
 }
 
@@ -200,6 +207,15 @@ private fun ContentPreview() {
                     thisWeekDailyCounts = listOf(7, 5, 6, 8, 7, 5, 4),
                     lastWeekDailyCounts = listOf(6, 5, 5, 7, 6, 5, 5),
                     hasLastWeekData = true,
+                ),
+                habitConsistency = HabitConsistencyData(
+                    habits = listOf(
+                        HabitConsistencyItem("Meditation",  HabitColor.TEAL,   0.92f, 92, 100),
+                        HabitConsistencyItem("Exercise",    HabitColor.ORANGE, 0.85f, 85, 100),
+                        HabitConsistencyItem("Reading",     HabitColor.PURPLE, 0.61f, 61, 100),
+                        HabitConsistencyItem("Journaling",  HabitColor.BLUE,   0.44f, 44, 100),
+                        HabitConsistencyItem("Cold Shower", HabitColor.SKY,    0.18f, 18, 100),
+                    ),
                 ),
             ),
             onEvent = {},
