@@ -87,10 +87,7 @@ private fun Home(
     selectedHabitData?.let { habitData ->
         RecordHabitSheet(
             habit = habitData.habit,
-            onRecord = { message, timestamp ->
-                onEvent(HomeUiEvent.RecordHabit(habitData.habit.id, message, timestamp))
-                selectedHabitData = null
-            },
+            onRecord = { record -> onEvent(HomeUiEvent.SaveRecord(record)) },
             onDismiss = { selectedHabitData = null },
         )
     }

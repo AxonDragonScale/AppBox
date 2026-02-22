@@ -114,10 +114,7 @@ private fun Habit(
     if (showRecordSheet) {
         RecordHabitSheet(
             habit = uiState.habit,
-            onRecord = { message, timestamp ->
-                onEvent(HabitUiEvent.RecordHabit(message, timestamp))
-                showRecordSheet = false
-            },
+            onRecord = { record -> onEvent(HabitUiEvent.SaveRecord(record)) },
             onDismiss = { showRecordSheet = false },
         )
     }

@@ -19,13 +19,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
+import com.axondragonscale.limitless.model.HabitColor
+import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.limitless.ui.common.RecordItem
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import org.koin.androidx.compose.koinViewModel
@@ -52,6 +57,18 @@ private fun History(
     uiState: HistoryUiState,
     onEvent: (HistoryUiEvent) -> Unit,
 ) {
+    var selectedRecord by remember { mutableStateOf<RecordEntity?>(null) }
+
+    selectedRecord?.let { record ->
+        RecordHabitSheet(
+            habit = uiState.habit,
+            initialRecord = record,
+            onRecord = { record -> onEvent(HistoryUiEvent.SaveRecord(record)) },
+            onDelete = { onEvent(HistoryUiEvent.DeleteRecord(record.id)) },
+            onDismiss = { selectedRecord = null },
+        )
+    }
+
     val listState = rememberLazyListState()
 
     // Trigger load-more when the user is within 5 items of the end of the loaded records
@@ -95,7 +112,7 @@ private fun History(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 items(items = uiState.records, key = { it.id }) { record ->
-                    RecordItem(record = record)
+                    RecordItem(record = record, onClick = { selectedRecord = record })
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 4.dp),
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
@@ -139,6 +156,7 @@ private fun HistoryPreview() {
     LimitlessTheme {
         Surface {
             val uiState = HistoryUiState(
+                habit = HabitEntity(id = 1, name = "Meditation", description = "", color = HabitColor.TEAL),
                 isLoading = false,
                 records = listOf(
                     RecordEntity(id = 1, habitId = 1, timestamp = 1750900200000, message = "Morning meditation session"),
@@ -161,6 +179,7 @@ private fun HistoryEndPreview() {
     LimitlessTheme {
         Surface {
             val uiState = HistoryUiState(
+                habit = HabitEntity(id = 1, name = "Meditation", description = "", color = HabitColor.TEAL),
                 isLoading = false,
                 records = listOf(
                     RecordEntity(id = 1, habitId = 1, timestamp = 1750900200000, message = "Morning meditation session"),

@@ -1,5 +1,6 @@
 package com.axondragonscale.limitless.ui.habit.calendar
 
+import com.axondragonscale.limitless.database.entity.RecordEntity
 import kotlinx.datetime.LocalDate
 
 /**
@@ -9,5 +10,5 @@ sealed interface HabitCalendarUiEvent {
     data object PreviousMonth : HabitCalendarUiEvent
     data object NextMonth : HabitCalendarUiEvent
     data class NavigateToDayDetail(val date: LocalDate) : HabitCalendarUiEvent
-    data class AddRecord(val message: String, val timestamp: Long) : HabitCalendarUiEvent
+    data class SaveRecord(val record: RecordEntity) : HabitCalendarUiEvent
 }

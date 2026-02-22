@@ -49,7 +49,7 @@ class HabitCalendarVM(
     fun onEvent(event: HabitCalendarUiEvent): Any = when (event) {
         is HabitCalendarUiEvent.PreviousMonth -> shiftMonth(-1)
         is HabitCalendarUiEvent.NextMonth -> shiftMonth(1)
-        is HabitCalendarUiEvent.AddRecord -> addRecord(event)
+        is HabitCalendarUiEvent.SaveRecord -> saveRecord(event)
 
         // Handled in Compose
         is HabitCalendarUiEvent.NavigateToDayDetail -> Unit
@@ -92,7 +92,7 @@ class HabitCalendarVM(
         }
     }
 
-    private fun addRecord(event: HabitCalendarUiEvent.AddRecord) = viewModelScope.launch(Dispatchers.IO) {
-        repository.recordHabit(habitId, event.timestamp, event.message)
+    private fun saveRecord(event: HabitCalendarUiEvent.SaveRecord) = viewModelScope.launch(Dispatchers.IO) {
+        repository.saveRecord(event.record)
     }
 }

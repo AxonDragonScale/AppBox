@@ -95,10 +95,7 @@ private fun HabitCalendar(
             habit = uiState.habit,
             showTimePicker = true,
             initialDate = date,
-            onRecord = { message, timestamp ->
-                onEvent(HabitCalendarUiEvent.AddRecord(message, timestamp))
-                longPressedDate = null
-            },
+            onRecord = { record -> onEvent(HabitCalendarUiEvent.SaveRecord(record)) },
             onDismiss = { longPressedDate = null },
         )
     }

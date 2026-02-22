@@ -46,9 +46,6 @@ class LimitlessRepository(
 
     suspend fun saveHabit(habit: HabitEntity): Long = habitDao.upsert(habit)
 
-    suspend fun recordHabit(habitId: Long, timestamp: Long, message: String) =
-        recordDao.upsert(RecordEntity(habitId = habitId, timestamp = timestamp, message = message))
-
     suspend fun getRecordsPaginated(habitId: Long, limit: Int, offset: Int): List<RecordEntity> =
         recordDao.getRecordsPaginated(habitId, limit, offset)
 
@@ -57,6 +54,8 @@ class LimitlessRepository(
 
     fun getRecordsForDate(habitId: Long, date: LocalDate): Flow<List<RecordEntity>> =
         recordDao.getRecordsForDate(habitId, date.toString())
+
+    suspend fun saveRecord(record: RecordEntity) = recordDao.upsert(record)
 
     suspend fun deleteRecord(id: Long) = recordDao.delete(id)
 

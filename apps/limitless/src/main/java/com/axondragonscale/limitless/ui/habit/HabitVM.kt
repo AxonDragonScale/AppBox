@@ -71,7 +71,7 @@ class HabitVM(
     }
 
     fun onEvent(event: HabitUiEvent): Any = when (event) {
-        is HabitUiEvent.RecordHabit -> recordHabit(event)
+        is HabitUiEvent.SaveRecord -> saveRecord(event)
 
         // Handled in Compose
         is HabitUiEvent.NavigateBack -> Unit
@@ -79,8 +79,8 @@ class HabitVM(
         is HabitUiEvent.NavigateToDayDetail -> Unit
     }
 
-    private fun recordHabit(event: HabitUiEvent.RecordHabit) = viewModelScope.launch(Dispatchers.IO) {
-        repository.recordHabit(habitRoute.habitId, event.timestamp, event.message)
+    private fun saveRecord(event: HabitUiEvent.SaveRecord) = viewModelScope.launch(Dispatchers.IO) {
+        repository.saveRecord(event.record)
     }
 
 }

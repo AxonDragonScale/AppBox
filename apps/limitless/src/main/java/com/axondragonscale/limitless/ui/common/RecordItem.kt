@@ -1,6 +1,7 @@
 package com.axondragonscale.limitless.ui.common
 
 import android.content.res.Configuration
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +31,7 @@ import kotlin.time.Instant
 internal fun RecordItem(
     modifier: Modifier = Modifier,
     record: RecordEntity,
+    onClick: () -> Unit = {},
 ) {
     val formattedDateTime = remember(record.timestamp) {
         Instant.fromEpochMilliseconds(record.timestamp).formatDateTime()
@@ -38,6 +40,7 @@ internal fun RecordItem(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 12.dp),
     ) {
         Text(

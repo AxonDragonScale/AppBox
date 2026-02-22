@@ -18,14 +18,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SelectableDates
@@ -41,13 +44,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.commons.compose.TimePickerDialog
 import com.axondragonscale.commons.formatAmPm
+import com.axondragonscale.commons.formatDateTime
 import com.axondragonscale.commons.formatShort
 import com.axondragonscale.limitless.database.entity.HabitEntity
+import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.ui.theme.HabitTheme
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.LocalDate
@@ -72,7 +78,9 @@ fun RecordHabitSheet(
     showDatePicker: Boolean = false,
     showTimePicker: Boolean = false,
     initialDate: LocalDate? = null,
-    onRecord: (message: String, timestamp: Long) -> Unit,
+    initialRecord: RecordEntity? = null,
+    onRecord: (RecordEntity) -> Unit,
+    onDelete: (() -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     HabitTheme(habit.color) {
@@ -81,7 +89,11 @@ fun RecordHabitSheet(
             onDismissRequest = onDismiss,
             containerColor = MaterialTheme.colorScheme.surface,
             dragHandle = { },
+            scrimColor = BottomSheetDefaults.ScrimColor.copy(alpha = 0.8f),
+            shape = RectangleShape,
         ) {
+            HorizontalDivider()
+
             // Custom drag handle
             Box(
                 modifier = Modifier
@@ -99,7 +111,15 @@ fun RecordHabitSheet(
                 showDatePicker = showDatePicker,
                 showTimePicker = showTimePicker,
                 initialDate = initialDate,
-                onRecord = onRecord,
+                initialRecord = initialRecord,
+                onRecord = { message, timestamp ->
+                    onRecord(RecordEntity(initialRecord?.id ?: 0, habit.id, timestamp, message))
+                    onDismiss()
+                },
+                onDelete = {
+                    onDelete?.invoke()
+                    onDismiss()
+                },
             )
 
             Spacer(modifier = Modifier.navigationBarsPadding())
@@ -115,18 +135,32 @@ private fun RecordHabitSheetContent(
     showDatePicker: Boolean = false,
     showTimePicker: Boolean = false,
     initialDate: LocalDate? = null,
+    initialRecord: RecordEntity? = null,
     onRecord: (message: String, timestamp: Long) -> Unit,
+    onDelete: (() -> Unit)? = null,
 ) {
     val tz = TimeZone.currentSystemDefault()
     val now = remember { Clock.System.now() }
     val nowLocal = remember(now) { now.toLocalDateTime(tz) }
 
-    val hasAnyPicker = showDatePicker || showTimePicker
+    val isEditMode = initialRecord != null
+    val recordLocalDateTime = remember(initialRecord) {
+        initialRecord?.let { Instant.fromEpochMilliseconds(it.timestamp).toLocalDateTime(tz) }
+    }
+    val originalDateTimeText = remember(initialRecord) {
+        initialRecord?.let { Instant.fromEpochMilliseconds(it.timestamp).formatDateTime() }
+    }
 
-    var message by rememberSaveable { mutableStateOf("") }
-    var selectedDate by rememberSaveable { mutableStateOf(initialDate ?: nowLocal.date) }
-    var selectedHour by rememberSaveable { mutableIntStateOf(nowLocal.hour) }
-    var selectedMinute by rememberSaveable { mutableIntStateOf(nowLocal.minute) }
+    val effectiveShowDatePicker = showDatePicker || isEditMode
+    val effectiveShowTimePicker = showTimePicker || isEditMode
+    val hasAnyPicker = effectiveShowDatePicker || effectiveShowTimePicker
+
+    var message by rememberSaveable { mutableStateOf(initialRecord?.message ?: "") }
+    var selectedDate by rememberSaveable { mutableStateOf(recordLocalDateTime?.date ?: initialDate ?: nowLocal.date) }
+    var selectedHour by rememberSaveable { mutableIntStateOf(recordLocalDateTime?.hour ?: nowLocal.hour) }
+    var selectedMinute by rememberSaveable { mutableIntStateOf(recordLocalDateTime?.minute ?: nowLocal.minute) }
+
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     var showDatePickerDialog by remember { mutableStateOf(false) }
     var showTimePickerDialog by remember { mutableStateOf(false) }
@@ -142,8 +176,7 @@ private fun RecordHabitSheetContent(
             initialDate = selectedDate,
             onDateSelected = { newDate ->
                 selectedDate = newDate
-                // Clamp time if the newly selected date is today and the selected
-                // time would now be in the future.
+                // Clamp time if the newly selected date is today and the selected time would now be in the future.
                 if (newDate == nowLocal.date) {
                     val clampedInstant = LocalDateTime(newDate, LocalTime(selectedHour, selectedMinute))
                         .toInstant(tz)
@@ -192,6 +225,15 @@ private fun RecordHabitSheetContent(
             color = MaterialTheme.colorScheme.primary,
         )
 
+        if (isEditMode && originalDateTimeText != null) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = originalDateTimeText,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
+        }
+
         if (hasAnyPicker) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -199,7 +241,7 @@ private fun RecordHabitSheetContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (showDatePicker) {
+                if (effectiveShowDatePicker) {
                     PickerChip(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.CalendarMonth,
@@ -208,7 +250,7 @@ private fun RecordHabitSheetContent(
                     )
                 }
 
-                if (showTimePicker) {
+                if (effectiveShowTimePicker) {
                     PickerChip(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Schedule,
@@ -252,27 +294,90 @@ private fun RecordHabitSheetContent(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        Button(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                val timestamp = if (hasAnyPicker) {
-                    LocalDateTime(selectedDate, LocalTime(selectedHour, selectedMinute))
-                        .toInstant(tz)
-                        .toEpochMilliseconds()
-                } else {
-                    Clock.System.now().toEpochMilliseconds()
+        if (!showDeleteConfirm) {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    val timestamp = if (hasAnyPicker) {
+                        LocalDateTime(selectedDate, LocalTime(selectedHour, selectedMinute))
+                            .toInstant(tz)
+                            .toEpochMilliseconds()
+                    } else {
+                        Clock.System.now().toEpochMilliseconds()
+                    }
+                    onRecord(message.trim(), timestamp)
+                },
+                enabled = !isInFuture,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+                Text(
+                    text = if (isEditMode) "Save" else "Record",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(vertical = 4.dp),
+                )
+            }
+        }
+
+        if (isEditMode) {
+            if (showDeleteConfirm) {
+                Text(
+                    text = "Delete this record?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = { showDeleteConfirm = false },
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
+
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = { onDelete?.invoke() },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                        ),
+                    ) {
+                        Text(
+                            text = "Delete",
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
                 }
-                onRecord(message.trim(), timestamp)
-            },
-            enabled = !isInFuture,
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(),
-        ) {
-            Text(
-                text = "Record",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 4.dp),
-            )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { showDeleteConfirm = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(
+                        text = "Delete",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -296,10 +401,7 @@ private fun RecordDatePickerDialog(
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
                 // Allow dates up to and including today in local timezone.
-                // DatePicker represents each day as UTC midnight, so we compare
-                // the date portion only.
-                val dateForMillis = Instant.fromEpochMilliseconds(utcTimeMillis)
-                    .toLocalDateTime(TimeZone.UTC).date
+                val dateForMillis = Instant.fromEpochMilliseconds(utcTimeMillis).toLocalDateTime(TimeZone.UTC).date
                 return dateForMillis <= today
             }
         },
@@ -391,5 +493,32 @@ private fun RecordHabitSheetDateTimePreview() {
         }
     }
 }
+
+@Preview(name = "Edit Mode Light", showBackground = true)
+@Preview(name = "Edit Mode Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun RecordHabitSheetEditPreview() {
+    LimitlessTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            RecordHabitSheetContent(
+                habitName = "Meditation",
+                initialRecord = RecordEntity(
+                    id = 1,
+                    habitId = 1,
+                    timestamp = 1750900200000,
+                    message = "Morning meditation session",
+                ),
+                onRecord = { _, _ -> },
+                onDelete = {},
+            )
+        }
+    }
+}
+
+
 
 // endregion

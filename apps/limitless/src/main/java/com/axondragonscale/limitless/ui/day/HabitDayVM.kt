@@ -33,7 +33,8 @@ class HabitDayVM(
     }
 
     fun onEvent(event: HabitDayUiEvent): Any = when (event) {
-        is HabitDayUiEvent.AddRecord -> addRecord(event)
+        is HabitDayUiEvent.SaveRecord -> saveRecord(event)
+        is HabitDayUiEvent.DeleteRecord -> deleteRecord(event)
 
         // Handled in Compose
         HabitDayUiEvent.NavigateBack -> Unit
@@ -54,7 +55,11 @@ class HabitDayVM(
             }
     }
 
-    private fun addRecord(event: HabitDayUiEvent.AddRecord) = viewModelScope.launch(Dispatchers.IO) {
-        repository.recordHabit(habitId, event.timestamp, event.message)
+    private fun saveRecord(event: HabitDayUiEvent.SaveRecord) = viewModelScope.launch(Dispatchers.IO) {
+        repository.saveRecord(event.record)
+    }
+
+    private fun deleteRecord(event: HabitDayUiEvent.DeleteRecord) = viewModelScope.launch(Dispatchers.IO) {
+        repository.deleteRecord(event.id)
     }
 }

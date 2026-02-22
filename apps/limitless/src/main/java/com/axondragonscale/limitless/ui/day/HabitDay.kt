@@ -40,9 +40,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.formatShort
 import com.axondragonscale.commons.formatTime
+import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.model.UIAlign
-import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
@@ -57,6 +57,11 @@ import kotlin.time.Instant
 /**
  * Created by Ronak Harkhani on 29/06/25
  */
+
+private sealed interface RecordSheetMode {
+    data object Add : RecordSheetMode
+    data class Edit(val record: RecordEntity) : RecordSheetMode
+}
 
 @Composable
 fun HabitDay(
@@ -87,19 +92,24 @@ private fun HabitDay(
     onEvent: (HabitDayUiEvent) -> Unit,
 ) {
     val formattedDate = remember(uiState.date) { uiState.date?.formatShort() ?: "" }
-    var showRecordSheet by remember { mutableStateOf(false) }
+    var sheetMode by remember { mutableStateOf<RecordSheetMode?>(null) }
 
-    if (showRecordSheet) {
-        RecordHabitSheet(
+    when (val mode = sheetMode) {
+        is RecordSheetMode.Add -> RecordHabitSheet(
             habit = uiState.habit,
             showTimePicker = true,
             initialDate = uiState.date,
-            onRecord = { message, timestamp ->
-                onEvent(HabitDayUiEvent.AddRecord(message, timestamp))
-                showRecordSheet = false
-            },
-            onDismiss = { showRecordSheet = false },
+            onRecord = { record -> onEvent(HabitDayUiEvent.SaveRecord(record)) },
+            onDismiss = { sheetMode = null },
         )
+        is RecordSheetMode.Edit -> RecordHabitSheet(
+            habit = uiState.habit,
+            initialRecord = mode.record,
+            onRecord = { record -> onEvent(HabitDayUiEvent.SaveRecord(record)) },
+            onDelete = { onEvent(HabitDayUiEvent.DeleteRecord(mode.record.id)) },
+            onDismiss = { sheetMode = null },
+        )
+        null -> Unit
     }
 
     Scaffold(
@@ -117,7 +127,7 @@ private fun HabitDay(
                 trailingItems = listOf(
                     AppBarItem(
                         icon = Icons.Default.AddCircle,
-                        onClick = { showRecordSheet = true },
+                        onClick = { sheetMode = RecordSheetMode.Add },
                     ),
                 ),
             )
@@ -169,7 +179,7 @@ private fun HabitDay(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                         ) {
                             items(items = uiState.records, key = { it.id }) { record ->
-                                RecordItem(record = record)
+                                RecordItem(record = record, onClick = { sheetMode = RecordSheetMode.Edit(record) })
                                 HorizontalDivider(
                                     modifier = Modifier.padding(horizontal = 4.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),

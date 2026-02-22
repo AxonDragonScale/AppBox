@@ -8,6 +8,7 @@ import com.axondragonscale.limitless.repository.LimitlessRepository
 import com.axondragonscale.limitless.ui.Route
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -28,16 +29,38 @@ class HistoryVM(
     val uiState = MutableStateFlow(HistoryUiState())
 
     init {
-        // Observe the record count so that any insert or delete triggers a full refresh.
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.getRecordCountFlow(habitRoute.habitId).collect {
-                refresh()
-            }
-        }
+        observeHabit()
+        observeRecordCount()
     }
 
     fun onEvent(event: HistoryUiEvent): Any = when (event) {
         is HistoryUiEvent.LoadMore -> loadMore()
+        is HistoryUiEvent.SaveRecord -> saveRecord(event)
+        is HistoryUiEvent.DeleteRecord -> deleteRecord(event)
+    }
+
+    private fun observeHabit() = viewModelScope.launch(Dispatchers.IO) {
+        repository.getHabitFlow(habitRoute.habitId)
+            .filterNotNull()
+            .collect { habit -> uiState.update { it.copy(habit = habit) } }
+    }
+
+    /**
+     * Observe the record count so that any insert or delete triggers a full refresh.
+     */
+    private fun observeRecordCount() = viewModelScope.launch(Dispatchers.IO) {
+        repository.getRecordCountFlow(habitRoute.habitId).collect {
+            refresh()
+        }
+    }
+
+    private fun saveRecord(event: HistoryUiEvent.SaveRecord) = viewModelScope.launch(Dispatchers.IO) {
+        repository.saveRecord(event.record)
+        refresh() // Since there is no change in count, manual refresh is required
+    }
+
+    private fun deleteRecord(event: HistoryUiEvent.DeleteRecord) = viewModelScope.launch(Dispatchers.IO) {
+        repository.deleteRecord(event.id)
     }
 
     /**
@@ -47,15 +70,15 @@ class HistoryVM(
      */
     private suspend fun refresh() {
         val currentCount = uiState.value.records.size
-        if (currentCount == 0) uiState.update { HistoryUiState(isLoading = true) }
+        if (currentCount == 0) uiState.update { it.copy(isLoading = true) }
 
         val records = repository.getRecordsPaginated(habitRoute.habitId, currentCount, 0)
         val totalCount = repository.getRecordCount(habitRoute.habitId)
         uiState.update {
-            HistoryUiState(
+            it.copy(
                 records = records,
                 isLoading = false,
-                hasMore = records.size < totalCount
+                hasMore = records.size < totalCount,
             )
         }
     }
