@@ -41,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.axondragonscale.commons.dayOfWeekAbbreviations
 import com.axondragonscale.commons.daysInMonth
 import com.axondragonscale.commons.displayName
 import com.axondragonscale.limitless.ui.common.RecordHabitSheet
@@ -56,8 +57,6 @@ import kotlin.time.Clock
 /**
  * Created by Ronak Harkhani on 29/06/25
  */
-
-private val DAY_HEADERS = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
 
 @Composable
 fun HabitCalendar(
@@ -151,7 +150,7 @@ private fun DayOfWeekHeader(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        DAY_HEADERS.forEach { day ->
+        dayOfWeekAbbreviations.forEach { day ->
             Text(
                 text = day,
                 modifier = Modifier.weight(1f),
