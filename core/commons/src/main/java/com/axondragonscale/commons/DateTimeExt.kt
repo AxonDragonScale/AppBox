@@ -36,6 +36,14 @@ val dayOfWeekAbbreviations: List<String> = listOf(
     "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
 )
 
+/**
+ * Single-letter day-of-week labels in ISO order (index 0 = Monday).
+ * Matches [DayOfWeek.letter] for each entry.
+ */
+val dayOfWeekLetters: List<String> = listOf(
+    "M", "T", "W", "T", "F", "S", "S",
+)
+
 // endregion
 
 // region Month Extensions
@@ -55,6 +63,10 @@ val Month.displayName: String
 /** Short 3-letter day abbreviation: "Mon", "Tue", … */
 val DayOfWeek.abbreviated: String
     get() = name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
+
+/** Single-letter day label: "M", "T", "W", "T", "F", "S", "S". */
+val DayOfWeek.letter: String
+    get() = dayOfWeekLetters[ordinal]
 
 // endregion
 

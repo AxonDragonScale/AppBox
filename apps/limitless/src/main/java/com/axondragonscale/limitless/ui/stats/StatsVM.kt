@@ -105,24 +105,31 @@ class StatsVM(
         today: LocalDate,
     ): WeekComparisonData {
         // ISO week starts Monday
-        val daysSinceMonday = today.dayOfWeek.isoDayNumber - 1
-        val thisWeekMonday = today.minus(daysSinceMonday, DateTimeUnit.DAY)
+        val thisWeekMonday = today.minus(today.dayOfWeek.ordinal, DateTimeUnit.DAY)
         val lastWeekMonday = thisWeekMonday.minus(1, DateTimeUnit.WEEK)
-        val lastWeekSunday = thisWeekMonday.minus(1, DateTimeUnit.DAY)
 
-        var thisWeekTotal = 0
-        var lastWeekTotal = 0
+        val thisWeekDailyCounts = IntArray(7)
+        val lastWeekDailyCounts = IntArray(7)
 
         for (dc in dayCounts) {
             when {
-                dc.date >= thisWeekMonday && dc.date <= today -> thisWeekTotal += dc.count
-                dc.date >= lastWeekMonday && dc.date <= lastWeekSunday -> lastWeekTotal += dc.count
+                dc.date >= thisWeekMonday && dc.date <= today ->
+                    thisWeekDailyCounts[dc.date.dayOfWeek.ordinal] += dc.count
+
+                dc.date >= lastWeekMonday && dc.date < thisWeekMonday ->
+                    lastWeekDailyCounts[dc.date.dayOfWeek.ordinal] += dc.count
             }
         }
 
+        val firstDate = dayCounts.minOfOrNull { it.date }
+        val hasLastWeekData = firstDate != null && daysBetween(firstDate, today) >= 7
+
         return WeekComparisonData(
-            thisWeekTotal = thisWeekTotal,
-            lastWeekTotal = lastWeekTotal,
+            thisWeekTotal = thisWeekDailyCounts.sum(),
+            lastWeekTotal = lastWeekDailyCounts.sum(),
+            thisWeekDailyCounts = thisWeekDailyCounts.toList(),
+            lastWeekDailyCounts = lastWeekDailyCounts.toList(),
+            hasLastWeekData = hasLastWeekData,
         )
     }
 

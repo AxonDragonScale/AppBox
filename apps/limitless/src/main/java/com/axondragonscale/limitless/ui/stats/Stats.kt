@@ -38,7 +38,9 @@ import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
 import com.axondragonscale.limitless.ui.stats.model.TodayHabitStatus
 import com.axondragonscale.limitless.ui.stats.model.TodayProgressData
+import com.axondragonscale.limitless.ui.stats.model.WeekComparisonData
 import com.axondragonscale.limitless.ui.stats.widget.TodayProgress
+import com.axondragonscale.limitless.ui.stats.widget.WeekComparison
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -163,7 +165,11 @@ private fun StatsList(
             item { TodayProgress(data = data) }
         }
 
-        // Sections 2–6 will be added in subsequent steps
+        uiState.weekComparison?.let { data ->
+            item { WeekComparison(data = data) }
+        }
+
+        // Sections 3–6 will be added in subsequent steps
     }
 }
 
@@ -187,6 +193,13 @@ private fun ContentPreview() {
                         TodayHabitStatus("Reading", HabitColor.PURPLE, isCompleted = true),
                         TodayHabitStatus("Journaling", HabitColor.BLUE, isCompleted = true),
                     ),
+                ),
+                weekComparison = WeekComparisonData(
+                    thisWeekTotal = 42,
+                    lastWeekTotal = 39,
+                    thisWeekDailyCounts = listOf(7, 5, 6, 8, 7, 5, 4),
+                    lastWeekDailyCounts = listOf(6, 5, 5, 7, 6, 5, 5),
+                    hasLastWeekData = true,
                 ),
             ),
             onEvent = {},
