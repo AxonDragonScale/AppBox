@@ -20,7 +20,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -84,7 +83,7 @@ private fun History(
                 Text(
                     text = "No records yet",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -106,9 +105,7 @@ private fun History(
                 if (uiState.hasMore) {
                     item(key = "load_more") {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -117,9 +114,7 @@ private fun History(
                 } else {
                     item(key = "end_of_list") {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -159,6 +154,28 @@ private fun HistoryPreview() {
     }
 }
 
+@Preview(name = "End reached Light Mode", showBackground = true)
+@Preview(name = "End reached Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HistoryEndPreview() {
+    LimitlessTheme {
+        Surface {
+            val uiState = HistoryUiState(
+                isLoading = false,
+                records = listOf(
+                    RecordEntity(id = 1, habitId = 1, timestamp = 1750900200000, message = "Morning meditation session"),
+                    RecordEntity(id = 2, habitId = 1, timestamp = 1750857000000, message = ""),
+                    RecordEntity(id = 3, habitId = 1, timestamp = 1750813800000, message = "Felt really focused today"),
+                    RecordEntity(id = 4, habitId = 1, timestamp = 1750770600000, message = "Quick 5 minute session"),
+                    RecordEntity(id = 5, habitId = 1, timestamp = 1750684200000, message = ""),
+                ),
+                hasMore = false,
+            )
+            History(uiState = uiState, onEvent = {})
+        }
+    }
+}
+
 @Preview(name = "Empty Light", showBackground = true)
 @Preview(name = "Empty Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
@@ -174,6 +191,7 @@ private fun EmptyHistoryPreview() {
 }
 
 @Preview(name = "Loading", showBackground = true)
+@Preview(name = "Loading Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun LoadingHistoryPreview() {
     LimitlessTheme {

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -119,18 +120,24 @@ private fun Home(
             )
         },
     ) { padding ->
-        if (uiState.habits.isEmpty()) {
+        if (uiState.isLoading) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (uiState.habits.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = "No habits yet.\nTap + to create one.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -190,6 +197,7 @@ private fun Preview() {
 
         val uiState = remember {
             HomeUiState(
+                isLoading = false,
                 habits = listOf(
                     HabitHeatMapData(
                         habit = HabitEntity(id = 1, name = "Meditation", description = "", color = HabitColor.RED),
@@ -221,7 +229,20 @@ private fun Preview() {
 @Composable
 private fun EmptyPreview() {
     LimitlessTheme {
-        val uiState = remember { HomeUiState() }
+        val uiState = remember { HomeUiState(isLoading = false) }
+        Home(
+            uiState = uiState,
+            onEvent = { }
+        )
+    }
+}
+
+@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun LoadingPreview() {
+    LimitlessTheme {
+        val uiState = remember { HomeUiState(isLoading = true) }
         Home(
             uiState = uiState,
             onEvent = { }

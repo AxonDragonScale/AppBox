@@ -28,27 +28,61 @@ class HistoryVM(
     val uiState = MutableStateFlow(HistoryUiState())
 
     init {
-        loadPage()
+        // Observe the record count so that any insert or delete triggers a full refresh.
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.getRecordCountFlow(habitRoute.habitId).collect {
+                refresh()
+            }
+        }
     }
 
     fun onEvent(event: HistoryUiEvent): Any = when (event) {
-        is HistoryUiEvent.LoadMore -> loadPage()
+        is HistoryUiEvent.LoadMore -> loadMore()
     }
 
-    private fun loadPage() = viewModelScope.launch(Dispatchers.IO) {
-        if (uiState.value.isLoadingMore) return@launch
+    /**
+     * Resets the list and loads the same count. Called whenever the DB count changes
+     * (record added or deleted) so the list always reflects the current DB state and
+     * the pagination offset is always consistent.
+     */
+    private suspend fun refresh() {
+        val currentCount = uiState.value.records.size
+        if (currentCount == 0) uiState.update { HistoryUiState(isLoading = true) }
+
+        val records = repository.getRecordsPaginated(habitRoute.habitId, currentCount, 0)
+        val totalCount = repository.getRecordCount(habitRoute.habitId)
+        uiState.update {
+            HistoryUiState(
+                records = records,
+                isLoading = false,
+                hasMore = records.size < totalCount
+            )
+        }
+    }
+
+    /**
+     * Appends the next page to the current list. The offset is derived from the current
+     * list size, which is always correct because [refresh] resets the list on every DB
+     * count change before any LoadMore can be issued on the new data.
+     */
+    private fun loadMore() = viewModelScope.launch(Dispatchers.IO) {
+        val currentState = uiState.value
+        if (currentState.isLoading || currentState.isLoadingMore || !currentState.hasMore) return@launch
+
         uiState.update { it.copy(isLoadingMore = true) }
 
         val offset = uiState.value.records.size
         val records = repository.getRecordsPaginated(habitRoute.habitId, PAGE_SIZE, offset)
         val totalCount = repository.getRecordCount(habitRoute.habitId)
 
-        uiState.update {
-            it.copy(
-                records = it.records + records,
-                isLoading = false,
+        uiState.update { state ->
+            // A refresh may have fired while we were fetching — if so, discard the
+            // stale page rather than appending it on top of the freshly loaded data.
+            if (state.isLoading) return@update state
+            state.copy(
+                records = state.records + records,
                 isLoadingMore = false,
-                hasMore = offset + records.size < totalCount,
+                hasMore = state.records.size + records.size < totalCount,
             )
         }
     }
