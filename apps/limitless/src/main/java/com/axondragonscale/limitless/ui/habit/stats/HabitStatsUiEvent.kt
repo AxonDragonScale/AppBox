@@ -3,8 +3,8 @@ package com.axondragonscale.limitless.ui.habit.stats
 /**
  * Created by Ronak Harkhani on 03/11/24
  */
-sealed interface StatsUiEvent {
-    data class PeriodChanged(val period: HistoryPeriod) : StatsUiEvent
+sealed interface HabitStatsUiEvent {
+    data class PeriodChanged(val period: HistoryPeriod) : HabitStatsUiEvent
 }
 
 /**

@@ -42,7 +42,7 @@ fun Stats(modifier: Modifier = Modifier) {
 private fun Stats(
     modifier: Modifier = Modifier,
     uiState: HabitStatsUiState,
-    onEvent: (StatsUiEvent) -> Unit,
+    onEvent: (HabitStatsUiEvent) -> Unit,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),

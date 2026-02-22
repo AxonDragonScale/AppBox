@@ -76,10 +76,10 @@ class HabitStatsVM(
         }
     }
 
-    fun onEvent(event: StatsUiEvent): Any = when (event) {
+    fun onEvent(event: HabitStatsUiEvent): Any = when (event) {
         // Period filtering is handled locally in the DailyHistoryChart composable.
         // This event is here for future use (e.g., persisting the selection).
-        is StatsUiEvent.PeriodChanged -> Unit
+        is HabitStatsUiEvent.PeriodChanged -> Unit
     }
 
     // region Streak Computation
