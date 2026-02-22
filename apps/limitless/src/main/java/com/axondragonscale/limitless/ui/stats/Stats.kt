@@ -33,8 +33,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.stats.model.TodayHabitStatus
+import com.axondragonscale.limitless.ui.stats.model.TodayProgressData
+import com.axondragonscale.limitless.ui.stats.widget.TodayProgress
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -155,19 +159,36 @@ private fun StatsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Sections will be added in Steps 1–6
+        uiState.todayProgress?.let { data ->
+            item { TodayProgress(data = data) }
+        }
+
+        // Sections 2–6 will be added in subsequent steps
     }
 }
 
 // region Previews
 
-@Preview(name = "Light — Loading", showBackground = true)
-@Preview(name = "Dark — Loading", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Light — Content", showBackground = true)
+@Preview(name = "Dark — Content", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun LoadingPreview() {
+private fun ContentPreview() {
     LimitlessTheme {
         Stats(
-            uiState = StatsUiState(isLoading = true),
+            uiState = StatsUiState(
+                isLoading = false,
+                isEmpty = false,
+                todayProgress = TodayProgressData(
+                    completed = 2,
+                    total = 4,
+                    habits = listOf(
+                        TodayHabitStatus("Meditation", HabitColor.TEAL, isCompleted = false),
+                        TodayHabitStatus("Exercise", HabitColor.ORANGE, isCompleted = false),
+                        TodayHabitStatus("Reading", HabitColor.PURPLE, isCompleted = true),
+                        TodayHabitStatus("Journaling", HabitColor.BLUE, isCompleted = true),
+                    ),
+                ),
+            ),
             onEvent = {},
         )
     }
@@ -185,13 +206,13 @@ private fun EmptyPreview() {
     }
 }
 
-@Preview(name = "Light — Content", showBackground = true)
-@Preview(name = "Dark — Content", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Light — Loading", showBackground = true)
+@Preview(name = "Dark — Loading", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ContentPreview() {
+private fun LoadingPreview() {
     LimitlessTheme {
         Stats(
-            uiState = StatsUiState(isLoading = false, isEmpty = false),
+            uiState = StatsUiState(isLoading = true),
             onEvent = {},
         )
     }
