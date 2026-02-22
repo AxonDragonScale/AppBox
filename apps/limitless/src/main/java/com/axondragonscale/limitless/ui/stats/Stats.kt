@@ -36,6 +36,11 @@ import androidx.navigation.NavController
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.habit.stats.widget.MonthlyTrendChart
+import com.axondragonscale.limitless.ui.habit.stats.widget.WeeklyPatternChart
+import com.axondragonscale.limitless.ui.model.MonthCount
+import com.axondragonscale.limitless.ui.model.MonthlyTrendData
+import com.axondragonscale.limitless.ui.model.WeeklyPatternData
 import com.axondragonscale.limitless.ui.stats.model.GlobalHeatMapData
 import com.axondragonscale.limitless.ui.stats.model.HabitConsistencyData
 import com.axondragonscale.limitless.ui.stats.model.HabitConsistencyItem
@@ -182,7 +187,13 @@ private fun StatsList(
             item { GlobalActivityHeatMap(data = data) }
         }
 
-        // Sections 5–6 will be added in subsequent steps
+        uiState.weeklyPattern?.let { data ->
+            item { WeeklyPatternChart(data = data, color = MaterialTheme.colorScheme.primary, title = "Weekly Rhythm") }
+        }
+
+        uiState.monthlyTrend?.let { data ->
+            item { MonthlyTrendChart(data = data, color = MaterialTheme.colorScheme.primary) }
+        }
     }
 }
 
@@ -227,6 +238,18 @@ private fun ContentPreview() {
                     dayCounts = emptyMap(),
                     maxCount = 0,
                     totalHabits = 5,
+                ),
+                weeklyPattern = WeeklyPatternData(
+                    dayAverages = listOf(3.2f, 4.1f, 2.8f, 5.0f, 4.4f, 3.6f, 2.1f),
+                ),
+                monthlyTrend = MonthlyTrendData(
+                    monthCounts = listOf(
+                        MonthCount(year = 2025, month = 3, count = 28),
+                        MonthCount(year = 2025, month = 4, count = 35),
+                        MonthCount(year = 2025, month = 5, count = 31),
+                        MonthCount(year = 2025, month = 6, count = 42),
+                        MonthCount(year = 2025, month = 7, count = 19),
+                    ),
                 ),
             ),
             onEvent = {},
