@@ -53,6 +53,7 @@ import kotlin.time.Clock
 internal val HeatMapCellSize = 14.dp
 internal val HeatMapCellSpacing = 3.dp
 internal val HeatMapCellCornerRadius = 3.dp
+internal val HeatMapCellShape = RoundedCornerShape(HeatMapCellCornerRadius)
 internal val HeatMapDayLabelWidth = 28.dp
 
 private val DayLabels = listOf("M", "", "W", "", "F", "", "S")
@@ -236,14 +237,13 @@ internal fun HeatMapCell(
     highlighted: Boolean = false,
     highlightColor: Color = Color.Unspecified,
 ) {
-    val shape = RoundedCornerShape(HeatMapCellCornerRadius)
     Box(
         modifier = Modifier
             .size(size)
-            .clip(shape)
+            .clip(HeatMapCellShape)
             .background(color)
             .thenIf(highlighted) {
-                this.border(width = 1.5.dp, color = highlightColor, shape = shape)
+                this.border(width = 1.5.dp, color = highlightColor, shape = HeatMapCellShape)
             }
     )
 }
