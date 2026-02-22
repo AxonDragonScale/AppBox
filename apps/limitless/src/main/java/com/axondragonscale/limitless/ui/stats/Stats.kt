@@ -36,11 +36,13 @@ import androidx.navigation.NavController
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
-import com.axondragonscale.limitless.ui.stats.model.TodayHabitStatus
-import com.axondragonscale.limitless.ui.stats.model.TodayProgressData
+import com.axondragonscale.limitless.ui.stats.model.GlobalHeatMapData
 import com.axondragonscale.limitless.ui.stats.model.HabitConsistencyData
 import com.axondragonscale.limitless.ui.stats.model.HabitConsistencyItem
+import com.axondragonscale.limitless.ui.stats.model.TodayHabitStatus
+import com.axondragonscale.limitless.ui.stats.model.TodayProgressData
 import com.axondragonscale.limitless.ui.stats.model.WeekComparisonData
+import com.axondragonscale.limitless.ui.stats.widget.GlobalActivityHeatMap
 import com.axondragonscale.limitless.ui.stats.widget.HabitConsistencyRanking
 import com.axondragonscale.limitless.ui.stats.widget.TodayProgress
 import com.axondragonscale.limitless.ui.stats.widget.WeekComparison
@@ -176,7 +178,11 @@ private fun StatsList(
             item { HabitConsistencyRanking(data = data) }
         }
 
-        // Sections 4–6 will be added in subsequent steps
+        uiState.heatMap?.let { data ->
+            item { GlobalActivityHeatMap(data = data) }
+        }
+
+        // Sections 5–6 will be added in subsequent steps
     }
 }
 
@@ -216,6 +222,11 @@ private fun ContentPreview() {
                         HabitConsistencyItem("Journaling",  HabitColor.BLUE,   0.44f, 44, 100),
                         HabitConsistencyItem("Cold Shower", HabitColor.SKY,    0.18f, 18, 100),
                     ),
+                ),
+                heatMap = GlobalHeatMapData(
+                    dayCounts = emptyMap(),
+                    maxCount = 0,
+                    totalHabits = 5,
                 ),
             ),
             onEvent = {},
