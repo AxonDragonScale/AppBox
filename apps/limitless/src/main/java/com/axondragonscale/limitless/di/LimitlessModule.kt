@@ -14,6 +14,7 @@ import com.axondragonscale.limitless.ui.habit.history.HistoryVM
 import com.axondragonscale.limitless.ui.home.HomeVM
 import com.axondragonscale.limitless.ui.settings.SettingsVM
 import com.axondragonscale.limitless.ui.habit.stats.HabitStatsVM
+import com.axondragonscale.limitless.ui.stats.StatsVM
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -52,6 +53,7 @@ val LimitlessModule = module {
     viewModelOf(::HabitCalendarVM)
     viewModelOf(::HabitDayVM)
     viewModelOf(::HabitStatsVM)
+    viewModelOf(::StatsVM)
     viewModelOf(::SettingsVM)
 
 }
