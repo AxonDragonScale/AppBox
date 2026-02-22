@@ -39,6 +39,7 @@ import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
+import com.axondragonscale.limitless.ui.common.HabitHeatMap
 import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DateTimeUnit

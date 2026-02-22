@@ -50,6 +50,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.number
 import kotlinx.datetime.todayIn
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Clock
@@ -87,7 +88,7 @@ private fun HabitCalendar(
     onEvent: (HabitCalendarUiEvent) -> Unit,
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    val isCurrentMonth = uiState.year == today.year && uiState.month == today.monthNumber
+    val isCurrentMonth = uiState.year == today.year && uiState.month == today.month.number
 
     var longPressedDate by remember { mutableStateOf<LocalDate?>(null) }
 

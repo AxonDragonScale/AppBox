@@ -1,4 +1,4 @@
-package com.axondragonscale.limitless.ui.home
+package com.axondragonscale.limitless.ui.common
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -62,7 +62,7 @@ private val CellSpacing = 3.dp
 private val CellCornerRadius = 3.dp
 private val DayLabelWidth = 28.dp
 
-private val DayLabels = listOf("", "M", "", "W", "", "F", "")
+private val DayLabels = listOf("M", "", "W", "", "F", "", "S")
 
 /**
  * A week column in the heatmap grid.
@@ -301,19 +301,19 @@ private fun cellColor(
 
 /**
  * Builds a list of [WeekData]s covering `totalWeeks` weeks ending on [today].
- * Each week starts on Sunday (to match GitHub's contribution graph layout).
- * The rows represent: Sun, Mon, Tue, Wed, Thu, Fri, Sat.
+ * Each week starts on Monday.
+ * The rows represent: Mon, Tue, Wed, Thu, Fri, Sat, Sun.
  */
 private fun buildWeeks(today: LocalDate, totalWeeks: Int): List<WeekData> {
-    // Find the Sunday of the current week
-    val daysSinceSunday = (today.dayOfWeek.ordinal + 1) % 7 // Monday=0 in Kotlin, so Sunday=6 -> offset 0
-    val currentWeekSunday = today.minus(daysSinceSunday, DateTimeUnit.DAY)
+    // Find the Monday of the current week
+    val daysSinceMonday = today.dayOfWeek.ordinal
+    val currentWeekMonday = today.minus(daysSinceMonday, DateTimeUnit.DAY)
 
-    // Go back totalWeeks-1 weeks from the current week's Sunday
-    val startSunday = currentWeekSunday.minus((totalWeeks - 1).toLong(), DateTimeUnit.WEEK)
+    // Go back totalWeeks-1 weeks from the current week's Monday
+    val startMonday = currentWeekMonday.minus((totalWeeks - 1).toLong(), DateTimeUnit.WEEK)
 
     return (0 until totalWeeks).map { weekIdx ->
-        val weekStart = startSunday.plus(weekIdx.toLong(), DateTimeUnit.WEEK)
+        val weekStart = startMonday.plus(weekIdx.toLong(), DateTimeUnit.WEEK)
         val days = (0 until 7).map { dayOffset ->
             val date = weekStart.plus(dayOffset, DateTimeUnit.DAY)
             date
@@ -386,7 +386,8 @@ private fun HabitHeatMapPreview() {
     }
 }
 
-@Preview(name = "Empty Heatmap", showBackground = true)
+@Preview(name = "Empty Heatmap Light Mode", showBackground = true)
+@Preview(name = "Empty Heatmap Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun EmptyHabitHeatMapPreview() {
     LimitlessTheme {
