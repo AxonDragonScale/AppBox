@@ -2,7 +2,7 @@
 <resources>
 
     <style name="Theme.Wallmatic" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowSplashScreenBackground">@color/wallmatic_icon_background</item>
+        <item name="android:windowSplashScreenBackground">@color/wallmatic_splash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/wallmatic_icon_foreground</item>
     </style>
 

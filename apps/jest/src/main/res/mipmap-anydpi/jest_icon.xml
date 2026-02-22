@@ -2,4 +2,5 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/jest_icon_background"/>
     <foreground android:drawable="@drawable/jest_icon_foreground"/>
+    <monochrome android:drawable="@drawable/jest_icon_foreground_themed"/>
 </adaptive-icon>

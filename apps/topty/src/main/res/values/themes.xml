@@ -2,7 +2,7 @@
 <resources>
 
     <style name="Theme.Topty" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowSplashScreenBackground">@color/topty_icon_background</item>
+        <item name="android:windowSplashScreenBackground">@color/topty_splash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/topty_icon_foreground</item>
     </style>
 

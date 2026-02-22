@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Wallmatic" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/wallmatic_splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/wallmatic_icon_foreground</item>
+    </style>
+
+</resources>
