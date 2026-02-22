@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
@@ -394,7 +396,9 @@ private fun HabitTabPager(
             when (HabitTab.entries[page]) {
                 HabitTab.History -> History()
 
-                HabitTab.Calendar -> Box(modifier = Modifier.fillMaxSize()) {
+                HabitTab.Calendar -> Box(
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                ) {
                     HabitCalendar(onNavigateToDayDetail = onNavigateToDayDetail)
                 }
 
