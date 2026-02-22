@@ -35,14 +35,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.limitless.ui.theme.LimitlessTheme
-import com.axondragonscale.limitless.ui.common.RecordHabitSheet
-import com.axondragonscale.commons.displayName
 import com.axondragonscale.commons.daysInMonth
+import com.axondragonscale.commons.displayName
+import com.axondragonscale.limitless.ui.common.RecordHabitSheet
+import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
@@ -271,14 +273,25 @@ private fun DayCell(
                 },
             )
 
-            if (!isFuture && hasActivity) {
-                Spacer(modifier = Modifier.height(1.dp))
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .background(primaryColor, CircleShape),
-                )
-            }
+            if (!isFuture && hasActivity)
+                Row(verticalAlignment = Alignment.CenterVertically,) {
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .size(4.dp)
+                            .background(primaryColor, CircleShape),
+                    )
+                    Text(
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 9.sp,
+                            lineHeightStyle = LineHeightStyle(
+                                alignment = LineHeightStyle.Alignment.Center,
+                                trim = LineHeightStyle.Trim.Both
+                            )
+                        ),
+                        text = count.toString()
+                    )
+                }
         }
     }
 }
