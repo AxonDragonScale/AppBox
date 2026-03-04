@@ -99,7 +99,6 @@ fun Templates(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Templates(
     modifier: Modifier = Modifier,
@@ -270,7 +269,6 @@ private fun PredefinedTemplateCard(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun UserTemplateCard(
     modifier: Modifier = Modifier,

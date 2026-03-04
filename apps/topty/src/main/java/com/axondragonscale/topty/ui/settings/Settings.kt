@@ -98,7 +98,6 @@ fun Settings(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Settings(
     modifier: Modifier = Modifier,

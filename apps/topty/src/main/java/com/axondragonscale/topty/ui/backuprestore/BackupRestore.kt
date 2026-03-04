@@ -81,7 +81,6 @@ fun BackupRestore(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BackupRestore(
     modifier: Modifier = Modifier,

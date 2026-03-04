@@ -24,7 +24,6 @@ import kotlin.time.Instant
  * A reusable Material3 date picker wrapped in a [DatePickerDialog].
  * Works with [kotlinx.datetime.LocalDate] — handles epoch millis conversion internally.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerDialog(
     modifier: Modifier = Modifier,
@@ -65,7 +64,6 @@ fun DatePickerDialog(
 
 // region Previews
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable

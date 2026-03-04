@@ -29,7 +29,6 @@ import androidx.compose.ui.window.Dialog
  * A reusable Material3 time picker wrapped in a Dialog.
  * Displays a [TimePicker] with Cancel / OK actions.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimePickerDialog(
     modifier: Modifier = Modifier,
@@ -88,7 +87,6 @@ fun TimePickerDialog(
 
 // region Previews
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable

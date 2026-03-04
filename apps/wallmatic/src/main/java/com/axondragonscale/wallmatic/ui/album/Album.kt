@@ -121,7 +121,6 @@ fun Album(
 
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun Album(
     modifier: Modifier = Modifier,
@@ -207,7 +206,6 @@ private fun Album(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun Folder(
     modifier: Modifier = Modifier,

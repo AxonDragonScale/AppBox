@@ -39,7 +39,6 @@ import com.axondragonscale.wallmatic.ui.util.hasWallpapers
  * Created by Ronak Harkhani on 21/09/24
  */
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectAlbumBottomSheet(
     albums: List<Album>,
@@ -139,7 +138,6 @@ private fun SelectAlbum(
         }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
@@ -164,7 +162,6 @@ private fun Preview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable

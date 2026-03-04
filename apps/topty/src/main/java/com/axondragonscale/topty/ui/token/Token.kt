@@ -96,7 +96,6 @@ fun Token(
         })
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Token(
     modifier: Modifier = Modifier,
@@ -220,7 +219,6 @@ private fun Configuration(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AdvancedConfiguration(
     modifier: Modifier = Modifier,

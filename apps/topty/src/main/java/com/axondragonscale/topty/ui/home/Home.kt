@@ -309,7 +309,6 @@ fun DeleteConfirmationDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopBar(
     modifier: Modifier = Modifier,
@@ -687,7 +686,6 @@ private fun SwipeActionsRow(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CodeList(
     modifier: Modifier = Modifier,

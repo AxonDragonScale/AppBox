@@ -127,7 +127,6 @@ private fun QRScanner(
     CameraPermission()
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun CameraPermission(
     modifier: Modifier = Modifier,

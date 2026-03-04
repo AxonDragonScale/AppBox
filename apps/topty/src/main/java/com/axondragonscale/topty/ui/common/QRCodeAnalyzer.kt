@@ -14,7 +14,6 @@ import com.google.mlkit.vision.common.InputImage
 /**
  * Created by Ronak Harkhani on 16/10/24
  */
-@OptIn(ExperimentalGetImage::class)
 class QRCodeAnalyzer(val onSuccess: (List<Barcode>) -> Unit) : ImageAnalysis.Analyzer {
 
     var isPaused = false

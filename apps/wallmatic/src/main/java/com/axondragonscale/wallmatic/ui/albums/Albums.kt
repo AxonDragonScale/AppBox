@@ -212,7 +212,6 @@ private fun AlbumList(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AlbumCard(
     modifier: Modifier = Modifier,

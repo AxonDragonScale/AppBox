@@ -19,7 +19,6 @@ import java.util.concurrent.Executors
  * Created by Ronak Harkhani on 12/10/24
  */
 
-@OptIn(ExperimentalGetImage::class)
 @Composable
 fun Camera(
     modifier: Modifier = Modifier,

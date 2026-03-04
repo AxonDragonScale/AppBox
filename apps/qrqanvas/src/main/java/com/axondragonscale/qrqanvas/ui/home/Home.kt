@@ -87,7 +87,6 @@ fun Home(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Home(
     modifier: Modifier = Modifier,

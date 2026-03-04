@@ -148,7 +148,6 @@ fun History(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun History(
     modifier: Modifier = Modifier,
@@ -248,7 +247,6 @@ private fun History(
 }
 
 @Suppress("DEPRECATION")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ScanHistoryList(
     modifier: Modifier = Modifier,

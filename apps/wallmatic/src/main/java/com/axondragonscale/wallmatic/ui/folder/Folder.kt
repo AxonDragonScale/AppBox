@@ -85,7 +85,6 @@ fun Folder(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun Folder(
     modifier: Modifier = Modifier,

@@ -266,7 +266,6 @@ private fun Scanner(
     }
 }
 
-@OptIn(ExperimentalGetImage::class)
 @Composable
 private fun CameraPreview(
     modifier: Modifier = Modifier,

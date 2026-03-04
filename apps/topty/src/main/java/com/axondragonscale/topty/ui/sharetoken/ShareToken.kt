@@ -101,7 +101,6 @@ fun ShareToken(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShareToken(
     modifier: Modifier = Modifier,
