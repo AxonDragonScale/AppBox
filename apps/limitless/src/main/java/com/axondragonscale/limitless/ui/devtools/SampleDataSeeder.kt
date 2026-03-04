@@ -1,5 +1,7 @@
 package com.axondragonscale.limitless.ui.devtools
 
+import com.axondragonscale.commons.toEpochMillis
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.database.dao.GoalDao
 import com.axondragonscale.limitless.database.dao.HabitDao
 import com.axondragonscale.limitless.database.dao.RecordDao
@@ -16,14 +18,10 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.todayIn
 import kotlin.random.Random
-import kotlin.time.Clock
 
 /**
  * Dev-only utility for seeding and clearing sample habits, records, goals, and reminders.
@@ -144,8 +142,7 @@ class SampleDataSeeder(
     // Stats highlights: all 3 goal rings, declining monthly bars, evening ToD peak
     // -------------------------------------------------------------------------
     private suspend fun seedReading() {
-        val tz = TimeZone.currentSystemDefault()
-        val nextWeek = Clock.System.todayIn(tz).plus(7, DateTimeUnit.DAY)
+        val nextWeek = LocalDate.today().plus(7, DateTimeUnit.DAY)
 
         val habit = insertHabit(
             name = "Reading",
@@ -319,8 +316,7 @@ class SampleDataSeeder(
         maxPerDay: Int,
         pickHour: (Random) -> Int,
     ) {
-        val tz = TimeZone.currentSystemDefault()
-        val today = Clock.System.todayIn(tz)
+        val today = LocalDate.today()
 
         for (daysAgo in 0 until totalDays) {
             val date = today.minus(daysAgo, DateTimeUnit.DAY)
@@ -330,9 +326,7 @@ class SampleDataSeeder(
             repeat(count) {
                 val hour = pickHour(random)
                 val minute = random.nextInt(0, 60)
-                val timestamp = LocalDateTime(date, LocalTime(hour, minute))
-                    .toInstant(tz)
-                    .toEpochMilliseconds()
+                val timestamp = LocalDateTime(date, LocalTime(hour, minute)).toEpochMillis()
                 recordDao.upsert(RecordEntity(habitId = habitId, timestamp = timestamp, message = ""))
             }
         }

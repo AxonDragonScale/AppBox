@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.HabitHeatMapData
@@ -27,10 +28,7 @@ import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 09/11/24
@@ -102,22 +100,20 @@ fun HabitCard(
 
 // region Previews
 
-private fun previewSampleCounts(): Map<LocalDate, Int> {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    return buildMap {
-        for (i in 0 until 180) {
-            val date = today.minus(i, DateTimeUnit.DAY)
-            val count = when {
-                i % 7 == 0 -> 4
-                i % 3 == 0 -> 2
-                i % 5 == 0 -> 1
-                i % 2 == 0 -> 3
-                else -> 0
-            }
-            if (count > 0) put(date, count)
+private fun previewSampleCounts(): Map<LocalDate, Int> = buildMap {
+    for (i in 0 until 180) {
+        val date = LocalDate.today().minus(i, DateTimeUnit.DAY)
+        val count = when {
+            i % 7 == 0 -> 4
+            i % 3 == 0 -> 2
+            i % 5 == 0 -> 1
+            i % 2 == 0 -> 3
+            else -> 0
         }
+        if (count > 0) put(date, count)
     }
 }
+
 
 @Preview(name = "HeatMap — Light", showBackground = true)
 @Preview(name = "HeatMap — Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)

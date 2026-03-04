@@ -26,6 +26,7 @@ import com.axondragonscale.commons.compose.chart.BarChart
 import com.axondragonscale.commons.compose.chart.BarChartStyle
 import com.axondragonscale.commons.compose.chart.BarEntry
 import com.axondragonscale.commons.compose.chart.TrendLine
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.habit.stats.HistoryPeriod
 import com.axondragonscale.limitless.ui.habit.stats.model.DailyHistoryData
@@ -33,11 +34,8 @@ import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 21/07/25
@@ -63,7 +61,7 @@ fun DailyHistoryChart(
     var selectedPeriod by remember { mutableStateOf(HistoryPeriod.THREE_MONTHS) }
     val color = habitColor.color
     // Computed once per composition session; date doesn't change while the screen is open.
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
 
     // Build the full date sequence for the selected window.
     // `remember(data, today)` recreates the derivedStateOf block whenever the dataset
@@ -155,10 +153,9 @@ private fun Preview() {
             modifier = Modifier.padding(16.dp),
             data = DailyHistoryData(
                 dayCounts = buildMap {
-                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
                     // Seed ~60 random-ish days over the last 3 months
                     repeat(60) { i ->
-                        val date = today.minus(i * 1, DateTimeUnit.DAY)
+                        val date = LocalDate.today().minus(i * 1, DateTimeUnit.DAY)
                         if (i % 3 != 0) put(date, (1..5).random())
                     }
                 },
@@ -177,9 +174,8 @@ private fun ConsistentPreview() {
             modifier = Modifier.padding(16.dp),
             data = DailyHistoryData(
                 dayCounts = buildMap {
-                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
                     repeat(90) { i ->
-                        val date = today.minus(i, DateTimeUnit.DAY)
+                        val date = LocalDate.today().minus(i, DateTimeUnit.DAY)
                         put(date, if (i % 7 < 5) 3 else 1)
                     }
                 },
@@ -198,9 +194,8 @@ private fun SparsePreview() {
             modifier = Modifier.padding(16.dp),
             data = DailyHistoryData(
                 dayCounts = buildMap {
-                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
                     listOf(1, 5, 14, 22, 30, 45, 60).forEach { daysAgo ->
-                        put(today.minus(daysAgo, DateTimeUnit.DAY), (1..4).random())
+                        put(LocalDate.today().minus(daysAgo, DateTimeUnit.DAY), (1..4).random())
                     }
                 },
             ),

@@ -51,6 +51,7 @@ import com.axondragonscale.commons.compose.TimePickerDialog
 import com.axondragonscale.commons.formatAmPm
 import com.axondragonscale.commons.formatDateTime
 import com.axondragonscale.commons.formatShort
+import com.axondragonscale.commons.now
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
 import com.axondragonscale.limitless.ui.theme.HabitTheme
@@ -137,8 +138,7 @@ private fun RecordHabitSheetContent(
     onDelete: (() -> Unit)? = null,
 ) {
     val tz = TimeZone.currentSystemDefault()
-    val now = remember { Clock.System.now() }
-    val nowLocal = remember(now) { now.toLocalDateTime(tz) }
+    val nowLocal = remember { LocalDateTime.now() }
 
     val isEditMode = initialRecord != null
     val recordLocalDateTime = remember(initialRecord) {
@@ -175,8 +175,7 @@ private fun RecordHabitSheetContent(
                 selectedDate = newDate
                 // Clamp time if the newly selected date is today and the selected time would now be in the future.
                 if (newDate == nowLocal.date) {
-                    val clampedInstant = LocalDateTime(newDate, LocalTime(selectedHour, selectedMinute))
-                        .toInstant(tz)
+                    val clampedInstant = LocalDateTime(newDate, LocalTime(selectedHour, selectedMinute)).toInstant(tz)
                     if (clampedInstant > Clock.System.now()) {
                         selectedHour = nowLocal.hour
                         selectedMinute = nowLocal.minute
@@ -195,8 +194,7 @@ private fun RecordHabitSheetContent(
             initialMinute = selectedMinute,
             onConfirm = { hour, minute ->
                 // Clamp to now if selection would be in the future
-                val candidateInstant = LocalDateTime(selectedDate, LocalTime(hour, minute))
-                    .toInstant(tz)
+                val candidateInstant = LocalDateTime(selectedDate, LocalTime(hour, minute)).toInstant(tz)
                 if (candidateInstant > Clock.System.now()) {
                     selectedHour = nowLocal.hour
                     selectedMinute = nowLocal.minute

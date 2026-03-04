@@ -34,17 +34,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.axondragonscale.commons.abbreviated
 import com.axondragonscale.commons.compose.thenIf
+import com.axondragonscale.commons.startOfWeek
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.number
 import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 21/07/25
@@ -88,7 +87,7 @@ fun HeatMapGrid(
     highlightCurrentDay: Boolean = true,
     totalWeeks: Int = 52,
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
     val weeks = remember(today, totalWeeks) { buildWeeks(today, totalWeeks) }
     val monthLabels = remember(weeks) { buildMonthLabels(weeks) }
     val listState = rememberLazyListState()
@@ -284,10 +283,7 @@ internal fun heatMapCellColor(
  * The rows represent: Mon, Tue, Wed, Thu, Fri, Sat, Sun.
  */
 internal fun buildWeeks(today: LocalDate, totalWeeks: Int): List<WeekData> {
-    // Find the Monday of the current week
-    val daysSinceMonday = today.dayOfWeek.ordinal
-    val currentWeekMonday = today.minus(daysSinceMonday, DateTimeUnit.DAY)
-
+    val currentWeekMonday = today.startOfWeek
     // Go back totalWeeks-1 weeks from the current week's Monday
     val startMonday = currentWeekMonday.minus((totalWeeks - 1).toLong(), DateTimeUnit.WEEK)
 
@@ -335,10 +331,9 @@ internal fun buildMonthLabels(weeks: List<WeekData>): List<Pair<Int, String>> {
 private fun HeatMapGridPreview() {
     LimitlessTheme {
         Surface {
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             val sampleCounts = buildMap {
                 for (i in 0 until 180) {
-                    val date = today.minus(i, DateTimeUnit.DAY)
+                    val date = LocalDate.today().minus(i, DateTimeUnit.DAY)
                     val count = when {
                         i % 7 == 0 -> 4
                         i % 3 == 0 -> 2
@@ -367,10 +362,9 @@ private fun HeatMapGridPreview() {
 private fun HeatMapGridPrimaryColorPreview() {
     LimitlessTheme {
         Surface {
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             val sampleCounts = buildMap {
                 for (i in 0 until 180) {
-                    val date = today.minus(i, DateTimeUnit.DAY)
+                    val date = LocalDate.today().minus(i, DateTimeUnit.DAY)
                     val count = if (i % 4 == 0) 3 else if (i % 2 == 0) 1 else 0
                     if (count > 0) put(date, count)
                 }
@@ -380,7 +374,7 @@ private fun HeatMapGridPrimaryColorPreview() {
                 modifier = Modifier.padding(16.dp),
                 dayCounts = sampleCounts,
                 maxCount = 3,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primary,
                 highlightCurrentDay = true,
             )
         }

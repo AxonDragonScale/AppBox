@@ -31,15 +31,13 @@ import androidx.compose.ui.unit.sp
 import com.axondragonscale.commons.abbreviated
 import com.axondragonscale.commons.compose.thenIf
 import com.axondragonscale.commons.letter
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 private val WeekCellSize = 28.dp
 private const val SWIPEABLE_WEEK_PAGE_COUNT = 500
@@ -67,7 +65,7 @@ fun SwipeableHabitWeekView(
     highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
     val pagerState = rememberPagerState(
         initialPage = SWIPEABLE_WEEK_INITIAL_PAGE,
         pageCount = { SWIPEABLE_WEEK_PAGE_COUNT },
@@ -120,7 +118,7 @@ fun HabitWeekView(
     highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
     val anchorDate = referenceDate ?: today
     // Build last 7 days ending on anchorDate (oldest first)
     val days = remember(anchorDate) {
@@ -207,10 +205,9 @@ fun HabitWeekView(
 private fun HabitWeekViewPreview() {
     LimitlessTheme {
         Surface {
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             val sampleCounts = buildMap {
                 for (i in 0..6) {
-                    val date = today.minus(i, DateTimeUnit.DAY)
+                    val date = LocalDate.today().minus(i, DateTimeUnit.DAY)
                     val count = when (i) { 0 -> 3; 2 -> 1; 4 -> 2; 5 -> 2; else -> 0 }
                     if (count > 0) put(date, count)
                 }

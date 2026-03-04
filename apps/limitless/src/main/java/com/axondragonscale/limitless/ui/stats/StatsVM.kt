@@ -3,6 +3,7 @@ package com.axondragonscale.limitless.ui.stats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.commons.daysBetween
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.view.HabitDayCountView
 import com.axondragonscale.limitless.repository.LimitlessRepository
@@ -22,12 +23,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.number
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 22/07/25
@@ -47,7 +45,7 @@ class StatsVM(
                 if (habits.isEmpty()) {
                     StatsUiState(isLoading = false, isEmpty = true)
                 } else {
-                    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                    val today = LocalDate.today()
                     StatsUiState(
                         isLoading = false,
                         isEmpty = false,

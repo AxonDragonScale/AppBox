@@ -4,6 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.axondragonscale.commons.startOfMonth
+import com.axondragonscale.commons.startOfWeek
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.model.GoalStatus
 import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.repository.LimitlessRepository
@@ -14,12 +17,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
+import kotlinx.datetime.LocalDate
 
 /**
  * Created by Ronak Harkhani on 17/02/26
@@ -35,10 +33,9 @@ class HabitVM(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            val startOfWeek = today.minus(today.dayOfWeek.isoDayNumber - 1, DateTimeUnit.DAY)
-            val startOfMonth = today.minus(today.day - 1, DateTimeUnit.DAY)
-            val rangeStart = minOf(startOfWeek, startOfMonth)
+            val today = LocalDate.today()
+            val startOfWeek = today.startOfWeek
+            val rangeStart = minOf(startOfWeek, today.startOfMonth)
 
             combine(
                 repository.getHabitFlow(habitRoute.habitId).filterNotNull(),

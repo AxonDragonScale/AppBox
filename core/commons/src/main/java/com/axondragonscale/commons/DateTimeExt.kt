@@ -3,12 +3,17 @@ package com.axondragonscale.commons
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
+import kotlinx.datetime.number
 import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
@@ -17,7 +22,7 @@ import kotlin.time.Instant
  * DateTime extensions shared across all apps.
  */
 
-
+val TIMEZONE = TimeZone.currentSystemDefault()
 
 // region Month & DayOfWeek Label Lists
 
@@ -88,6 +93,25 @@ fun hourLabel(hour: Int): String {
 
 // region LocalDate Extensions
 
+fun LocalDate.Companion.today() =
+    Clock.System.todayIn(TIMEZONE)
+
+/** The Monday of the week containing this date. */
+val LocalDate.startOfWeek: LocalDate
+    get() = minus(dayOfWeek.ordinal, DateTimeUnit.DAY)
+
+/** The Sunday of the week containing this date. */
+val LocalDate.endOfWeek: LocalDate
+    get() = startOfWeek.plus(6, DateTimeUnit.DAY)
+
+/** The first day of the month containing this date. */
+val LocalDate.startOfMonth: LocalDate
+    get() = LocalDate(year, month, 1)
+
+/** The last day of the month containing this date. */
+val LocalDate.endOfMonth: LocalDate
+    get() = startOfMonth.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
+
 /**
  * Formats a [LocalDate] as "Jan 5, 2025".
  */
@@ -107,6 +131,12 @@ fun LocalDate.formatMonthYear(): String =
  */
 fun daysInMonth(year: Int, month: Int): Int =
     LocalDate(year, month, 1)
+        .plus(1, DateTimeUnit.MONTH)
+        .minus(1, DateTimeUnit.DAY)
+        .day
+
+fun LocalDate.daysInMonth(): Int =
+    LocalDate(year, month.number, 1)
         .plus(1, DateTimeUnit.MONTH)
         .minus(1, DateTimeUnit.DAY)
         .day
@@ -131,6 +161,16 @@ fun LocalTime.formatAmPm(): String {
     val amPm = if (hour < 12) "AM" else "PM"
     return "$h:$m $amPm"
 }
+
+// endregion
+
+// region LocalDateTime Extensions
+
+fun LocalDateTime.Companion.now() =
+    Clock.System.now().toLocalDateTime(TIMEZONE)
+
+fun LocalDateTime.toEpochMillis() =
+    toInstant(TIMEZONE).toEpochMilliseconds()
 
 // endregion
 

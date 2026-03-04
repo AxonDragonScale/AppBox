@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.HabitHeatMapData
@@ -44,11 +45,9 @@ import com.axondragonscale.limitless.ui.common.HabitCard
 import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
-import kotlinx.datetime.todayIn
 import org.koin.androidx.compose.koinViewModel
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 01/11/24
@@ -181,10 +180,9 @@ private fun Home(
 @Composable
 private fun Preview() {
     LimitlessTheme {
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val sampleCounts = buildMap {
             for (i in 0 until 180) {
-                val date = today.minus(i, DateTimeUnit.DAY)
+                val date = LocalDate.today().minus(i, DateTimeUnit.DAY)
                 val count = when {
                     i % 7 == 0 -> 4
                     i % 3 == 0 -> 2

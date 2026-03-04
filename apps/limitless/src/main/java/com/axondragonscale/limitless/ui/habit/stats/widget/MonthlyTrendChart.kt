@@ -21,6 +21,7 @@ import com.axondragonscale.commons.compose.chart.BarChart
 import com.axondragonscale.commons.compose.chart.BarChartStyle
 import com.axondragonscale.commons.compose.chart.BarEntry
 import com.axondragonscale.commons.monthAbbreviations
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.model.MonthCount
 import com.axondragonscale.limitless.ui.model.MonthlyTrendData
@@ -28,11 +29,8 @@ import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.number
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 private val BarWidth = 32.dp
 private val BarSpacing = 12.dp
@@ -70,7 +68,7 @@ fun MonthlyTrendChart(
     data: MonthlyTrendData,
     color: Color,
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val scrollState = rememberScrollState()
 

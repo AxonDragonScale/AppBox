@@ -8,14 +8,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.commons.compose.StatCard
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.ui.common.HeatMapGrid
 import com.axondragonscale.limitless.ui.stats.model.GlobalHeatMapData
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 23/07/25
@@ -62,10 +61,9 @@ fun GlobalActivityHeatMap(
 @Composable
 private fun WithDataPreview() {
     LimitlessTheme {
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val dayCounts = buildMap {
             for (i in 0 until 180) {
-                val date = today.minus(i, DateTimeUnit.DAY)
+                val date = LocalDate.today().minus(i, DateTimeUnit.DAY)
                 val count = when {
                     i % 7 == 0 -> 5
                     i % 3 == 0 -> 3
@@ -108,10 +106,9 @@ private fun EmptyPreview() {
 @Composable
 private fun SparsePreview() {
     LimitlessTheme {
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val dayCounts = buildMap {
             for (i in listOf(1, 3, 8, 15, 22, 30, 45, 60)) {
-                put(today.minus(i, DateTimeUnit.DAY), (1..4).random())
+                put(LocalDate.today().minus(i, DateTimeUnit.DAY), (1..4).random())
             }
         }
         GlobalActivityHeatMap(

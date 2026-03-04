@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.repository.LimitlessRepository
 import com.axondragonscale.limitless.ui.Route
 import kotlinx.coroutines.Dispatchers
@@ -14,12 +15,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.number
 import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 29/06/25
@@ -34,7 +32,7 @@ class HabitCalendarVM(
 
     val uiState = MutableStateFlow(
         run {
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            val today = LocalDate.today()
             HabitCalendarUiState(year = today.year, month = today.month.number)
         }
     )

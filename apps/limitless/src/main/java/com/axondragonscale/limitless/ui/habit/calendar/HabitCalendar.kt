@@ -43,16 +43,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.commons.dayOfWeekAbbreviations
 import com.axondragonscale.commons.daysInMonth
 import com.axondragonscale.commons.displayName
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.number
-import kotlinx.datetime.todayIn
 import org.koin.androidx.compose.koinViewModel
-import kotlin.time.Clock
 
 /**
  * Created by Ronak Harkhani on 29/06/25
@@ -86,7 +83,7 @@ private fun HabitCalendar(
     uiState: HabitCalendarUiState,
     onEvent: (HabitCalendarUiEvent) -> Unit,
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
     val isCurrentMonth = uiState.year == today.year && uiState.month == today.month.number
 
     var longPressedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -178,8 +175,8 @@ private fun CalendarGrid(
     onDayLongPress: (LocalDate) -> Unit,
 ) {
     val firstOfMonth = LocalDate(year, month, 1)
-    // Mon=1 … Sun=7 → offset = isoDayNumber - 1, so Monday lands in column 0
-    val startOffset = firstOfMonth.dayOfWeek.isoDayNumber - 1
+    // Mon=1 … Sun=7 → offset = ordinal, so Monday lands in column 0
+    val startOffset = firstOfMonth.dayOfWeek.ordinal
     val daysInMonth = daysInMonth(year, month)
     val totalCells = startOffset + daysInMonth
     val rows = (totalCells + 6) / 7 // ceiling division

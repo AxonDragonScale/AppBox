@@ -34,18 +34,16 @@ import com.axondragonscale.commons.abbreviated
 import com.axondragonscale.commons.compose.thenIf
 import com.axondragonscale.commons.dayOfWeekLetters
 import com.axondragonscale.commons.daysInMonth
+import com.axondragonscale.commons.startOfMonth
+import com.axondragonscale.commons.today
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import com.axondragonscale.limitless.ui.theme.color
-import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.number
-import kotlinx.datetime.todayIn
 import kotlin.random.Random
-import kotlin.time.Clock
 
 private val MonthCellSize = 28.dp
 private const val SWIPEABLE_MONTH_PAGE_COUNT = 500
@@ -73,7 +71,7 @@ fun SwipeableHabitMonthView(
     highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
     val pagerState = rememberPagerState(
         initialPage = SWIPEABLE_MONTH_INITIAL_PAGE,
         pageCount = { SWIPEABLE_MONTH_PAGE_COUNT },
@@ -125,7 +123,7 @@ fun HabitMonthView(
     highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = remember { LocalDate.today() }
     val anchorDate = referenceDate ?: today
 
     Row(
@@ -173,7 +171,7 @@ private fun MonthGrid(
     habitColor: Color,
     onDayClick: (LocalDate) -> Unit,
 ) {
-    val firstOfMonth = LocalDate(anchorDate.year, anchorDate.month.number, 1)
+    val firstOfMonth = anchorDate.startOfMonth
     val startOffset = firstOfMonth.dayOfWeek.ordinal
     val daysInMonth = daysInMonth(anchorDate.year, anchorDate.month.number)
     val totalCells = startOffset + daysInMonth
@@ -288,7 +286,7 @@ private fun MonthDayCell(
 private fun HabitMonthViewPreview() {
     LimitlessTheme {
         Surface {
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault()) - DatePeriod(days = 9)
+            val today = LocalDate.today()
             val sampleCounts = buildMap {
                 for (i in 0..today.day) {
                     val date = LocalDate(today.year, today.month, (i + 1).coerceAtMost(today.day))
