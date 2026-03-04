@@ -58,10 +58,11 @@ private const val SWIPEABLE_MONTH_INITIAL_PAGE = SWIPEABLE_MONTH_PAGE_COUNT - 1
  * month. Swiping right reveals older months; swiping left past the current month is blocked
  * because the pager starts at its last page.
  *
- * @param dayCounts  Map of date → record count used for cell tinting.
- * @param maxCount   Maximum count across all dates, used to derive intensity levels.
- * @param color      Habit color used for active-day cell backgrounds.
- * @param onDayClick Called when the user taps a past-or-today day.
+ * @param dayCounts           Map of date → record count used for cell tinting.
+ * @param maxCount            Maximum count across all dates, used to derive intensity levels.
+ * @param color               Habit color used for active-day cell backgrounds.
+ * @param highlightCurrentDay Whether to outline today's cell with a border.
+ * @param onDayClick          Called when the user taps a past-or-today day.
  */
 @Composable
 fun SwipeableHabitMonthView(
@@ -69,6 +70,7 @@ fun SwipeableHabitMonthView(
     dayCounts: Map<LocalDate, Int>,
     maxCount: Int,
     color: Color,
+    highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -93,6 +95,7 @@ fun SwipeableHabitMonthView(
             maxCount = maxCount,
             color = color,
             referenceDate = referenceDate,
+            highlightCurrentDay = highlightCurrentDay,
             onDayClick = onDayClick,
         )
     }
@@ -105,11 +108,12 @@ fun SwipeableHabitMonthView(
  * activity are tinted using the habit color; today is highlighted; future days are dimmed.
  * Tapping any past (non-future) day calls [onDayClick].
  *
- * @param dayCounts     Map of date → record count used for cell tinting.
- * @param maxCount      Maximum count across all dates, used to derive intensity levels.
- * @param color         Habit color used for active-day cell backgrounds.
- * @param referenceDate The month to display, anchored to this date. Defaults to today.
- * @param onDayClick    Called when the user taps a past-or-today day.
+ * @param dayCounts           Map of date → record count used for cell tinting.
+ * @param maxCount            Maximum count across all dates, used to derive intensity levels.
+ * @param color               Habit color used for active-day cell backgrounds.
+ * @param referenceDate       The month to display, anchored to this date. Defaults to today.
+ * @param highlightCurrentDay Whether to outline today's cell with a border.
+ * @param onDayClick          Called when the user taps a past-or-today day.
  */
 @Composable
 fun HabitMonthView(
@@ -118,6 +122,7 @@ fun HabitMonthView(
     maxCount: Int,
     color: Color,
     referenceDate: LocalDate? = null,
+    highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -150,7 +155,7 @@ fun HabitMonthView(
             maxCount = maxCount,
             today = today,
             anchorDate = anchorDate,
-            referenceDate = referenceDate,
+            highlightCurrentDay = highlightCurrentDay,
             habitColor = color,
             onDayClick = onDayClick,
         )
@@ -164,7 +169,7 @@ private fun MonthGrid(
     maxCount: Int,
     today: LocalDate,
     anchorDate: LocalDate,
-    referenceDate: LocalDate?,
+    highlightCurrentDay: Boolean,
     habitColor: Color,
     onDayClick: (LocalDate) -> Unit,
 ) {
@@ -210,7 +215,7 @@ private fun MonthGrid(
                         val date = LocalDate(anchorDate.year, anchorDate.month.number, dayNumber)
                         val count = dayCounts[date] ?: 0
                         val isFuture = date > today
-                        val isToday = referenceDate == null && date == today
+                        val isToday = highlightCurrentDay && date == today
 
                         MonthDayCell(
                             dayNumber = dayNumber,

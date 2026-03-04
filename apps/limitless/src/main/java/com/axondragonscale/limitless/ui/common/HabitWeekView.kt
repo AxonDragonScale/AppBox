@@ -52,10 +52,11 @@ private const val SWIPEABLE_WEEK_INITIAL_PAGE = SWIPEABLE_WEEK_PAGE_COUNT - 1
  * week. Swiping right reveals older weeks; swiping left past the current week is blocked because
  * the pager starts at its last page.
  *
- * @param dayCounts  Map of date → record count used for cell color intensity.
- * @param maxCount   Maximum count across all dates, used to derive intensity levels.
- * @param color      Habit color used for filled cells.
- * @param onDayClick Called when the user taps a cell.
+ * @param dayCounts          Map of date → record count used for cell color intensity.
+ * @param maxCount           Maximum count across all dates, used to derive intensity levels.
+ * @param color              Habit color used for filled cells.
+ * @param highlightCurrentDay Whether to outline today's cell with a border.
+ * @param onDayClick         Called when the user taps a cell.
  */
 @Composable
 fun SwipeableHabitWeekView(
@@ -63,6 +64,7 @@ fun SwipeableHabitWeekView(
     dayCounts: Map<LocalDate, Int>,
     maxCount: Int,
     color: Color,
+    highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -87,6 +89,7 @@ fun SwipeableHabitWeekView(
             maxCount = maxCount,
             color = color,
             referenceDate = referenceDate,
+            highlightCurrentDay = highlightCurrentDay,
             onDayClick = onDayClick,
         )
     }
@@ -100,11 +103,12 @@ fun SwipeableHabitWeekView(
  * same color intensity logic as [HeatMapGrid]. A day-of-week letter appears below each cell.
  * Tapping a cell calls [onDayClick] with the corresponding [LocalDate].
  *
- * @param dayCounts     Map of date → record count used for cell color intensity.
- * @param maxCount      Maximum count across all dates, used to derive intensity levels.
- * @param color         Habit color used for filled cells.
- * @param referenceDate The "end" date of the 7-day window. Defaults to today.
- * @param onDayClick    Called when the user taps any of the 7 cells.
+ * @param dayCounts          Map of date → record count used for cell color intensity.
+ * @param maxCount           Maximum count across all dates, used to derive intensity levels.
+ * @param color              Habit color used for filled cells.
+ * @param referenceDate      The "end" date of the 7-day window. Defaults to today.
+ * @param highlightCurrentDay Whether to outline today's cell with a border.
+ * @param onDayClick         Called when the user taps any of the 7 cells.
  */
 @Composable
 fun HabitWeekView(
@@ -113,6 +117,7 @@ fun HabitWeekView(
     maxCount: Int,
     color: Color,
     referenceDate: LocalDate? = null,
+    highlightCurrentDay: Boolean = true,
     onDayClick: (LocalDate) -> Unit = {},
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -154,7 +159,7 @@ fun HabitWeekView(
         ) {
             days.forEach { date ->
                 val count = dayCounts[date] ?: 0
-                val isToday = referenceDate == null && date == today
+                val isToday = highlightCurrentDay && date == today
                 val cellColor = heatMapCellColor(count, maxCount, emptyColor, color)
 
                 Column(

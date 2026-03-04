@@ -86,12 +86,14 @@ fun HabitCard(
                 dayCounts = data.dayCounts,
                 maxCount = data.maxCount,
                 color = data.habit.color.color,
+                highlightCurrentDay = highlightCurrentDay,
                 onDayClick = onDayClick,
             )
             HabitView.WEEK -> SwipeableHabitWeekView(
                 dayCounts = data.dayCounts,
                 maxCount = data.maxCount,
                 color = data.habit.color.color,
+                highlightCurrentDay = highlightCurrentDay,
                 onDayClick = onDayClick,
             )
         }
