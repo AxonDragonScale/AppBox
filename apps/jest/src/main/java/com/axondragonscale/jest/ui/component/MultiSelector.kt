@@ -42,7 +42,6 @@ fun <T : Enum<T>> createMultiSelectorOptions(
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MultiSelector(
     modifier: Modifier = Modifier,

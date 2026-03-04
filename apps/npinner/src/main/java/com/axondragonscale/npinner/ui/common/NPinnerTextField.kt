@@ -82,7 +82,6 @@ fun NPinnerTextField(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UnderlinedDecorationBox(
     value: String,

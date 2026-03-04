@@ -49,7 +49,6 @@ fun PrefsBottomSheet(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrefsBottomSheet(
     modifier: Modifier = Modifier,

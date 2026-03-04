@@ -210,7 +210,6 @@ private fun ColorModeSelector(
 
 // region Solid Color Picker
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SolidColorPicker(
     modifier: Modifier = Modifier,
@@ -475,7 +474,6 @@ private fun GradientPreview(
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GradientColorSection(
     modifier: Modifier = Modifier,

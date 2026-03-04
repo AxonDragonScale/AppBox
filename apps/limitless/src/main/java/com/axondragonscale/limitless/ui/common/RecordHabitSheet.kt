@@ -70,7 +70,6 @@ import kotlin.time.Instant
  * Created by Ronak Harkhani on 09/06/25
  */
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordHabitSheet(
     modifier: Modifier = Modifier,
@@ -127,7 +126,6 @@ fun RecordHabitSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RecordHabitSheetContent(
     modifier: Modifier = Modifier,
@@ -382,7 +380,6 @@ private fun RecordHabitSheetContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RecordDatePickerDialog(
     initialDate: LocalDate,

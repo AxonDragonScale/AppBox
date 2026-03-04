@@ -45,6 +45,7 @@ class HomeVM(
         is HomeUiEvent.NavigateToStats -> Unit
         is HomeUiEvent.AddHabit -> Unit
         is HomeUiEvent.NavigateToHabit -> Unit
+        is HomeUiEvent.NavigateToDayDetail -> Unit
     }
 
     private fun recordHabit(event: HomeUiEvent.SaveRecord) =

@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
  * Created by Ronak Harkhani on 13/05/23
  */
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NPinnerModalBottomSheet(
     onDismiss: () -> Unit,

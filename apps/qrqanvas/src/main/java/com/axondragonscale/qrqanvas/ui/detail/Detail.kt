@@ -105,7 +105,6 @@ fun Detail(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Detail(
     modifier: Modifier = Modifier,

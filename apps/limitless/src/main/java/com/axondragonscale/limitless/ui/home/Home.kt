@@ -35,11 +35,12 @@ import androidx.navigation.NavController
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.model.HabitHeatMapData
+import com.axondragonscale.limitless.model.HabitView
 import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
-import com.axondragonscale.limitless.ui.common.HabitHeatMap
+import com.axondragonscale.limitless.ui.common.HabitCard
 import com.axondragonscale.limitless.ui.common.RecordHabitSheet
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DateTimeUnit
@@ -70,6 +71,7 @@ fun Home(
                 is HomeUiEvent.NavigateToStats -> navController.navigate(Route.Stats)
                 is HomeUiEvent.AddHabit -> navController.navigate(Route.Editor())
                 is HomeUiEvent.NavigateToHabit -> navController.navigate(Route.Habit(event.habitId))
+                is HomeUiEvent.NavigateToDayDetail -> navController.navigate(Route.HabitDay(event.habitId, event.date.toString()))
 
                 else -> vm.onEvent(event)
             }
@@ -158,13 +160,14 @@ private fun Home(
                         color = MaterialTheme.colorScheme.surfaceContainer,
                         tonalElevation = 1.dp,
                     ) {
-                        HabitHeatMap(
+                        HabitCard(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
                                 .padding(top = 8.dp, bottom = 16.dp),
                             data = habitData,
                             highlightCurrentDay = uiState.highlightCurrentDay,
                             onRecordClick = { selectedHabitData = habitData },
+                            onDayClick = { date -> onEvent(HomeUiEvent.NavigateToDayDetail(habitData.habit.id, date)) },
                         )
                     }
                 }
@@ -203,12 +206,12 @@ private fun Preview() {
                         maxCount = 4,
                     ),
                     HabitHeatMapData(
-                        habit = HabitEntity(id = 2, name = "Exercise", description = "", color = HabitColor.BLUE),
+                        habit = HabitEntity(id = 2, name = "Exercise", description = "", color = HabitColor.BLUE, view = HabitView.MONTH),
                         dayCounts = sampleCounts.filterKeys { it.dayOfMonth % 2 == 0 },
                         maxCount = 4,
                     ),
                     HabitHeatMapData(
-                        habit = HabitEntity(id = 3, name = "Reading", description = "", color = HabitColor.GREEN),
+                        habit = HabitEntity(id = 3, name = "Reading", description = "", color = HabitColor.GREEN, view = HabitView.WEEK),
                         dayCounts = emptyMap(),
                         maxCount = 0,
                     ),

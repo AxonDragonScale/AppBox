@@ -1,7 +1,6 @@
 package com.axondragonscale.limitless.ui.habit.calendar
 
 import android.content.res.Configuration
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -216,7 +215,6 @@ private fun CalendarGrid(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DayCell(
     modifier: Modifier = Modifier,

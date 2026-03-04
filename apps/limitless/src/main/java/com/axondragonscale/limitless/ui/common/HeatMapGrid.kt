@@ -70,7 +70,7 @@ internal data class WeekData(
  * A reusable heat map grid that renders week columns, day cells, month labels, and day-of-week
  * labels. Scrolls to the most recent (trailing) week on first composition.
  *
- * Extracted from [HabitHeatMap] so it can be embedded in any context — per-habit views, global
+ * Extracted from [HabitCard] so it can be embedded in any context — per-habit views, global
  * stats cards, etc. — without the habit-name header or record button.
  *
  * @param dayCounts     Map of date → record count for coloring the cells.
@@ -86,7 +86,7 @@ fun HeatMapGrid(
     maxCount: Int,
     color: Color,
     highlightCurrentDay: Boolean = true,
-    totalWeeks: Int = 26,
+    totalWeeks: Int = 52,
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val weeks = remember(today, totalWeeks) { buildWeeks(today, totalWeeks) }

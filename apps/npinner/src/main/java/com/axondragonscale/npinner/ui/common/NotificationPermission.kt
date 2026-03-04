@@ -50,7 +50,6 @@ private enum class RequestStatus {
     NONE, REQUESTED, COMPLETED
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun NotificationPermission() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return

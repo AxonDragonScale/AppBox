@@ -8,6 +8,7 @@ import androidx.room.TypeConverters
 import com.axondragonscale.limitless.database.LimitlessDatabase.Companion.DB_VERSION
 import com.axondragonscale.limitless.database.converter.GoalTypeConverter
 import com.axondragonscale.limitless.database.converter.HabitColorConverter
+import com.axondragonscale.limitless.database.converter.HabitViewConverter
 import com.axondragonscale.commons.room.LocalDateConverter
 import com.axondragonscale.commons.room.LocalTimeConverter
 import com.axondragonscale.limitless.database.converter.ReminderTypeConverter
@@ -47,12 +48,13 @@ import com.axondragonscale.limitless.database.view.HabitHourCountView
     ReminderTypeConverter::class,
     GoalTypeConverter::class,
     HabitColorConverter::class,
+    HabitViewConverter::class,
 )
 abstract class LimitlessDatabase : RoomDatabase() {
 
     companion object {
         const val DB_NAME = "limitless"
-        const val DB_VERSION = 2
+        const val DB_VERSION = 3
 
         /**
          * Create a new instance of [LimitlessDatabase]

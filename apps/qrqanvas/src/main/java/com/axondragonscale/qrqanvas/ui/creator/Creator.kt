@@ -149,7 +149,6 @@ fun Creator(
 
 // region Main Creator Screen
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Creator(
     modifier: Modifier = Modifier,
@@ -715,7 +714,6 @@ private fun UrlInputFields(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WiFiInputFields(
     modifier: Modifier = Modifier,

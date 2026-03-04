@@ -28,12 +28,16 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,6 +61,7 @@ import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.model.BitWeek
 import com.axondragonscale.limitless.model.GoalType
 import com.axondragonscale.limitless.model.HabitColor
+import com.axondragonscale.limitless.model.HabitView
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
@@ -132,6 +137,12 @@ private fun Editor(
                 modifier = Modifier.padding(top = 8.dp),
                 selected = uiState.habit.color,
                 onColorSelected = { onEvent(EditorUiEvent.UpdateHabit(uiState.habit.copy(color = it))) },
+            )
+
+            ViewSection(
+                modifier = Modifier.padding(top = 8.dp),
+                selected = uiState.habit.view,
+                onViewSelected = { onEvent(EditorUiEvent.UpdateHabit(uiState.habit.copy(view = it))) },
             )
 
             GoalsSection(
@@ -211,7 +222,6 @@ private fun EditorFields(
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColorSection(
     modifier: Modifier = Modifier,
@@ -284,6 +294,56 @@ private fun ColorSection(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ViewSection(
+    modifier: Modifier = Modifier,
+    selected: HabitView,
+    onViewSelected: (HabitView) -> Unit,
+) = Column(
+    modifier = modifier
+        .fillMaxWidth()
+        .padding(horizontal = 12.dp)
+        .padding(bottom = 8.dp),
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(32.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            modifier = Modifier
+                .padding(end = 8.dp)
+                .size(20.dp),
+            imageVector = Icons.Default.TableChart,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "View",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().height(40.dp)) {
+        HabitView.entries.forEachIndexed { index, view ->
+            SegmentedButton(
+                selected = view == selected,
+                onClick = { onViewSelected(view) },
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = HabitView.entries.size,
+                    baseShape = RoundedCornerShape(12.dp)
+                ),
+                label = { Text(view.displayName) },
+            )
         }
     }
 }

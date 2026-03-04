@@ -1,6 +1,5 @@
 package com.axondragonscale.jest.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +26,6 @@ import kotlinx.coroutines.launch
  * Created by Ronak Harkhani on 24/10/24
  */
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,

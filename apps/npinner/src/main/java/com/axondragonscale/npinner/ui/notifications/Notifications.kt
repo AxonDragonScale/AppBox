@@ -149,7 +149,6 @@ fun Notifications(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeableNotificationItem(
     notification: NPinnerNotification,
