@@ -76,29 +76,15 @@ private fun MyScreenPreview() {
 
 ### Navigation
 
-#### Pass `navController` to Top-Level Composables
 - Top-level screen composables accept `navController: NavController` directly — not individual callbacks like `onNavigateToX`
-- Keeps `NavHost` call sites clean
-
-```kotlin
-// Preferred
-composable<Route.Home> { Home(navController = navController) }
-
-// Avoid
-composable<Route.Home> {
-    Home(
-        onNavigateToCreator = { navController.navigate(Route.Creator()) },
-        onNavigateToScanner = { navController.navigate(Route.Scanner) },
-    )
-}
-```
-
-#### Intercept Navigation Events in Compose
 - User-triggered navigation is intercepted in the top-level `onEvent` lambda and handled with `navController.navigate(...)` directly — do **not** bounce through `uiEffect`
 - `uiEffect` is only for navigation the VM initiates after async work
 - In the VM, navigation events handled in Compose map to `Unit`
 
 ```kotlin
+// NavHost call site
+composable<Route.Home> { Home(navController = navController) }
+
 // In the VM
 fun onEvent(event: MyUiEvent): Any = when (event) {
     is MyUiEvent.Search -> handleSearch(event)
@@ -129,13 +115,6 @@ private fun MyComponentPreview() {
 - `kotlinx.datetime.Clock` and `kotlinx.datetime.Instant` are deprecated — use `kotlin.time.Clock` and `kotlin.time.Instant` instead
 - The rest of `kotlinx.datetime` (`LocalDate`, `TimeZone`, `toLocalDateTime()`, etc.) is still used normally
 
-```kotlin
-import kotlin.time.Clock
-import kotlin.time.Instant
-
-val now: Instant = Clock.System.now()
-```
-
 ### Class Organization
 
 #### Companion Object Placement
@@ -152,36 +131,12 @@ class MyVM : ViewModel() {
 }
 ```
 
-### Coroutine Launch Style
-
-#### Prefer Expression Body for Coroutine-Launching Functions
-- Use `=` expression body when a function's sole purpose is to launch a coroutine
-
-```kotlin
-// Preferred
-fun loadData() = viewModelScope.launch { ... }
-
-// Avoid
-fun loadData() {
-    viewModelScope.launch { ... }
-}
-```
-
-### Lambda Formatting
+### Style Preferences
+- Use `=` expression body when a function's sole purpose is to launch a coroutine or is a single `when` expression:
+  - `fun loadData() = viewModelScope.launch { ... }`
+  - `fun onEvent(event: MyUiEvent): Any = when (event) { ... }`
 - Keep lambdas on a single line when the total line length is under 120 characters
-
-```kotlin
-items.filter { it.isActive }
-uiState.update { it.copy(isLoading = true) }
-```
-
-### Nullability Idioms
 - Prefer `.orEmpty()` over `?: ""` / `?: emptyList()` on nullable `String?` and `List?`
-
-```kotlin
-val name = user.name.orEmpty()
-val items = response.items.orEmpty()
-```
 
 ### Naming Conventions
 - ViewModels: `VM` suffix — `HomeVM`, `SettingsVM`
@@ -246,30 +201,12 @@ class MyVM : ViewModel() {
 ## Documentation
 
 ### File Header Format
-```
-/**
- * Created by <author> on MM/DD/YY
- */
- ```
+`/** Created by <author> on MM/DD/YY */`
 
 ### KDoc Comments
-- Use KDoc for public APIs and complex functions
-- Describe what the function does, not how
-- Document non-obvious parameters
-- Don't comment obvious things
+- Use KDoc for public APIs and complex functions to describe what the function does, not how
+- Document non-obvious parameters; skip anything self-evident
 - Keep it concise
-
----
-
-## Project Structure
-
-### Package Structure
-```
-ui/         - UI components and screens
-model/      - Data models
-repository/ - Data repositories
-di/         - Dependency injection modules
-```
 
 ---
 
