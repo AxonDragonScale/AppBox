@@ -5,9 +5,9 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.axondragonscale.wallmatic.database.WallmaticDatabase.Companion.DB_VERSION
 import com.axondragonscale.commons.room.IntListConverter
 import com.axondragonscale.commons.room.StringListConverter
+import com.axondragonscale.wallmatic.database.WallmaticDatabase.Companion.DB_VERSION
 import com.axondragonscale.wallmatic.database.dao.WallmaticDao
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Folder

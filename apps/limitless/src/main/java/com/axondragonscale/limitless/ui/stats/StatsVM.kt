@@ -2,6 +2,7 @@ package com.axondragonscale.limitless.ui.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.commons.daysBetween
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.view.HabitDayCountView
 import com.axondragonscale.limitless.repository.LimitlessRepository
@@ -14,7 +15,6 @@ import com.axondragonscale.limitless.ui.stats.model.HabitConsistencyItem
 import com.axondragonscale.limitless.ui.stats.model.TodayHabitStatus
 import com.axondragonscale.limitless.ui.stats.model.TodayProgressData
 import com.axondragonscale.limitless.ui.stats.model.WeekComparisonData
-import com.axondragonscale.commons.daysBetween
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine

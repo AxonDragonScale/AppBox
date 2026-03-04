@@ -4,10 +4,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.core.SyncManager
 import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
-import com.axondragonscale.commons.logD
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

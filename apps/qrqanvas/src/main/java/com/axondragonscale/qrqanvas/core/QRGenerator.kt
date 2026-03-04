@@ -1,7 +1,7 @@
 package com.axondragonscale.qrqanvas.core
 
-import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.axondragonscale.qrqanvas.model.QRContent
+import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.common.BitMatrix

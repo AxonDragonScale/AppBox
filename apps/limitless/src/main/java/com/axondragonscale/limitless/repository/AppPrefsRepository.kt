@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.enumSetting
 import com.axondragonscale.commons.setting
 import com.axondragonscale.limitless.model.UIAlign
-import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 01/11/24

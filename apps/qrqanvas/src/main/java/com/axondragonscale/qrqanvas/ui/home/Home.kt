@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,13 +48,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import com.axondragonscale.qrqanvas.database.entity.QRCodeEntity
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.model.QRStyle
 import com.axondragonscale.qrqanvas.ui.Route
-import com.axondragonscale.qrqanvas.util.typeIcon
 import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
-import androidx.navigation.NavController
+import com.axondragonscale.qrqanvas.util.typeIcon
 import org.koin.androidx.compose.koinViewModel
 
 /**

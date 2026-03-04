@@ -6,12 +6,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.enumSetting
 import com.axondragonscale.commons.setting
 import com.axondragonscale.topty.model.CodeDesign
 import com.axondragonscale.topty.model.SortOrder
 import com.axondragonscale.topty.model.UIFont
-import com.axondragonscale.commons.UIMode
 
 private val Context.appPrefs: DataStore<Preferences> by preferencesDataStore("topty_prefs")
 

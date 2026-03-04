@@ -5,12 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.axondragonscale.commons.room.LocalDateConverter
+import com.axondragonscale.commons.room.LocalTimeConverter
 import com.axondragonscale.limitless.database.LimitlessDatabase.Companion.DB_VERSION
 import com.axondragonscale.limitless.database.converter.GoalTypeConverter
 import com.axondragonscale.limitless.database.converter.HabitColorConverter
 import com.axondragonscale.limitless.database.converter.HabitViewConverter
-import com.axondragonscale.commons.room.LocalDateConverter
-import com.axondragonscale.commons.room.LocalTimeConverter
 import com.axondragonscale.limitless.database.converter.ReminderTypeConverter
 import com.axondragonscale.limitless.database.dao.GoalDao
 import com.axondragonscale.limitless.database.dao.HabitDao

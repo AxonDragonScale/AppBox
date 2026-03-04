@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,10 +52,10 @@ import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.qrqanvas.model.QRContent
 import com.axondragonscale.qrqanvas.ui.common.QRPreview
 import com.axondragonscale.qrqanvas.ui.common.QRPreviewStyle
+import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import com.axondragonscale.qrqanvas.util.displayValue
 import com.axondragonscale.qrqanvas.util.typeIcon
 import com.axondragonscale.qrqanvas.util.typeLabel
-import com.axondragonscale.qrqanvas.ui.theme.QRQanvasTheme
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel

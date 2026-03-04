@@ -3,9 +3,9 @@ package com.axondragonscale.qrqanvas.ui.creator
 import com.axondragonscale.qrqanvas.model.ColorData
 import com.axondragonscale.qrqanvas.model.ContentType
 import com.axondragonscale.qrqanvas.model.DotStyle
-import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.axondragonscale.qrqanvas.model.EyeStyle
 import com.axondragonscale.qrqanvas.model.LogoShape
+import com.axondragonscale.qrqanvas.model.QRErrorCorrection
 import com.axondragonscale.qrqanvas.model.QRStyle
 
 /**

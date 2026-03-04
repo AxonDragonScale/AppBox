@@ -5,8 +5,8 @@ import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.qrqanvas.core.QRContentCodec
-import com.axondragonscale.qrqanvas.repository.ScanHistoryRepository
 import com.axondragonscale.qrqanvas.database.entity.ScanHistoryEntity
+import com.axondragonscale.qrqanvas.repository.ScanHistoryRepository
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode

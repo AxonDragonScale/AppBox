@@ -1,6 +1,7 @@
 package com.axondragonscale.limitless.ui.editor
 
 import android.Manifest
+import android.content.res.Configuration
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,17 +42,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.compose.ui.platform.LocalContext
 import com.axondragonscale.commons.canPostNotifications
 import com.axondragonscale.commons.canScheduleExactAlarms
+import com.axondragonscale.commons.compose.DatePickerDialog
 import com.axondragonscale.commons.compose.Dropdown
 import com.axondragonscale.commons.compose.DropdownItem
-import com.axondragonscale.commons.compose.DatePickerDialog
 import com.axondragonscale.commons.compose.TimePickerDialog
 import com.axondragonscale.commons.formatAmPm
 import com.axondragonscale.commons.formatShort
@@ -59,17 +62,14 @@ import com.axondragonscale.limitless.database.entity.ReminderEntity
 import com.axondragonscale.limitless.model.BitWeek
 import com.axondragonscale.limitless.model.ReminderType
 import com.axondragonscale.limitless.ui.common.PickerChip
+import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
-import android.content.res.Configuration
-import androidx.compose.material3.Surface
-import androidx.compose.ui.tooling.preview.Preview
-import com.axondragonscale.limitless.ui.theme.LimitlessTheme
-import kotlinx.datetime.LocalDate
 
 /**
  * Created by Ronak Harkhani on 03/11/24

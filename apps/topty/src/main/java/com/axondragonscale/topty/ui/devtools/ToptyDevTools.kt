@@ -1,20 +1,16 @@
 package com.axondragonscale.topty.ui.devtools
 
 import android.content.res.Configuration
-import android.widget.Toast
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.axondragonscale.commons.devtools.DevToolsScreen
 import com.axondragonscale.topty.BuildConfig
@@ -22,7 +18,6 @@ import com.axondragonscale.topty.repository.TokenRepository
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.ui.theme.ToptyTheme
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
 /**

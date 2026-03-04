@@ -6,9 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.enumSetting
 import com.axondragonscale.commons.setting
-import com.axondragonscale.commons.UIMode
 
 /**
  * Created by Ronak Harkhani on 09/07/25

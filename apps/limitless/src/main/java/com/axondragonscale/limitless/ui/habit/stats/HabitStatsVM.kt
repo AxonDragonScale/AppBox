@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.axondragonscale.commons.daysBetween
 import com.axondragonscale.limitless.database.entity.GoalEntity
 import com.axondragonscale.limitless.database.view.HabitDayCountView
 import com.axondragonscale.limitless.database.view.HabitHourCountView
@@ -13,13 +14,12 @@ import com.axondragonscale.limitless.ui.Route
 import com.axondragonscale.limitless.ui.habit.stats.model.DailyHistoryData
 import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionData
 import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionRate
-import com.axondragonscale.limitless.ui.model.MonthCount
-import com.axondragonscale.limitless.ui.model.MonthlyTrendData
 import com.axondragonscale.limitless.ui.habit.stats.model.StreakData
 import com.axondragonscale.limitless.ui.habit.stats.model.SummaryData
 import com.axondragonscale.limitless.ui.habit.stats.model.TimeOfDayData
+import com.axondragonscale.limitless.ui.model.MonthCount
+import com.axondragonscale.limitless.ui.model.MonthlyTrendData
 import com.axondragonscale.limitless.ui.model.WeeklyPatternData
-import com.axondragonscale.commons.daysBetween
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,8 +31,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
-import kotlinx.datetime.plus
 import kotlinx.datetime.number
+import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 

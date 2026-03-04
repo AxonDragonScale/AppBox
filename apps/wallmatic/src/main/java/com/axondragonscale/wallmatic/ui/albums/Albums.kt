@@ -1,7 +1,6 @@
 package com.axondragonscale.wallmatic.ui.albums
 
 import android.content.res.Configuration
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,7 +41,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import org.koin.androidx.compose.koinViewModel
+import com.axondragonscale.commons.collectWithLifecycle
+import com.axondragonscale.commons.compose.navigationBarsHeight
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.bottombar.BOTTOM_BAR_HEIGHT
@@ -55,9 +54,8 @@ import com.axondragonscale.wallmatic.ui.common.LoadingState
 import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
-import com.axondragonscale.commons.collectWithLifecycle
-import com.axondragonscale.commons.compose.navigationBarsHeight
 import com.axondragonscale.wallmatic.ui.util.countSummary
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 09/06/24

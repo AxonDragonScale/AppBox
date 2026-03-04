@@ -2,8 +2,6 @@ package com.axondragonscale.commons.compose
 
 import android.content.res.Configuration
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog as M3DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -17,6 +15,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
+import androidx.compose.material3.DatePickerDialog as M3DatePickerDialog
 
 /**
  * Created by Ronak Harkhani on 29/06/25

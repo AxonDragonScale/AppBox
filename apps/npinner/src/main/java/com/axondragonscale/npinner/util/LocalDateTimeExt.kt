@@ -1,7 +1,6 @@
 package com.axondragonscale.npinner.util
 
 import android.text.format.DateUtils
-import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -11,6 +10,7 @@ import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /**
  * Created by Ronak Harkhani on 01/05/23

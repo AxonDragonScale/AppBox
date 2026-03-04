@@ -2,6 +2,7 @@ package com.axondragonscale.topty.ui.sharetoken
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.commons.qr.QRGenerator
 import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.repository.TokenRepository
 import kotlinx.coroutines.Dispatchers
@@ -9,9 +10,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
-import com.axondragonscale.commons.qr.QRGenerator
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * Created by Ronak Harkhani on 28/12/24

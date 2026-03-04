@@ -1,7 +1,6 @@
 package com.axondragonscale.wallmatic.ui.devtools
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.Timer
@@ -9,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.commons.devtools.DevTool
 import com.axondragonscale.commons.devtools.DevToolsScreen
 import com.axondragonscale.wallmatic.BuildConfig
 import com.axondragonscale.wallmatic.core.SyncManager

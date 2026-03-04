@@ -4,14 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.core.SyncManager
-import com.axondragonscale.commons.UIMode
-import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.ui.WallmaticApp
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme

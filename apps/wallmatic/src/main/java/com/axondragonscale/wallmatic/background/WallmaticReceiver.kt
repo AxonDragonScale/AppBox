@@ -3,8 +3,8 @@ package com.axondragonscale.wallmatic.background
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.commons.logD
+import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

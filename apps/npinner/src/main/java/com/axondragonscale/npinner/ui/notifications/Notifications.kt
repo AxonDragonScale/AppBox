@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import org.koin.androidx.compose.koinViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.npinner.R
@@ -50,6 +48,7 @@ import com.axondragonscale.npinner.ui.notifications.about.AboutBottomSheet
 import com.axondragonscale.npinner.ui.notifications.themePicker.ThemePickerBottomSheet
 import com.axondragonscale.npinner.ui.theme.Dimen
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 22/04/23

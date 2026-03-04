@@ -15,12 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.limitless.ui.habit.stats.widget.GoalCompletionRings
 import com.axondragonscale.limitless.ui.habit.stats.widget.MonthlyTrendChart
-import com.axondragonscale.limitless.ui.theme.color
 import com.axondragonscale.limitless.ui.habit.stats.widget.StreakCards
 import com.axondragonscale.limitless.ui.habit.stats.widget.SummaryStatsGrid
 import com.axondragonscale.limitless.ui.habit.stats.widget.TimeOfDayChart
 import com.axondragonscale.limitless.ui.habit.stats.widget.WeeklyPatternChart
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
+import com.axondragonscale.limitless.ui.theme.color
 import org.koin.androidx.compose.koinViewModel
 
 /**

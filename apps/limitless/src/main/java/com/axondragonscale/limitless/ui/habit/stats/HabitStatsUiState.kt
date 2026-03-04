@@ -3,10 +3,10 @@ package com.axondragonscale.limitless.ui.habit.stats
 import com.axondragonscale.limitless.model.HabitColor
 import com.axondragonscale.limitless.ui.habit.stats.model.DailyHistoryData
 import com.axondragonscale.limitless.ui.habit.stats.model.GoalCompletionData
-import com.axondragonscale.limitless.ui.model.MonthlyTrendData
 import com.axondragonscale.limitless.ui.habit.stats.model.StreakData
 import com.axondragonscale.limitless.ui.habit.stats.model.SummaryData
 import com.axondragonscale.limitless.ui.habit.stats.model.TimeOfDayData
+import com.axondragonscale.limitless.ui.model.MonthlyTrendData
 import com.axondragonscale.limitless.ui.model.WeeklyPatternData
 
 /**

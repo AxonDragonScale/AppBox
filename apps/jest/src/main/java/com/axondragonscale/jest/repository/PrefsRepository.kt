@@ -6,13 +6,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.enumSetting
 import com.axondragonscale.commons.serializedSetting
 import com.axondragonscale.commons.setting
 import com.axondragonscale.jest.model.BlacklistFlag
 import com.axondragonscale.jest.model.Category
 import com.axondragonscale.jest.model.JokeType
-import com.axondragonscale.commons.UIMode
 
 private val Context.appPrefs: DataStore<Preferences> by preferencesDataStore("jest_prefs")
 

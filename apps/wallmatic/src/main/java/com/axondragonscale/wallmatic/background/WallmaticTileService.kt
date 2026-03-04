@@ -1,9 +1,9 @@
 package com.axondragonscale.wallmatic.background
 
 import android.service.quicksettings.TileService
+import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.commons.logD
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

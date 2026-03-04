@@ -9,8 +9,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.axondragonscale.wallmatic.model.Config
 import com.axondragonscale.commons.UIMode
+import com.axondragonscale.wallmatic.model.Config
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import java.io.InputStream

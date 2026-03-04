@@ -1,7 +1,6 @@
 package com.axondragonscale.wallmatic.ui.settings
 
 import android.content.res.Configuration
-import androidx.navigation.NavController
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.BrightnessAuto
@@ -47,18 +45,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.commons.compose.navigationBarsHeight
-import org.koin.androidx.compose.koinViewModel
-import com.axondragonscale.wallmatic.BuildConfig
-import com.axondragonscale.wallmatic.util.Link
-import com.axondragonscale.wallmatic.R
+import androidx.navigation.NavController
 import com.axondragonscale.commons.UIMode
+import com.axondragonscale.commons.compose.navigationBarsHeight
+import com.axondragonscale.wallmatic.BuildConfig
+import com.axondragonscale.wallmatic.R
+import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.bottombar.BOTTOM_BAR_HEIGHT
 import com.axondragonscale.wallmatic.ui.common.SettingsCard
 import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.WallmaticCard
-import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
+import com.axondragonscale.wallmatic.util.Link
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 09/06/24

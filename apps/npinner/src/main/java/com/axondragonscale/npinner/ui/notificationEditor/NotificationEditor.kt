@@ -11,7 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import org.koin.androidx.compose.koinViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.npinner.model.NPinnerNotification
@@ -34,12 +32,13 @@ import com.axondragonscale.npinner.ui.common.IconActionButton
 import com.axondragonscale.npinner.ui.common.TopBar
 import com.axondragonscale.npinner.ui.theme.Dimen
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.hours
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.koin.androidx.compose.koinViewModel
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 
 /**
  * Created by Ronak Harkhani on 22/04/23

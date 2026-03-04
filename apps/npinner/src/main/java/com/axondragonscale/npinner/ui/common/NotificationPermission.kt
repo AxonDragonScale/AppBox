@@ -35,10 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.axondragonscale.commons.openNotificationSettings
 import com.axondragonscale.npinner.R
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
-import com.axondragonscale.commons.openNotificationSettings
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 

@@ -1,8 +1,6 @@
 package com.axondragonscale.qrqanvas.repository
 
 import com.axondragonscale.qrqanvas.database.dao.ScanHistoryDao
-import com.axondragonscale.qrqanvas.database.entity.ScanHistoryEntity
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Created by Ronak Harkhani on 09/07/25

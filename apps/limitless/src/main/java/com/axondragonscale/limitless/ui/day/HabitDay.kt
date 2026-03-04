@@ -42,12 +42,12 @@ import com.axondragonscale.commons.formatShort
 import com.axondragonscale.commons.formatTime
 import com.axondragonscale.limitless.database.entity.HabitEntity
 import com.axondragonscale.limitless.database.entity.RecordEntity
-import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.model.HabitColor
+import com.axondragonscale.limitless.model.UIAlign
 import com.axondragonscale.limitless.ui.common.AppBar
 import com.axondragonscale.limitless.ui.common.AppBarItem
-import com.axondragonscale.limitless.ui.common.RecordItem
 import com.axondragonscale.limitless.ui.common.RecordHabitSheet
+import com.axondragonscale.limitless.ui.common.RecordItem
 import com.axondragonscale.limitless.ui.theme.HabitTheme
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
 import kotlinx.datetime.LocalDate

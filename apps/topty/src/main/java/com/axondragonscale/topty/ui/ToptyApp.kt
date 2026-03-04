@@ -11,13 +11,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.axondragonscale.topty.ui.backuprestore.BackupRestore
 import com.axondragonscale.topty.ui.devtools.ToptyDevTools
-import com.axondragonscale.topty.ui.token.Token
 import com.axondragonscale.topty.ui.home.Home
 import com.axondragonscale.topty.ui.onboarding.Onboarding
 import com.axondragonscale.topty.ui.qrscanner.QRScanner
 import com.axondragonscale.topty.ui.settings.ChangePassword
 import com.axondragonscale.topty.ui.settings.Settings
 import com.axondragonscale.topty.ui.sharetoken.ShareToken
+import com.axondragonscale.topty.ui.token.Token
 
 /**
  * Created by Ronak Harkhani on 15/09/24

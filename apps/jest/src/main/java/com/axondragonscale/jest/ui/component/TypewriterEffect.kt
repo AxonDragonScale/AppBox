@@ -3,10 +3,6 @@ package com.axondragonscale.jest.ui.component
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import kotlin.random.nextInt

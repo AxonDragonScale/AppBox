@@ -21,12 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.commons.UIMode
 import com.axondragonscale.npinner.ui.common.NPinnerModalBottomSheet
 import com.axondragonscale.npinner.ui.common.SegmentedToggleButton
 import com.axondragonscale.npinner.ui.theme.NPinnerTheme
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 13/05/23

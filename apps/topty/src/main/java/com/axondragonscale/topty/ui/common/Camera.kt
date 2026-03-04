@@ -1,7 +1,5 @@
 package com.axondragonscale.topty.ui.common
 
-import androidx.annotation.OptIn
-import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView

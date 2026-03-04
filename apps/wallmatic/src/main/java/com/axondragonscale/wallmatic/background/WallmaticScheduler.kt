@@ -4,9 +4,9 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import androidx.core.content.getSystemService
+import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.ui.util.toTimestampString
-import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.util.nextUpdate
 import kotlinx.coroutines.flow.firstOrNull
 

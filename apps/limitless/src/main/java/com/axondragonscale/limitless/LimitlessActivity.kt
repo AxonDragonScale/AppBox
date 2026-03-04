@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.limitless.repository.AppPrefsRepository
 import com.axondragonscale.limitless.ui.LimitlessApp

@@ -2,12 +2,12 @@ package com.axondragonscale.wallmatic.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.commons.collect
 import com.axondragonscale.wallmatic.background.WallmaticScheduler
 import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.model.config
 import com.axondragonscale.wallmatic.model.copy
 import com.axondragonscale.wallmatic.model.wallpaperConfig
-import com.axondragonscale.commons.collect
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.util.homeConfig

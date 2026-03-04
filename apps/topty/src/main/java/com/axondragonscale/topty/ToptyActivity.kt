@@ -11,9 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.topty.auth.BiometricAuthManager
-import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.isDarkTheme
+import com.axondragonscale.topty.auth.BiometricAuthManager
 import com.axondragonscale.topty.repository.ToptyPrefsRepository
 import com.axondragonscale.topty.ui.BiometricLockScreen
 import com.axondragonscale.topty.ui.Route

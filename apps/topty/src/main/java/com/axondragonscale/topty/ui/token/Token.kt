@@ -27,7 +27,6 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
@@ -59,7 +59,6 @@ import com.axondragonscale.topty.ui.Route
 import com.axondragonscale.topty.ui.common.TextInput
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
-import com.axondragonscale.commons.collectWithLifecycle
 import com.google.common.io.BaseEncoding
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
