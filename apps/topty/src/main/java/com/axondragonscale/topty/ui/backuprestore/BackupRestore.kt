@@ -4,6 +4,11 @@ import android.content.res.Configuration
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +29,7 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -31,6 +38,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +50,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -50,8 +60,14 @@ import androidx.navigation.NavController
 import com.axondragonscale.commons.compose.Dropdown
 import com.axondragonscale.commons.compose.DropdownItem
 import com.axondragonscale.topty.backup.BackupFormat
+import com.axondragonscale.topty.backup.BackupImportEvent
+import com.axondragonscale.topty.backup.ToptyEncryptionOption
+import com.axondragonscale.topty.ui.backuprestore.ExportUiState
+import com.axondragonscale.topty.ui.backuprestore.ImportUiState
 import com.axondragonscale.topty.ui.theme.DefaultShape
 import com.axondragonscale.topty.ui.theme.ToptyTheme
+import com.axondragonscale.topty.util.description
+import com.axondragonscale.topty.util.displayName
 import com.axondragonscale.topty.util.generateSuggestedFileName
 import org.koin.androidx.compose.koinViewModel
 
@@ -120,46 +136,36 @@ private fun BackupRestore(
             InfoCard(tokenCount = uiState.tokenCount)
 
             // Export section
-            val exportLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.CreateDocument("*/*")
-            ) { uri: Uri? ->
-                uri?.let { onEvent(BackupRestoreUiEvent.ExportBackup(it)) }
-            }
-
-            BackupActionSection(
+            ExportSection(
                 modifier = modifier,
-                title = "Export Backup",
-                icon = Icons.Default.CloudUpload,
-                description = "Save your tokens to a file in selected format",
-                buttonText = "Export Backup",
-                selectedFormat = uiState.selectedExportFormat,
-                isLoading = uiState.isLoading,
-                onFormatSelected = { onEvent(BackupRestoreUiEvent.SelectExportFormat(it)) },
-                onAction = { exportLauncher.launch(uiState.selectedExportFormat.generateSuggestedFileName()) }
+                uiState = uiState.exportUiState,
+                onEvent = onEvent,
             )
 
             // Import section
-            val importLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.GetContent()
-            ) { uri: Uri? ->
-                uri?.let { onEvent(BackupRestoreUiEvent.ImportBackup(it)) }
-            }
-
-            BackupActionSection(
+            ImportSection(
                 modifier = modifier,
-                title = "Import Backup",
-                icon = Icons.Default.CloudDownload,
-                description = "Restore tokens from a file of the selected format",
-                buttonText = "Import Backup",
-                selectedFormat = uiState.selectedImportFormat,
-                isLoading = uiState.isLoading,
-                onFormatSelected = { onEvent(BackupRestoreUiEvent.SelectImportFormat(it)) },
-                onAction = { importLauncher.launch("*/*") }
+                uiState = uiState.importUiState,
+                onEvent = onEvent,
             )
         }
     }
 
-    // Success dialog
+    // Error dialog — stays at root, can be triggered by both export and import
+    uiState.errorMessage?.let { error ->
+        ErrorDialog(
+            message = error,
+            onDismiss = { onEvent(BackupRestoreUiEvent.DismissError) }
+        )
+    }
+}
+
+@Composable
+private fun ExportSection(
+    modifier: Modifier = Modifier,
+    uiState: ExportUiState,
+    onEvent: (BackupRestoreUiEvent) -> Unit,
+) {
     if (uiState.exportSuccess) {
         SuccessDialog(
             title = "Backup Exported",
@@ -168,6 +174,152 @@ private fun BackupRestore(
         )
     }
 
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("*/*")
+    ) { uri: Uri? ->
+        uri?.let { onEvent(BackupRestoreUiEvent.ExportBackup(it)) }
+    }
+    val encryptionOption = (uiState.selectedFormat as? BackupFormat.Topty)?.encryptionOption
+    val isCustomPassword = encryptionOption is ToptyEncryptionOption.CustomPassword
+    val isExportEnabled = !uiState.isLoading &&
+        (!isCustomPassword || (uiState.customPassword.isNotEmpty()
+            && uiState.customPassword == uiState.customPasswordConfirm))
+
+    SectionCard(modifier = modifier, title = "Export Backup", icon = Icons.Default.CloudUpload) {
+        Text(
+            text = "Save your tokens to a file",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Format selector
+        Dropdown(
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            selectedItem = DropdownItem(uiState.selectedFormat.displayName, uiState.selectedFormat),
+            items = listOf(BackupFormat.Topty(), BackupFormat.Aegis, BackupFormat.OtpAuthUri)
+                .map { DropdownItem(it.displayName, it) },
+            onItemSelected = { onEvent(BackupRestoreUiEvent.SelectExportFormat(it.value)) },
+            shape = DefaultShape,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = uiState.selectedFormat.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        )
+
+        // Encryption selector — only for Topty format
+        AnimatedVisibility(
+            visible = encryptionOption != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Encryption",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val options = listOf(
+                    ToptyEncryptionOption.AppPassword,
+                    ToptyEncryptionOption.CustomPassword(""),
+                    ToptyEncryptionOption.None,
+                )
+                Dropdown(
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    selectedItem = DropdownItem(encryptionOption?.displayName ?: "", encryptionOption),
+                    items = options.map { DropdownItem(it.displayName, it) },
+                    onItemSelected = { onEvent(BackupRestoreUiEvent.SelectExportEncryption(it.value!!)) },
+                    shape = DefaultShape,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = encryptionOption?.description ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+
+                // Custom password fields
+                AnimatedVisibility(
+                    visible = isCustomPassword,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = uiState.customPassword,
+                            onValueChange = {
+                                onEvent(BackupRestoreUiEvent.UpdateCustomExportPassword(it, uiState.customPasswordConfirm))
+                            },
+                            label = { Text("Backup Password") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            singleLine = true,
+                            shape = DefaultShape,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = uiState.customPasswordConfirm,
+                            onValueChange = {
+                                onEvent(BackupRestoreUiEvent.UpdateCustomExportPassword(uiState.customPassword, it))
+                            },
+                            label = { Text("Confirm Password") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            singleLine = true,
+                            shape = DefaultShape,
+                            isError = uiState.customPasswordConfirm.isNotEmpty()
+                                && uiState.customPassword != uiState.customPasswordConfirm,
+                            supportingText = {
+                                if (uiState.customPasswordConfirm.isNotEmpty()
+                                    && uiState.customPassword != uiState.customPasswordConfirm
+                                ) {
+                                    Text("Passwords do not match")
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { exportLauncher.launch(uiState.selectedFormat.generateSuggestedFileName()) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isExportEnabled,
+            shape = DefaultShape,
+        ) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text("Export Backup")
+        }
+    }
+}
+
+@Composable
+private fun ImportSection(
+    modifier: Modifier = Modifier,
+    uiState: ImportUiState,
+    onEvent: (BackupRestoreUiEvent) -> Unit,
+) {
     if (uiState.importSuccess) {
         SuccessDialog(
             title = "Import Complete",
@@ -176,15 +328,6 @@ private fun BackupRestore(
         )
     }
 
-    // Error dialog
-    uiState.errorMessage?.let { error ->
-        ErrorDialog(
-            message = error,
-            onDismiss = { onEvent(BackupRestoreUiEvent.DismissError) }
-        )
-    }
-
-    // Import confirmation dialog
     if (uiState.pendingImportTokens != null) {
         ImportConfirmationDialog(
             tokenCount = uiState.pendingImportTokens.size,
@@ -192,6 +335,93 @@ private fun BackupRestore(
             onDismiss = { onEvent(BackupRestoreUiEvent.DismissError) }
         )
     }
+
+    uiState.activeImportEvent?.let { event ->
+        ImportPasswordDialog(
+            event = event,
+            passwordInput = uiState.importPasswordInput,
+            onPasswordChange = { onEvent(BackupRestoreUiEvent.UpdateImportPasswordInput(it)) },
+            onSubmit = { onEvent(BackupRestoreUiEvent.SubmitImportPassword) },
+            onDismiss = { onEvent(BackupRestoreUiEvent.DismissImportPasswordDialog) },
+        )
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onEvent(BackupRestoreUiEvent.ImportBackup(it)) }
+    }
+    SectionCard(modifier = modifier, title = "Import Backup", icon = Icons.Default.CloudDownload) {
+        Text(
+            text = "Restore tokens from a backup file. Format is detected automatically.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { importLauncher.launch("*/*") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.isLoading,
+            shape = DefaultShape,
+        ) {
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text("Import Backup")
+        }
+    }
+}
+
+@Composable
+private fun ImportPasswordDialog(
+    event: BackupImportEvent,
+    passwordInput: String,
+    onPasswordChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val errorMessage = (event as? BackupImportEvent.PasswordError)?.message
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        title = { Text("Backup Password") },
+        text = {
+            Column {
+                Text("This backup is encrypted. Enter the password to import it.")
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = passwordInput,
+                    onValueChange = onPasswordChange,
+                    label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    shape = DefaultShape,
+                    isError = errorMessage != null,
+                    supportingText = errorMessage?.let { { Text(it) } },
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onSubmit, enabled = passwordInput.isNotEmpty(), shape = DefaultShape) {
+                Text("Unlock")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
@@ -238,74 +468,7 @@ private fun InfoCard(
     }
 }
 
-@Composable
-private fun BackupActionSection(
-    modifier: Modifier = Modifier,
-    title: String,
-    icon: ImageVector,
-    description: String,
-    buttonText: String,
-    selectedFormat: BackupFormat,
-    isLoading: Boolean,
-    onFormatSelected: (BackupFormat) -> Unit,
-    onAction: () -> Unit,
-) {
-    SectionCard(
-        modifier = modifier,
-        title = title,
-        icon = icon,
-    ) {
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Format selector
-        Dropdown(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            selectedItem = DropdownItem(selectedFormat.displayName, selectedFormat),
-            items = BackupFormat.entries.map {
-                DropdownItem(name = it.displayName, value = it)
-            },
-            onItemSelected = { onFormatSelected(it.value) },
-            shape = DefaultShape,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Format description
-        Text(
-            text = selectedFormat.description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Action button
-        Button(
-            onClick = onAction,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading,
-            shape = DefaultShape,
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Text(buttonText)
-        }
-    }
-}
 
 @Composable
 private fun SectionCard(
@@ -440,21 +603,172 @@ private fun ImportConfirmationDialog(
     )
 }
 
-@Preview(name = "Light Mode", showBackground = true)
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+// Default state — Topty format, app password (default)
+@Preview(name = "Default - Light", showBackground = true)
+@Preview(name = "Default - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun Preview() {
+private fun PreviewDefault() {
     ToptyTheme {
-        val uiState = remember {
-            BackupRestoreUiState(
-                tokenCount = 12,
-                selectedExportFormat = BackupFormat.TOPTY,
-                selectedImportFormat = BackupFormat.AEGIS,
-            )
-        }
         BackupRestore(
-            uiState = uiState,
-            onEvent = { },
+            uiState = BackupRestoreUiState(tokenCount = 12),
+            onEvent = {},
+        )
+    }
+}
+
+// Custom password selected — password fields expanded, passwords matching
+@Preview(name = "Custom Password - Matching - Light", showBackground = true)
+@Preview(name = "Custom Password - Matching - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewCustomPasswordMatching() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 5,
+                selectedExportFormat = BackupFormat.Topty(ToptyEncryptionOption.CustomPassword("hunter2")),
+                customExportPassword = "hunter2",
+                customExportPasswordConfirm = "hunter2",
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Custom password selected — passwords not matching (export button disabled, error shown)
+@Preview(name = "Custom Password - Mismatch - Light", showBackground = true)
+@Preview(name = "Custom Password - Mismatch - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewCustomPasswordMismatch() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 5,
+                selectedExportFormat = BackupFormat.Topty(ToptyEncryptionOption.CustomPassword("hunter2")),
+                customExportPassword = "hunter2",
+                customExportPasswordConfirm = "hunter3",
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Unencrypted export selected
+@Preview(name = "Unencrypted Export - Light", showBackground = true)
+@Preview(name = "Unencrypted Export - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewUnencrypted() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 3,
+                selectedExportFormat = BackupFormat.Topty(ToptyEncryptionOption.None),
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Loading state
+@Preview(name = "Loading - Light", showBackground = true)
+@Preview(name = "Loading - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewLoading() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 8,
+                isLoading = true,
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Import password dialog — first prompt (PasswordRequired)
+@Preview(name = "Import Password Dialog - Light", showBackground = true)
+@Preview(name = "Import Password Dialog - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewImportPasswordDialog() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 8,
+                activeImportEvent = BackupImportEvent.PasswordRequired(
+                    onReceived = {},
+                    onCancel = {},
+                ),
+                importPasswordInput = "",
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Import password dialog — wrong password (PasswordError with inline error)
+@Preview(name = "Import Password Error - Light", showBackground = true)
+@Preview(name = "Import Password Error - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewImportPasswordError() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 8,
+                activeImportEvent = BackupImportEvent.PasswordError(
+                    message = "Incorrect password. Please try again.",
+                    onReceived = {},
+                    onCancel = {},
+                ),
+                importPasswordInput = "wrongpassword",
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Error dialog
+@Preview(name = "Error Dialog - Light", showBackground = true)
+@Preview(name = "Error Dialog - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewError() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 8,
+                errorMessage = "Failed to import backup: Invalid backup file format",
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Import confirmation dialog
+@Preview(name = "Import Confirmation - Light", showBackground = true)
+@Preview(name = "Import Confirmation - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewImportConfirmation() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 8,
+                pendingImportTokens = emptyList(),
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+// Export success dialog
+@Preview(name = "Export Success - Light", showBackground = true)
+@Preview(name = "Export Success - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewExportSuccess() {
+    ToptyTheme {
+        BackupRestore(
+            uiState = BackupRestoreUiState(
+                tokenCount = 8,
+                exportSuccess = true,
+            ),
+            onEvent = {},
         )
     }
 }

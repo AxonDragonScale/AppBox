@@ -26,16 +26,16 @@ This project uses a **context graph** — a set of interlinked markdown files th
 
 ### Module Index
 
-| Module | Package | Purpose | Context |
-|--------|---------|---------|---------|
-| `:apps:jest` | `com.axondragonscale.jest` | Daily jokes/humor with home screen widget | [context](./apps/jest/context.md) |
-| `:apps:limitless` | `com.axondragonscale.limitless` | Habit tracking with statistics | [context](./apps/limitless/context.md) |
-| `:apps:npinner` | `com.axondragonscale.npinner` | Persistent notification pinning with scheduling | [context](./apps/npinner/context.md) ∙ [notification-system](./apps/npinner/notification-system.md) |
-| `:apps:qrqanvas` | `com.axondragonscale.qrqanvas` | Customizable QR code generator & scanner | [context](./apps/qrqanvas/context.md) |
-| `:apps:topty` | `com.axondragonscale.topty` | TOTP-based 2FA code manager | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
-| `:apps:wallmatic` | `com.axondragonscale.wallmatic` | Auto-change wallpapers on schedule | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md) |
-| `:core:commons` | `com.axondragonscale.commons` | Shared utilities, networking, DI, DevTools | [context](./core/commons/context.md) |
-| `:libraries:tlv` | `io.github.axondragonscale.tlv` | BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md) |
+| Module            |  Purpose                                                    | Context                                                                                                                      |
+|-------------------|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `:apps:jest`      |  Daily jokes/humor with home screen widget                  | [context](./apps/jest/context.md)                                                                                            |
+| `:apps:limitless` |  Habit tracking with statistics                             | [context](./apps/limitless/context.md)                                                                                       |
+| `:apps:npinner`   |  Persistent notification pinning with scheduling            | [context](./apps/npinner/context.md) ∙ [notification-system](./apps/npinner/notification-system.md)                          |
+| `:apps:qrqanvas`  |  Customizable QR code generator & scanner                   | [context](./apps/qrqanvas/context.md)                                                                                        |
+| `:apps:topty`     |  TOTP-based 2FA code manager                                | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
+| `:apps:wallmatic` |  Auto-change wallpapers on schedule                         | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md)                      |
+| `:core:commons`   |  Shared utilities, networking, DI, DevTools                 | [context](./core/commons/context.md)                                                                                         |
+| `:libraries:tlv`  |  BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md)                                                                                        |
 
 ## Agent Efficiency Guidelines
 
@@ -57,6 +57,9 @@ Before planning or implementing anything non-trivial, raise questions and push b
 - **Trivial (no debate needed):** mechanical changes, obvious bug fixes, private/internal naming, anything already explicitly decided.
 
 Once a direction is agreed and work is underway — execute with confidence and don't re-litigate settled decisions.
+
+- **Chunked implementation:** implement in ~100 lines of change per chunk. Propose a chunk plan upfront, wait for review after each chunk, address only what was flagged on fix requests.
+- **Code review:** after completing an implementation, proactively review for correctness, reusability, maintainability, complexity, and convention adherence. Group findings by severity, wait for the user to decide what to act on before making changes.
 
 ---
 

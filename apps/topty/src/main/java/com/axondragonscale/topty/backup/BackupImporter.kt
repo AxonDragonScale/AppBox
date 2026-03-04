@@ -2,11 +2,11 @@ package com.axondragonscale.topty.backup
 
 import android.content.Context
 import android.net.Uri
-import com.axondragonscale.commons.Result
 import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
+import com.axondragonscale.topty.security.PasswordManager
 import com.axondragonscale.topty.security.TokenEncryption
 import kotlinx.serialization.json.Json
 
@@ -20,120 +20,181 @@ import kotlinx.serialization.json.Json
 class BackupImporter(
     private val context: Context,
     private val json: Json,
+    private val passwordManager: PasswordManager,
 ) {
 
     /**
-     * Import tokens from backup content.
+     * Import tokens from the backup file at [uri].
      *
-     * @param content Backup file content as string
-     * @param format Backup format to parse
-     * @return Result containing list of imported tokens or error
-     */
-    suspend fun import(content: String, format: BackupFormat): Result<List<Token>, String> {
-        return try {
-            val tokens = when (format) {
-                BackupFormat.TOPTY -> importToptyFormat(content)
-                BackupFormat.AEGIS -> importAegisFormat(content)
-                BackupFormat.OTP_AUTH_URI -> importOtpAuthUriFormat(content)
-            }
-            Result.Success(tokens)
-        } catch (e: Exception) {
-            Result.Failure("Failed to import backup: ${e.message}")
-        }
-    }
-
-    /**
-     * Import tokens from file at the specified URI.
+     * All outcomes — including success, failure, cancellation, and mid-flight password prompts —
+     * are communicated exclusively via [eventHandler]. The method returns [Unit].
      *
-     * @param uri URI of the backup file to read
-     * @param format Backup format to parse
-     * @return Result containing list of imported tokens or error
+     * For TOPTY format:
+     * - [BackupEncryptionType.NONE]: decodes payload directly, emits [BackupImportEvent.Success].
+     * - [BackupEncryptionType.ENCRYPTED]: tries the current app key first (same-device fast path).
+     *   If that fails, emits [BackupImportEvent.PasswordRequired] and suspends until the user
+     *   provides a password via the event's callbacks.
+     *   Subsequent wrong passwords emit [BackupImportEvent.PasswordError].
+     *
+     * For AEGIS and OTP_AUTH_URI formats, only terminal events are emitted.
      */
-    suspend fun importFromFile(uri: Uri, format: BackupFormat): Result<List<Token>, String> {
-        return try {
-            // Read file content
-            val content = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                inputStream.bufferedReader().readText()
-            } ?: return Result.Failure("Failed to open input stream")
-
-            if (content.isEmpty()) return Result.Failure("Backup file is empty")
-
-            val tokens = when (format) {
-                BackupFormat.TOPTY -> importToptyFormat(content)
-                BackupFormat.AEGIS -> importAegisFormat(content)
-                BackupFormat.OTP_AUTH_URI -> importOtpAuthUriFormat(content)
+    suspend fun importFromFile(
+        uri: Uri,
+        format: BackupFormat,
+        eventHandler: suspend (BackupImportEvent) -> Unit,
+    ) {
+        try {
+            val content = readFile(uri)
+            if (content == null) {
+                eventHandler(BackupImportEvent.Failure("Failed to open file"))
+                return
             }
-            Result.Success(tokens)
+            if (content.isEmpty()) {
+                eventHandler(BackupImportEvent.Failure("Backup file is empty"))
+                return
+            }
+
+            when (format) {
+                is BackupFormat.Topty -> importToptyFormat(content, eventHandler)
+                is BackupFormat.Aegis -> eventHandler(BackupImportEvent.Success(importAegisFormat(content)))
+                is BackupFormat.OtpAuthUri -> eventHandler(BackupImportEvent.Success(importOtpAuthUriFormat(content)))
+            }
         } catch (e: Exception) {
-            Result.Failure("Failed to import backup: ${e.message}")
+            eventHandler(BackupImportEvent.Failure("Failed to import backup: ${e.message}"))
         }
     }
 
-    /**
-     * Import from Topty's native encrypted JSON format.
-     */
-    private fun importToptyFormat(content: String): List<Token> {
-        // Decrypt the backup
-        val decryptedContent = try {
-            TokenEncryption.decrypt(content)
+    // region Topty Format
+
+    private suspend fun importToptyFormat(
+        content: String,
+        eventHandler: suspend (BackupImportEvent) -> Unit,
+    ) {
+        val backupFile = try {
+            json.decodeFromString<ToptyBackupFile>(content)
         } catch (e: Exception) {
-            // If decryption fails, assume it's unencrypted (for backward compatibility)
-            content
+            eventHandler(BackupImportEvent.Failure("Invalid backup file format"))
+            return
         }
 
-        // Parse JSON
-        val backupData = json.decodeFromString<ToptyBackupData>(decryptedContent)
-
-        // Validate version
-        if (backupData.version > ToptyBackupData.CURRENT_VERSION) {
-            throw IllegalArgumentException(
-                "Backup version ${backupData.version} is not supported. Please update the app."
-            )
+        if (backupFile.version > ToptyBackupFile.CURRENT_VERSION) {
+            eventHandler(BackupImportEvent.Failure(
+                "Backup version ${backupFile.version} is not supported. Please update the app."
+            ))
+            return
         }
 
-        // Convert backup tokens to Token entities
-        return backupData.tokens.map { backupToken ->
-            Token(
-                id = 0, // Will be auto-generated by Room
-                name = backupToken.name,
-                issuer = backupToken.issuer,
-                group = backupToken.group,
-                note = backupToken.note,
-                encryptedSecret = backupToken.encryptedSecret,
-                protocol = backupToken.protocol,
-                hashAlgo = backupToken.hashAlgo,
-                period = backupToken.period,
-                counter = backupToken.counter,
-                digits = backupToken.digits,
-                lastUsedAt = backupToken.lastUsedAt
-            )
+        when (backupFile.encryptionType) {
+            BackupEncryptionType.NONE -> decodeAndEmit(backupFile.payload, eventHandler)
+            BackupEncryptionType.ENCRYPTED -> importEncryptedToptyFormat(backupFile, eventHandler)
         }
     }
 
-    /**
-     * Import from Aegis Authenticator JSON format.
-     * Compatible with Aegis, andOTP, 2FAS, etc.
-     * Note: Does not preserve notes or lastUsedAt (not part of Aegis spec).
-     */
+    private suspend fun importEncryptedToptyFormat(
+        backupFile: ToptyBackupFile,
+        eventHandler: suspend (BackupImportEvent) -> Unit,
+    ) {
+        // Same-device Same-install fast path: try the current app key first
+        val decryptedPayload = try {
+            TokenEncryption.decrypt(backupFile.payload, passwordManager.getEncryptionKey())
+        } catch (e: Exception) {
+            null // App key didn't work, fall through to password prompt
+        }
+
+        if (decryptedPayload != null) {
+            decodeAndEmit(decryptedPayload, eventHandler)
+            return
+        } else {
+            // App key failed — need the user to provide a password
+            requestPassword(backupFile, eventHandler)
+        }
+    }
+
+    private suspend fun requestPassword(
+        backupFile: ToptyBackupFile,
+        eventHandler: suspend (BackupImportEvent) -> Unit,
+    ) {
+        eventHandler(BackupImportEvent.PasswordRequired(
+            onReceived = { password -> decryptWithPassword(password, backupFile, eventHandler) },
+            onCancel = { eventHandler(BackupImportEvent.Cancelled) },
+        ))
+    }
+
+    private suspend fun decryptWithPassword(
+        password: String,
+        backupFile: ToptyBackupFile,
+        eventHandler: suspend (BackupImportEvent) -> Unit,
+    ) {
+        try {
+            if (!verifyPassword(password, backupFile)) {
+                eventHandler(BackupImportEvent.PasswordError(
+                    message = "Incorrect password. Please try again.",
+                    onReceived = { retryPassword -> decryptWithPassword(retryPassword, backupFile, eventHandler) },
+                    onCancel = { eventHandler(BackupImportEvent.Cancelled) },
+                ))
+                return
+            }
+
+            // Hash matched — derive key and decrypt
+            val key = passwordManager.deriveKey(password, backupFile.keyDerivationSalt!!)
+            val plaintext = TokenEncryption.decrypt(backupFile.payload, key)
+            decodeAndEmit(plaintext, eventHandler)
+        } catch (e: Exception) {
+            eventHandler(BackupImportEvent.Failure("Failed to decrypt backup: ${e.message}"))
+        }
+    }
+
+    private fun verifyPassword(password: String, backupFile: ToptyBackupFile): Boolean {
+        val saltBase64 = backupFile.passwordVerificationSalt ?: return false
+        val expectedHash = backupFile.passwordVerificationHash ?: return false
+        return passwordManager.verifyPasswordAgainstHash(password, expectedHash, saltBase64)
+    }
+
+    private suspend fun decodeAndEmit(
+        payloadJson: String,
+        eventHandler: suspend (BackupImportEvent) -> Unit,
+    ) {
+        try {
+            val payload = json.decodeFromString<ToptyBackupPayload>(payloadJson)
+            val tokens = payload.tokens.map { backupToken ->
+                Token.fromPlaintext(
+                    id = 0,
+                    name = backupToken.name,
+                    issuer = backupToken.issuer,
+                    group = backupToken.group,
+                    note = backupToken.note,
+                    secret = backupToken.secret,
+                    protocol = backupToken.protocol,
+                    hashAlgo = backupToken.hashAlgo,
+                    period = backupToken.period,
+                    counter = backupToken.counter,
+                    digits = backupToken.digits,
+                    lastUsedAt = backupToken.lastUsedAt,
+                )
+            }
+            eventHandler(BackupImportEvent.Success(tokens))
+        } catch (e: Exception) {
+            eventHandler(BackupImportEvent.Failure("Failed to parse backup payload: ${e.message}"))
+        }
+    }
+
+    // endregion
+
+    // region Aegis Format
+
     private fun importAegisFormat(content: String): List<Token> {
-        // Parse JSON
         val vault = json.decodeFromString<AegisVault>(content)
 
-        // Validate version
         if (vault.version > 1) {
-            throw IllegalArgumentException(
-                "Aegis vault version ${vault.version} is not supported"
-            )
+            throw IllegalArgumentException("Aegis vault version ${vault.version} is not supported")
         }
 
-        // Check if vault is encrypted
-        if (vault.header.slots != null && vault.header.slots.isNotEmpty()) {
+        if (!vault.header.slots.isNullOrEmpty()) {
             throw IllegalArgumentException(
                 "Encrypted Aegis vaults are not supported. Please decrypt in Aegis first."
             )
         }
 
-        // Convert Aegis entries to Token entities
         return vault.db.entries.map { entry ->
             val protocol = when (entry.type.lowercase()) {
                 "totp" -> Protocol.TOTP
@@ -145,7 +206,7 @@ class BackupImporter(
                 "SHA1" -> HashAlgo.SHA1
                 "SHA256" -> HashAlgo.SHA256
                 "SHA512" -> HashAlgo.SHA512
-                else -> HashAlgo.SHA1 // Default to SHA1
+                else -> HashAlgo.SHA1
             }
 
             Token.fromPlaintext(
@@ -160,29 +221,27 @@ class BackupImporter(
                 period = entry.info.period ?: 30,
                 counter = entry.info.counter ?: 0L,
                 digits = entry.info.digits,
-                lastUsedAt = 0L
+                lastUsedAt = 0L,
             )
         }
     }
 
-    /**
-     * Import from OTP Auth URI format.
-     * Parses one or more otpauth:// URIs.
-     */
-    private fun importOtpAuthUriFormat(content: String): List<Token> {
-        val tokens = mutableListOf<Token>()
+    // endregion
 
-        // Split by lines and process each URI
-        content.lines().forEach { line ->
-            val trimmedLine = line.trim()
-            if (trimmedLine.isNotEmpty() && trimmedLine.startsWith("otpauth://")) {
-                val token = TokenUriHandler.parseTokenUri(trimmedLine)
-                if (token != null) tokens.add(token)
-            }
-        }
+    // region OTP Auth URI Format
+
+    private fun importOtpAuthUriFormat(content: String): List<Token> {
+        val tokens = content.lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && it.startsWith("otpauth://") }
+            .mapNotNull { TokenUriHandler.parseTokenUri(it) }
 
         if (tokens.isEmpty()) throw IllegalArgumentException("No valid OTP Auth URIs found in the backup file")
         return tokens
     }
 
+    // endregion
+
+    private fun readFile(uri: Uri): String? =
+        context.contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() }
 }

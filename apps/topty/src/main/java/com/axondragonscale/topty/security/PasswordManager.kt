@@ -11,6 +11,18 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import kotlin.io.encoding.Base64
 import kotlin.random.Random
+import androidx.core.content.edit
+
+/**
+ * Holds all derived values produced from a password.
+ * Used both when setting the app password and when building an encrypted backup.
+ */
+data class DerivedPasswordData(
+    val key: ByteArray, // Raw 256-bit AES key derived via PBKDF2
+    val keyDerivationSalt: String, // Base64-encoded salt used to derive [key]
+    val passwordVerificationHash: String, // Base64-encoded hash for password verification
+    val passwordVerificationSalt: String, // Base64-encoded salt used to compute [passwordVerificationHash]
+)
 
 /**
  * Manages password validation and strength checking.
@@ -77,23 +89,35 @@ class PasswordManager(
         }
     }
 
+    /**
+     * Derives all password-related values (key, salts, verification hash) from [password].
+     * Used by [setPassword] and by [BackupExporter] when building an encrypted backup.
+     */
+    fun derivePasswordData(password: String): DerivedPasswordData {
+        val keyDerivationSaltBytes = generateSalt()
+        val key = deriveKey(password, keyDerivationSaltBytes)
+
+        val passwordVerificationSaltBytes = generateSalt()
+        val passwordVerificationHash = Base64.encode(deriveKey(password, passwordVerificationSaltBytes))
+
+        return DerivedPasswordData(
+            key = key,
+            keyDerivationSalt = Base64.encode(keyDerivationSaltBytes),
+            passwordVerificationHash = passwordVerificationHash,
+            passwordVerificationSalt = Base64.encode(passwordVerificationSaltBytes),
+        )
+    }
+
     suspend fun setPassword(password: String) {
-        // Derive encryption key from password
-        val keyDerivationSalt = generateSalt()
-        val encryptionKey = deriveKey(password, keyDerivationSalt)
+        val derivedData = derivePasswordData(password)
 
-        // Save encryption key
-        val encryptionKeyBase64 = Base64.encode(encryptionKey)
-        encryptedPrefs.edit().putString(ENCRYPTION_KEY_NAME, encryptionKeyBase64).commit()
+        // Save encryption key in EncryptedSharedPreferences
+        encryptedPrefs.edit { putString(ENCRYPTION_KEY_NAME, Base64.encode(derivedData.key)) }
 
-        // Hash password for verification
-        val passwordHashSalt = generateSalt()
-        val passwordHash = hashPassword(password, passwordHashSalt)
-
-        // Store in preferences
-        prefsRepository.passwordHash.set(passwordHash)
-        prefsRepository.passwordHashSalt.set(Base64.encode(passwordHashSalt))
-        prefsRepository.keyDerivationSalt.set(Base64.encode(keyDerivationSalt))
+        // Store salts and verification hash in DataStore
+        prefsRepository.keyDerivationSalt.set(derivedData.keyDerivationSalt)
+        prefsRepository.passwordHash.set(derivedData.passwordVerificationHash)
+        prefsRepository.passwordHashSalt.set(derivedData.passwordVerificationSalt)
     }
 
     fun getEncryptionKey(): ByteArray {
@@ -101,6 +125,13 @@ class PasswordManager(
             ?: throw IllegalStateException("Encryption key must always exist")
         return Base64.decode(encryptionKeyBase64)
     }
+
+    /**
+     * Verifies [password] against a Base64-encoded [hashBase64] and [saltBase64].
+     * Used by [BackupImporter] to check the password before attempting decryption.
+     */
+    fun verifyPasswordAgainstHash(password: String, hashBase64: String, saltBase64: String): Boolean =
+        hashPassword(password, saltBase64) == hashBase64
 
     /**
      * Verifies a password against stored hash.
@@ -111,10 +142,18 @@ class PasswordManager(
         return passwordHash == prefsRepository.passwordHash.get()
     }
 
-    private fun hashPassword(password: String, salt: ByteArray): String {
-        val hash = deriveKey(password, salt)
-        return Base64.encode(hash)
-    }
+    private fun hashPassword(password: String, saltBase64: String): String =
+        Base64.encode(deriveKey(password, Base64.decode(saltBase64)))
+
+    private fun hashPassword(password: String, salt: ByteArray): String =
+        Base64.encode(deriveKey(password, salt))
+
+    /**
+     * Derives the AES key from [password] and a Base64-encoded [saltBase64].
+     * Used by [BackupImporter] to re-derive the key from the salt embedded in the backup file.
+     */
+    fun deriveKey(password: String, saltBase64: String): ByteArray =
+        deriveKey(password, Base64.decode(saltBase64))
 
     /**
      * Derives a 256-bit key from password and salt using PBKDF2.

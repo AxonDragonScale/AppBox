@@ -9,20 +9,14 @@ import kotlinx.serialization.Serializable
  */
 
 /**
- * Root backup data structure for Topty native format.
- * Contains metadata and all tokens.
+ * Inner payload of a Topty backup file.
+ * Contains all token data. Serialized to JSON and either stored as plaintext or
+ * encrypted inside [ToptyBackupFile]. Version and timestamp live on the envelope.
  */
 @Serializable
-data class ToptyBackupData(
-    val version: Int = CURRENT_VERSION,
-    val timestamp: Long = System.currentTimeMillis(),
-    val tokenCount: Int,
+data class ToptyBackupPayload(
     val tokens: List<BackupToken>,
-) {
-    companion object {
-        const val CURRENT_VERSION = 1
-    }
-}
+)
 
 /**
  * Token data for backup.
@@ -34,7 +28,7 @@ data class BackupToken(
     val issuer: String,
     val group: String,
     val note: String,
-    val encryptedSecret: String,
+    val secret: String,
     val protocol: Protocol,
     val hashAlgo: HashAlgo,
     val period: Int,

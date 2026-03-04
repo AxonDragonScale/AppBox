@@ -6,6 +6,8 @@ import com.axondragonscale.commons.Result
 import com.axondragonscale.topty.core.TokenUriHandler
 import com.axondragonscale.topty.database.entity.Token
 import com.axondragonscale.topty.model.Protocol
+import com.axondragonscale.topty.repository.ToptyPrefsRepository
+import com.axondragonscale.topty.security.PasswordManager
 import com.axondragonscale.topty.security.TokenEncryption
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -20,42 +22,19 @@ import java.util.UUID
 class BackupExporter(
     private val context: Context,
     private val json: Json,
+    private val passwordManager: PasswordManager,
+    private val prefsRepository: ToptyPrefsRepository,
 ) {
 
     /**
-     * Export tokens to the specified format.
-     *
-     * @param tokens List of tokens to export
-     * @param format Backup format to use
-     * @return Backup content as a string
-     */
-    suspend fun export(tokens: List<Token>, format: BackupFormat): Result<String, String> {
-        return try {
-            val content = when (format) {
-                BackupFormat.TOPTY -> exportToptyFormat(tokens)
-                BackupFormat.AEGIS -> exportAegisFormat(tokens)
-                BackupFormat.OTP_AUTH_URI -> exportOtpAuthUriFormat(tokens)
-            }
-            Result.Success(content)
-        } catch (e: Exception) {
-            Result.Failure("Failed to export backup: ${e.message}")
-        }
-    }
-
-    /**
-     * Export tokens to file at the specified URI.
-     *
-     * @param tokens List of tokens to export
-     * @param format Backup format to use
-     * @param uri URI where the backup should be written
-     * @return Result indicating success or failure
+     * Export tokens to the specified format and write to the file at [uri].
      */
     suspend fun exportToFile(tokens: List<Token>, format: BackupFormat, uri: Uri): Result<Unit, String> {
         return try {
             val content = when (format) {
-                BackupFormat.TOPTY -> exportToptyFormat(tokens)
-                BackupFormat.AEGIS -> exportAegisFormat(tokens)
-                BackupFormat.OTP_AUTH_URI -> exportOtpAuthUriFormat(tokens)
+                is BackupFormat.Topty -> exportToptyFormat(tokens, format.encryptionOption)
+                is BackupFormat.Aegis -> exportAegisFormat(tokens)
+                is BackupFormat.OtpAuthUri -> exportOtpAuthUriFormat(tokens)
             }
 
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
@@ -69,38 +48,80 @@ class BackupExporter(
         }
     }
 
-    /**
-     * Export to Topty's native encrypted JSON format.
-     * Includes all token data.
-     */
-    private fun exportToptyFormat(tokens: List<Token>): String {
-        val backupTokens = tokens.map { token ->
+    // region Topty Format
+
+    private suspend fun exportToptyFormat(tokens: List<Token>, encryptionOption: ToptyEncryptionOption): String {
+        val payload = buildPayload(tokens)
+        val payloadJson = json.encodeToString(payload)
+
+        val backupFile = when (encryptionOption) {
+            is ToptyEncryptionOption.None -> buildUnencryptedBackupFile(payloadJson)
+            is ToptyEncryptionOption.AppPassword -> buildAppPasswordBackupFile(payloadJson)
+            is ToptyEncryptionOption.CustomPassword -> buildCustomPasswordBackupFile(payloadJson, encryptionOption.password)
+        }
+
+        return json.encodeToString(backupFile)
+    }
+
+    private fun buildPayload(tokens: List<Token>) = ToptyBackupPayload(
+        tokens = tokens.map { token ->
             BackupToken(
                 name = token.name,
                 issuer = token.issuer,
                 group = token.group,
                 note = token.note,
-                encryptedSecret = token.encryptedSecret,
+                secret = token.secret,
                 protocol = token.protocol,
                 hashAlgo = token.hashAlgo,
                 period = token.period,
                 counter = token.counter,
                 digits = token.digits,
-                lastUsedAt = token.lastUsedAt
+                lastUsedAt = token.lastUsedAt,
             )
         }
+    )
 
-        val backupData = ToptyBackupData(tokenCount = tokens.size, tokens = backupTokens)
-        return TokenEncryption.encrypt(json.encodeToString(backupData))
+    private fun buildUnencryptedBackupFile(payloadJson: String) = ToptyBackupFile(
+        encryptionType = BackupEncryptionType.NONE,
+        payload = payloadJson,
+    )
+
+    private suspend fun buildAppPasswordBackupFile(payloadJson: String): ToptyBackupFile {
+        val key = passwordManager.getEncryptionKey()
+        val encryptedPayload = TokenEncryption.encrypt(payloadJson, key)
+
+        // Reuse the existing password hash and salts already stored in DataStore —
+        // no need to re-derive anything, and the user doesn't need to re-enter their password.
+        val keyDerivationSalt = prefsRepository.keyDerivationSalt.get()
+        val passwordVerificationHash = prefsRepository.passwordHash.get()
+        val passwordVerificationSalt = prefsRepository.passwordHashSalt.get()
+
+        return ToptyBackupFile(
+            encryptionType = BackupEncryptionType.ENCRYPTED,
+            keyDerivationSalt = keyDerivationSalt,
+            passwordVerificationHash = passwordVerificationHash,
+            passwordVerificationSalt = passwordVerificationSalt,
+            payload = encryptedPayload,
+        )
     }
 
-    /**
-     * Export to Aegis Authenticator encrypted JSON format.
-     * Compatible with Aegis, andOTP, 2FAS, and other apps.
-     * Note: This format does not preserve notes or lastUsedAt.
-     * For simplicity, we're creating an unencrypted Aegis vault.
-     * Users can encrypt it in Aegis if needed.
-     */
+    private fun buildCustomPasswordBackupFile(payloadJson: String, password: String): ToptyBackupFile {
+        val derived = passwordManager.derivePasswordData(password)
+        val encryptedPayload = TokenEncryption.encrypt(payloadJson, derived.key)
+
+        return ToptyBackupFile(
+            encryptionType = BackupEncryptionType.ENCRYPTED,
+            keyDerivationSalt = derived.keyDerivationSalt,
+            passwordVerificationHash = derived.passwordVerificationHash,
+            passwordVerificationSalt = derived.passwordVerificationSalt,
+            payload = encryptedPayload,
+        )
+    }
+
+    // endregion
+
+    // region Aegis Format
+
     private fun exportAegisFormat(tokens: List<Token>): String {
         val aegisEntries = tokens.map { token ->
             AegisEntry(
@@ -120,33 +141,22 @@ class BackupExporter(
             )
         }
 
-        val database = AegisDatabase(
-            version = 2,
-            entries = aegisEntries
-        )
-
+        val database = AegisDatabase(version = 2, entries = aegisEntries)
         val vault = AegisVault(
             version = 1,
-            header = AegisHeader(
-                slots = null,
-                params = null
-            ),
-            db = database
+            header = AegisHeader(slots = null, params = null),
+            db = database,
         )
 
         return json.encodeToString(vault)
     }
 
-    /**
-     * Export to OTP Auth URI format.
-     * Plain text file with one otpauth:// URI per line.
-     * Compatible with most authenticator apps.
-     *
-     * Note: This format does not preserve groups, notes, or lastUsedAt.
-     */
-    private fun exportOtpAuthUriFormat(tokens: List<Token>): String {
-        return tokens.joinToString("\n") { token ->
-            TokenUriHandler.generateTokenUri(token)
-        }
-    }
+    // endregion
+
+    // region OTP Auth URI Format
+
+    private fun exportOtpAuthUriFormat(tokens: List<Token>): String =
+        tokens.joinToString("\n") { token -> TokenUriHandler.generateTokenUri(token) }
+
+    // endregion
 }

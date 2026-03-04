@@ -50,9 +50,12 @@ Responsibilities:
 - Stores/retrieves encryption key from EncryptedSharedPreferences
 
 Key methods:
-- `setPassword(password)` — Derives key, stores key + hash + salts
-- `verifyPassword(password)` — Compares against stored hash
+- `setPassword(password)` — Derives key via `derivePasswordData()`, stores key + hash + salts
+- `verifyPassword(password)` — Compares against stored hash (used for app unlock / password change)
 - `getEncryptionKey()` — Retrieves derived key from EncryptedSharedPreferences
+- `derivePasswordData(password)` — Derives key + salts + verification hash from a password; returns `DerivedPasswordData`. Used by `setPassword` and `BackupExporter` for custom-password backups
+- `deriveKeyFromSalt(password, saltBase64)` — Re-derives the AES key from a password and a Base64-encoded salt. Used by `BackupImporter` to decrypt backups on a new device
+- `verifyPasswordAgainstHash(password, hashBase64, saltBase64)` — Verifies a password against an arbitrary hash + salt pair. Used by `BackupImporter` for fast pre-decryption password checks
 
 #### `TokenEncryption` (`security/TokenEncryption.kt`)
 
@@ -103,9 +106,9 @@ When generating codes (`Token.generateCode()` extension):
 | Data | Storage Location | Purpose |
 |------|-----------------|---------|
 | Encryption Key (256-bit) | `EncryptedSharedPreferences` | Encrypting/decrypting token secrets |
-| Password Hash | DataStore | Verifying password on re-entry |
-| Password Hash Salt | DataStore | Salt for password hashing |
-| Key Derivation Salt | DataStore | Salt for PBKDF2 key derivation |
+| Password Hash | DataStore | Verifying password on re-entry and embedded in `AppPassword` backup exports |
+| Password Hash Salt | DataStore | Salt for password hashing; embedded in `AppPassword` backup exports |
+| Key Derivation Salt | DataStore | Salt for PBKDF2 key derivation; embedded in `AppPassword` backup exports |
 
 `EncryptedSharedPreferences` is backed by Android Keystore hardware when available, providing an additional layer of protection for the encryption key.
 
@@ -209,6 +212,6 @@ Stored in `ToptyPrefsRepository`:
 ## Related Context
 
 - [Topty Context](./context.md) — Module overview, architecture, all features
-- [Topty Backup & Restore](./backup-restore.md) — Backup formats (TOPTY format uses password-derived encryption)
+- [Topty Backup & Restore](./backup-restore.md) — Backup formats, encryption options, cross-device restore flow
 - [Commons Module](../../core/commons/context.md) — Shared utilities
 - [Main Context](../../context.md) — Project overview, tech stack
