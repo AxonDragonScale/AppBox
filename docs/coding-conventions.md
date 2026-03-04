@@ -245,14 +245,19 @@ class MyVM : ViewModel() {
 
 ## Documentation
 
-### File Headers
-- Format: `// Created by [Name] on DD/MM/YY`
+### File Header Format
+```
+/**
+ * Created by <author> on MM/DD/YY
+ */
+ ```
 
 ### KDoc Comments
 - Use KDoc for public APIs and complex functions
 - Describe what the function does, not how
 - Document non-obvious parameters
 - Don't comment obvious things
+- Keep it concise
 
 ---
 
@@ -268,7 +273,7 @@ di/         - Dependency injection modules
 
 ---
 
-*This document is a living guide and will be updated as new conventions are established.*
+*This document is a living guide. Update it when new conventions are established. If the user corrects your code, distill the correction into a convention and add it here.*
 
 ---
 

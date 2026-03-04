@@ -11,10 +11,11 @@ This project uses a **context graph** — a set of interlinked markdown files th
 
 1. **Always start here** — this file is your entry point. It gives you the project overview, tech stack, architecture patterns, and links to everything else.
 2. **Load the module context when working on a module** — follow the link in the [Module Index](#module-index) below.
-3. **Always load [commons context](./core/commons/context.md)** — every app module depends on `:core:commons`. Know what utilities are available before writing new code.
+3. **Always load [commons context](./core/commons/context.md)** — every app module depends on `:core:commons`. Know what reusable utilities are available before writing new code.
 4. **Follow sub-context links only when needed** — some modules have sub-context files for deep subsystems (e.g., topty's security or backup systems). Only read these when your task touches that subsystem.
 5. **Load [coding-conventions.md](./coding-conventions.md) before writing code** — it defines Compose patterns, Kotlin idioms, naming conventions, and state management patterns you must follow.
 6. **Load [build-system.md](./build-system.md) only for build/config tasks** — convention plugins, version catalog, signing, and build commands. Not needed for typical feature work.
+7. **Keep context files up to date as you make changes** — when you add a feature, introduce a pattern, or change something architecturally significant, update the relevant context file(s) to reflect it. The context graph is the source of truth for future agents.
 
 ### Navigation Conventions
 
@@ -25,8 +26,6 @@ This project uses a **context graph** — a set of interlinked markdown files th
 
 ### Module Index
 
-#### App Modules
-
 | Module | Package | Purpose | Context |
 |--------|---------|---------|---------|
 | `:apps:jest` | `com.axondragonscale.jest` | Daily jokes/humor with home screen widget | [context](./apps/jest/context.md) |
@@ -35,17 +34,7 @@ This project uses a **context graph** — a set of interlinked markdown files th
 | `:apps:qrqanvas` | `com.axondragonscale.qrqanvas` | Customizable QR code generator & scanner | [context](./apps/qrqanvas/context.md) |
 | `:apps:topty` | `com.axondragonscale.topty` | TOTP-based 2FA code manager | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
 | `:apps:wallmatic` | `com.axondragonscale.wallmatic` | Auto-change wallpapers on schedule | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md) |
-
-#### Core Modules
-
-| Module | Package | Purpose | Context |
-|--------|---------|---------|---------|
 | `:core:commons` | `com.axondragonscale.commons` | Shared utilities, networking, DI, DevTools | [context](./core/commons/context.md) |
-
-#### Libraries
-
-| Module | Package | Purpose | Context |
-|--------|---------|---------|---------|
 | `:libraries:tlv` | `io.github.axondragonscale.tlv` | BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md) |
 
 ## Agent Efficiency Guidelines
@@ -59,6 +48,15 @@ This project uses a **context graph** — a set of interlinked markdown files th
 - Don't provide verbose summaries of what you just did. A one-line confirmation is fine; a paragraph recap is not. Skip the summary entirely if the result is obvious.
 - Parallelize independent tool calls — when multiple reads, searches, or edits don't depend on each other, make them all in one round.
 - Scope searches using known project structure — once you know which module you're in, narrow searches to that subtree instead of searching the entire project.
+
+### Working Style
+
+Before planning or implementing anything non-trivial, raise questions and push back where appropriate. Don't silently pick an approach — surface meaningful design decisions, tradeoffs, and ambiguities first, and **wait for alignment before proceeding**.
+
+- **Non-trivial:** new abstractions, architectural choices, public API naming, data model decisions, choosing between multiple valid approaches, anything hard to reverse.
+- **Trivial (no debate needed):** mechanical changes, obvious bug fixes, private/internal naming, anything already explicitly decided.
+
+Once a direction is agreed and work is underway — execute with confidence and don't re-litigate settled decisions.
 
 ---
 
@@ -115,6 +113,13 @@ AppBox/
     └── tlv/                    # BER-TLV encoding/decoding (Kotlin Multiplatform)
 ```
 
+## Building
+
+Apps can be built using `./gradlew :apps:<module>:assembleDebug`. Example -
+```bash
+./gradlew :apps:topty:assembleDebug
+```
+
 ## Architecture Patterns
 
 All apps follow these patterns consistently:
@@ -133,7 +138,6 @@ All apps follow these patterns consistently:
 - Each app is fully self-contained with its own `Application` class
 - Shared code goes in `:core:commons`
 - App modules depend on `:core:commons`, never on each other
-- Use typesafe project accessors: `implementation(projects.core.commons)`
 
 See [coding-conventions.md](./coding-conventions.md) for detailed code patterns.
 See [build-system.md](./build-system.md) for convention plugins and build configuration.
