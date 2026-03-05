@@ -11,10 +11,13 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.axondragonscale.commons.UIMode
 import com.axondragonscale.wallmatic.model.Config
+import com.axondragonscale.wallmatic.util.homeConfig
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.InputStream
 import java.io.OutputStream
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Created by Ronak Harkhani on 19/06/24
@@ -86,8 +89,12 @@ class AppPrefsRepository(
         .distinctUntilChanged()
 
     suspend fun setFastAutoCycle(fastAutoCycle: Boolean) {
+        val newInterval = if (fastAutoCycle) 1 else 15
         context.appPrefs.edit { prefs ->
             prefs[fastAutoCycleKey] = fastAutoCycle
+            setConfig(configFlow.first().homeConfig {
+                updateInterval = newInterval.minutes.inWholeMilliseconds
+            })
         }
     }
 
