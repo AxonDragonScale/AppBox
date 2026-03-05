@@ -34,7 +34,7 @@ fun Any.logW(msg: MsgProvider) = this.log(Log.WARN, msg)
 fun Any.logV(msg: MsgProvider) = this.log(Log.VERBOSE, msg)
 fun Any.logA(msg: MsgProvider) = this.log(Log.ASSERT, msg)
 
-fun Any.logE(e: ExceptionProvider) = this.log(Log.ERROR) { "Handled Exception:\n" + e().stackTraceToString() }
+fun Any.log(e: ExceptionProvider) = this.log(Log.ERROR) { "Handled Exception:\n" + e().stackTraceToString() }
 
 // -------------------- Private Helper Functions --------------------
 
