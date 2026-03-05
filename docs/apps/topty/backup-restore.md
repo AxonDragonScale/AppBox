@@ -85,6 +85,34 @@ Plain text file containing `otpauth://` URIs, one per line.
 | Cross-device | ✅ | ✅ | ✅ |
 | Interoperable | Topty only | Aegis/andOTP/2FAS | Any authenticator |
 
+## Package Structure
+
+Each backup format lives in its own sub-package under `backup/`:
+
+```
+backup/
+├── BackupFormat.kt           — shared sealed interface + ToptyEncryptionOption
+├── BackupImportEvent.kt      — shared sealed interface for all import outcomes
+├── BackupExporter.kt         — facade: dispatches to format handlers, writes to URI
+├── BackupImporter.kt         — facade: reads file, dispatches to format handlers
+│
+├── topty/
+│   ├── ToptyBackupFile.kt        — outer envelope (always plaintext JSON)
+│   ├── ToptyBackupPayload.kt     — inner payload + BackupToken
+│   ├── BackupEncryptionType.kt   — NONE / ENCRYPTED enum
+│   ├── ToptyBackupExporter.kt    — Topty export logic
+│   └── ToptyBackupImporter.kt    — Topty import logic (incl. password prompt flow)
+│
+├── aegis/
+│   ├── AegisVaultData.kt         — Aegis vault data models
+│   ├── AegisBackupExporter.kt    — Aegis export logic
+│   └── AegisBackupImporter.kt    — Aegis import logic
+│
+└── otpauth/
+    ├── OtpAuthBackupExporter.kt  — OtpAuth export logic
+    └── OtpAuthBackupImporter.kt  — OtpAuth import logic
+```
+
 ## Key Classes
 
 ### `BackupFormat` (Sealed Interface)
@@ -99,30 +127,30 @@ sealed interface BackupFormat {
 
 The `Topty` variant carries the encryption intent, so `BackupExporter.exportToFile` needs no additional parameters.
 
-### `BackupExporter`
+### `BackupExporter` / `BackupImporter` (Facades)
 
-Serializes tokens and writes to a user-selected file URI.
+The public entry points. Each holds injected format-specific handlers and dispatches to them based on `BackupFormat`. All format logic lives in the sub-packages.
 
 ```kotlin
+// Export facade — dispatches to ToptyBackupExporter / AegisBackupExporter / OtpAuthBackupExporter
 suspend fun exportToFile(tokens: List<Token>, format: BackupFormat, uri: Uri): Result<Unit, String>
+
+// Import facade — dispatches to ToptyBackupImporter / AegisBackupImporter / OtpAuthBackupImporter
+suspend fun importFromFile(uri: Uri, format: BackupFormat, eventHandler: suspend (BackupImportEvent) -> Unit)
 ```
 
-For `BackupFormat.Topty`:
-- `AppPassword` — calls `PasswordManager.getEncryptionKey()` for the key; reads `keyDerivationSalt`, `passwordHash`, `passwordHashSalt` from DataStore for the envelope
-- `CustomPassword` — calls `PasswordManager.derivePasswordData(password)` to derive a fresh key + salts
-- `None` — writes plaintext payload directly
+### Format Handlers
 
-### `BackupImporter`
+| Class | Package | Injected deps |
+|---|---|---|
+| `ToptyBackupExporter` | `backup.topty` | `Json`, `PasswordManager`, `ToptyPrefsRepository` |
+| `ToptyBackupImporter` | `backup.topty` | `Json`, `PasswordManager` |
+| `AegisBackupExporter` | `backup.aegis` | `Json` |
+| `AegisBackupImporter` | `backup.aegis` | `Json` |
+| `OtpAuthBackupExporter` | `backup.otpauth` | — (uses `TokenUriHandler` object) |
+| `OtpAuthBackupImporter` | `backup.otpauth` | — (uses `TokenUriHandler` object) |
 
-Reads a backup file and imports tokens. All outcomes are communicated via an `eventHandler` lambda — the method returns `Unit`.
-
-```kotlin
-suspend fun importFromFile(
-    uri: Uri,
-    format: BackupFormat,
-    eventHandler: suspend (BackupImportEvent) -> Unit,
-)
-```
+All 6 are registered as `factoryOf` in `ToptyModule` and injected into the facades via Koin.
 
 ### `BackupImportEvent` (Sealed Interface)
 

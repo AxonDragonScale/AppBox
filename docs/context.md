@@ -49,18 +49,6 @@ This project uses a **context graph** — a set of interlinked markdown files th
 - Parallelize independent tool calls — when multiple reads, searches, or edits don't depend on each other, make them all in one round.
 - Scope searches using known project structure — once you know which module you're in, narrow searches to that subtree instead of searching the entire project.
 
-### Working Style
-
-Before planning or implementing anything non-trivial, raise questions and push back where appropriate. Don't silently pick an approach — surface meaningful design decisions, tradeoffs, and ambiguities first, and **wait for alignment before proceeding**.
-
-- **Non-trivial:** new abstractions, architectural choices, public API naming, data model decisions, choosing between multiple valid approaches, anything hard to reverse.
-- **Trivial (no debate needed):** mechanical changes, obvious bug fixes, private/internal naming, anything already explicitly decided.
-
-Once a direction is agreed and work is underway — execute with confidence and don't re-litigate settled decisions.
-
-- **Chunked implementation:** implement in ~100 lines of change per chunk. Propose a chunk plan upfront, wait for review after each chunk, address only what was flagged on fix requests.
-- **Code review:** after completing an implementation, proactively review for correctness, reusability, maintainability, complexity, and convention adherence. Group findings by severity, wait for the user to decide what to act on before making changes.
-
 ---
 
 ## Overview

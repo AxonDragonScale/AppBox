@@ -1,43 +1,38 @@
 > Context: [Main](./context.md) > Coding Conventions
 
-# AppBox Coding Conventions
+# Coding Conventions
 
 ---
 
 ## Jetpack Compose
 
-### Composable Parameters
+### Modifier Parameter Position
+- `modifier: Modifier = Modifier` **must** always be the **first parameter** in every composable, even when there are other mandatory parameters
 
-#### Modifier Parameter Position
-- `modifier: Modifier = Modifier` is always the **first parameter** in every composable, even when required params like `navController` are present
+### Screen Pattern
 
-```kotlin
-@Composable
-fun ShareToken(
-    modifier: Modifier = Modifier,  // Always first
-    navController: NavController,
-    tokenId: Long,
-) { ... }
-```
-
-### Composable Structure
-
-#### Separation of VM and Preview Composables
-- Top-level composable handles ViewModel, state collection, and navigation
-- Private inner composable is pure UI — accepts state and event callbacks
-- Use the inner composable for previews
-- Intercept navigation events in the top-level `onEvent` lambda; forward the rest to the VM
+- Top-level composable handles ViewModel, state collection, and navigation; accepts `navController: NavController` directly
+- Private inner composable is pure UI — accepts state and event callbacks; used for previews
+- User-triggered navigation is intercepted in the top-level `onEvent` lambda — do **not** bounce through `uiEffect`
+- `uiEffect` is only for navigation the VM initiates after async work
+- In the VM, navigation events handled in Compose map to `Unit`
+- Always include both light and dark mode previews
+- Add previews for all major variants of the UI like empty state, loading state, etc
 
 ```kotlin
+// NavHost call site
+composable<Route.My> { MyScreen(navController = navController) }
+
+// Top-level: wires VM, state, and navigation
 @Composable
 fun MyScreen(
     modifier: Modifier = Modifier,
     navController: NavController,
 ) {
-    val viewModel: MyViewModel = koinViewModel()
+    val viewModel: MyVM = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Use uiEffect only for VM-initiated navigation (e.g., after async work)
+    // Only for VM-initiated navigation (e.g., after async work)
     viewModel.uiEffect.collectWithLifecycle { effect ->
         when (effect) {
             is MyUiEffect.NavigateToResult -> navController.navigate(Route.Result(effect.id))
@@ -50,13 +45,13 @@ fun MyScreen(
         onEvent = { event ->
             when (event) {
                 is MyUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
-                is MyUiEvent.NavigateToDetail -> navController.navigate(Route.Detail(event.id))
                 else -> viewModel.onEvent(event)
             }
         },
     )
 }
 
+// Inner: pure UI
 @Composable
 private fun MyScreen(
     modifier: Modifier = Modifier,
@@ -72,36 +67,23 @@ private fun MyScreenPreview() {
         MyScreen(uiState = MyUiState(), onEvent = {})
     }
 }
-```
 
-### Navigation
+// ViewModel
+class MyVM(
+    private val repository: MyRepository,
+) : ViewModel() {
 
-- Top-level screen composables accept `navController: NavController` directly — not individual callbacks like `onNavigateToX`
-- User-triggered navigation is intercepted in the top-level `onEvent` lambda and handled with `navController.navigate(...)` directly — do **not** bounce through `uiEffect`
-- `uiEffect` is only for navigation the VM initiates after async work
-- In the VM, navigation events handled in Compose map to `Unit`
+    val uiState = MutableStateFlow(MyUiState())
 
-```kotlin
-// NavHost call site
-composable<Route.Home> { Home(navController = navController) }
+    private val uiEffectChannel = Channel<MyUiEffect>()
+    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
-// In the VM
-fun onEvent(event: MyUiEvent): Any = when (event) {
-    is MyUiEvent.Search -> handleSearch(event)
-    is MyUiEvent.NavigateToSettings -> Unit  // Handled in Compose
-    is MyUiEvent.ItemClicked -> Unit         // Handled in Compose
-}
-```
+    fun onEvent(event: MyUiEvent): Any = when (event) {
+        is MyUiEvent.Action1 -> handleAction1(event)
+        is MyUiEvent.NavigateToSettings -> Unit  // Handled in Compose
+    }
 
-### Preview Annotations
-- Always include both light and dark mode previews
-
-```kotlin
-@Preview(showBackground = true)
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun MyComponentPreview() {
-    AppTheme { Surface { MyComponent() } }
+    private fun handleAction1(event: MyUiEvent.Action1) = viewModelScope.launch { ... }
 }
 ```
 
@@ -120,17 +102,6 @@ private fun MyComponentPreview() {
 #### Companion Object Placement
 - `companion object` goes at the **top** of its enclosing class, before any other members
 
-```kotlin
-class MyVM : ViewModel() {
-    companion object {
-        private const val TAG = "MyVM"
-    }
-
-    val uiState = MutableStateFlow(MyUiState())
-    fun onEvent(event: MyUiEvent) { ... }
-}
-```
-
 ### Style Preferences
 - Use `=` expression body when a function's sole purpose is to launch a coroutine or is a single `when` expression:
   - `fun loadData() = viewModelScope.launch { ... }`
@@ -143,28 +114,6 @@ class MyVM : ViewModel() {
 - UI State: `UiState` suffix — `HomeUiState`
 - UI Events: `UiEvent` suffix — `HomeUiEvent`
 - UI Effects: `UiEffect` suffix — `HomeUiEffect`
-
-### State Management Pattern
-
-```kotlin
-class MyVM(
-    private val repository: MyRepository,
-) : ViewModel() {
-
-    val uiState = MutableStateFlow(MyUiState())
-
-    private val uiEffectChannel = Channel<MyUiEffect>()
-    val uiEffect = uiEffectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
-
-    fun onEvent(event: MyUiEvent): Any = when (event) {
-        is MyUiEvent.Action1 -> handleAction1(event)
-        is MyUiEvent.Action2 -> handleAction2(event)
-        is MyUiEvent.Navigate -> Unit  // Handled in Compose
-    }
-
-    private fun handleAction1(event: MyUiEvent.Action1) = viewModelScope.launch { ... }
-}
-```
 
 ---
 

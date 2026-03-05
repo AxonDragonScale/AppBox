@@ -3,6 +3,12 @@ package com.axondragonscale.topty.di
 import com.axondragonscale.topty.auth.BiometricAvailabilityChecker
 import com.axondragonscale.topty.backup.BackupExporter
 import com.axondragonscale.topty.backup.BackupImporter
+import com.axondragonscale.topty.backup.aegis.AegisBackupExporter
+import com.axondragonscale.topty.backup.aegis.AegisBackupImporter
+import com.axondragonscale.topty.backup.otpauth.OtpAuthBackupExporter
+import com.axondragonscale.topty.backup.otpauth.OtpAuthBackupImporter
+import com.axondragonscale.topty.backup.topty.ToptyBackupExporter
+import com.axondragonscale.topty.backup.topty.ToptyBackupImporter
 import com.axondragonscale.topty.core.TTS
 import com.axondragonscale.topty.database.ToptyDatabase
 import com.axondragonscale.topty.repository.TokenRepository
@@ -35,7 +41,15 @@ val ToptyModule = module {
     singleOf(::TokenRepository)
     singleOf(::ToptyPrefsRepository)
 
-    // Backup
+    // Backup — format handlers
+    factoryOf(::ToptyBackupExporter)
+    factoryOf(::ToptyBackupImporter)
+    factoryOf(::AegisBackupExporter)
+    factoryOf(::AegisBackupImporter)
+    factoryOf(::OtpAuthBackupExporter)
+    factoryOf(::OtpAuthBackupImporter)
+
+    // Backup — facades
     factoryOf(::BackupExporter)
     factoryOf(::BackupImporter)
 

@@ -1,4 +1,4 @@
-package com.axondragonscale.topty.backup
+package com.axondragonscale.topty.backup.aegis
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

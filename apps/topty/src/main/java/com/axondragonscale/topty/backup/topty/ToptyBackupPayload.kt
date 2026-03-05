@@ -1,4 +1,4 @@
-package com.axondragonscale.topty.backup
+package com.axondragonscale.topty.backup.topty
 
 import com.axondragonscale.topty.model.HashAlgo
 import com.axondragonscale.topty.model.Protocol
