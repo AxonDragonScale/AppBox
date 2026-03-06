@@ -2,7 +2,6 @@ package com.axondragonscale.wallmatic.util
 
 import com.axondragonscale.wallmatic.model.Config
 import com.axondragonscale.wallmatic.model.ConfigKt
-import com.axondragonscale.wallmatic.model.WallpaperConfig
 import com.axondragonscale.wallmatic.model.WallpaperConfigKt
 import com.axondragonscale.wallmatic.model.copy
 
@@ -23,5 +22,6 @@ fun Config.lockConfig(block: WallpaperConfigKt.Dsl.() -> Unit) = this.copy {
     lockConfig = lockConfig.copy { block() }
 }
 
-val WallpaperConfig.nextUpdate: Long
-    get() = if (autoCycleEnabled) lastUpdated + updateInterval else Long.MAX_VALUE
+val Config.nextUpdate: Long
+    get() = if (homeConfig.autoCycleEnabled || lockConfig.autoCycleEnabled) lastUpdated + updateInterval
+            else Long.MAX_VALUE

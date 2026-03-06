@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.axondragonscale.commons.UIMode
 import com.axondragonscale.wallmatic.model.Config
+import com.axondragonscale.wallmatic.model.copy
 import com.axondragonscale.wallmatic.util.homeConfig
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -92,7 +93,7 @@ class AppPrefsRepository(
         val newInterval = if (fastAutoCycle) 1 else 15
         context.appPrefs.edit { prefs ->
             prefs[fastAutoCycleKey] = fastAutoCycle
-            setConfig(configFlow.first().homeConfig {
+            setConfig(configFlow.first().copy {
                 updateInterval = newInterval.minutes.inWholeMilliseconds
             })
         }

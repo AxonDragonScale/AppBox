@@ -60,7 +60,7 @@ import com.axondragonscale.commons.compose.navigationBarsHeight
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.WallpaperConfig
+
 import com.axondragonscale.wallmatic.model.config
 import com.axondragonscale.wallmatic.model.wallpaperConfig
 import com.axondragonscale.wallmatic.ui.Route
@@ -79,6 +79,7 @@ import com.axondragonscale.wallmatic.ui.util.performLongPressHapticFeedback
 import com.axondragonscale.wallmatic.ui.util.performTickHapticFeedback
 import com.axondragonscale.wallmatic.ui.util.toDateTimeString
 import com.axondragonscale.wallmatic.util.nextUpdate
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -271,7 +272,9 @@ private fun HomeScreenCard(
     WallpaperPreviewCard(
         modifier = Modifier.padding(top = 8.dp),
         wallpaper = uiState.homeWallpaper,
-        wallpaperConfig = uiState.config.homeConfig,
+        autoCycleEnabled = uiState.config.homeConfig.autoCycleEnabled,
+        lastUpdated = uiState.config.lastUpdated,
+        nextUpdate = uiState.config.nextUpdate,
         onWallpaperClick = {
             onEvent(HomeUiEvent.NavigateToWallpaper(it))
         },
@@ -287,9 +290,9 @@ private fun HomeScreenCard(
     ) {
         AutoCycleIntervalCard(
             modifier = Modifier.padding(top = 8.dp),
-            interval = uiState.config.homeConfig.updateInterval,
+            interval = uiState.config.updateInterval,
             onIntervalUpdate = {
-                onEvent(HomeUiEvent.IntervalUpdated(it, TargetScreen.Home))
+                onEvent(HomeUiEvent.IntervalUpdated(it))
             },
         )
     }
@@ -330,7 +333,9 @@ private fun LockScreenCard(
             WallpaperPreviewCard(
                 modifier = Modifier.padding(top = 8.dp),
                 wallpaper = uiState.lockWallpaper,
-                wallpaperConfig = uiState.config.lockConfig,
+                autoCycleEnabled = uiState.config.lockConfig.autoCycleEnabled,
+                lastUpdated = uiState.config.lastUpdated,
+                nextUpdate = uiState.config.nextUpdate,
                 onWallpaperClick = {
                     onEvent(HomeUiEvent.NavigateToWallpaper(it))
                 },
@@ -344,13 +349,7 @@ private fun LockScreenCard(
                 enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 300)),
                 exit = fadeOut() + shrinkVertically(tween(delayMillis = 300))
             ) {
-                AutoCycleIntervalCard(
-                    modifier = Modifier.padding(top = 8.dp),
-                    interval = uiState.config.lockConfig.updateInterval,
-                    onIntervalUpdate = {
-                        onEvent(HomeUiEvent.IntervalUpdated(it, TargetScreen.Lock))
-                    },
-                )
+                // Interval card is shown in HomeScreenCard to avoid duplication
             }
         }
     }
@@ -449,7 +448,9 @@ private fun AlbumConfigCard(
 private fun WallpaperPreviewCard(
     modifier: Modifier = Modifier,
     wallpaper: Wallpaper?,
-    wallpaperConfig: WallpaperConfig,
+    autoCycleEnabled: Boolean,
+    lastUpdated: Long,
+    nextUpdate: Long,
     onWallpaperClick: (Int) -> Unit,
     onChangeWallpaperClick: () -> Unit,
 ) {
@@ -478,7 +479,7 @@ private fun WallpaperPreviewCard(
             WallpaperInfo(
                 icon = Icons.Outlined.RemoveFromQueue,
                 title = "Current Wallpaper",
-                time = wallpaperConfig.lastUpdated.toDateTimeString()
+                time = lastUpdated.toDateTimeString()
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -486,10 +487,7 @@ private fun WallpaperPreviewCard(
             WallpaperInfo(
                 icon = Icons.Outlined.QueuePlayNext,
                 title = "Next Wallpaper",
-                time = if (wallpaperConfig.autoCycleEnabled)
-                    wallpaperConfig.nextUpdate.toDateTimeString()
-                else
-                    "Autocycle Disabled"
+                time = if (autoCycleEnabled) nextUpdate.toDateTimeString() else "Autocycle Disabled"
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -679,9 +677,9 @@ private fun Preview() {
                     config = config {
                         isInit = true
                         mirrorHomeConfigForLock = false
+                        updateInterval = 15.minutes.inWholeMilliseconds
                         homeConfig = wallpaperConfig {
                             albumId = 1
-                            updateInterval = 15.minutes.inWholeMilliseconds
                             autoCycleEnabled = false
                         }
                         lockConfig = wallpaperConfig {

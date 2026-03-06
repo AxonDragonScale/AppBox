@@ -6,7 +6,6 @@ import androidx.core.net.toUri
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.WallpaperConfig
 import com.axondragonscale.wallmatic.model.copy
 import com.axondragonscale.wallmatic.model.getAllWallpapers
 import com.axondragonscale.wallmatic.model.hasWallpapers
@@ -115,18 +114,25 @@ class SyncManager(
         return validFolders
     }
 
+    /**
+     * Validates config against the current album state and resets it if necessary.
+     * Triggers an immediate wallpaper update if the current wallpaper is stale.
+     */
     private suspend fun syncConfig() {
         val config = appPrefsRepository.configFlow.first()
         if (!config.isInit) return
-        val refreshConfig: suspend (WallpaperConfig, TargetScreen) -> Unit = { targetConfig, target ->
-            val album = repository.getFullAlbum(targetConfig.albumId)
+
+        val refreshConfig: suspend (Int, Int, TargetScreen) -> Unit = { albumId, currentWallpaperId, target ->
+            val album = repository.getFullAlbum(albumId)
             if (album == null || !album.hasWallpapers())
                 appPrefsRepository.setConfig(config.copy { isInit = false })
-            else if (targetConfig.currentWallpaperId !in album.getAllWallpapers().map { it.id })
+            else if (currentWallpaperId !in album.getAllWallpapers().map { it.id })
                 wallpaperUpdater.updateWallpaper(target)
         }
-        refreshConfig(config.homeConfig, TargetScreen.Home)
-        if (!config.mirrorHomeConfigForLock) refreshConfig(config.lockConfig, TargetScreen.Lock)
+
+        refreshConfig(config.homeConfig.albumId, config.homeConfig.currentWallpaperId, TargetScreen.Home)
+        if (!config.mirrorHomeConfigForLock)
+            refreshConfig(config.lockConfig.albumId, config.lockConfig.currentWallpaperId, TargetScreen.Lock)
     }
 
 }

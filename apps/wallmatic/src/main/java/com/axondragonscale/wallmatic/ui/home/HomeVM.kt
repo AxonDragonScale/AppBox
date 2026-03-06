@@ -3,7 +3,7 @@ package com.axondragonscale.wallmatic.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.commons.collect
-import com.axondragonscale.wallmatic.background.WallmaticScheduler
+import com.axondragonscale.wallmatic.background.WallpaperWorkScheduler
 import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.model.config
 import com.axondragonscale.wallmatic.model.copy
@@ -12,6 +12,7 @@ import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.util.homeConfig
 import com.axondragonscale.wallmatic.util.lockConfig
+import com.axondragonscale.wallmatic.util.nextUpdate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -27,7 +28,7 @@ import kotlin.time.Duration.Companion.minutes
 class HomeVM(
     private val wallmaticRepository: WallmaticRepository,
     private val appPrefsRepository: AppPrefsRepository,
-    private val scheduler: WallmaticScheduler,
+    private val scheduler: WallpaperWorkScheduler,
     private val wallpaperUpdater: WallpaperUpdater,
 ) : ViewModel() {
 
@@ -63,13 +64,13 @@ class HomeVM(
     fun onEvent(event: HomeUiEvent) = viewModelScope.launch(Dispatchers.IO) {
         when (event) {
             is HomeUiEvent.AlbumSelected -> onAlbumSelected(event)
-            HomeUiEvent.MirrorHomeConfigForLockToggled -> onMirrorHomeConfigForLockToggled()
+            is HomeUiEvent.MirrorHomeConfigForLockToggled -> onMirrorHomeConfigForLockToggled()
             is HomeUiEvent.AutoCycleToggled -> onAutoCycleToggled(event)
-            is HomeUiEvent.IntervalUpdated -> onIntervalUpdated(event)
+            is HomeUiEvent.IntervalUpdated -> onIntervalUpdated(event.interval)
             is HomeUiEvent.ChangeWallpaper -> wallpaperUpdater.updateWallpaper(event.target)
 
             // Handled in Compose
-            HomeUiEvent.CreateAlbumClick -> Unit
+            is HomeUiEvent.CreateAlbumClick -> Unit
             is HomeUiEvent.SelectAlbumClick -> Unit
             is HomeUiEvent.NavigateToWallpaper -> Unit
         }
@@ -82,12 +83,12 @@ class HomeVM(
                 config {
                     isInit = true
                     mirrorHomeConfigForLock = true
+                    updateInterval = 15.minutes.inWholeMilliseconds
+                    lastUpdated = -1
                     homeConfig = wallpaperConfig {
                         albumId = event.albumId
                         autoCycleEnabled = true
                         currentWallpaperId = -1 // Will be set after updateWallpaper
-                        updateInterval = 15.minutes.inWholeMilliseconds
-                        lastUpdated = -1
                     }
                     lockConfig = homeConfig
                 }
@@ -98,15 +99,19 @@ class HomeVM(
             }
         )
         wallpaperUpdater.updateWallpaper(event.target)
+        scheduler.scheduleNextUpdate()
     }
 
     private suspend fun onMirrorHomeConfigForLockToggled() {
-        appPrefsRepository.setConfig(
-            uiState.value.config.copy {
-                lockConfig = homeConfig
-                mirrorHomeConfigForLock = !mirrorHomeConfigForLock
-            }
-        )
+        val updatedConfig = uiState.value.config.copy {
+            lockConfig = homeConfig
+            mirrorHomeConfigForLock = !mirrorHomeConfigForLock
+        }
+        appPrefsRepository.setConfig(updatedConfig)
+        if (!updatedConfig.homeConfig.autoCycleEnabled && !updatedConfig.lockConfig.autoCycleEnabled)
+            scheduler.cancelScheduledUpdates()
+        else
+            scheduler.scheduleNextUpdate()
     }
 
     private suspend fun onAutoCycleToggled(event: HomeUiEvent.AutoCycleToggled) {
@@ -123,17 +128,13 @@ class HomeVM(
         }
     }
 
-    private suspend fun onIntervalUpdated(event: HomeUiEvent.IntervalUpdated) {
+    private suspend fun onIntervalUpdated(interval: Long) {
         viewModelScope.launch(Dispatchers.IO) {
-           if (appPrefsRepository.fastAutoCycleFlow.firstOrNull() == true)
-               appPrefsRepository.setFastAutoCycle(false)
+            if (appPrefsRepository.fastAutoCycleFlow.firstOrNull() == true)
+                appPrefsRepository.setFastAutoCycle(false)
         }
-        val interval = event.interval.coerceAtMost(24.hours.inWholeMilliseconds)
-        appPrefsRepository.setConfig(
-            uiState.value.config
-                .homeConfig { if (event.target.isHome()) updateInterval = interval }
-                .lockConfig { if (event.target.isLock()) updateInterval = interval }
-        )
+        val coercedInterval = interval.coerceAtMost(24.hours.inWholeMilliseconds)
+        appPrefsRepository.setConfig(uiState.value.config.copy { updateInterval = coercedInterval })
         scheduler.scheduleNextUpdate()
     }
 }

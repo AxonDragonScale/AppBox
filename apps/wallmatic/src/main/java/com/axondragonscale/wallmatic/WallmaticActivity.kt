@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.commons.logD
+import com.axondragonscale.wallmatic.background.WallpaperWorkScheduler
 import com.axondragonscale.wallmatic.core.SyncManager
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.ui.WallmaticApp
@@ -24,6 +25,7 @@ class WallmaticActivity : ComponentActivity() {
 
     private val appPrefsRepository: AppPrefsRepository by inject()
     private val syncManager: SyncManager by inject()
+    private val scheduler: WallpaperWorkScheduler by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -40,6 +42,7 @@ class WallmaticActivity : ComponentActivity() {
         // and the app onStart is called.
         lifecycleScope.launch(Dispatchers.IO) {
             syncManager.syncAlbums()
+            scheduler.scheduleNextUpdate()
         }
 
         setContent {

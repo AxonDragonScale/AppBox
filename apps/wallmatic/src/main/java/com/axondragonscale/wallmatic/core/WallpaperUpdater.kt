@@ -4,9 +4,9 @@ import android.app.WallpaperManager
 import android.content.Context
 import androidx.core.net.toUri
 import com.axondragonscale.commons.logD
-import com.axondragonscale.wallmatic.background.WallmaticScheduler
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.model.copy
 import com.axondragonscale.wallmatic.model.getRandomWallpaper
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
@@ -22,15 +22,13 @@ class WallpaperUpdater(
     val context: Context,
     private val appPrefsRepository: AppPrefsRepository,
     private val repository: WallmaticRepository,
-    private val scheduler: WallmaticScheduler,
 ) {
 
     private val manager = WallpaperManager.getInstance(context)
 
     /**
      * Update one or both wallpapers if the updateInterval has passed since the last update.
-     * Determines if one or both wallpapers should be update based on config.
-     * Schedules the next update if wallpapers are not updated.
+     * Determines target screen based on config and delegates to the TargetScreen overload.
      */
     suspend fun updateWallpaper() {
         val config = appPrefsRepository.configFlow.firstOrNull() ?: run {
@@ -44,19 +42,20 @@ class WallpaperUpdater(
         }
 
         val now = System.currentTimeMillis()
-        val updateHomeWallpaper = config.homeConfig.nextUpdate < now
-        val updateLockWallpaper = config.lockConfig.nextUpdate < now
+        val updateHome = config.homeConfig.autoCycleEnabled && config.nextUpdate < now
+        val updateLock = config.lockConfig.autoCycleEnabled && config.nextUpdate < now
 
         val target = when {
-            updateHomeWallpaper && updateLockWallpaper -> TargetScreen.Both
-            updateHomeWallpaper && config.mirrorHomeConfigForLock -> TargetScreen.Both
-            updateHomeWallpaper -> TargetScreen.Home
-            updateLockWallpaper -> TargetScreen.Lock
+            updateHome && (updateLock || config.mirrorHomeConfigForLock) -> TargetScreen.Both
+            updateHome -> TargetScreen.Home
+            updateLock -> TargetScreen.Lock
             else -> null
+        } ?: run {
+            this.logD { "Wallpaper update skipped. Next update not due yet." }
+            return
         }
 
-        if (target != null) updateWallpaper(target)
-        else scheduler.scheduleNextUpdate()
+        updateWallpaper(target)
     }
 
     /**
@@ -88,38 +87,28 @@ class WallpaperUpdater(
             return
         }
 
-        if (config.mirrorHomeConfigForLock) {
-            this.logD { "Updating wallpaper. homeAlbumId: $homeAlbumId, lockAlbumId: $lockAlbumId" }
-            val wallpaper = homeAlbum.getRandomWallpaper()
-            setWallpaper(wallpaper, TargetScreen.Both)
-            // Lock Config automatically updated since mirroring is enabled
-            appPrefsRepository.setConfig(config.homeConfig {
-                currentWallpaperId = wallpaper.id
-                lastUpdated = timestamp
-            })
-        } else {
-            if (target.isHome()) {
-                this.logD { "Updating home wallpaper. homeAlbumId: $homeAlbumId" }
-                val wallpaper = homeAlbum.getRandomWallpaper()
-                setWallpaper(wallpaper, TargetScreen.Home)
-                appPrefsRepository.setConfig(config.homeConfig {
-                    currentWallpaperId = wallpaper.id
-                    lastUpdated = timestamp
-                })
-            }
-            if (target.isLock()) {
-                this.logD { "Updating lock wallpaper. lockAlbumId: $lockAlbumId" }
-                val wallpaper = lockAlbum.getRandomWallpaper()
-                setWallpaper(wallpaper, TargetScreen.Lock)
-                appPrefsRepository.setConfig(config.lockConfig {
-                    currentWallpaperId = wallpaper.id
-                    lastUpdated = timestamp
-                })
-            }
-        }
-        this.logD { "Wallpaper update complete" }
+        // When mirroring, always apply home wallpaper to both screens regardless of target.
+        val applyHome = target.isHome() || config.mirrorHomeConfigForLock
+        val applyLock = target.isLock() && !config.mirrorHomeConfigForLock
 
-        scheduler.scheduleNextUpdate()
+        var updatedConfig = config
+        if (applyHome) {
+            this.logD { "Updating home wallpaper. homeAlbumId: $homeAlbumId" }
+            val wallpaper = homeAlbum.getRandomWallpaper()
+            val applyTarget = if (config.mirrorHomeConfigForLock) TargetScreen.Both else TargetScreen.Home
+            setWallpaper(wallpaper, applyTarget)
+            updatedConfig = updatedConfig.homeConfig { currentWallpaperId = wallpaper.id }
+            if (config.mirrorHomeConfigForLock)
+                updatedConfig = updatedConfig.lockConfig { currentWallpaperId = wallpaper.id }
+        }
+        if (applyLock) {
+            this.logD { "Updating lock wallpaper. lockAlbumId: $lockAlbumId" }
+            val wallpaper = lockAlbum.getRandomWallpaper()
+            setWallpaper(wallpaper, TargetScreen.Lock)
+            updatedConfig = updatedConfig.lockConfig { currentWallpaperId = wallpaper.id }
+        }
+        appPrefsRepository.setConfig(updatedConfig.copy { lastUpdated = timestamp })
+        this.logD { "Wallpaper update complete" }
     }
 
     fun setWallpaper(wallpaper: Wallpaper, target: TargetScreen) = runCatching {

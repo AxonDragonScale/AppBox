@@ -2,271 +2,147 @@
 
 # Wallmatic — Background Services
 
-This document covers Wallmatic's background wallpaper update system, including scheduling, broadcast receivers, foreground service, quick settings tiles, and filesystem sync. For general Wallmatic context, see [Wallmatic context](./context.md).
-
-## Overview
-
-Wallmatic's background system ensures wallpapers are automatically changed on schedule, even after device reboots or timezone changes. The system uses `AlarmManager` for precise scheduling, a `ForegroundService` for the actual wallpaper update, `BroadcastReceiver`s for system event handling, and Quick Settings tiles for manual triggers.
+This document covers the background wallpaper update system: scheduling, workers, broadcast receivers, and quick settings tiles. For module overview, database schema, and config, see [Wallmatic context](./context.md).
 
 ## Component Architecture
 
 ```
-AlarmManager (exact alarm)
-    ↓ triggers
-WallmaticReceiver (BroadcastReceiver)
-    ↓ starts
-WallmaticService (ForegroundService)
+WallpaperWorker (OneTimeWork, at calculated next-update time)
     ↓ calls
-WallpaperUpdater (core logic)
+SyncManager.syncAlbums()
+    ↓ then
+WallpaperUpdater.updateWallpaper()
     ↓ uses
 WallpaperManager.setStream() (system API)
     ↓ then
-WallmaticScheduler → schedules next alarm
+WallpaperWorkScheduler.scheduleNextUpdate() → enqueues next WallpaperWorker
 ```
+
+## Why WorkManager?
+
+The previous stack (`AlarmManager.setExact` → `BroadcastReceiver` → `ForegroundService`) was unreliable on OEM-skinned Android (Xiaomi, Samsung, Oppo, etc.) due to aggressive battery optimisation. WorkManager is whitelisted by OEMs in a way that arbitrary alarms and custom services are not. It also persists pending work across reboots natively.
+
+## WallpaperWorker (`background/WallpaperWorker.kt`)
+
+`CoroutineWorker` that coordinates each scheduled update cycle:
+
+1. `syncManager.syncAlbums()` — sync filesystem before applying
+2. `wallpaperUpdater.updateWallpaper()` — select and apply wallpaper
+3. `scheduler.scheduleNextUpdate()` — enqueue the next run
+4. Returns `Result.success()` on completion, `Result.retry()` on failure (triggers WorkManager backoff)
+
+Scheduling is the worker's responsibility, not `WallpaperUpdater`'s — so tile-triggered updates don't accidentally reschedule.
 
 ## WallpaperUpdater (`core/WallpaperUpdater.kt`)
 
-The central piece — contains all logic for selecting and applying wallpapers.
+Core logic for selecting and applying wallpapers.
 
-### Responsibilities
+- No-arg `updateWallpaper()`: reads config, checks if interval has passed, determines target (`Home` / `Lock` / `Both`), delegates to the `TargetScreen` overload
+- `updateWallpaper(target)`: loads album(s), picks random wallpaper(s), calls `WallpaperManager.setStream()`, updates `currentWallpaperId` and `lastUpdated` in config
+- When `mirrorHomeConfigForLock = true`: single pick from home album applied to both screens
+- Explicit `TargetScreen` overload bypasses the interval check — used by tile services for immediate updates
 
-- Check if the update interval has elapsed since last update
-- Select a random wallpaper from the whitelisted pool in the configured album
-- Apply the wallpaper to the correct target screen(s)
-- Update the config with the new wallpaper ID and timestamp
-- Schedule the next update after completion
+## WallpaperWorkScheduler (`background/WallpaperWorkScheduler.kt`)
 
-### Key Behaviors
+Wraps WorkManager enqueuing. Uses `ExistingWorkPolicy.REPLACE` so a re-schedule always supersedes the pending one.
 
-- Supports separate home/lock screen configurations
-- **Mirroring option**: When `mirrorHomeConfigForLock` is true, the same wallpaper is applied to both screens
-- Selects a **random** wallpaper from the whitelisted pool (non-blacklisted wallpapers in the album)
-- Uses `WallpaperManager.setStream()` with appropriate flags:
-  - `FLAG_SYSTEM` for home screen
-  - `FLAG_LOCK` for lock screen
-- Skips update if the configured interval hasn't passed (unless forced)
+| Method | Description |
+|---|---|
+| `scheduleNextUpdate()` | Reads config, computes `delay = config.nextUpdate - now` (clamped to 0), enqueues `WallpaperWorker` |
+| `cancelScheduledUpdates()` | Cancels the pending update work |
 
-### Target Screen Handling
-
-```kotlin
-enum class TargetScreen {
-    Home,   // Home screen only
-    Lock,   // Lock screen only
-    Both    // Both screens
-}
-```
-
-When `mirrorHomeConfigForLock = true`:
-- A single wallpaper is selected from the home config's album
-- Applied to both home and lock screens simultaneously
-
-When `mirrorHomeConfigForLock = false`:
-- Each screen has its own `WallpaperConfig` (album, interval, current wallpaper)
-- Updates are independent — each screen can have a different album and schedule
-
-## WallmaticScheduler (`background/WallmaticScheduler.kt`)
-
-Manages exact alarms for auto-cycle updates.
-
-### How It Works
-
-- Uses `AlarmManager.setExactAndAllowWhileIdle()` for precise timing
-- Calculates the next trigger time based on:
-  - `lastUpdated` timestamp from config
-  - `updateInterval` from config
-- Creates a `PendingIntent` targeting `WallmaticReceiver`
-- Called after every successful wallpaper update to schedule the next one
-
-### Permissions Required
-
-```xml
-<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-```
+Work name: `"wallpaper_update"` (`WALLPAPER_WORK_NAME`).
 
 ## WallmaticReceiver (`background/WallmaticReceiver.kt`)
 
-A `BroadcastReceiver` that handles system events and alarm triggers.
+Handles system events that can invalidate the scheduled update time. All three actions call `scheduleNextUpdate()` with `ExistingWorkPolicy.REPLACE` to correct any drift.
 
-### Handled Actions
-
-| Action | When | Response |
-|--------|------|----------|
-| Alarm trigger | Scheduled update time reached | Starts `WallmaticService` to perform update |
-| `BOOT_COMPLETED` | Device reboots | Reschedules alarms (alarms don't survive reboot) |
-| `TIME_SET` / `TIMEZONE_CHANGED` | User changes time/timezone | Reschedules alarms to maintain correct intervals |
-
-### Boot Persistence
-
-Android clears all alarms on reboot. `WallmaticReceiver` listens for `BOOT_COMPLETED` and re-registers the exact alarm based on the persisted config (last update time + interval).
-
-```xml
-<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-```
-
-## WallmaticService (`background/WallmaticService.kt`)
-
-A `ForegroundService` that performs the actual wallpaper update.
-
-### Why a Foreground Service?
-
-- Wallpaper updates involve reading potentially large image files from storage
-- Background execution limits on Android 12+ would kill a plain background task
-- A foreground service with a notification ensures the update completes reliably
-
-### Lifecycle
-
-1. Started by `WallmaticReceiver` (or Quick Settings tiles)
-2. Shows a foreground notification
-3. Calls `WallpaperUpdater.updateWallpaper()` with the appropriate `TargetScreen`
-4. After completion, stops itself
-5. `WallpaperUpdater` internally schedules the next alarm via `WallmaticScheduler`
-
-## Quick Settings Tiles
-
-Three tile services for manual wallpaper changes directly from the notification shade:
-
-### WallmaticTileService (`background/WallmaticTileService.kt`)
-
-- Changes **both** home and lock screen wallpapers
-- Icon: `ic_replace_image`
-
-### HomeTileService (`background/HomeTileService.kt`)
-
-- Changes **home screen** wallpaper only
-- Icon: `ic_home_replace_image`
-
-### LockTileService (`background/LockTileService.kt`)
-
-- Changes **lock screen** wallpaper only
-- Icon: `ic_lock_replace_image`
-
-### Tile Behavior
-
-1. User taps tile → `TileService.onClick()` is called
-2. Service calls `WallpaperUpdater.updateWallpaper(targetScreen)`
-3. Wallpaper is changed **immediately** (ignores interval check)
-4. The next **scheduled** update remains unchanged — the tile is a one-off manual action
+| Action | Reason |
+|---|---|
+| `BOOT_COMPLETED` | WorkManager persists work but the calculated delay may be stale after a reboot |
+| `TIME_SET` | User-changed clock shifts the next update time |
+| `TIMEZONE_CHANGED` | Same as above |
 
 ## SyncManager (`core/SyncManager.kt`)
 
-Synchronizes album contents with the device filesystem.
+Synchronizes album contents with the filesystem before each wallpaper update.
 
-### Purpose
+- Scans folder URIs for added/removed image files and updates Room accordingly
+- `syncConfig()`: resets `isInit = false` if the configured album is gone/empty; triggers an immediate `updateWallpaper()` if `currentWallpaperId` is stale
+- Called by `WallpaperWorker` before each update, and by `WallmaticActivity` on app start
 
-Folders added to albums reference filesystem directories via SAF (Storage Access Framework) URIs. Files can be added or removed externally (e.g., user downloads new wallpapers or deletes old ones). SyncManager detects these changes.
+SAF integration: folder URIs are persisted with `takePersistableUriPermission()`; `DocumentFile.fromTreeUri()` is used to list files.
 
-### Behavior
+## Quick Settings Tiles
 
-- **Detects added wallpapers**: Scans folder URIs for new image files not yet in the database
-- **Detects removed wallpapers**: Identifies database entries whose files no longer exist on disk
-- **Updates database**: Inserts new wallpaper entries, removes stale ones
-- **Called on app start**: `WallmaticActivity` triggers a sync when the app is opened
+Three `TileService`s for immediate manual wallpaper changes from the notification shade:
 
-### SAF Integration
+| Service | Target | Icon |
+|---|---|---|
+| `WallmaticTileService` | Both screens | `ic_replace_image` |
+| `HomeTileService` | Home only | `ic_home_replace_image` |
+| `LockTileService` | Lock only | `ic_lock_replace_image` |
 
-Uses `DocumentFile` API to traverse folder contents:
-- Folder URIs are persisted with `takePersistableUriPermission()` to survive app restarts
-- `DocumentFile.fromTreeUri()` is used to list files within selected folders
-- Only image MIME types are considered as wallpapers
+Tile taps call `wallpaperUpdater.updateWallpaper(targetScreen)` directly — interval check bypassed, scheduled chain unaffected.
 
-## Data Flow: Wallpaper Auto-Cycle
+## Data Flows
 
-```
-1. App start or previous update completion
-       ↓
-2. WallmaticScheduler.schedule()
-       ↓ sets exact alarm
-3. AlarmManager triggers at scheduled time
-       ↓
-4. WallmaticReceiver.onReceive()
-       ↓ starts service
-5. WallmaticService (foreground)
-       ↓ calls
-6. WallpaperUpdater.updateWallpaper()
-       ↓
-7. Read config from Proto DataStore
-       ↓
-8. Check if interval has passed (skip if not)
-       ↓
-9. Load album → get whitelisted wallpapers
-       ↓
-10. Select random wallpaper from pool
-       ↓
-11. WallpaperManager.setStream(inputStream, flags)
-       ↓
-12. Update config: currentWallpaperId, lastUpdated
-       ↓
-13. WallmaticScheduler.schedule() → next alarm
-       ↓
-14. Service stops itself
-```
-
-## Data Flow: Quick Settings Tile
+### Auto-Cycle
 
 ```
-1. User taps tile in notification shade
+1. App start or previous update completes
        ↓
-2. TileService.onClick()
+2. WallpaperWorkScheduler.scheduleNextUpdate()
+       ↓ delay elapses
+3. WallpaperWorker.doWork()
        ↓
-3. WallpaperUpdater.updateWallpaper(targetScreen)
-       ↓ (interval check bypassed)
-4. Load album → select random wallpaper
+4. SyncManager.syncAlbums()
        ↓
-5. WallpaperManager.setStream()
+5. WallpaperUpdater.updateWallpaper()
        ↓
-6. Update config (currentWallpaperId, lastUpdated)
+6. Random wallpaper selected → WallpaperManager.setStream()
        ↓
-7. Scheduled alarm remains unchanged
+7. Config updated: currentWallpaperId, lastUpdated
+       ↓
+8. WallpaperWorkScheduler.scheduleNextUpdate() → chain continues
 ```
 
-## Data Flow: Device Reboot
+### Quick Settings Tile
 
 ```
-1. Device boots up
+1. User taps tile
+       ↓
+2. WallpaperUpdater.updateWallpaper(targetScreen)  ← interval check bypassed
+       ↓
+3. Random wallpaper selected → WallpaperManager.setStream()
+       ↓
+4. Config updated: currentWallpaperId, lastUpdated
+   (scheduled chain unchanged)
+```
+
+### Device Reboot
+
+```
+1. Device boots
        ↓
 2. WallmaticReceiver receives BOOT_COMPLETED
        ↓
-3. Read persisted config from Proto DataStore
+3. WallpaperWorkScheduler.scheduleNextUpdate()
        ↓
-4. Calculate next update time (lastUpdated + interval)
+4. Delay = lastUpdated + updateInterval - now (0 if past due)
        ↓
-5. WallmaticScheduler.schedule() → re-registers alarm
-       ↓
-6. If next update time is in the past → trigger immediately
+5. WallpaperWorker enqueued
 ```
 
-## Configuration Reference
-
-The background services read from Proto DataStore config (see [Wallmatic context](./context.md) for full schema):
-
-```protobuf
-message WallpaperConfig {
-    int32 albumId = 1;           // Which album to draw wallpapers from
-    bool autoCycleEnabled = 2;   // Whether auto-cycle is active
-    int32 currentWallpaperId = 3; // Currently displayed wallpaper
-    int64 updateInterval = 4;    // Millis between updates
-    int64 lastUpdated = 5;       // Epoch millis of last update
-}
-```
-
-Key fields for background services:
-- `autoCycleEnabled`: If false, no alarms are scheduled
-- `updateInterval`: Determines when the next alarm fires
-- `lastUpdated`: Used to calculate the next trigger time
-- `albumId`: Determines which album's wallpapers to choose from
-
-## Permissions Summary
+## Permissions
 
 ```xml
 <uses-permission android:name="android.permission.SET_WALLPAPER" />
 <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 ```
 
 ## Related Context
 
-- [Wallmatic Context](./context.md) — Module overview, database schema, UI screens, Proto DataStore config
+- [Wallmatic Context](./context.md) — Module overview, database schema, config schema
 - [Commons Module](../../core/commons/context.md) — Shared utilities
 - [Main Context](../../context.md) — Project overview, tech stack

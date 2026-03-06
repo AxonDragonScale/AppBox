@@ -4,11 +4,11 @@
 
 ## Overview
 
-Wallmatic is an automatic wallpaper changer app within AppBox. It allows users to create albums of wallpapers from device folders and automatically cycles through them on a schedule. Supports separate configurations for home and lock screens, quick settings tiles, and boot-persistent scheduling.
+Wallmatic automatically cycles through user-created albums of wallpapers on a schedule. Supports separate configurations for home and lock screens, quick settings tiles, and scheduling that survives reboots.
 
 - **Package**: `com.axondragonscale.wallmatic`
 - **Module path**: `:apps:wallmatic`
-- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), AlarmManager (scheduling), Quick Settings Tiles
+- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), WorkManager (scheduling), Quick Settings Tiles
 
 ## Architecture
 
@@ -17,7 +17,7 @@ Wallmatic is an automatic wallpaper changer app within AppBox. It allows users t
 - **DI**: Koin (`WallmaticApplication` initializes `CommonsModule` + `WallmaticModule`)
 - **State Management**: ViewModel + StateFlow
 - **Persistence**: Room database + Proto DataStore
-- **Background Work**: AlarmManager + BroadcastReceiver + Service — see [Background Services sub-context](./background-services.md) for details
+- **Background Work**: WorkManager (`WallpaperWorker`) + BroadcastReceiver — see [Background Services sub-context](./background-services.md) for details
 - **Image Loading**: Coil
 
 ## Package Structure
@@ -29,8 +29,8 @@ com.axondragonscale.wallmatic/
 │   ├── HomeTileService.kt            # Quick settings tile (home screen)
 │   ├── LockTileService.kt            # Quick settings tile (lock screen)
 │   ├── WallmaticReceiver.kt          # Boot/time change broadcast receiver
-│   ├── WallmaticScheduler.kt         # Alarm scheduling for auto-cycle
-│   ├── WallmaticService.kt           # Background wallpaper update service
+│   ├── WallpaperWorker.kt            # Coordinator worker: sync → update → reschedule
+│   ├── WallpaperWorkScheduler.kt     # WorkManager scheduling for auto-cycle
 │   └── WallmaticTileService.kt       # Quick settings tile (both screens)
 ├── core/
 │   ├── AlbumManager.kt               # Album CRUD operations
@@ -95,19 +95,7 @@ object Route {
 - **Wallpaper**: Full-screen wallpaper preview
 - **Settings**: App configuration
 
-## WallmaticActivity
-
-Entry point activity with edge-to-edge display. Syncs albums on start and applies theme preferences.
-
-```kotlin
-companion object {
-    fun start(context: Context) {
-        val intent = Intent(context, WallmaticActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-    }
-}
-```
+`WallmaticActivity` is the entry point. It syncs albums on start and applies theme preferences. Use `WallmaticActivity.start(context)` to launch it from outside.
 
 ## Database
 
@@ -141,25 +129,28 @@ data class Album(
 
 ```protobuf
 message Config {
-    bool isInit = 1;
-    bool mirrorHomeConfigForLock = 2;
-    WallpaperConfig homeConfig = 3;
-    WallpaperConfig lockConfig = 4;
+  bool isInit = 1;
+  bool mirrorHomeConfigForLock = 2;
+  WallpaperConfig homeConfig = 3;
+  WallpaperConfig lockConfig = 4;
+  int64 updateInterval = 5;  // Shared interval for both screens (millis)
+  int64 lastUpdated = 6;     // Shared last update timestamp (epoch millis)
 }
 
 message WallpaperConfig {
-    int32 albumId = 1;
-    bool autoCycleEnabled = 2;
-    int32 currentWallpaperId = 3;
-    int64 updateInterval = 4;
-    int64 lastUpdated = 5;
+  int32 albumId = 1;
+  bool autoCycleEnabled = 2;
+  int32 currentWallpaperId = 3;
+  // field 4 retired (was updateInterval) — do not reuse
+  // field 5 retired (was lastUpdated) — do not reuse
 }
 ```
 
 Key settings:
 - **`mirrorHomeConfigForLock`**: When true, lock screen uses the same wallpaper as home screen
 - **`autoCycleEnabled`**: Per-screen toggle for automatic wallpaper cycling
-- **`updateInterval`**: Time between automatic wallpaper changes (milliseconds)
+- **`updateInterval`**: Single shared interval for both screens (milliseconds)
+- **`lastUpdated`**: Shared timestamp — used with `updateInterval` to compute the next update time
 
 ## Data Flow
 
@@ -169,26 +160,18 @@ Key settings:
 3. Wallpapers inserted into Room with folder reference
 4. Album updated with folder/wallpaper IDs
 
-### SyncManager
-Synchronizes album contents with filesystem on app start:
-- Detects added/removed wallpapers in folders
-- Updates database to reflect current state
-- Called automatically in `WallmaticActivity`
-
 ### Wallpaper Auto-Cycle (Summary)
-1. `WallmaticScheduler` sets exact alarm for next update
-2. Alarm triggers → `WallmaticReceiver` → `WallmaticService` → `WallpaperUpdater`
-3. Random wallpaper selected from whitelisted pool → applied → next update scheduled
+1. `WallpaperWorkScheduler` enqueues `WallpaperWorker` with a calculated delay
+2. `WallpaperWorker` runs → `SyncManager.syncAlbums()` → `WallpaperUpdater.updateWallpaper()` → `scheduleNextUpdate()`
+3. `WallmaticReceiver` re-kicks the chain on `BOOT_COMPLETED`, `TIME_SET`, and `TIMEZONE_CHANGED`
 
-For full details on scheduling, tiles, receivers, and the update lifecycle, see [Background Services](./background-services.md).
+For full details on scheduling, workers, tiles, and the update lifecycle, see [Background Services](./background-services.md).
 
 ## Permissions
 
 ```xml
 <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 <uses-permission android:name="android.permission.SET_WALLPAPER" />
-<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 ```
 
 ## Resources
@@ -205,8 +188,8 @@ For full details on scheduling, tiles, receivers, and the update lifecycle, see 
 ## Dependencies
 
 - **Local Modules**: `projects.core.commons`
-- **AndroidX**: Compose BOM + Material3, Navigation Compose, Room, Proto DataStore, DocumentFile
-- **Koin**: DI
+- **AndroidX**: Compose BOM + Material3, Navigation Compose, Room, Proto DataStore, DocumentFile, WorkManager
+- **Koin**: DI (with `koin-androidx-workmanager` for worker injection)
 - **Coil**: Image loading
 - **kotlinx**: serialization, coroutines
 - **Protobuf**: protobuf-kotlin-lite
@@ -216,14 +199,6 @@ For full details on scheduling, tiles, receivers, and the update lifecycle, see 
 - **Namespace**: `com.axondragonscale.wallmatic`
 - **Min SDK**: 31 (Android 12)
 - **Java/Kotlin**: JVM 21
-
-## Code Conventions
-
-- ViewModels: `HomeVM`, `AlbumsVM`, `AlbumVM`, `FolderVM`, `WallpaperVM`, `SettingsVM`
-- Type-safe navigation with `@Serializable` route classes
-- Proto DataStore for complex configuration
-- Manager classes for domain logic (`AlbumManager`, `FolderManager`, `SyncManager`, `WallpaperManager`)
-- Extension functions for config manipulation (`homeConfig {}`, `lockConfig {}`)
 
 ## Related Context
 

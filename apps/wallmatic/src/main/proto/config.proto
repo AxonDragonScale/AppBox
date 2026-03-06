@@ -1,19 +1,19 @@
 syntax = "proto3";
 
-option java_package = "com.axondragonscale.wallmatic.model";
 option java_multiple_files = true;
+option java_package = "com.axondragonscale.wallmatic.model";
 
 message Config {
   bool isInit = 1;
-  bool mirrorHomeConfigForLock = 2;
-  WallpaperConfig homeConfig = 3;
-  WallpaperConfig lockConfig = 4;
+  int64 updateInterval = 2;
+  int64 lastUpdated = 3;
+  bool mirrorHomeConfigForLock = 4;
+  WallpaperConfig homeConfig = 5;
+  WallpaperConfig lockConfig = 6;
 }
 
 message WallpaperConfig {
   int32 albumId = 1;
   bool autoCycleEnabled = 2;
   int32 currentWallpaperId = 3;
-  int64 updateInterval = 4;
-  int64 lastUpdated = 5;
 }

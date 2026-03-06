@@ -5,6 +5,7 @@ import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.wallmatic.di.WallmaticModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
+import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
 
 /**
@@ -21,10 +22,8 @@ class WallmaticApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@WallmaticApplication)
-            modules(
-                CommonsModule,
-                WallmaticModule,
-            )
+            workManagerFactory()
+            modules(CommonsModule, WallmaticModule,)
         }
     }
 }
