@@ -8,18 +8,23 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +36,7 @@ import androidx.compose.material.icons.outlined.QueuePlayNext
 import androidx.compose.material.icons.outlined.RemoveFromQueue
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -47,7 +53,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,7 +68,6 @@ import com.axondragonscale.commons.compose.navigationBarsHeight
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
-
 import com.axondragonscale.wallmatic.model.config
 import com.axondragonscale.wallmatic.model.wallpaperConfig
 import com.axondragonscale.wallmatic.ui.Route
@@ -71,15 +78,15 @@ import com.axondragonscale.wallmatic.ui.common.SelectAlbumBottomSheet
 import com.axondragonscale.wallmatic.ui.common.SettingsCard
 import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.WallmaticCard
-import com.axondragonscale.wallmatic.ui.common.WallpaperPreview
 import com.axondragonscale.wallmatic.ui.common.WallpaperThumbnail
+import com.axondragonscale.wallmatic.ui.common.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.util.countSummary
+import com.axondragonscale.wallmatic.ui.util.getAspectRatio
 import com.axondragonscale.wallmatic.ui.util.performLongPressHapticFeedback
 import com.axondragonscale.wallmatic.ui.util.performTickHapticFeedback
 import com.axondragonscale.wallmatic.ui.util.toDateTimeString
 import com.axondragonscale.wallmatic.util.nextUpdate
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -93,6 +100,47 @@ import kotlin.time.Duration.Companion.minutes
  * Created by Ronak Harkhani on 06/06/24
  */
 
+// Non-linear interval stops in milliseconds
+private val INTERVAL_STOPS: List<Long> = listOf(
+    15.minutes.inWholeMilliseconds,
+    30.minutes.inWholeMilliseconds,
+    45.minutes.inWholeMilliseconds,
+    1.hours.inWholeMilliseconds,
+    90.minutes.inWholeMilliseconds,
+    2.hours.inWholeMilliseconds,
+    3.hours.inWholeMilliseconds,
+    4.hours.inWholeMilliseconds,
+    6.hours.inWholeMilliseconds,
+    8.hours.inWholeMilliseconds,
+    12.hours.inWholeMilliseconds,
+    24.hours.inWholeMilliseconds,
+)
+
+// Labels for all 12 stops — odd-indexed ones are shown, even-indexed are empty (alternating)
+private val INTERVAL_STOP_LABELS: List<String> = listOf(
+    "15m", "", "45m", "", "1.5h", "", "3h", "", "6h", "", "12h", "",
+)
+
+private fun Long.toSliderIndex(): Float {
+    val closest = INTERVAL_STOPS.minByOrNull { kotlin.math.abs(it - this) } ?: INTERVAL_STOPS.first()
+    return INTERVAL_STOPS.indexOf(closest).toFloat()
+}
+
+private fun Long.toIntervalLabel(): String {
+    val totalMins = this.milliseconds.inWholeMinutes
+    val h = (totalMins / 60).toInt()
+    val m = (totalMins % 60).toInt()
+    return when {
+        h == 0 -> "$m Minutes"
+        m == 0 -> if (h == 1) "1 Hour" else "$h Hours"
+        else -> if (h == 1) "1 Hour $m Minutes" else "$h Hours $m Minutes"
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Entry point
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 fun Home(
     modifier: Modifier = Modifier,
@@ -100,9 +148,7 @@ fun Home(
 ) {
     val vm: HomeVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
-    var selectAlbumBottomSheetTarget by rememberSaveable {
-        mutableStateOf<TargetScreen?>(null)
-    }
+    var selectAlbumBottomSheetTarget by rememberSaveable { mutableStateOf<TargetScreen?>(null) }
 
     Home(
         modifier = modifier,
@@ -111,13 +157,10 @@ fun Home(
             when (event) {
                 HomeUiEvent.CreateAlbumClick ->
                     navController.navigate(Route.Dashboard(tab = Tab.Albums.position))
-
                 is HomeUiEvent.SelectAlbumClick ->
                     selectAlbumBottomSheetTarget = event.target
-
                 is HomeUiEvent.NavigateToWallpaper ->
                     navController.navigate(Route.Wallpaper(event.wallpaperId))
-
                 else -> vm.onEvent(event)
             }
         }
@@ -151,7 +194,7 @@ private fun Home(
     ) {
         TabHeader(
             modifier = Modifier.padding(start = 8.dp, top = 48.dp, bottom = 8.dp),
-            text = "Wallmatic"
+            text = "Wallmatic",
         )
 
         when {
@@ -160,36 +203,34 @@ private fun Home(
 
             uiState.albums.isEmpty() ->
                 TextAndButton(
-                    text = """
-                        Auto cycle wallpapers.
-                        Choose individual images
-                        Or entire folders.
-                    """.trimIndent(),
+                    text = "Auto cycle wallpapers.\nChoose individual images\nOr entire folders.",
                     buttonText = "CREATE ALBUM",
                     buttonIcon = Icons.Outlined.AddCircle,
-                    onClick = { onEvent(HomeUiEvent.CreateAlbumClick) }
+                    onClick = { onEvent(HomeUiEvent.CreateAlbumClick) },
                 )
 
-            !uiState.config.isInit || uiState.homeAlbum == null || uiState.lockAlbum == null ->
+            !uiState.config.isInit || uiState.homeAlbum == null ->
                 TextAndButton(
-                    text = """
-                        Auto cycle wallpapers.
-                        Choose individual images
-                        Or entire folders.
-                    """.trimIndent(),
+                    text = "Auto cycle wallpapers.\nChoose individual images\nOr entire folders.",
                     buttonText = "SELECT ALBUM",
                     buttonIcon = Icons.Outlined.CheckCircle,
-                    onClick = { onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Both)) }
+                    onClick = { onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Both)) },
                 )
 
             else -> {
-                HomeScreenCard(
+                WallpapersCard(
                     modifier = Modifier.padding(vertical = 8.dp),
                     uiState = uiState,
                     onEvent = onEvent,
                 )
 
-                LockScreenCard(
+                MirrorToggleCard(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    mirrorHomeConfigForLock = uiState.config.mirrorHomeConfigForLock,
+                    onToggle = { onEvent(HomeUiEvent.MirrorHomeConfigForLockToggled) },
+                )
+
+                AutoCycleCard(
                     modifier = Modifier.padding(vertical = 8.dp),
                     uiState = uiState,
                     onEvent = onEvent,
@@ -197,11 +238,13 @@ private fun Home(
             }
         }
 
-        Spacer(
-            modifier = Modifier.height(BOTTOM_BAR_HEIGHT + navigationBarsHeight() + 8.dp)
-        )
+        Spacer(modifier = Modifier.height(BOTTOM_BAR_HEIGHT + navigationBarsHeight() + 8.dp))
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TextAndButton (empty / no-album states)
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun TextAndButton(
@@ -224,10 +267,7 @@ private fun TextAndButton(
             modifier = Modifier
                 .padding(top = 16.dp)
                 .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(8.dp)
-                )
+                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                 .clickable { onClick() }
                 .height(48.dp)
                 .padding(12.dp),
@@ -240,7 +280,6 @@ private fun TextAndButton(
                 color = MaterialTheme.colorScheme.onPrimary,
                 fontWeight = FontWeight.SemiBold,
             )
-
             Icon(
                 modifier = Modifier.size(24.dp),
                 imageVector = buttonIcon,
@@ -251,292 +290,362 @@ private fun TextAndButton(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// WallpapersCard
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun HomeScreenCard(
+private fun WallpapersCard(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
     onEvent: (HomeUiEvent) -> Unit,
-) = WallmaticCard(modifier = modifier, title = "Home Screen") {
+) {
+    val mirroring = uiState.config.mirrorHomeConfigForLock
+    val lastUpdated = uiState.config.lastUpdated
+    val nextUpdate = uiState.config.nextUpdate
 
-    AlbumConfigCard(
-        album = uiState.homeAlbum!!,
-        autoCycleEnabled = uiState.config.homeConfig.autoCycleEnabled,
-        onSelectAlbumClick = {
-            onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Home))
-        },
-        onAutoCycleToggle = {
-            onEvent(HomeUiEvent.AutoCycleToggled(it, TargetScreen.Home))
-        },
-    )
-
-    WallpaperPreviewCard(
-        modifier = Modifier.padding(top = 8.dp),
-        wallpaper = uiState.homeWallpaper,
-        autoCycleEnabled = uiState.config.homeConfig.autoCycleEnabled,
-        lastUpdated = uiState.config.lastUpdated,
-        nextUpdate = uiState.config.nextUpdate,
-        onWallpaperClick = {
-            onEvent(HomeUiEvent.NavigateToWallpaper(it))
-        },
-        onChangeWallpaperClick = {
-            onEvent(HomeUiEvent.ChangeWallpaper(TargetScreen.Home))
-        }
-    )
-
-    AnimatedVisibility(
-        visible = uiState.config.homeConfig.autoCycleEnabled,
-        enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 300)),
-        exit = fadeOut() + shrinkVertically(tween(delayMillis = 300))
+    // Use BoxWithConstraints to compute the exact column width:
+    //   columnWidth = (totalWidth - gap) / 2
+    // This ensures the home column is always the same physical size regardless of
+    // whether the lock column is shown. When mirroring is on, the single home column
+    // is centered inside the full-width Box.
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.TopCenter,
     ) {
-        AutoCycleIntervalCard(
-            modifier = Modifier.padding(top = 8.dp),
-            interval = uiState.config.updateInterval,
-            onIntervalUpdate = {
-                onEvent(HomeUiEvent.IntervalUpdated(it))
-            },
-        )
-    }
-}
+        val gap = 8.dp
+        val columnWidth = (maxWidth - gap) / 2
 
-@Composable
-private fun LockScreenCard(
-    modifier: Modifier = Modifier,
-    uiState: HomeUiState,
-    onEvent: (HomeUiEvent) -> Unit,
-) = WallmaticCard(modifier = modifier, title = "Lock Screen") {
-    MirrorHomeScreenCard(
-        mirrorHomeConfigForLock = uiState.config.mirrorHomeConfigForLock,
-        onToggle = { onEvent(HomeUiEvent.MirrorHomeConfigForLockToggled) },
-    )
-
-    // TODO: Extract this out
-    // Maybe the preview and the other (future) controls should also be hidden
-    // when autoCycle is disabled
-    AnimatedVisibility(
-        visible = !uiState.config.mirrorHomeConfigForLock && uiState.lockAlbum != null,
-        enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 300)),
-        exit = fadeOut() + shrinkVertically(tween(delayMillis = 300))
-    ) {
-        Column {
-            AlbumConfigCard(
-                modifier = Modifier.padding(top = 8.dp),
-                album = uiState.lockAlbum!!,
-                autoCycleEnabled = uiState.config.lockConfig.autoCycleEnabled,
-                onSelectAlbumClick = {
-                    onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Lock))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+        ) {
+            WallpaperColumn(
+                modifier = Modifier.width(columnWidth),
+                label = "Home",
+                wallpaper = uiState.homeWallpaper,
+                autoCycleEnabled = uiState.config.homeConfig.autoCycleEnabled,
+                lastUpdated = lastUpdated,
+                nextUpdate = nextUpdate,
+                buttonLabel = if (mirroring) "Change Both" else "Change",
+                onPreviewClick = { uiState.homeWallpaper?.let { onEvent(HomeUiEvent.NavigateToWallpaper(it.id)) } },
+                onChangeClick = {
+                    onEvent(HomeUiEvent.ChangeWallpaper(if (mirroring) TargetScreen.Both else TargetScreen.Home))
                 },
-                onAutoCycleToggle = {
-                    onEvent(HomeUiEvent.AutoCycleToggled(it, TargetScreen.Lock))
-                },
-            )
-
-            WallpaperPreviewCard(
-                modifier = Modifier.padding(top = 8.dp),
-                wallpaper = uiState.lockWallpaper,
-                autoCycleEnabled = uiState.config.lockConfig.autoCycleEnabled,
-                lastUpdated = uiState.config.lastUpdated,
-                nextUpdate = uiState.config.nextUpdate,
-                onWallpaperClick = {
-                    onEvent(HomeUiEvent.NavigateToWallpaper(it))
-                },
-                onChangeWallpaperClick = {
-                    onEvent(HomeUiEvent.ChangeWallpaper(TargetScreen.Lock))
-                }
             )
 
             AnimatedVisibility(
-                visible = uiState.config.lockConfig.autoCycleEnabled,
-                enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 300)),
-                exit = fadeOut() + shrinkVertically(tween(delayMillis = 300))
+                visible = !mirroring,
+                enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 150)),
+                exit = fadeOut(tween()) + shrinkVertically(tween(delayMillis = 150)),
             ) {
-                // Interval card is shown in HomeScreenCard to avoid duplication
+                WallpaperColumn(
+                    modifier = Modifier.width(columnWidth),
+                    label = "Lock",
+                    wallpaper = uiState.lockWallpaper,
+                    autoCycleEnabled = uiState.config.lockConfig.autoCycleEnabled,
+                    lastUpdated = lastUpdated,
+                    nextUpdate = nextUpdate,
+                    buttonLabel = "Change",
+                    onPreviewClick = { uiState.lockWallpaper?.let { onEvent(HomeUiEvent.NavigateToWallpaper(it.id)) } },
+                    onChangeClick = { onEvent(HomeUiEvent.ChangeWallpaper(TargetScreen.Lock)) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun MirrorHomeScreenCard(
+private fun WallpaperColumn(
+    modifier: Modifier = Modifier,
+    label: String,
+    wallpaper: Wallpaper?,
+    autoCycleEnabled: Boolean,
+    lastUpdated: Long,
+    nextUpdate: Long,
+    buttonLabel: String,
+    onPreviewClick: () -> Unit,
+    onChangeClick: () -> Unit,
+) {
+    val aspectRatio = getAspectRatio()
+    val view = LocalView.current
+
+    Column(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Screen label chip
+        Text(
+            modifier = Modifier
+                .padding(bottom = 6.dp)
+                .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(6.dp))
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        // Wallpaper preview — fixed aspect ratio, always same size regardless of column count
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(aspectRatio)
+                .border(2.dp, Color.Black, RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(enabled = wallpaper?.uri != null) { onPreviewClick() },
+            contentAlignment = Alignment.Center,
+        ) {
+            if (wallpaper?.uri != null) {
+                Wallpaper(
+                    modifier = Modifier.fillMaxSize(),
+                    uri = wallpaper.uri,
+                    cornerRadius = 12.dp,
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Text(
+                    text = "No wallpaper",
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Current & next — label and date on the same line
+        WallpaperInfoRow(
+            icon = Icons.Outlined.RemoveFromQueue,
+            label = "Now",
+            value = if (lastUpdated == -1L) "—" else lastUpdated.toDateTimeString(),
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        WallpaperInfoRow(
+            icon = Icons.Outlined.QueuePlayNext,
+            label = "Next",
+            value = if (autoCycleEnabled) nextUpdate.toDateTimeString() else "Off",
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                view.performLongPressHapticFeedback()
+                onChangeClick()
+            },
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text(text = buttonLabel)
+        }
+    }
+}
+
+// Icon + "Label  value" all on one line
+@Composable
+private fun WallpaperInfoRow(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            modifier = Modifier
+                .padding(end = 6.dp)
+                .size(14.dp),
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            modifier = Modifier.weight(1f),
+            text = value,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MirrorToggleCard
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Flattened: no WallmaticCard wrapper, SettingsCard is the card itself.
+@Composable
+private fun MirrorToggleCard(
     modifier: Modifier = Modifier,
     mirrorHomeConfigForLock: Boolean,
-    onToggle: (Boolean) -> Unit,
-) {
+    onToggle: () -> Unit,
+) = Card(modifier = modifier.fillMaxWidth()) {
     SettingsCard(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(0.dp),
         leadingContent = {
             Icon(
                 imageVector = Icons.Default.SyncLock,
-                contentDescription = null
+                contentDescription = null,
             )
         },
         headlineContent = {
             Text(
-                text = "Mirror Home Screen",
+                text = "Mirror lock to home",
                 style = MaterialTheme.typography.titleMedium,
             )
         },
         supportingContent = {
             Text(
-                text = "Use same settings as Home Screen",
-                style = MaterialTheme.typography.labelMedium
+                text = "Lock screen uses the same album and wallpaper as home",
+                style = MaterialTheme.typography.labelMedium,
             )
         },
         trailingContent = {
             Switch(
                 checked = mirrorHomeConfigForLock,
-                onCheckedChange = onToggle
+                onCheckedChange = { onToggle() },
             )
-        }
+        },
     )
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AutoCycleCard
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun AlbumConfigCard(
+private fun AutoCycleCard(
+    modifier: Modifier = Modifier,
+    uiState: HomeUiState,
+    onEvent: (HomeUiEvent) -> Unit,
+) = WallmaticCard(modifier = modifier, title = "Auto Cycle") {
+    val mirroring = uiState.config.mirrorHomeConfigForLock
+    val homeAutoCycle = uiState.config.homeConfig.autoCycleEnabled
+    val lockAutoCycle = uiState.config.lockConfig.autoCycleEnabled
+
+    AlbumSection(
+        label = "Home",
+        album = uiState.homeAlbum!!,
+        autoCycleEnabled = homeAutoCycle,
+        onSelectAlbumClick = { onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Home)) },
+        onAutoCycleToggle = { onEvent(HomeUiEvent.AutoCycleToggled(it, TargetScreen.Home)) },
+    )
+
+    AnimatedVisibility(
+        visible = !mirroring,
+        enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 150)),
+        exit = fadeOut(tween()) + shrinkVertically(tween(delayMillis = 150)),
+    ) {
+        Column {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+            AlbumSection(
+                label = "Lock",
+                album = uiState.lockAlbum ?: uiState.homeAlbum!!,
+                autoCycleEnabled = lockAutoCycle,
+                onSelectAlbumClick = { onEvent(HomeUiEvent.SelectAlbumClick(TargetScreen.Lock)) },
+                onAutoCycleToggle = { onEvent(HomeUiEvent.AutoCycleToggled(it, TargetScreen.Lock)) },
+            )
+        }
+    }
+
+    AnimatedVisibility(
+        visible = homeAutoCycle || lockAutoCycle,
+        enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 300)),
+        exit = fadeOut(tween()) + shrinkVertically(tween(delayMillis = 300)),
+    ) {
+        Column {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+            AutoCycleIntervalCard(
+                interval = uiState.config.updateInterval,
+                onIntervalUpdate = { onEvent(HomeUiEvent.IntervalUpdated(it)) },
+            )
+        }
+    }
+}
+
+// AlbumSection: label rendered as a small title above the album selector row.
+// Layout: "Home" / "Lock" title line, then thumbnail | name + count | switch on the row below.
+@Composable
+private fun AlbumSection(
     modifier: Modifier = Modifier,
     album: Album,
+    label: String,
     autoCycleEnabled: Boolean,
     onSelectAlbumClick: () -> Unit,
     onAutoCycleToggle: (Boolean) -> Unit,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+        )
+
         Row(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable { onSelectAlbumClick() },
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            WallpaperThumbnail(uri = album.coverUri)
-
-            Column(
+            // Clickable album selector
+            Row(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(horizontal = 12.dp)
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onSelectAlbumClick() }
+                    .padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = album.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                WallpaperThumbnail(uri = album.coverUri, size = 40.dp, cornerRadius = 6.dp)
 
-                Text(
-                    text = album.countSummary(),
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 10.dp),
+                ) {
+                    Text(
+                        text = album.name,
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = album.countSummary(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-        }
 
-        Switch(
-            modifier = Modifier.padding(horizontal = 8.dp),
-            checked = autoCycleEnabled,
-            onCheckedChange = onAutoCycleToggle
-        )
-    }
-}
-
-@Composable
-private fun WallpaperPreviewCard(
-    modifier: Modifier = Modifier,
-    wallpaper: Wallpaper?,
-    autoCycleEnabled: Boolean,
-    lastUpdated: Long,
-    nextUpdate: Long,
-    onWallpaperClick: (Int) -> Unit,
-    onChangeWallpaperClick: () -> Unit,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(8.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        WallpaperPreview(
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .fillMaxWidth(0.4f)
-                .clickable(enabled = wallpaper?.uri != null) {
-                    wallpaper?.let { onWallpaperClick(it.id) }
-                },
-            uri = wallpaper?.uri
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, top = 8.dp)
-        ) {
-            WallpaperInfo(
-                icon = Icons.Outlined.RemoveFromQueue,
-                title = "Current Wallpaper",
-                time = lastUpdated.toDateTimeString()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            WallpaperInfo(
-                icon = Icons.Outlined.QueuePlayNext,
-                title = "Next Wallpaper",
-                time = if (autoCycleEnabled) nextUpdate.toDateTimeString() else "Autocycle Disabled"
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            val view = LocalView.current
-            Button(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                onClick = {
-                    view.performLongPressHapticFeedback()
-                    onChangeWallpaperClick()
-                },
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(text = "Change Wallpaper")
-            }
-        }
-    }
-}
-
-@Composable
-fun WallpaperInfo(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    title: String,
-    time: String,
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            modifier = Modifier.padding(8.dp),
-            imageVector = icon,
-            contentDescription = null,
-        )
-
-        Column(modifier = Modifier.padding(start = 8.dp)) {
-            Text(
-                text = title,
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.labelLarge
-            )
-            Text(
-                text = time,
-                style = MaterialTheme.typography.labelMedium
+            Switch(
+                checked = autoCycleEnabled,
+                onCheckedChange = onAutoCycleToggle,
             )
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AutoCycleIntervalCard
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun AutoCycleIntervalCard(
@@ -548,89 +657,82 @@ private fun AutoCycleIntervalCard(
     val scope = rememberCoroutineScope()
     var job by remember { mutableStateOf<Job?>(null) }
 
-    var hours by remember(interval) {
-        mutableFloatStateOf(interval.milliseconds.inWholeHours.coerceAtMost(24).toFloat())
-    }
-    var mins by remember(interval) {
-        val mins = if (hours.toInt() == 24) 0 else interval.milliseconds.inWholeMinutes % 60
-        mutableFloatStateOf(mins.toFloat())
+    var sliderIndex by remember(interval) {
+        mutableFloatStateOf(interval.toSliderIndex())
     }
 
-    val updateInterval = {
-        job?.cancel()
-        job = scope.launch {
-            delay(500)
-            if (!isActive) return@launch
-            onIntervalUpdate(
-                hours.toInt().hours.inWholeMilliseconds + mins.toInt().minutes.inWholeMilliseconds
-            )
-        }
-    }
+    val currentInterval = INTERVAL_STOPS[sliderIndex.toInt().coerceIn(0, INTERVAL_STOPS.lastIndex)]
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(8.dp),
-    ) {
-        val hoursText = if (hours.toInt() != 0) "${hours.toInt()} Hours" else ""
-        val minsText = if (mins.toInt() != 0) "${mins.toInt()} Minutes" else ""
-        val connectorText = if (hoursText.isNotEmpty() && minsText.isNotEmpty()) ", " else ""
-        Text(
-            modifier = Modifier.padding(start = 8.dp),
-            text = "Auto Cycle Interval",
-            style = MaterialTheme.typography.labelLarge
-        )
+    Column(modifier = modifier.fillMaxWidth()) {
 
-        Text(
+        // Title row: "Interval" label on left, formatted value pill on right
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp)
-                .padding(horizontal = 8.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(8.dp)
-                )
-                .padding(vertical = 8.dp),
-            text = "$hoursText$connectorText$minsText",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            textAlign = TextAlign.Center,
-        )
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "Interval",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(20.dp),
+                    )
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                text = currentInterval.toIntervalLabel(),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
 
+        // Slider
         Slider(
             modifier = Modifier.padding(horizontal = 8.dp),
-            value = hours,
-            valueRange = 0f..24f,
-            steps = 23,
-            onValueChange = { newHours ->
-                hours = newHours
+            value = sliderIndex,
+            valueRange = 0f..(INTERVAL_STOPS.lastIndex.toFloat()),
+            steps = INTERVAL_STOPS.lastIndex - 1,
+            onValueChange = { newIndex ->
+                sliderIndex = newIndex
                 view.performTickHapticFeedback()
-                if (hours.toInt() == 0 && mins < 15) mins = 15f
-                updateInterval()
+                job?.cancel()
+                job = scope.launch {
+                    delay(400)
+                    if (!isActive) return@launch
+                    onIntervalUpdate(INTERVAL_STOPS[newIndex.toInt().coerceIn(0, INTERVAL_STOPS.lastIndex)])
+                }
             },
         )
 
-        Slider(
+        // Alternating track labels — one per stop, odd-indexed labels are empty strings
+        Row(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 8.dp)
-                .padding(top = 8.dp),
-            value = mins,
-            valueRange = 0f..60f,
-            steps = 59,
-            onValueChange = { newMins ->
-                mins = when {
-                    hours.toInt() == 0 && newMins < 15 -> 15f
-                    hours.toInt() == 24 -> 0f
-                    else -> newMins
-                }
-                view.performTickHapticFeedback()
-                updateInterval()
-            },
-        )
+                .padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            INTERVAL_STOP_LABELS.forEach { label ->
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Previews
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -638,11 +740,7 @@ private fun AutoCycleIntervalCard(
 private fun PreviewCreateAlbum() {
     WallmaticTheme {
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-            val uiState = remember { HomeUiState(isLoading = false) }
-            Home(
-                uiState = uiState,
-                onEvent = { }
-            )
+            Home(uiState = HomeUiState(isLoading = false), onEvent = {})
         }
     }
 }
@@ -653,12 +751,9 @@ private fun PreviewCreateAlbum() {
 private fun PreviewSelectAlbum() {
     WallmaticTheme {
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-            val uiState = remember {
-                HomeUiState(isLoading = false, albums = listOf(Album(name = "a")))
-            }
             Home(
-                uiState = uiState,
-                onEvent = { }
+                uiState = HomeUiState(isLoading = false, albums = listOf(Album(name = "Nature"))),
+                onEvent = {},
             )
         }
     }
@@ -667,30 +762,96 @@ private fun PreviewSelectAlbum() {
 @Preview(name = "Light Mode", showBackground = true)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun Preview() {
+private fun PreviewMirroringOff() {
     WallmaticTheme {
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-            val uiState = remember {
-                HomeUiState(
+            val album = Album(name = "Nature").apply { id = 1 }
+            Home(
+                uiState = HomeUiState(
                     isLoading = false,
-                    albums = listOf(Album(name = "Album 1").apply { id = 1 }),
+                    albums = listOf(album),
                     config = config {
                         isInit = true
                         mirrorHomeConfigForLock = false
-                        updateInterval = 15.minutes.inWholeMilliseconds
+                        updateInterval = 2.hours.inWholeMilliseconds
+                        lastUpdated = System.currentTimeMillis() - 30.minutes.inWholeMilliseconds
                         homeConfig = wallpaperConfig {
                             albumId = 1
-                            autoCycleEnabled = false
+                            autoCycleEnabled = true
+                            currentWallpaperId = -1
                         }
                         lockConfig = wallpaperConfig {
                             albumId = 1
+                            autoCycleEnabled = true
+                            currentWallpaperId = -1
                         }
-                    }
-                )
-            }
+                    },
+                ),
+                onEvent = {},
+            )
+        }
+    }
+}
+
+@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewMirroringOn() {
+    WallmaticTheme {
+        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+            val album = Album(name = "Nature").apply { id = 1 }
             Home(
-                uiState = uiState,
-                onEvent = { }
+                uiState = HomeUiState(
+                    isLoading = false,
+                    albums = listOf(album),
+                    config = config {
+                        isInit = true
+                        mirrorHomeConfigForLock = true
+                        updateInterval = 1.hours.inWholeMilliseconds
+                        lastUpdated = System.currentTimeMillis() - 10.minutes.inWholeMilliseconds
+                        homeConfig = wallpaperConfig {
+                            albumId = 1
+                            autoCycleEnabled = true
+                            currentWallpaperId = -1
+                        }
+                        lockConfig = homeConfig
+                    },
+                ),
+                onEvent = {},
+            )
+        }
+    }
+}
+
+@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewAutoCycleOff() {
+    WallmaticTheme {
+        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+            val album = Album(name = "Nature").apply { id = 1 }
+            Home(
+                uiState = HomeUiState(
+                    isLoading = false,
+                    albums = listOf(album),
+                    config = config {
+                        isInit = true
+                        mirrorHomeConfigForLock = false
+                        updateInterval = 2.hours.inWholeMilliseconds
+                        lastUpdated = System.currentTimeMillis()
+                        homeConfig = wallpaperConfig {
+                            albumId = 1
+                            autoCycleEnabled = false
+                            currentWallpaperId = -1
+                        }
+                        lockConfig = wallpaperConfig {
+                            albumId = 1
+                            autoCycleEnabled = false
+                            currentWallpaperId = -1
+                        }
+                    },
+                ),
+                onEvent = {},
             )
         }
     }
