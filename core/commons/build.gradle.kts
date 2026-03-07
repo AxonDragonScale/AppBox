@@ -13,6 +13,7 @@ kotlin {
             implementation(libs.material3)
             implementation(libs.components.resources)
             implementation(libs.material.icons.extended)
+            implementation(libs.compose.ui.tooling.preview)
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
