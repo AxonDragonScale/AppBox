@@ -1,4 +1,4 @@
-package com.axondragonscale.commons.compose
+package com.axondragonscale.commons.compose.datetime
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -91,44 +91,10 @@ fun TimePickerDialog(
 @Composable
 private fun TimePickerDialogPreview() {
     MaterialTheme {
-        // Render the dialog surface content directly — Dialog() itself
-        // doesn't display inside the preview canvas.
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Select Time",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                )
-
-                val timePickerState = rememberTimePickerState(
-                    initialHour = 9,
-                    initialMinute = 30,
-                    is24Hour = false,
-                )
-                TimePicker(state = timePickerState)
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(onClick = {}) { Text("Cancel") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = {}) { Text("OK") }
-                }
-            }
-        }
+        TimePickerDialog(
+            onConfirm = { _, _ -> },
+            onDismiss = {}
+        )
     }
 }
 

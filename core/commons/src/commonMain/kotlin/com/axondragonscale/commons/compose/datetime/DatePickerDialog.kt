@@ -1,4 +1,4 @@
-package com.axondragonscale.commons.compose
+package com.axondragonscale.commons.compose.datetime
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

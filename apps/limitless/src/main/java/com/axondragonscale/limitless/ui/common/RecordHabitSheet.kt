@@ -47,7 +47,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.commons.compose.TimePickerDialog
+import com.axondragonscale.commons.compose.datetime.TimePickerDialog
 import com.axondragonscale.commons.formatAmPm
 import com.axondragonscale.commons.formatDateTime
 import com.axondragonscale.commons.formatShort

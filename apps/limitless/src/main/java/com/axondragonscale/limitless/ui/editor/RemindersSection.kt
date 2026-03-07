@@ -51,10 +51,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.axondragonscale.commons.canPostNotifications
 import com.axondragonscale.commons.canScheduleExactAlarms
-import com.axondragonscale.commons.compose.DatePickerDialog
+import com.axondragonscale.commons.compose.datetime.DatePickerDialog
 import com.axondragonscale.commons.compose.Dropdown
 import com.axondragonscale.commons.compose.DropdownItem
-import com.axondragonscale.commons.compose.TimePickerDialog
+import com.axondragonscale.commons.compose.datetime.TimePickerDialog
 import com.axondragonscale.commons.formatAmPm
 import com.axondragonscale.commons.formatShort
 import com.axondragonscale.commons.openExactAlarmSettings
