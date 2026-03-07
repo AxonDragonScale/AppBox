@@ -149,8 +149,8 @@ class ReminderScheduler(
         tz: TimeZone,
         now: Instant,
     ): LocalDateTime {
-        val clampedDay = clampDayOfMonth(nowLocal.date.year, nowLocal.date.monthNumber, targetDayOfMonth)
-        val thisMonthDate = LocalDate(nowLocal.date.year, nowLocal.date.monthNumber, clampedDay)
+        val clampedDay = clampDayOfMonth(nowLocal.date.year, nowLocal.date.month.number, targetDayOfMonth)
+        val thisMonthDate = LocalDate(nowLocal.date.year, nowLocal.date.month.number, clampedDay)
         val thisMonthTrigger = thisMonthDate.atTime(time)
 
         if (thisMonthTrigger.toInstant(tz) > now) return thisMonthTrigger

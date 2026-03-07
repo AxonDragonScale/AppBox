@@ -7,8 +7,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.axondragonscale.commons.UIMode
-import com.axondragonscale.commons.enumSetting
-import com.axondragonscale.commons.setting
+import com.axondragonscale.commons.enumPref
+import com.axondragonscale.commons.pref
 
 /**
  * Created by Ronak Harkhani on 09/07/25
@@ -20,12 +20,12 @@ class AppPrefsRepository(context: Context) {
 
     private val dataStore = context.appPrefs
 
-    val uiMode = dataStore.enumSetting(
+    val uiMode = dataStore.enumPref(
         key = stringPreferencesKey("uiMode"),
         default = UIMode.DEFAULT,
     )
 
-    val dynamicTheme = dataStore.setting(
+    val dynamicTheme = dataStore.pref(
         key = booleanPreferencesKey("dynamicTheme"),
         default = true,
     )

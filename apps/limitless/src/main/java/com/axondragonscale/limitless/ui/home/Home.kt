@@ -205,7 +205,7 @@ private fun Preview() {
                     ),
                     HabitHeatMapData(
                         habit = HabitEntity(id = 2, name = "Exercise", description = "", color = HabitColor.BLUE, view = HabitView.MONTH),
-                        dayCounts = sampleCounts.filterKeys { it.dayOfMonth % 2 == 0 },
+                        dayCounts = sampleCounts.filterKeys { it.day % 2 == 0 },
                         maxCount = 4,
                     ),
                     HabitHeatMapData(

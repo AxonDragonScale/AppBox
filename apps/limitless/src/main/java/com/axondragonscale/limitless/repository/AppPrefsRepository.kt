@@ -5,8 +5,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.axondragonscale.commons.UIMode
-import com.axondragonscale.commons.enumSetting
-import com.axondragonscale.commons.setting
+import com.axondragonscale.commons.enumPref
+import com.axondragonscale.commons.pref
 import com.axondragonscale.limitless.model.UIAlign
 
 /**
@@ -20,22 +20,22 @@ class AppPrefsRepository(
     private val context: Context,
 ) {
 
-    val uiMode = context.appPrefs.enumSetting(
+    val uiMode = context.appPrefs.enumPref(
         key = stringPreferencesKey("uiMode"),
         default = UIMode.DEFAULT,
     )
 
-    val dynamicTheme = context.appPrefs.setting(
+    val dynamicTheme = context.appPrefs.pref(
         key = booleanPreferencesKey("dynamicTheme"),
         default = false,
     )
 
-    val uiAlign = context.appPrefs.enumSetting(
+    val uiAlign = context.appPrefs.enumPref(
         key = stringPreferencesKey("uiAlign"),
         default = UIAlign.DEFAULT,
     )
 
-    val highlightCurrentDay = context.appPrefs.setting(
+    val highlightCurrentDay = context.appPrefs.pref(
         key = booleanPreferencesKey("highlightCurrentDay"),
         default = true,
     )

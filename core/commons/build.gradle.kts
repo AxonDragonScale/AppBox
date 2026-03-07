@@ -28,6 +28,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
 
             implementation(libs.androidx.room.runtime)
+            implementation(libs.datastore.prefs)
         }
 
         androidMain.dependencies {
@@ -47,8 +48,6 @@ kotlin {
 
             implementation(libs.ktor.client.okhttp)
             implementation(libs.chucker)
-
-            implementation(libs.datastore.prefs)
 
             implementation(libs.androidx.room.ktx)
 

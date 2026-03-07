@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
 /**
  * A wrapper that encapsulates a DataStore preference with its read [flow] and [set] function.
  */
-class PreferenceSetting<T>(
+class Pref<T>(
     private val dataStore: DataStore<Preferences>,
     private val key: Preferences.Key<T>,
     private val default: T,
@@ -29,7 +29,7 @@ class PreferenceSetting<T>(
 /**
  * A wrapper for enum preferences stored as strings.
  */
-class EnumPreferenceSetting<E : Enum<E>>(
+class EnumPref<E : Enum<E>>(
     private val dataStore: DataStore<Preferences>,
     private val key: Preferences.Key<String>,
     private val default: E,
@@ -47,27 +47,10 @@ class EnumPreferenceSetting<E : Enum<E>>(
 }
 
 /**
- * Creates a [PreferenceSetting] for the given key and default value.
- */
-fun <T> DataStore<Preferences>.setting(
-    key: Preferences.Key<T>,
-    default: T,
-) = PreferenceSetting(this, key, default)
-
-/**
- * Creates an [EnumPreferenceSetting] for the given key and default enum value.
- * The enum is stored as its name string.
- */
-inline fun <reified E : Enum<E>> DataStore<Preferences>.enumSetting(
-    key: Preferences.Key<String>,
-    default: E,
-) = EnumPreferenceSetting(this, key, default, ::enumValueOf)
-
-/**
  * A wrapper for serializable model class preferences stored as JSON strings.
  * The model class must be annotated with @Serializable.
  */
-class SerializedPreferenceSetting<T>(
+class SerializedPref<T>(
     private val dataStore: DataStore<Preferences>,
     private val key: Preferences.Key<String>,
     private val default: T,
@@ -86,18 +69,35 @@ class SerializedPreferenceSetting<T>(
 }
 
 /**
- * Creates a [SerializedPreferenceSetting] for the given key and default value.
+ * Creates a [Pref] for the given key and default value.
+ */
+fun <T> DataStore<Preferences>.pref(
+    key: Preferences.Key<T>,
+    default: T,
+) = Pref(this, key, default)
+
+/**
+ * Creates an [EnumPref] for the given key and default enum value.
+ * The enum is stored as its name string.
+ */
+inline fun <reified E : Enum<E>> DataStore<Preferences>.enumPref(
+    key: Preferences.Key<String>,
+    default: E,
+) = EnumPref(this, key, default, ::enumValueOf)
+
+/**
+ * Creates a [SerializedPref] for the given key and default value.
  * The model class must be annotated with @Serializable.
  *
  * @param key The preference key name
  * @param default The default value when no value is stored
  * @param json The Json instance to use for serialization/deserialization
  */
-inline fun <reified T> DataStore<Preferences>.serializedSetting(
+inline fun <reified T> DataStore<Preferences>.serializedPref(
     key: String,
     default: T,
     json: Json = Json,
-): SerializedPreferenceSetting<T> = SerializedPreferenceSetting(
+): SerializedPref<T> = SerializedPref(
     dataStore = this,
     key = stringPreferencesKey(key),
     default = default,

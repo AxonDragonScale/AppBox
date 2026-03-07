@@ -70,7 +70,7 @@ class HabitCalendarVM(
             currentFirst.minus(1, DateTimeUnit.MONTH)
 
         uiState.update {
-            it.copy(year = newFirst.year, month = newFirst.monthNumber, isLoading = true)
+            it.copy(year = newFirst.year, month = newFirst.month.number, isLoading = true)
         }
         observeCurrentMonth()
     }
