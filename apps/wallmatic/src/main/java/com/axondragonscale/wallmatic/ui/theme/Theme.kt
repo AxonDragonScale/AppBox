@@ -58,10 +58,8 @@ fun WallmaticTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                window.isStatusBarContrastEnforced = false
-                window.isNavigationBarContrastEnforced = false
-            }
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = !darkTheme
                 isAppearanceLightNavigationBars = !darkTheme
@@ -74,19 +72,4 @@ fun WallmaticTheme(
         typography = Typography,
         content = content
     )
-}
-
-@Composable
-fun SystemBars(
-    statusBarColor: Color = Color.Transparent,
-    navBarColor: Color = Color.Transparent,
-) {
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = statusBarColor.toArgb()
-            window.navigationBarColor = navBarColor.toArgb()
-        }
-    }
 }
