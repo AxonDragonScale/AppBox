@@ -1,44 +1,68 @@
+
 plugins {
-    id("library-convention")
-    alias(libs.plugins.kotlin.compose)
+    id("kmp-library-convention")
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
 }
 
-android {
-    namespace = "com.axondragonscale.commons"
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.components.resources)
+            implementation(compose.materialIconsExtended)
 
-    buildFeatures {
-        compose = true
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
+
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+        }
+
+        androidMain.dependencies {
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.appcompat)
+            implementation(libs.androidx.lifecycle.runtime.ktx)
+
+            implementation(libs.kotlinx.coroutines.android)
+
+            implementation(libs.androidx.compose.ui.tooling)
+            implementation(libs.androidx.compose.ui.test.manifest)
+
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.android)
+            implementation(libs.koin.androidx.compose)
+            implementation(libs.koin.androidx.compose.navigation)
+
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.chucker)
+
+            implementation(libs.datastore.prefs)
+
+            implementation(libs.androidx.room.ktx)
+
+            implementation(libs.zxing)
+        }
+
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+        }
+
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
     }
 }
 
-dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.bundles.compose)
-    debugImplementation(libs.bundles.compose.debug)
-
-    // Koin
-    implementation(platform(libs.koin.bom))
-    implementation(libs.bundles.koin)
-
-    // Kotlin
-    implementation(libs.bundles.coroutines)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.datetime)
-
-    // Datastore
-    implementation(libs.datastore.prefs)
-
-    // Ktor
-    implementation(libs.bundles.ktor)
-
-    // Room
-    implementation(libs.androidx.room.ktx)
-
-    implementation(libs.zxing)
+android {
+    namespace = "com.axondragonscale.commons"
 }

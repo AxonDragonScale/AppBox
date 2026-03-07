@@ -1,8 +1,9 @@
 [versions]
 agp = "8.13.2"
-kotlin = "2.3.0"
+kotlin = "2.3.10"
 protobufPlugin = "0.9.6"
 vanniktechPublish = "0.30.0"
+compose-multiplatform = "1.10.2"
 
 # Android SDK
 android-compileSdk = "36"
@@ -12,16 +13,16 @@ android-minSdk = "31"
 coreKtx = "1.17.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.12.4"
-composeBom = "2026.02.00"
+composeBom = "2026.02.01"
 appcompat = "1.7.1"
 androidxGlance = "1.1.1"
 room = "2.8.4"
-ksp = "2.3.4"
+ksp = "2.3.6"
 datastore = "1.2.0"
 documentfile = "1.1.0"
 androidxSplashscreen = "1.2.0"
 androidxBiometric = "1.1.0"
-workmanager = "2.10.1"
+workmanager = "2.11.1"
 camerax = "1.5.3"
 mlkitBarcodeScanner = "17.3.0"
 crypto = "1.1.0"
@@ -33,9 +34,9 @@ kotlinx-datetime = "0.7.1"
 
 # Third party
 koin-bom = "4.1.1"
-ktor = "3.4.0"
-chucker = "4.3.0"
-coil = "3.3.0"
+ktor = "3.4.1"
+chucker = "4.3.1"
+coil = "3.4.0"
 protobuf = "3.25.4" # Update carefully
 guava = "33.5.0-android"
 accompanist = "0.36.0"
@@ -47,6 +48,8 @@ materialKolor = "4.1.1"
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-compose-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+kotlin-serialization-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
+compose-multiplatform-gradle-plugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
 
 # Android
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -109,10 +112,14 @@ koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-compose-navigation3 = { module = "io.insert-koin:koin-compose-navigation3" }
 koin-androidx-compose-navigation = { module = "io.insert-koin:koin-androidx-compose-navigation" }
 koin-ktor = { module = "io.insert-koin:koin-ktor" }
+koin-compose = { module = "io.insert-koin:koin-compose" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
 
 # Ktor
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 chucker = { module = "com.github.chuckerteam.chucker:library", version.ref = "chucker" }
@@ -138,6 +145,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechPublish" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 
 [bundles]
 compose = [
@@ -161,6 +169,11 @@ ktor = [
     "ktor-client-content-negotiation",
     "ktor-serialization-kotlinx-json",
     "chucker",
+]
+ktor-common = [
+    "ktor-client-core",
+    "ktor-client-content-negotiation",
+    "ktor-serialization-kotlinx-json",
 ]
 coroutines = [
     "kotlinx-coroutines-core",

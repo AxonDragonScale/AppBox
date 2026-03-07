@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.UIMode
+import com.axondragonscale.commons.icon
 import com.axondragonscale.commons.compose.Dropdown
 import com.axondragonscale.commons.compose.DropdownItem
 import com.axondragonscale.commons.compose.thenIfNotNull

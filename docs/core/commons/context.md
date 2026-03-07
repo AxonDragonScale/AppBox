@@ -4,11 +4,23 @@
 
 ## Overview
 
-The `commons` module is a shared Android library that provides common utilities, extensions, and infrastructure used across all apps in the AppBox monorepo. It serves as the foundation layer that all app modules depend on.
+The `commons` module is a **Kotlin Multiplatform** library that provides shared utilities, Compose UI components, and infrastructure used across all apps in the AppBox monorepo. It targets Android, JVM, and iOS (x64, arm64, simulatorArm64).
 
 **Package**: `com.axondragonscale.commons`
 
+## Source Set Structure
+
+```
+src/
+├── commonMain/          # Pure Kotlin + Compose Multiplatform code
+├── androidMain/         # Android-only code (Context, DataStore, Room, Permissions, etc.)
+├── jvmMain/             # JVM actual implementations (Logger, HttpClient engine)
+└── iosMain/             # iOS actual implementations (Logger, HttpClient engine)
+```
+
 ## Package Structure
+
+### `commonMain` — shared across all targets
 
 ```
 com.axondragonscale.commons/
@@ -17,41 +29,75 @@ com.axondragonscale.commons/
 │   │   ├── BarChart.kt       # Configurable bar chart (vertical/horizontal, labels, highlight)
 │   │   ├── RingChart.kt      # Circular progress arc with center label
 │   │   └── TrendLine.kt      # Smoothed line overlay (Catmull-Rom spline)
-│   ├── ComposeUtils.kt      # Window inset height helpers
 │   ├── Dropdown.kt          # Reusable Dropdown composable + DropdownItem
 │   └── ModifierExt.kt       # Compose Modifier extensions
+│   └── StatCard.kt          # Titled card shell for stat/chart widgets
 ├── devtools/
 │   ├── DevTool.kt           # DevTool sealed interface definitions
-│   ├── DevToolItems.kt      # Composables for rendering tools
-│   ├── DevToolsBuilder.kt   # Builder DSL for creating tools
-│   └── DevToolsScreen.kt    # Main DevTools screen composable
-├── di/
-│   └── CommonsModule.kt     # Koin DI module
+│   └── DevToolsBuilder.kt   # Builder DSL for creating tools
 ├── network/
-│   └── HttpClient.kt        # Ktor HTTP client setup
+│   └── HttpClient.kt        # createHttpClient() — common entry point, expect/actual engine
+├── DateTimeExt.kt           # kotlinx.datetime extensions
+├── FlowExt.kt               # Flow collect() helper and 6/7-flow combine overloads
+├── Logger.kt                # Logging utilities (expect/actual dispatch per platform)
+├── Result.kt                # Result type for error handling
+├── Serialization.kt         # JSON serialization setup
+└── UIMode.kt                # Light/Auto/Dark theme enum (icon + isDarkTheme in androidMain)
+```
+
+### `androidMain` — Android-only
+
+```
+com.axondragonscale.commons/
+├── compose/
+│   ├── ComposeUtils.kt      # Window inset height helpers (Android-specific WindowInsets)
+│   ├── DatePickerDialog.kt  # Material3 date picker dialog
+│   └── TimePickerDialog.kt  # Material3 time picker dialog
+├── devtools/
+│   ├── DevToolItems.kt      # Composables for rendering DevTool items (uses LocalContext)
+│   └── DevToolsScreen.kt    # Full DevTools screen (permissions, clear data, kill app)
+├── di/
+│   └── CommonsModule.kt     # Koin DI module (Android-scoped)
+├── network/
+│   └── HttpClientActual.kt  # actual createPlatformHttpClient — OkHttp engine + Chucker
 ├── qr/
-│   └── QRGenerator.kt       # QR code bitmap generation via ZXing
+│   └── QRGenerator.kt       # QR code bitmap generation via ZXing (android.graphics.Bitmap)
 ├── room/
 │   ├── IntListConverter.kt      # Room TypeConverter for List<Int>
 │   ├── LocalDateConverter.kt    # Room TypeConverter for kotlinx.datetime.LocalDate
 │   ├── LocalTimeConverter.kt    # Room TypeConverter for kotlinx.datetime.LocalTime
 │   └── StringListConverter.kt   # Room TypeConverter for List<String>
 ├── ContextExt.kt            # Android Context extensions
-├── FlowExt.kt               # Flow collection helpers and multi-flow combine
-├── Logger.kt                # Logging utilities
+├── FlowExt.android.kt       # collectWithLifecycle (requires androidx.lifecycle)
+├── LoggerActual.kt          # actual dispatchLog — delegates to android.util.Log
 ├── PermissionExt.kt         # Runtime permission helpers
 ├── PreferenceExt.kt         # DataStore preference wrappers
-├── Result.kt                # Result type for error handling
-├── Serialization.kt         # JSON serialization setup
-└── UIMode.kt                # Common Light/Auto/Dark theme enum
+└── UIMode.android.kt        # UIMode.icon (ImageVector) + UIMode.isDarkTheme() extensions
 ```
+
+## `expect`/`actual` Contracts
+
+### `Logger` — `dispatchLog`
+- **expect** in `commonMain`: `internal expect fun dispatchLog(priority: LogPriority, tag: String, message: String)`
+- **actual** in `androidMain`: delegates to `android.util.Log.println`
+- **actual** in `jvmMain` / `iosMain`: delegates to `println`
+
+### `HttpClient` — `createPlatformHttpClient`
+- **expect** in `commonMain`: `internal expect fun createPlatformHttpClient(json: Json): HttpClient`
+- **actual** in `androidMain`: OkHttp engine + ChuckerInterceptor (requires `HttpClientContext.context` seeded in `CommonsModule`)
+- **actual** in `jvmMain` / `iosMain`: CIO engine (Ktor's pure-Kotlin engine)
+
+Public entry point (common): `fun createHttpClient(json: Json): HttpClient`
 
 ## Koin DI Module (`CommonsModule`)
 
 ```kotlin
 val CommonsModule = module {
-    single { createJson() }                      // Json instance
-    single { createHttpClient(get(), get()) }   // HttpClient instance
+    single { CommonJson }
+    single {
+        HttpClientContext.context = get<Context>()  // seeds Chucker interceptor
+        createHttpClient(get())
+    }
 }
 ```
 
@@ -70,9 +116,9 @@ startKoin {
 
 ## Components
 
-### Logging (`Logger.kt`)
+### Logging (`Logger.kt`) — `commonMain`
 
-Flexible logging system with extension functions for any object:
+Flexible logging system with extension functions for any object. Uses `expect`/`actual` for platform log dispatch.
 
 ```kotlin
 // Usage with TAG
@@ -81,16 +127,18 @@ TAG.logD { "Debug message" }
 TAG.logE { "Error message" }
 
 // Usage with class instance
-this.logD { "Debug message from ${this.javaClass.simpleName}" }
+this.logD { "Debug message from ${this::class.simpleName}" }
 
 // Available log levels: logD, logE, logI, logW, logV, logA
 
 // Global configuration
 Logger.isLoggingEnabled = true  // Enable/disable all logging
-Logger.usePrintlnLogs = false   // Use println instead of Log (for tests)
+Logger.usePrintlnLogs = false   // Force println output on all platforms (useful for tests)
 ```
 
-### Result Type (`Result.kt`)
+Android dispatches to `android.util.Log`; JVM/iOS dispatch to `println`.
+
+### Result Type (`Result.kt`) — `commonMain`
 
 Custom type-safe result wrapper (not `kotlin.Result`):
 
@@ -118,14 +166,28 @@ result
 val dataOrNull = result.getSuccessResultOrNull()
 ```
 
-### Flow Extensions (`FlowExt.kt`)
+### Flow Extensions (`FlowExt.kt` / `FlowExt.android.kt`)
 
 Helpers for Flow collection and multi-flow combining:
 
+**`commonMain` (`FlowExt.kt`)**:
 ```kotlin
 // No-op collection — triggers flow without handling emissions
 suspend fun <T> Flow<T>.collect() = this.collect {}
 
+// Combine 6 flows
+fun <T1, T2, T3, T4, T5, T6, R> combine(
+    flow1, flow2, flow3, flow4, flow5, flow6, transform
+): Flow<R>
+
+// Combine 7 flows
+fun <T1, T2, T3, T4, T5, T6, T7, R> combine(
+    flow1, flow2, flow3, flow4, flow5, flow6, flow7, transform
+): Flow<R>
+```
+
+**`androidMain` (`FlowExt.android.kt`)**:
+```kotlin
 // Lifecycle-aware one-shot effect collection (for UiEffect channels)
 // Starts on STARTED, stops on STOPPED, dispatches on Main.immediate
 @Composable
@@ -140,40 +202,41 @@ viewModel.uiEffect.collectWithLifecycle { effect ->
         is MyUiEffect.NavigateBack -> navController.popBackStack()
     }
 }
-
-// Combine 6 flows
-fun <T1, T2, T3, T4, T5, T6, R> combine(
-    flow1, flow2, flow3, flow4, flow5, flow6, transform
-): Flow<R>
-
-// Combine 7 flows
-fun <T1, T2, T3, T4, T5, T6, T7, R> combine(
-    flow1, flow2, flow3, flow4, flow5, flow6, flow7, transform
-): Flow<R>
 ```
 
 The multi-flow `combine` functions extend Kotlin's standard library which only supports up to 5 flows. They use internal `Tuple5`/`Tuple6` data classes to chain standard `combine` calls.
 
-### UIMode (`UIMode.kt`)
+### UIMode (`UIMode.kt` / `UIMode.android.kt`)
 
-Common enum for Light/Dark/Auto theme control, shared across all apps:
+Common enum for Light/Dark/Auto theme control, shared across all apps.
 
+**`commonMain`** — `UIMode.kt`:
 ```kotlin
-enum class UIMode(val displayName: String, val icon: ImageVector) {
-    LIGHT("Light", Icons.Default.LightMode),
-    AUTO("Auto", Icons.Default.BrightnessAuto),
-    DARK("Dark", Icons.Default.DarkMode);
+enum class UIMode(val displayName: String) {
+    LIGHT("Light"), AUTO("Auto"), DARK("Dark");
 
     companion object {
         val DEFAULT get() = AUTO
         fun fromOrdinal(ordinal: Int) = entries[ordinal]
     }
 }
-
-// Composable extension to resolve to a dark theme boolean
-@Composable
-fun UIMode.isDarkTheme(): Boolean  // AUTO delegates to isSystemInDarkTheme()
 ```
+
+**`androidMain`** — `UIMode.android.kt` (requires explicit import):
+```kotlin
+// Icon for use in Android Compose UI
+val UIMode.icon: ImageVector  // import com.axondragonscale.commons.icon
+
+// Resolves to dark theme boolean; AUTO delegates to isSystemInDarkTheme()
+@Composable
+fun UIMode.isDarkTheme(): Boolean  // import com.axondragonscale.commons.isDarkTheme
+```
+
+> **Important**: `icon` and `isDarkTheme` are extension properties/functions defined in a separate file. App modules must import them explicitly:
+> ```kotlin
+> import com.axondragonscale.commons.icon
+> import com.axondragonscale.commons.isDarkTheme
+> ```
 
 Usage in apps:
 ```kotlin
@@ -188,7 +251,7 @@ val isDark = uiMode.isDarkTheme()
 MyAppTheme(darkTheme = isDark) { ... }
 ```
 
-### DataStore Preferences (`PreferenceExt.kt`)
+### DataStore Preferences (`PreferenceExt.kt`) — `androidMain`
 
 Typed wrappers for DataStore preference access:
 
@@ -217,7 +280,7 @@ themeMode.set("dark")
 val value = themeMode.get() // suspend function
 ```
 
-### Permission Utilities (`PermissionExt.kt`)
+### Permission Utilities (`PermissionExt.kt`) — `androidMain`
 
 ```kotlin
 // Get all dangerous permissions with their grant status
@@ -231,14 +294,14 @@ val missing: Array<String> = permissions.getMissingPermissions()
 launcher.launch(missing)
 ```
 
-### Context Extensions (`ContextExt.kt`)
+### Context Extensions (`ContextExt.kt`) — `androidMain`
 
 ```kotlin
 // Clear all app data (preferences, databases, cache) and kill process
 context.clearAppData()
 ```
 
-### Compose Modifier Extensions (`compose/ModifierExt.kt`)
+### Compose Modifier Extensions (`compose/ModifierExt.kt`) — `commonMain`
 
 ```kotlin
 // Apply modifier only if condition is true

@@ -20,11 +20,24 @@ Applied to all app modules via `id("app-convention")`:
 
 ### `library-convention.gradle.kts`
 
-Applied to library modules via `id("library-convention")`:
+Applied to Android-only library modules via `id("library-convention")`:
 
 - Android Library plugin
 - Kotlin Android
 - Common SDK versions and compile options (same as app-convention)
+
+### `kmp-library-convention.gradle.kts`
+
+Applied to Kotlin Multiplatform library modules via `id("kmp-library-convention")`:
+
+- Kotlin Multiplatform plugin
+- Android Library plugin
+- Compose Multiplatform plugin + Kotlin Compose compiler plugin
+- Targets: `androidTarget` (JVM 21), `jvm`, `iosX64`, `iosArm64`, `iosSimulatorArm64`
+- Android SDK versions and compile options (same as other conventions)
+- Compose `buildFeatures` enabled for Android target
+
+Currently used by: `:core:commons`
 
 ## Version Catalog
 
@@ -92,7 +105,9 @@ Koin DSL conventions:
 ### Adding a New Library Module
 
 1. Create directory under `core/`
-2. Create `build.gradle.kts` with `id("library-convention")`
+2. Create `build.gradle.kts`:
+   - Use `id("library-convention")` for Android-only library modules
+   - Use `id("kmp-library-convention")` for Kotlin Multiplatform library modules
 3. Register in `settings.gradle.kts`
 
 ### Project Accessors

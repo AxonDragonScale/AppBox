@@ -51,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.commons.UIMode
+import com.axondragonscale.commons.icon
 import com.axondragonscale.jest.BuildConfig
 import com.axondragonscale.jest.R
 import com.axondragonscale.jest.ui.theme.JestTheme

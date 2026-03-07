@@ -1,5 +1,7 @@
 package com.axondragonscale.qrqanvas.ui.settings
 
+import com.axondragonscale.commons.icon
+
 import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
