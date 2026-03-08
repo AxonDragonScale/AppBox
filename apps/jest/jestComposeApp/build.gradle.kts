@@ -119,30 +119,6 @@ kotlin {
         }
 
     }
-
-    compilerOptions {
-        freeCompilerArgs.addAll(
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-opt-in=kotlinx.cinterop.ExperimentalForeignApi",
-            "-Xexpect-actual-classes",
-        )
-    }
-
-    targets.configureEach {
-        if (this is org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget) {
-            compilations.configureEach {
-                compileTaskProvider.configure {
-                    compilerOptions {
-                        freeCompilerArgs.addAll(
-                            "-opt-in=androidx.compose.ui.layout.ExperimentalLayoutApi",
-                            "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi",
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 android {
