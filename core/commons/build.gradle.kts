@@ -28,6 +28,9 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
 
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.runtime.compose)
+
             implementation(libs.androidx.room.runtime)
             implementation(libs.datastore.prefs)
         }

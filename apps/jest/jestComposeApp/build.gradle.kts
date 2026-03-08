@@ -20,19 +20,19 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_21)
         }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
-            baseName = "ComposeApp"
+            baseName = "JestComposeApp"
             isStatic = true
         }
     }
-    
+
     jvm()
-    
+
 //    js {
 //        browser()
 //        binaries.executable()
@@ -43,7 +43,7 @@ kotlin {
 //        browser()
 //        binaries.executable()
 //    }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.androidx.splashscreen)
@@ -71,6 +71,9 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.core.commons)
 
+            // DataStore
+            implementation(libs.datastore.prefs)
+
             // Room
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
@@ -94,6 +97,12 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.navigation.compose)
+
+            // Koin
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
 
         jvmMain.dependencies {
@@ -115,9 +124,24 @@ kotlin {
         freeCompilerArgs.addAll(
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-opt-in=androidx.compose.ui.layout.ExperimentalLayoutApi",
-            "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi",
+            "-opt-in=kotlinx.cinterop.ExperimentalForeignApi",
+            "-Xexpect-actual-classes",
         )
+    }
+
+    targets.configureEach {
+        if (this is org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget) {
+            compilations.configureEach {
+                compileTaskProvider.configure {
+                    compilerOptions {
+                        freeCompilerArgs.addAll(
+                            "-opt-in=androidx.compose.ui.layout.ExperimentalLayoutApi",
+                            "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi",
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -192,6 +216,10 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+compose.resources {
+    packageOfResClass = "com.axondragonscale.jest.resources"
 }
 
 room {
