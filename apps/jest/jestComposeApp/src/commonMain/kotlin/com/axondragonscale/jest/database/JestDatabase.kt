@@ -45,9 +45,3 @@ abstract class JestDatabase : RoomDatabase() {
 expect object JestDatabaseConstructor : RoomDatabaseConstructor<JestDatabase> {
     override fun initialize(): JestDatabase
 }
-
-/**
- * Platform-specific factory function to create the [JestDatabase].
- * Each platform provides its own Room builder configuration.
- */
-expect fun createJestDatabase(): JestDatabase

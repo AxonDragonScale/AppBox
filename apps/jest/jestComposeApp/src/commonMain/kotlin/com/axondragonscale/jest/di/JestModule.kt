@@ -1,8 +1,8 @@
 package com.axondragonscale.jest.di
 
+import com.axondragonscale.commons.room.createDatabase
 import com.axondragonscale.jest.database.JestDatabase
 import com.axondragonscale.jest.database.JestDbClient
-import com.axondragonscale.jest.database.createJestDatabase
 import com.axondragonscale.jest.network.JokeApiClient
 import com.axondragonscale.jest.repository.JokeRepository
 import com.axondragonscale.jest.repository.PrefsRepository
@@ -15,7 +15,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val JestModule = module {
-    single { createJestDatabase() }
+    single { createDatabase<JestDatabase>(JestDatabase.DB_NAME) }
     single { get<JestDatabase>().getJokeDao() }
 
     single { JestDbClient(get()) }
