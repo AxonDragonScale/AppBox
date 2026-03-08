@@ -48,6 +48,7 @@ This project uses a **context graph** — a set of interlinked markdown files th
 - Don't provide verbose summaries of what you just did. A one-line confirmation is fine; a paragraph recap is not. Skip the summary entirely if the result is obvious.
 - Parallelize independent tool calls — when multiple reads, searches, or edits don't depend on each other, make them all in one round.
 - Scope searches using known project structure — once you know which module you're in, narrow searches to that subtree instead of searching the entire project.
+- Prefer moving files and editing them instead of rewriting them.
 
 ---
 

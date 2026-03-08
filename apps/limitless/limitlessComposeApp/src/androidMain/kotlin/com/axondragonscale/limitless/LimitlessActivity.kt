@@ -1,9 +1,12 @@
 package com.axondragonscale.limitless
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -11,6 +14,7 @@ import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.limitless.repository.AppPrefsRepository
 import com.axondragonscale.limitless.ui.LimitlessApp
 import com.axondragonscale.limitless.ui.theme.LimitlessTheme
+import com.axondragonscale.limitless.ui.theme.SystemBarsEffect
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
@@ -34,9 +38,17 @@ class LimitlessActivity : ComponentActivity() {
             val uiMode by appPrefsRepository.uiMode.flow.collectAsStateWithLifecycle(initialValue = initialUiMode)
             val dynamicTheme by appPrefsRepository.dynamicTheme.flow.collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
 
+            val darkTheme = uiMode.isDarkTheme()
+
+            val dynamicColorScheme = if (dynamicTheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (darkTheme) dynamicDarkColorScheme(this) else dynamicLightColorScheme(this)
+            } else null
+
+            SystemBarsEffect(darkTheme = darkTheme)
+
             LimitlessTheme(
-                darkTheme = uiMode.isDarkTheme(),
-                dynamicColor = dynamicTheme,
+                darkTheme = darkTheme,
+                colorScheme = dynamicColorScheme,
             ) {
                 LimitlessApp()
             }
