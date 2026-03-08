@@ -39,6 +39,7 @@ include(":apps:topty")
 include(":apps:npinner")
 include(":apps:qrqanvas")
 include(":apps:limitless")
+include(":apps:limitless:limitlessComposeApp")
 
 // Library modules (KMP)
 include(":libraries:tlv")
