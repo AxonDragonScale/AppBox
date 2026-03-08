@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-
-    <style name="Theme.Jest" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowSplashScreenBackground">@color/jest_splash_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/jest_icon_foreground</item>
-    </style>
-
-</resources>
