@@ -10,6 +10,7 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+**/build
 /captures
 .externalNativeBuild
 .cxx
@@ -26,3 +27,16 @@ local.properties
 /.idea/AndroidProjectSystem.xml
 /.idea/markdown.xml
 .idea/artifacts
+
+### Xcode ###
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcworkspace/contents.xcworkspacedata/
+/*.gcno
+**/xcshareddata/WorkspaceSettings.xcsettings
+*.xcuserstate
+*.xcscheme
+*.xcworkspace
+xcuserdata/
+Pods/

@@ -34,6 +34,7 @@ include(":core:commons")
 
 // App modules (applications)
 include(":apps:jest")
+include(":apps:jest:jestComposeApp")
 include(":apps:wallmatic")
 include(":apps:topty")
 include(":apps:npinner")

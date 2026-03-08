@@ -1,0 +1,144 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "c7d437b9aba99c76153ab1cbec1976f4",
+    "entities": [
+      {
+        "tableName": "joke",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `lang` INTEGER NOT NULL, `category` INTEGER NOT NULL, `type` INTEGER NOT NULL, `safe` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, `joke` TEXT, `setup` TEXT, `delivery` TEXT, `nsfw` INTEGER NOT NULL, `religious` INTEGER NOT NULL, `political` INTEGER NOT NULL, `racist` INTEGER NOT NULL, `sexist` INTEGER NOT NULL, `explicit` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lang",
+            "columnName": "lang",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "safe",
+            "columnName": "safe",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "favorite",
+            "columnName": "favorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "joke",
+            "columnName": "joke",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "setup",
+            "columnName": "setup",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "delivery",
+            "columnName": "delivery",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "flags.nsfw",
+            "columnName": "nsfw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flags.religious",
+            "columnName": "religious",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flags.political",
+            "columnName": "political",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flags.racist",
+            "columnName": "racist",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flags.sexist",
+            "columnName": "sexist",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flags.explicit",
+            "columnName": "explicit",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_joke_timestamp",
+            "unique": true,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [
+              "DESC"
+            ],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_joke_timestamp` ON `${TABLE_NAME}` (`timestamp` DESC)"
+          },
+          {
+            "name": "index_joke_favorite_timestamp",
+            "unique": true,
+            "columnNames": [
+              "favorite",
+              "timestamp"
+            ],
+            "orders": [
+              "DESC",
+              "DESC"
+            ],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_joke_favorite_timestamp` ON `${TABLE_NAME}` (`favorite` DESC, `timestamp` DESC)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c7d437b9aba99c76153ab1cbec1976f4')"
+    ]
+  }
+}
