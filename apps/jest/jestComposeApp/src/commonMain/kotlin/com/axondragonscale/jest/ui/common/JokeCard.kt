@@ -38,7 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.jest.shareText
+import com.axondragonscale.jest.util.shareText
 import com.axondragonscale.jest.model.Category
 import com.axondragonscale.jest.model.Flags
 import com.axondragonscale.jest.model.IJoke

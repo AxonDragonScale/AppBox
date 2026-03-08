@@ -1,4 +1,4 @@
-package com.axondragonscale.jest
+package com.axondragonscale.jest.util
 
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication

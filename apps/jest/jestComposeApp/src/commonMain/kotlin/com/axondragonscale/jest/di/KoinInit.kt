@@ -1,7 +1,6 @@
-package com.axondragonscale.jest
+package com.axondragonscale.jest.di
 
 import com.axondragonscale.commons.di.CommonsModule
-import com.axondragonscale.jest.di.JestModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 

@@ -17,10 +17,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.axondragonscale.commons.AppInfo
 import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.jest.repository.PrefsRepository
-import com.axondragonscale.jest.ui.JestApp
 import com.axondragonscale.jest.ui.theme.JestTheme
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject

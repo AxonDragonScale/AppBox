@@ -1,4 +1,4 @@
-package com.axondragonscale.jest.ui
+package com.axondragonscale.jest
 
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.foundation.background
@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.axondragonscale.jest.ui.MainScreen
 import com.axondragonscale.jest.ui.devtools.JestDevTools
 import com.axondragonscale.jest.ui.navigation.Route
 

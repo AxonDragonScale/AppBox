@@ -1,4 +1,4 @@
-package com.axondragonscale.jest
+package com.axondragonscale.jest.util
 
 /**
  * Cross-platform sharing utility.

@@ -2,6 +2,7 @@ package com.axondragonscale.jest
 
 import android.app.Application
 import com.axondragonscale.commons.AppInfo
+import com.axondragonscale.jest.di.initKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 

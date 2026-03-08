@@ -1,4 +1,4 @@
-package com.axondragonscale.jest
+package com.axondragonscale.jest.util
 
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
