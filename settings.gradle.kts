@@ -43,3 +43,4 @@ include(":apps:limitless:limitlessComposeApp")
 
 // Library modules (KMP)
 include(":libraries:tlv")
+include(":libraries:bitops")
