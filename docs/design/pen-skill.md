@@ -120,6 +120,39 @@ After any batch of `U()` or `R()` calls, verify with `batch_get` on the affected
 
 ---
 
+## Unsetting / Clearing a Property
+
+Setting a property to `null` in `U()` is not valid and will crash the operation with a TypeError. There is no way to "unset" a property via `U()`.
+
+To remove a property from a node (e.g. a fixed `width` that should become `fit_content`), use `R()` to reconstruct the node without that property. The engine will then use the default/inferred value.
+
+```
+// WRONG — crashes with TypeError
+U("nodeId", { width: null })
+
+// CORRECT — rebuild without the property
+R("nodeId", { type: "frame", layout: "horizontal", height: 38, ... })
+```
+
+---
+
+## I() Insertion Order
+
+`I()` always appends the new node at the **end** of the parent's children list. When child order matters — for example, a `justifyContent: space_between` row where a button must appear on the left and a timestamp on the right — the inserted node may land in the wrong position.
+
+### Workaround: follow I() with M()
+After inserting, use `M()` to move the node to the correct index.
+
+```
+// Insert lands at the end (wrong side of the row)
+I("rowFrameId", { type: "ref", ref: "FY5ll", name: "shareBtn" })
+
+// Move it to index 0 so it appears on the left
+M("insertedNodeId", "rowFrameId", 0)
+```
+
+---
+
 ## Efficient Debugging Flow
 
 1. Take a screenshot to see the visual state
