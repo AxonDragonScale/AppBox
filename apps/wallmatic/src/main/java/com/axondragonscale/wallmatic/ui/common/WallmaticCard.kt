@@ -16,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 
 /**
@@ -27,22 +29,26 @@ import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 @Composable
 fun WallmaticCard(
     modifier: Modifier = Modifier,
-    contentModifier: Modifier = Modifier,
     title: String,
-    cardShape: Shape = RoundedCornerShape(12.dp),
-    content: @Composable ColumnScope.() -> Unit
-) = Card(
-    modifier = modifier.fillMaxWidth(),
-    shape = cardShape,
-) {
-    Column(modifier = contentModifier.padding(8.dp)) {
-        Text(
-            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-        )
+    cardShape: Shape = RoundedCornerShape(16.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) = Column(modifier = modifier.fillMaxWidth()) {
+    Text(
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        letterSpacing = 1.2.sp,
+    )
 
-        content()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
+    ) {
+        Column {
+            content()
+        }
     }
 }
 
@@ -55,8 +61,9 @@ private fun Preview() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp)
         ) {
-            WallmaticCard(title = "Title") {
+            WallmaticCard(title = "Section Title") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -67,5 +74,3 @@ private fun Preview() {
         }
     }
 }
-
-

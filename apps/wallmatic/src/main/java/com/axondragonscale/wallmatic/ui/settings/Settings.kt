@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -138,13 +139,13 @@ private fun ThemeCard(
 ) = WallmaticCard(modifier = modifier, title = "Appearance") {
 
     DarkModeCard(
-        modifier = Modifier.padding(bottom = 8.dp),
         uiMode = uiMode,
         onUiModeUpdate = onUiModeUpdate,
     )
 
+    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+
     DynamicThemeCard(
-        modifier = Modifier,
         dynamicTheme = dynamicTheme,
         onDynamicThemeToggle = onDynamicThemeToggle,
     )
@@ -361,7 +362,6 @@ private fun AboutCard(
     val uriHandler = LocalUriHandler.current
 
     SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
         leadingContent = {
             Icon(
                 imageVector = Icons.Filled.Android,
@@ -383,8 +383,9 @@ private fun AboutCard(
         }
     )
 
+    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+
     SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
         leadingContent = {
             Icon(
                 imageVector = Icons.Filled.Person,
@@ -406,8 +407,9 @@ private fun AboutCard(
         }
     )
 
+    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+
     SettingsCard(
-        modifier = Modifier.padding(bottom = 8.dp),
         onClick = { uriHandler.openUri(Link.AXON_DRAGON_SCALE) },
         leadingContent = {
             Image(
@@ -432,8 +434,9 @@ private fun AboutCard(
         }
     )
 
+    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+
     SettingsCard(
-        modifier = Modifier,
         onClick = { uriHandler.openUri(Link.WALLMATIC) },
         leadingContent = {
             Icon(

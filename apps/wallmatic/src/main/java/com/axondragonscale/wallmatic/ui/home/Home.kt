@@ -12,18 +12,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.SyncLock
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -31,23 +37,27 @@ import androidx.compose.material.icons.outlined.QueuePlayNext
 import androidx.compose.material.icons.outlined.RemoveFromQueue
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +66,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil3.compose.AsyncImage
 import com.axondragonscale.commons.compose.navigationBarsHeight
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
@@ -71,27 +82,49 @@ import com.axondragonscale.wallmatic.ui.common.SelectAlbumBottomSheet
 import com.axondragonscale.wallmatic.ui.common.SettingsCard
 import com.axondragonscale.wallmatic.ui.common.TabHeader
 import com.axondragonscale.wallmatic.ui.common.WallmaticCard
-import com.axondragonscale.wallmatic.ui.common.WallpaperPreview
 import com.axondragonscale.wallmatic.ui.common.WallpaperThumbnail
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.util.countSummary
+import com.axondragonscale.wallmatic.ui.util.getAspectRatio
 import com.axondragonscale.wallmatic.ui.util.performLongPressHapticFeedback
-import com.axondragonscale.wallmatic.ui.util.performTickHapticFeedback
 import com.axondragonscale.wallmatic.ui.util.toDateTimeString
 import com.axondragonscale.wallmatic.util.nextUpdate
-import kotlin.time.Duration.Companion.minutes
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
+import kotlin.math.abs
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * Created by Ronak Harkhani on 06/06/24
  */
+
+private val AutoCycleIntervals: List<Duration> = listOf(
+    15.minutes, 30.minutes, 45.minutes,
+    1.hours, 90.minutes, 2.hours,
+    3.hours, 4.hours, 6.hours,
+    8.hours, 12.hours, 24.hours,
+)
+
+private fun Duration.displayLabel(): String {
+    val h = inWholeHours
+    val m = inWholeMinutes % 60
+    return when {
+        h == 0L -> "$m Minutes"
+        m == 0L -> if (h == 1L) "1 Hour" else "$h Hours"
+        else -> "${h}h ${m}m"
+    }
+}
+
+private fun Duration.chipLabel(): String {
+    val h = inWholeHours
+    val m = inWholeMinutes % 60
+    return when {
+        h == 0L -> "${m}m"
+        m == 0L -> "${h}h"
+        else -> "${h}h ${m}m"
+    }
+}
 
 @Composable
 fun Home(
@@ -269,8 +302,9 @@ private fun HomeScreenCard(
         },
     )
 
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
     WallpaperPreviewCard(
-        modifier = Modifier.padding(top = 8.dp),
         wallpaper = uiState.homeWallpaper,
         autoCycleEnabled = uiState.config.homeConfig.autoCycleEnabled,
         lastUpdated = uiState.config.lastUpdated,
@@ -288,13 +322,15 @@ private fun HomeScreenCard(
         enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 300)),
         exit = fadeOut() + shrinkVertically(tween(delayMillis = 300))
     ) {
-        AutoCycleIntervalCard(
-            modifier = Modifier.padding(top = 8.dp),
-            interval = uiState.config.updateInterval,
-            onIntervalUpdate = {
-                onEvent(HomeUiEvent.IntervalUpdated(it))
-            },
-        )
+        Column {
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            AutoCycleIntervalCard(
+                interval = uiState.config.updateInterval,
+                onIntervalUpdate = {
+                    onEvent(HomeUiEvent.IntervalUpdated(it))
+                },
+            )
+        }
     }
 }
 
@@ -318,8 +354,9 @@ private fun LockScreenCard(
         exit = fadeOut() + shrinkVertically(tween(delayMillis = 300))
     ) {
         Column {
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
             AlbumConfigCard(
-                modifier = Modifier.padding(top = 8.dp),
                 album = uiState.lockAlbum!!,
                 autoCycleEnabled = uiState.config.lockConfig.autoCycleEnabled,
                 onSelectAlbumClick = {
@@ -330,8 +367,9 @@ private fun LockScreenCard(
                 },
             )
 
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
             WallpaperPreviewCard(
-                modifier = Modifier.padding(top = 8.dp),
                 wallpaper = uiState.lockWallpaper,
                 autoCycleEnabled = uiState.config.lockConfig.autoCycleEnabled,
                 lastUpdated = uiState.config.lastUpdated,
@@ -343,14 +381,6 @@ private fun LockScreenCard(
                     onEvent(HomeUiEvent.ChangeWallpaper(TargetScreen.Lock))
                 }
             )
-
-            AnimatedVisibility(
-                visible = uiState.config.lockConfig.autoCycleEnabled,
-                enter = expandVertically(tween()) + fadeIn(tween(delayMillis = 300)),
-                exit = fadeOut() + shrinkVertically(tween(delayMillis = 300))
-            ) {
-                // Interval card is shown in HomeScreenCard to avoid duplication
-            }
         }
     }
 }
@@ -363,7 +393,6 @@ private fun MirrorHomeScreenCard(
 ) {
     SettingsCard(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
         leadingContent = {
             Icon(
                 imageVector = Icons.Default.SyncLock,
@@ -399,49 +428,39 @@ private fun AlbumConfigCard(
     onSelectAlbumClick: () -> Unit,
     onAutoCycleToggle: (Boolean) -> Unit,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable { onSelectAlbumClick() },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            WallpaperThumbnail(uri = album.coverUri)
-
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(horizontal = 12.dp)
-            ) {
-                Text(
-                    text = album.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Text(
-                    text = album.countSummary(),
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-
-        Switch(
-            modifier = Modifier.padding(horizontal = 8.dp),
-            checked = autoCycleEnabled,
-            onCheckedChange = onAutoCycleToggle
-        )
-    }
+    ListItem(
+        modifier = modifier.clickable { onSelectAlbumClick() },
+        leadingContent = {
+            WallpaperThumbnail(
+                uri = album.coverUri,
+                size = 48.dp,
+                cornerRadius = 8.dp,
+            )
+        },
+        headlineContent = {
+            Text(
+                text = album.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent = {
+            Text(
+                text = album.countSummary(),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        },
+        trailingContent = {
+            Switch(
+                checked = autoCycleEnabled,
+                onCheckedChange = onAutoCycleToggle,
+            )
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
+        ),
+    )
 }
 
 @Composable
@@ -456,50 +475,62 @@ private fun WallpaperPreviewCard(
 ) {
     Row(
         modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(8.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        WallpaperPreview(
+        Box(
             modifier = Modifier
-                .padding(start = 8.dp)
-                .fillMaxWidth(0.4f)
+                .fillMaxWidth(0.45f)
+                .aspectRatio(getAspectRatio())
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .clickable(enabled = wallpaper?.uri != null) {
                     wallpaper?.let { onWallpaperClick(it.id) }
                 },
-            uri = wallpaper?.uri
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            if (wallpaper?.uri != null) {
+                AsyncImage(
+                    model = wallpaper.uri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Text(
+                    text = "No Wallpaper",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
+        val view = LocalView.current
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, top = 8.dp)
+                .padding(start = 12.dp, top = 12.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            WallpaperInfo(
-                icon = Icons.Outlined.RemoveFromQueue,
-                title = "Current Wallpaper",
-                time = lastUpdated.toDateTimeString()
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                WallpaperInfoItem(
+                    icon = Icons.Outlined.RemoveFromQueue,
+                    label = "Current",
+                    value = lastUpdated.toDateTimeString(),
+                )
+                WallpaperInfoItem(
+                    icon = Icons.Outlined.QueuePlayNext,
+                    label = "Next",
+                    value = if (autoCycleEnabled) nextUpdate.toDateTimeString() else "Auto-cycle off",
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            WallpaperInfo(
-                icon = Icons.Outlined.QueuePlayNext,
-                title = "Next Wallpaper",
-                time = if (autoCycleEnabled) nextUpdate.toDateTimeString() else "Autocycle Disabled"
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            val view = LocalView.current
             Button(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 onClick = {
                     view.performLongPressHapticFeedback()
                     onChangeWallpaperClick()
                 },
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Text(text = "Change Wallpaper")
             }
@@ -508,31 +539,32 @@ private fun WallpaperPreviewCard(
 }
 
 @Composable
-fun WallpaperInfo(
+private fun WallpaperInfoItem(
     modifier: Modifier = Modifier,
     icon: ImageVector,
-    title: String,
-    time: String,
+    label: String,
+    value: String,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            modifier = Modifier.padding(8.dp),
             imageVector = icon,
             contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary,
         )
-
         Column(modifier = Modifier.padding(start = 8.dp)) {
             Text(
-                text = title,
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.labelLarge
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = time,
-                style = MaterialTheme.typography.labelMedium
+                text = value,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
@@ -544,90 +576,58 @@ private fun AutoCycleIntervalCard(
     interval: Long,
     onIntervalUpdate: (Long) -> Unit,
 ) {
-    val view = LocalView.current
-    val scope = rememberCoroutineScope()
-    var job by remember { mutableStateOf<Job?>(null) }
-
-    var hours by remember(interval) {
-        mutableFloatStateOf(interval.milliseconds.inWholeHours.coerceAtMost(24).toFloat())
-    }
-    var mins by remember(interval) {
-        val mins = if (hours.toInt() == 24) 0 else interval.milliseconds.inWholeMinutes % 60
-        mutableFloatStateOf(mins.toFloat())
-    }
-
-    val updateInterval = {
-        job?.cancel()
-        job = scope.launch {
-            delay(500)
-            if (!isActive) return@launch
-            onIntervalUpdate(
-                hours.toInt().hours.inWholeMilliseconds + mins.toInt().minutes.inWholeMilliseconds
-            )
-        }
-    }
+    val selected = AutoCycleIntervals.minByOrNull { abs(it.inWholeMilliseconds - interval) }
+        ?: AutoCycleIntervals.first()
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(8.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        val hoursText = if (hours.toInt() != 0) "${hours.toInt()} Hours" else ""
-        val minsText = if (mins.toInt() != 0) "${mins.toInt()} Minutes" else ""
-        val connectorText = if (hoursText.isNotEmpty() && minsText.isNotEmpty()) ", " else ""
         Text(
             modifier = Modifier.padding(start = 8.dp),
             text = "Auto Cycle Interval",
-            style = MaterialTheme.typography.labelLarge
+            style = MaterialTheme.typography.labelLarge,
         )
 
         Text(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp)
+                .padding(vertical = 8.dp)
                 .padding(horizontal = 8.dp)
                 .background(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(8.dp)
                 )
-                .padding(vertical = 8.dp),
-            text = "$hoursText$connectorText$minsText",
+                .padding(vertical = 10.dp),
+            text = selected.displayLabel(),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             textAlign = TextAlign.Center,
         )
 
-        Slider(
-            modifier = Modifier.padding(horizontal = 8.dp),
-            value = hours,
-            valueRange = 0f..24f,
-            steps = 23,
-            onValueChange = { newHours ->
-                hours = newHours
-                view.performTickHapticFeedback()
-                if (hours.toInt() == 0 && mins < 15) mins = 15f
-                updateInterval()
-            },
-        )
-
-        Slider(
-            modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .padding(top = 8.dp),
-            value = mins,
-            valueRange = 0f..60f,
-            steps = 59,
-            onValueChange = { newMins ->
-                mins = when {
-                    hours.toInt() == 0 && newMins < 15 -> 15f
-                    hours.toInt() == 24 -> 0f
-                    else -> newMins
-                }
-                view.performTickHapticFeedback()
-                updateInterval()
-            },
-        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        ) {
+            items(AutoCycleIntervals) { duration ->
+                val isSelected = duration == selected
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onIntervalUpdate(duration.inWholeMilliseconds) },
+                    label = { Text(text = duration.chipLabel()) },
+                    leadingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                            )
+                        }
+                    } else null,
+                )
+            }
+        }
     }
 }
 

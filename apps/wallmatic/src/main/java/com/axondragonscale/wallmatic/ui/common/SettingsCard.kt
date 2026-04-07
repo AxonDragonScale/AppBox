@@ -1,15 +1,12 @@
 package com.axondragonscale.wallmatic.ui.common
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.axondragonscale.wallmatic.ui.util.thenIf
 
 /**
@@ -24,19 +21,17 @@ fun SettingsCard(
     supportingContent: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
-    shape: Shape = RoundedCornerShape(8.dp),
 ) {
     ListItem(
-        modifier = modifier
-            .clip(shape)
-            .thenIf(onClick != null) { clickable(onClick = onClick!!) },
+        modifier = modifier.thenIf(onClick != null) { clickable(onClick = onClick!!) },
         leadingContent = leadingContent,
         headlineContent = headlineContent,
         supportingContent = supportingContent,
         trailingContent = trailingContent,
         colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
             leadingIconColor = MaterialTheme.colorScheme.primary,
-            headlineColor = MaterialTheme.colorScheme.primary,
-        )
+            headlineColor = MaterialTheme.colorScheme.onSurface,
+        ),
     )
 }
