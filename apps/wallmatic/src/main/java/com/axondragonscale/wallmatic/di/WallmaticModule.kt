@@ -2,6 +2,7 @@ package com.axondragonscale.wallmatic.di
 
 import com.axondragonscale.wallmatic.background.WallpaperWorker
 import com.axondragonscale.wallmatic.background.WallpaperWorkScheduler
+import com.axondragonscale.wallmatic.background.WatchdogWorker
 import com.axondragonscale.wallmatic.core.AlbumManager
 import com.axondragonscale.wallmatic.core.FolderManager
 import com.axondragonscale.wallmatic.core.SyncManager
@@ -38,6 +39,7 @@ val WallmaticModule = module {
 
     singleOf(::WallpaperWorkScheduler)
     workerOf(::WallpaperWorker)
+    workerOf(::WatchdogWorker)
 
     // ViewModels
     viewModelOf(::SettingsVM)

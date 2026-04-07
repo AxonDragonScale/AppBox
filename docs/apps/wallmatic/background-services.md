@@ -16,6 +16,11 @@ WallpaperUpdater.updateWallpaper()
 WallpaperManager.setStream() (system API)
     ↓ then
 WallpaperWorkScheduler.scheduleNextUpdate() → enqueues next WallpaperWorker
+
+WatchdogWorker (PeriodicWork, every 15 min)
+    ↓ queries WorkManager for WALLPAPER_WORK_NAME state
+    ↓ if not ENQUEUED or RUNNING:
+WallpaperWorkScheduler.scheduleNextUpdate() → revives the chain
 ```
 
 ## Why WorkManager?
@@ -50,18 +55,33 @@ Wraps WorkManager enqueuing. Uses `ExistingWorkPolicy.REPLACE` so a re-schedule 
 |---|---|
 | `scheduleNextUpdate()` | Reads config, computes `delay = config.nextUpdate - now` (clamped to 0), enqueues `WallpaperWorker` |
 | `cancelScheduledUpdates()` | Cancels the pending update work |
+| `scheduleWatchdog()` | Enqueues `WatchdogWorker` as periodic work; uses `ExistingPeriodicWorkPolicy.KEEP` so repeated calls are no-ops |
 
-Work name: `"wallpaper_update"` (`WALLPAPER_WORK_NAME`).
+Work names: `"wallpaper_update"` (`WALLPAPER_WORK_NAME`), `"wallpaper_watchdog"` (`WATCHDOG_WORK_NAME`).
+
+## WatchdogWorker (`background/WatchdogWorker.kt`)
+
+Periodic `CoroutineWorker` (15-minute interval) that acts as a dead-man's switch for the one-time update chain.
+
+- Queries WorkManager for the state of `WALLPAPER_WORK_NAME`
+- If no work is `ENQUEUED` or `RUNNING`, calls `scheduler.scheduleNextUpdate()` to revive the chain
+- Uses `getWorkInfosForUniqueWorkFlow().first()` — no extra dependencies required
+- Returns `Result.success()` unconditionally (watching is always a valid outcome)
+
+The chain can die silently from OEM task killers or force-stops that aren't covered by `WallmaticReceiver`. The watchdog bounds the worst-case missed-update window to 15 minutes.
+
+`scheduleWatchdog()` is called from `WallmaticActivity.onCreate()` and from `WallmaticReceiver` on every handled action. The `KEEP` policy means all but the first call are free no-ops.
 
 ## WallmaticReceiver (`background/WallmaticReceiver.kt`)
 
-Handles system events that can invalidate the scheduled update time. All three actions call `scheduleNextUpdate()` with `ExistingWorkPolicy.REPLACE` to correct any drift.
+Handles system events that can invalidate the scheduled update time or wipe WorkManager state entirely. All actions call `scheduleNextUpdate()` + `scheduleWatchdog()` (the `KEEP` policy makes the watchdog call a no-op when it's already running).
 
 | Action | Reason |
 |---|---|
 | `BOOT_COMPLETED` | WorkManager persists work but the calculated delay may be stale after a reboot |
 | `TIME_SET` | User-changed clock shifts the next update time |
 | `TIMEZONE_CHANGED` | Same as above |
+| `MY_PACKAGE_REPLACED` | An app update wipes all pending WorkManager state — both the update chain and the watchdog must be re-established from scratch |
 
 ## SyncManager (`core/SyncManager.kt`)
 

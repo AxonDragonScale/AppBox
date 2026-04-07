@@ -43,6 +43,7 @@ class WallmaticActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             syncManager.syncAlbums()
             scheduler.scheduleNextUpdate()
+            scheduler.scheduleWatchdog()
         }
 
         setContent {

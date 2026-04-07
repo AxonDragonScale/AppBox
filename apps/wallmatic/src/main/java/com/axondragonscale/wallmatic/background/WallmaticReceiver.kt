@@ -18,6 +18,8 @@ import kotlin.system.measureTimeMillis
  * - **ACTION_BOOT_COMPLETED:** Re-kicks the WorkManager chain when the device reboots.
  * - **ACTION_TIME_CHANGED:** Reschedules the update when the device time is changed.
  * - **ACTION_TIMEZONE_CHANGED:** Reschedules the update when the device timezone is changed.
+ * - **ACTION_MY_PACKAGE_REPLACED:** Revives both the update chain and the watchdog after an
+ *   app update wipes all pending WorkManager work.
  *
  * WorkManager survives reboots natively, but this ensures any missed or drifted chain is
  * revived immediately after a system event rather than waiting for the watchdog.
@@ -36,7 +38,11 @@ class WallmaticReceiver : BroadcastReceiver(), KoinComponent {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED -> scheduler.scheduleNextUpdate()
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {
+                scheduler.scheduleNextUpdate()
+                scheduler.scheduleWatchdog()
+            }
         }
     }
 

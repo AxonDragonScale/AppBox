@@ -1,8 +1,10 @@
 package com.axondragonscale.wallmatic.background
 
 import android.content.Context
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
@@ -21,6 +23,7 @@ class WallpaperWorkScheduler(
 
     companion object {
         const val WALLPAPER_WORK_NAME = "wallpaper_update"
+        const val WATCHDOG_WORK_NAME = "wallpaper_watchdog"
     }
 
     private val workManager = WorkManager.getInstance(context)
@@ -57,6 +60,21 @@ class WallpaperWorkScheduler(
     fun cancelScheduledUpdates() {
         this.logD { "Cancelling scheduled updates" }
         workManager.cancelUniqueWork(WALLPAPER_WORK_NAME)
+    }
+
+    /**
+     * Enqueues a periodic watchdog that revives the one-time update chain if it ever goes dead.
+     * Uses KEEP policy so repeated calls (app start, receiver) are no-ops when already scheduled.
+     */
+    fun scheduleWatchdog() {
+        this.logD { "Scheduling watchdog" }
+        val request = PeriodicWorkRequestBuilder<WatchdogWorker>(15, TimeUnit.MINUTES)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            WATCHDOG_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
     }
 
 }
