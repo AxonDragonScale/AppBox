@@ -65,6 +65,10 @@ class JokeRepository(
         return dbClient.getFavoriteJokes().map { it.map { it.toModel() } }
     }
 
+    fun getJokeCount(): Flow<Int> = dbClient.getJokeCount()
+
+    fun getFavoriteCount(): Flow<Int> = dbClient.getFavoriteCount()
+
     suspend fun addToFavorites(jokeId: Int) {
         dbClient.updateFavoriteFlag(jokeId, favorite = true)
     }

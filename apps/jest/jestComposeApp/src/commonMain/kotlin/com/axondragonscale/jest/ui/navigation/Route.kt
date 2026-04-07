@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 object Route {
 
     @Serializable
-    data class Dashboard(val initialTab: Int = 0)
+    data object Dashboard
 
     @Serializable
     data object DevTools

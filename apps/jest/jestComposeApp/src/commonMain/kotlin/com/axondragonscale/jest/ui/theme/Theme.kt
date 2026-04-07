@@ -7,16 +7,64 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+internal val JestDarkColorScheme = darkColorScheme(
+    background = DarkBackground,
+    surface = DarkSurface,
+    surfaceVariant = DarkSurfaceVariant,
+    surfaceContainer = DarkSurface,
+    surfaceContainerLow = DarkBackground,
+    surfaceContainerHigh = DarkSurfaceVariant,
+    outline = DarkBorder,
+    outlineVariant = DarkBorder,
+
+    primary = DarkPrimary,
+    onPrimary = DarkOnPrimary,
+    primaryContainer = DarkPrimaryContainer,
+    onPrimaryContainer = DarkOnBackground,
+
+    secondary = DarkSecondary,
+    onSecondary = DarkOnPrimary,
+    secondaryContainer = DarkSecondaryContainer,
+    onSecondaryContainer = DarkOnBackground,
+
+    error = DarkError,
+    onError = DarkOnPrimary,
+    errorContainer = DarkErrorContainer,
+    onErrorContainer = DarkOnBackground,
+
+    onBackground = DarkOnBackground,
+    onSurface = DarkOnSurface,
+    onSurfaceVariant = DarkTextSecondary,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+internal val JestLightColorScheme = lightColorScheme(
+    background = LightBackground,
+    surface = LightSurface,
+    surfaceVariant = LightSurfaceVariant,
+    surfaceContainer = LightSurface,
+    surfaceContainerLow = LightBackground,
+    surfaceContainerHigh = LightSurfaceVariant,
+    outline = LightBorder,
+    outlineVariant = LightBorder,
+
+    primary = LightPrimary,
+    onPrimary = LightOnPrimary,
+    primaryContainer = LightPrimaryContainer,
+    onPrimaryContainer = LightOnBackground,
+
+    secondary = LightSecondary,
+    onSecondary = LightOnPrimary,
+    secondaryContainer = LightSecondaryContainer,
+    onSecondaryContainer = LightOnBackground,
+
+    error = LightError,
+    onError = LightOnPrimary,
+    errorContainer = LightErrorContainer,
+    onErrorContainer = LightOnBackground,
+
+    onBackground = LightOnBackground,
+    onSurface = LightOnSurface,
+    onSurfaceVariant = LightTextSecondary,
 )
 
 /**
@@ -34,11 +82,11 @@ fun JestTheme(
     content: @Composable () -> Unit,
 ) {
     val resolvedColorScheme = colorScheme
-        ?: if (darkTheme) DarkColorScheme else LightColorScheme
+        ?: if (darkTheme) JestDarkColorScheme else JestLightColorScheme
 
     MaterialTheme(
         colorScheme = resolvedColorScheme,
-        typography = Typography,
+        typography = JestTypography,
         content = content,
     )
 }

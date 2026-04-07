@@ -8,16 +8,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.tooling.preview.Preview
+import com.axondragonscale.jest.ui.util.WindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,9 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.jest.model.Category
@@ -35,11 +37,18 @@ import com.axondragonscale.jest.model.Flags
 import com.axondragonscale.jest.model.JokeType
 import com.axondragonscale.jest.model.Language
 import com.axondragonscale.jest.model.OnePartJoke
-import com.axondragonscale.jest.ui.common.JokeCard
-import com.axondragonscale.jest.ui.component.JestIconButton
+import com.axondragonscale.jest.model.TwoPartJoke
+import com.axondragonscale.jest.ui.common.HeroJokeCard
+import com.axondragonscale.jest.ui.component.FilterChip
+import com.axondragonscale.jest.ui.component.StatCard
+import com.axondragonscale.jest.ui.filter.FilterHost
+import com.axondragonscale.jest.ui.filter.FilterType
+import com.axondragonscale.jest.ui.filter.PrefsVM
+import com.axondragonscale.jest.ui.theme.DarkError
+import com.axondragonscale.jest.ui.theme.DarkSecondary
+import com.axondragonscale.jest.ui.theme.DarkSuccess
 import com.axondragonscale.jest.ui.theme.JestTheme
-import com.axondragonscale.jest.ui.tune.PrefsBottomSheet
-import androidx.compose.ui.tooling.preview.Preview
+
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -47,109 +56,225 @@ import org.koin.compose.viewmodel.koinViewModel
  */
 
 @Composable
-fun Home(vm: HomeVM = koinViewModel()) {
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
-    Home(
-        uiState = uiState,
-        onEvent = { vm.onEvent(it) }
-    )
-}
-
-@Composable
 fun Home(
     modifier: Modifier = Modifier,
-    uiState: HomeUiState,
-    onEvent: (HomeUiEvent) -> Unit,
+    windowSize: WindowSize = WindowSize.Compact,
+    vm: HomeVM = koinViewModel(),
+    prefsVm: PrefsVM = koinViewModel(),
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        HomeHeader(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(top = 16.dp)
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
+    val prefsUiState by prefsVm.uiState.collectAsStateWithLifecycle()
+    var activeFilterType by remember { mutableStateOf<FilterType?>(null) }
+    var categoryChipAnchor by remember { mutableStateOf(IntOffset.Zero) }
+    var flagsChipAnchor by remember { mutableStateOf(IntOffset.Zero) }
+
+    Home(
+        modifier = modifier,
+        uiState = uiState,
+        windowSize = windowSize,
+        categorySelectedCount = prefsUiState.selectedCategories.size,
+        flagsSelectedCount = prefsUiState.selectedBlacklistFlags.size,
+        onEvent = { event ->
+            when (event) {
+                is HomeUiEvent.OpenCategoryFilter -> activeFilterType = FilterType.Category
+                is HomeUiEvent.OpenFlagsFilter -> activeFilterType = FilterType.Flags
+                is HomeUiEvent.CloseFilter -> activeFilterType = null
+                else -> vm.onEvent(event)
+            }
+        },
+        onCategoryChipPositioned = { categoryChipAnchor = it },
+        onFlagsChipPositioned = { flagsChipAnchor = it },
+    )
+
+    activeFilterType?.let { filterType ->
+        FilterHost(
+            filterType = filterType,
+            windowSize = windowSize,
+            anchorOffset = when (filterType) {
+                FilterType.Category -> categoryChipAnchor
+                FilterType.Flags -> flagsChipAnchor
+            },
+            onDismiss = { activeFilterType = null },
         )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        (uiState as? HomeUiState.Success).let { uiState ->
-            JokeCard(
-                joke = uiState?.joke,
-                shouldAnimateJoke = uiState?.shouldAnimateJoke ?: false,
-                onAnimationComplete = { onEvent(HomeUiEvent.JokeAnimationComplete) },
-                onFavoriteToggled = {
-                    uiState?.joke?.let { joke ->
-                        onEvent(HomeUiEvent.FavoriteToggled(joke, it))
-                    }
-                },
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        var isTuneBottomSheetOpen by remember { mutableStateOf(false) }
-        JokeControls(
-            onTuneClick = { isTuneBottomSheetOpen = true },
-            onRandomClick = { onEvent(HomeUiEvent.NewJoke) }
-        )
-
-        if (isTuneBottomSheetOpen)
-            PrefsBottomSheet(onDismiss = { isTuneBottomSheetOpen = false })
-
-        Spacer(modifier = Modifier.weight(1.5f))
     }
 }
 
 @Composable
-private fun JokeControls(
+private fun Home(
     modifier: Modifier = Modifier,
-    onTuneClick: () -> Unit,
-    onRandomClick: () -> Unit,
+    uiState: HomeUiState,
+    windowSize: WindowSize,
+    categorySelectedCount: Int = 0,
+    flagsSelectedCount: Int = 0,
+    onEvent: (HomeUiEvent) -> Unit,
+    onCategoryChipPositioned: (IntOffset) -> Unit = {},
+    onFlagsChipPositioned: (IntOffset) -> Unit = {},
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+    val isCompact = windowSize == WindowSize.Compact
+    val horizontalPadding = when (windowSize) {
+        WindowSize.Compact -> 20.dp
+        WindowSize.Medium -> 24.dp
+        WindowSize.Expanded -> 32.dp
+    }
+
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .then(if (isCompact) Modifier.statusBarsPadding() else Modifier)
+            .padding(horizontal = horizontalPadding)
+            .padding(top = 20.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        JestIconButton(icon = Icons.Default.Tune, onClick = onTuneClick)
-        Spacer(modifier = Modifier.width(16.dp))
-        JestIconButton(icon = Icons.Default.Shuffle, onClick = onRandomClick)
+        // Header — only shown in compact (mobile) mode; tablet/desktop use the top bar
+        if (isCompact) {
+            HomeHeader()
+        }
+
+        // Filter chips row
+        FilterRow(
+            categorySelectedCount = categorySelectedCount,
+            flagsSelectedCount = flagsSelectedCount,
+            onEvent = onEvent,
+            onCategoryChipPositioned = onCategoryChipPositioned,
+            onFlagsChipPositioned = onFlagsChipPositioned,
+        )
+
+        // Hero joke card
+        HeroJokeCard(
+            joke = uiState.joke,
+            shouldAnimateJoke = uiState.shouldAnimateJoke,
+            onAnimationComplete = { onEvent(HomeUiEvent.JokeAnimationComplete) },
+            onFavoriteToggled = { favorite ->
+                uiState.joke?.let { onEvent(HomeUiEvent.FavoriteToggled(it, favorite)) }
+            },
+            onNextJoke = { onEvent(HomeUiEvent.NewJoke) },
+        )
+
+        // Stats row
+        StatsRow(
+            jokeCount = uiState.jokeCount,
+            favoriteCount = uiState.favoriteCount,
+        )
     }
 }
 
 @Composable
 private fun HomeHeader(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        MaterialTheme.colorScheme.secondaryContainer,
-                    )
-                )
-            )
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        contentAlignment = Alignment.Center
+    Column(modifier = modifier) {
+        Text(
+            text = "Jest",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Text(
+            text = "Your daily dose of humour",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FilterRow(
+    modifier: Modifier = Modifier,
+    categorySelectedCount: Int = 0,
+    flagsSelectedCount: Int = 0,
+    onEvent: (HomeUiEvent) -> Unit,
+    onCategoryChipPositioned: (IntOffset) -> Unit = {},
+    onFlagsChipPositioned: (IntOffset) -> Unit = {},
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Jest",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.ExtraBold,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "Your daily dose of humour",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontWeight = FontWeight.Medium,
+        FilterChip(
+            modifier = Modifier.onGloballyPositioned { coords ->
+                val pos = coords.positionInWindow()
+                onCategoryChipPositioned(
+                    IntOffset(pos.x.toInt(), (pos.y + coords.size.height).toInt())
+                )
+            },
+            label = "Category",
+            icon = Icons.Default.LocalOffer,
+            selectedCount = categorySelectedCount,
+            onClick = { onEvent(HomeUiEvent.OpenCategoryFilter) },
+        )
+        FilterChip(
+            modifier = Modifier.onGloballyPositioned { coords ->
+                val pos = coords.positionInWindow()
+                onFlagsChipPositioned(
+                    IntOffset(pos.x.toInt(), (pos.y + coords.size.height).toInt())
+                )
+            },
+            label = "Flags",
+            icon = Icons.Default.Shield,
+            selectedCount = flagsSelectedCount,
+            onClick = { onEvent(HomeUiEvent.OpenFlagsFilter) },
+        )
+    }
+}
+
+@Composable
+private fun StatsRow(
+    modifier: Modifier = Modifier,
+    jokeCount: Int,
+    favoriteCount: Int,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        StatCard(
+            modifier = Modifier.weight(1f),
+            value = jokeCount.toString(),
+            label = "Seen",
+            valueColor = DarkSuccess,
+        )
+        StatCard(
+            modifier = Modifier.weight(1f),
+            value = favoriteCount.toString(),
+            label = "Liked",
+            valueColor = DarkError,
+        )
+        StatCard(
+            modifier = Modifier.weight(1f),
+            value = "—",
+            label = "Streak",
+            valueColor = DarkSecondary,
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HomePreview() {
+    JestTheme(darkTheme = true) {
+        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+            Home(
+                uiState = HomeUiState(
+                    joke = TwoPartJoke(
+                        id = 1,
+                        lang = Language.English,
+                        category = Category.Pun,
+                        flags = Flags(false, false, false, false, false, false),
+                        safe = true,
+                        favorite = false,
+                        timestamp = 1L,
+                        type = JokeType.TwoPart,
+                        setup = "What happened to the man who got behind on payments to his exorcist?",
+                        delivery = "He got repossessed.",
+                    ),
+                    isLoading = false,
+                    jokeCount = 142,
+                    favoriteCount = 38,
+                ),
+                windowSize = WindowSize.Compact,
+                onEvent = {},
             )
         }
     }
@@ -157,24 +282,42 @@ private fun HomeHeader(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-private fun HomePreview() {
-    JestTheme {
+private fun HomeLoadingPreview() {
+    JestTheme(darkTheme = true) {
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
             Home(
-                modifier = Modifier,
-                uiState = HomeUiState.Success(
+                uiState = HomeUiState(isLoading = true),
+                windowSize = WindowSize.Compact,
+                onEvent = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun HomeOnePartPreview() {
+    JestTheme(darkTheme = true) {
+        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+            Home(
+                uiState = HomeUiState(
                     joke = OnePartJoke(
-                        id = 1,
+                        id = 2,
                         lang = Language.English,
-                        category = Category.Pun,
+                        category = Category.Programming,
                         flags = Flags(false, false, false, false, false, false),
                         safe = true,
-                        timestamp = 1,
+                        favorite = true,
+                        timestamp = 1L,
                         type = JokeType.Single,
-                        joke = "Lorem Ipsum"
-                    )
+                        joke = "Why don't scientists trust atoms? Because they make up everything.",
+                    ),
+                    isLoading = false,
+                    jokeCount = 5,
+                    favoriteCount = 2,
                 ),
-                onEvent = {}
+                windowSize = WindowSize.Compact,
+                onEvent = {},
             )
         }
     }

@@ -1,4 +1,4 @@
-package com.axondragonscale.jest.ui.tune
+package com.axondragonscale.jest.ui.filter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -48,6 +48,14 @@ class PrefsVM(
                     event.selectedBlacklistFlags.map { BlacklistFlag.fromOrdinal(it) }
                 )
             }
+
+            is PrefsUiEvent.CategoryCleared -> {
+                prefsRepository.jokeCategories.set(emptyList())
+            }
+
+            is PrefsUiEvent.FlagsCleared -> {
+                prefsRepository.blacklistFlags.set(emptyList())
+            }
         }
     }
 
@@ -63,5 +71,4 @@ class PrefsVM(
                 selectedBlacklistFlags = blacklistFlags,
             )
         }
-
 }

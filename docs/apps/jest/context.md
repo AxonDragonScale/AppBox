@@ -15,7 +15,7 @@ Jest is a joke/humor app within AppBox that fetches and displays jokes from an e
 ## Architecture
 
 - **UI Framework**: Compose Multiplatform with Material3
-- **Navigation**: `NavHost` with `HorizontalPager` — `JestApp` hosts a `NavHost`; `MainScreen` is the dashboard destination containing a `HorizontalPager` with a custom bottom tab bar
+- **Navigation**: `NavHost` with manual `when` block — `JestApp` hosts a `NavHost`; `MainScreen` is the adaptive dashboard destination rendering content via `when (activeDestination)` (no HorizontalPager)
 - **Dependency Injection**: Koin — each platform entry point starts Koin with `CommonsModule + JestModule`
 - **State Management**: ViewModel + StateFlow (`collectAsStateWithLifecycle`)
 - **Persistence**: Room (KMP) + DataStore Preferences (via commons `createPreferencesDataStore`)
@@ -45,7 +45,7 @@ com.axondragonscale.jest/
 │   ├── JestDatabase.kt          # @Database class + expect fun createJestDatabase()
 │   ├── JestDbClient.kt          # Database operations wrapper
 │   ├── converter/               # Room type converters
-│   ├── dao/JokeDao.kt           # Data Access Object
+│   ├── dao/JokeDao.kt           # Data Access Object (includes getJokeCount, getFavoriteCount)
 │   ├── entity/JokeEntity.kt     # Room entity
 │   └── mapper/JokeMapper.kt     # Entity ↔ model mappers
 ├── di/
@@ -63,21 +63,23 @@ com.axondragonscale.jest/
 │   ├── mapper/                  # API response → entity mappers
 │   └── response/                # API response data classes
 ├── repository/
-│   ├── JokeRepository.kt        # Core joke data operations
+│   ├── JokeRepository.kt        # Core joke data operations (+ getJokeCount, getFavoriteCount)
 │   └── PrefsRepository.kt       # User preferences via DataStore
 └── ui/
     ├── JestApp.kt               # Root NavHost composable
-    ├── MainScreen.kt            # HorizontalPager dashboard
-    ├── bottombar/               # Tab definitions + BottomTabBar composable
-    ├── common/JokeCard.kt       # Shared joke card component
-    ├── component/               # Reusable UI components (buttons, tags, selectors, shimmer)
+    ├── MainScreen.kt            # Adaptive shell: Sidebar (tablet/desktop) or BottomBar (mobile)
+    ├── common/
+    │   ├── HeroJokeCard.kt      # Full-size joke card with shimmer loading state (Home screen)
+    │   └── LibraryJokeCard.kt   # Compact card with category badge + timestamp (Library screen)
+    ├── component/               # Reusable UI: FilterChip, StatCard, MultiSelector, Shimmer, etc.
     ├── devtools/JestDevTools.kt # Jest-specific DevTools screen (uses commons DevToolsScreen)
-    ├── home/                    # Home screen: VM + UiState + UiEvent + composable
-    ├── list/                    # Favorites & History screens: shared JokeList composable + VMs
-    ├── navigation/Route.kt      # Typed navigation routes
-    ├── settings/                # Settings screen: VM + UiState + UiEvent + composable
-    ├── theme/                   # Color.kt, Type.kt, Theme.kt (common JestTheme)
-    └── tune/                    # Prefs bottom sheet: VM + UiState + UiEvent + composable
+    ├── filter/                  # Filter system: PrefsVM + FilterBottomSheet + FilterPopover + FilterHost
+    ├── home/                    # Home screen: HomeVM + HomeUiState + HomeUiEvent + Home composable
+    ├── library/                 # Library screen: LibraryVM + LibraryUiState + LibraryUiEvent + Library composable
+    ├── navigation/              # Destination sealed class, Route, BottomBar, Sidebar
+    ├── settings/                # Settings screen: SettingsVM + SettingsUiState + SettingsComponents
+    ├── theme/                   # Color.kt, Type.kt, Theme.kt (JestDarkColorScheme + JestLightColorScheme)
+    └── util/                    # WindowSize enum + rememberWindowSize() (adaptive library)
 ```
 
 ### `commonMain/composeResources`
@@ -129,27 +131,66 @@ com.axondragonscale.jest/
 ### Navigation
 
 `JestApp` hosts a `NavHost` with two destinations:
-- `Route.Dashboard` → `MainScreen` (HorizontalPager with four tabs)
+- `Route.Dashboard` → `MainScreen` (adaptive shell with 3 destinations)
 - `Route.DevTools` → `JestDevTools`
 
-`MainScreen` uses `HorizontalPager` (not Navigation Compose) to switch between tabs. The `BottomTabBar` floats over the pager content.
+`MainScreen` renders content via `when (activeDestination)` — no HorizontalPager. Navigation chrome adapts to window size:
+- **Compact** (mobile): floating `BottomBar` over content
+- **Medium** (tablet): fixed 240dp `Sidebar` on the left
+- **Expanded** (desktop): fixed 280dp `Sidebar` on the left
 
-### Tabs
+Window size is determined by `rememberWindowSize()` from `ui/util/WindowSizeUtils.kt`, which uses `currentWindowAdaptiveInfo()` from `org.jetbrains.compose.material3.adaptive:adaptive:1.3.0-alpha02`.
 
-| Position | Tab | Screen |
-|----------|-----|--------|
-| 0 | Home | `Home` |
-| 1 | Favorites | `Favorites` (via `JokeList`) |
-| 2 | History | `History` (via `JokeList`) |
-| 3 | Settings | `Settings` |
+### Destinations
+
+| Destination | Screen | Notes |
+|-------------|--------|-------|
+| `Destination.Home` | `Home` | Hero joke card, stats, filter chips |
+| `Destination.Library` | `Library` | All jokes / Favorites toggle, LazyColumn (mobile) or LazyVerticalGrid (tablet+) |
+| `Destination.Settings` | `Settings` | Single-column (mobile), 2-column (tablet), 3-column (desktop) |
 
 ### Theme
 
 `JestTheme` in `commonMain` accepts `darkTheme: Boolean` and an optional `colorScheme: ColorScheme?` override:
-- **Android**: `JestActivity` resolves dynamic Material You colors (API 31+) and passes them as the override
-- **Desktop / iOS**: call `JestTheme` without an override; static purple-based scheme is used
+- **Android**: `JestActivity` resolves dynamic Material You colors (API 31+) and passes them as the override. Falls back to `JestDarkColorScheme` / `JestLightColorScheme` for system bar tinting when dynamic color is unavailable.
+- **Desktop / iOS**: call `JestTheme` without an override; static dark/light scheme is used.
+
+`JestDarkColorScheme` and `JestLightColorScheme` are `internal val` in `Theme.kt` (indigo-primary, amber-secondary, custom surface tokens).
 
 `isSystemInDarkTheme()` is the default for `darkTheme` on all platforms.
+
+### Filter System
+
+The filter UI adapts based on `WindowSize`:
+- **Compact**: `FilterBottomSheet` — `ModalBottomSheet` sliding up from the bottom
+- **Medium / Expanded**: `FilterPopover` — floating `Popup` card (320dp wide)
+
+`FilterHost` is the single call-site API — callers pass `filterType`, `windowSize`, and `onDismiss`; it selects the right surface automatically.
+
+`FilterType` is a sealed interface with two objects:
+- `FilterType.Category` — renders the Category sheet; accent color is indigo (primary)
+- `FilterType.Flags` — renders the Exclude Flags sheet; accent color is amber (secondary)
+
+Each sheet renders a vertical list of **checkbox rows** (not pill chips): 52dp tall, 10dp corner radius, 16dp horizontal padding. Selected rows use `DarkSurface` background; the right-side checkbox is a 22×22dp rounded square — filled with the accent color and showing a check icon when selected, or dark with a `#3A3A40` border when unselected.
+
+The header row shows the filter title (Fraunces `titleLarge`) on the left and a "Clear" text link (accent-colored) on the right. A muted subtitle sits beneath. The "Apply Filters" CTA button at the bottom is full-width, 52dp tall, 14dp corner radius, filled with the accent color.
+
+`PrefsVM` / `PrefsUiState` / `PrefsUiEvent` live in `ui/filter/` (moved from old `ui/tune/`).
+`PrefsUiEvent` includes `CategoryCleared` and `FlagsCleared` to reset selections from the "Clear" button.
+
+### Library Screen
+
+Replaces the old separate `Favorites` and `History` tabs. `LibraryVM` exposes a single flow toggled by `LibraryFilter` enum (`All`, `Favorites`). Layout uses `LazyColumn` on Compact and `LazyVerticalGrid(columns = 2)` on Medium/Expanded.
+
+### Stats (Home Screen)
+
+`HomeUiState` carries `jokeCount: Int` and `favoriteCount: Int` sourced from `JokeDao.getJokeCount()` and `JokeDao.getFavoriteCount()` (both `Flow<Int>`). Day streak shows `—` placeholder (deferred).
+
+### Window Size
+
+`WindowSize` is a project-local `enum class { Compact, Medium, Expanded }` in `ui/util/WindowSize.kt`.
+
+`rememberWindowSize()` in `ui/util/WindowSizeUtils.kt` calls `currentWindowAdaptiveInfo()` and checks breakpoints via `WindowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)` / `WIDTH_DP_EXPANDED_LOWER_BOUND`. This avoids the broken `androidx.compose.material3.windowsizeclass.WindowWidthSizeClass` companion object that was unresolvable in `commonMain`.
 
 ### `expect`/`actual` Summary
 
@@ -176,8 +217,10 @@ Both carry: `id`, `lang`, `category`, `type`, `flags`, `safe`, `favorite`, `time
 |--------|-------------|
 | `getCurrentJoke()` | Returns cached joke or fetches new one if older than 1 day |
 | `getNewJoke()` | Always fetches from API using current user preferences |
-| `getAllJokes()` | Flow of all jokes (History tab) |
-| `getFavoriteJokes()` | Flow of favorited jokes (Favorites tab) |
+| `getAllJokes()` | Flow of all jokes (Library — All filter) |
+| `getFavoriteJokes()` | Flow of favorited jokes (Library — Favorites filter) |
+| `getJokeCount()` | Flow of total joke count (Home stats) |
+| `getFavoriteCount()` | Flow of favorite joke count (Home stats) |
 | `addToFavorites(id)` | Marks joke as favorite in DB |
 | `removeFromFavorites(id)` | Unmarks favorite in DB |
 
@@ -208,7 +251,7 @@ Fully in `commonMain`. Wires:
 - `createJestDatabase()` → `JestDatabase` singleton
 - `JestDatabase.getJokeDao()` → `JokeDao` singleton
 - `JestDbClient`, `JokeApiClient`, `PrefsRepository`, `JokeRepository` singletons
-- `HomeVM`, `FavoritesVM`, `HistoryVM`, `PrefsVM`, `SettingsVM` viewModels
+- `HomeVM`, `LibraryVM`, `PrefsVM`, `SettingsVM` viewModels (`FavoritesVM` and `HistoryVM` removed)
 
 ### JestDevTools
 
@@ -263,10 +306,11 @@ Database version: `1`. Schema exported to `jestComposeApp/schemas/`.
 - Room runtime + SQLite bundled
 - Ktor core + content negotiation + kotlinx.json serialization
 - Compose Multiplatform (runtime, foundation, material3, ui, resources, tooling-preview)
+- `org.jetbrains.compose.material3.adaptive:adaptive:1.3.0-alpha02` — `currentWindowAdaptiveInfo()` for window size
 - `androidx.lifecycle` viewmodel-compose + runtime-compose
 - Navigation Compose (multiplatform)
 - Koin BOM + `koin-core` + `koin-compose` + `koin-compose-viewmodel`
-- `kotlinx-coroutines-core`, `kotlinx-serialization-json`
+- `kotlinx-coroutines-core`, `kotlinx-serialization-json`, `kotlinx-datetime`
 
 **`androidMain`** adds: splash screen, Glance, `koin-android` bundle, OkHttp Ktor engine, Chucker, `kotlinx-coroutines-android`
 
@@ -278,11 +322,12 @@ Database version: `1`. Schema exported to `jestComposeApp/schemas/`.
 
 ## Code Conventions
 
-- ViewModels: `HomeVM`, `FavoritesVM`, `HistoryVM`, `PrefsVM`, `SettingsVM`
+- ViewModels: `HomeVM`, `LibraryVM`, `PrefsVM`, `SettingsVM`
 - `koinViewModel()` from `org.koin.compose.viewmodel` (KMP-compatible, not `koin.androidx.compose`)
-- `@Preview` from `org.jetbrains.compose.ui.tooling.preview` (CMP, not `androidx.compose.ui.tooling.preview`)
+- `@Preview` from `androidx.compose.ui.tooling.preview` (NOT `org.jetbrains.compose.ui.tooling.preview` — the CMP version is not usable in commonMain for these files)
 - Single `@Preview` per composable — no `uiMode` dark-mode variants (Android-only API)
 - `expect`/`actual` file naming: `MyFile.kt` (common), `MyFile.android.kt`, `MyFile.jvm.kt`, `MyFile.ios.kt`
+- All screen composables accept `windowSize: WindowSize` (not `WindowWidthSizeClass`) for adaptive layout
 
 ## Related Context
 

@@ -5,13 +5,10 @@ import com.axondragonscale.jest.model.IJoke
 /**
  * Created by Ronak Harkhani on 01/04/24
  */
-sealed interface HomeUiState {
-
-    data object Loading : HomeUiState
-
-    data class Success(
-        val joke: IJoke,
-        val shouldAnimateJoke: Boolean = true,
-    ) : HomeUiState
-
-}
+data class HomeUiState(
+    val joke: IJoke? = null,
+    val isLoading: Boolean = true,
+    val shouldAnimateJoke: Boolean = true,
+    val jokeCount: Int = 0,
+    val favoriteCount: Int = 0,
+)

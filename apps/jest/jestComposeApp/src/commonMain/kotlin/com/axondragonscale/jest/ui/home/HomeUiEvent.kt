@@ -16,4 +16,10 @@ sealed interface HomeUiEvent {
         val favorite: Boolean,
     ) : HomeUiEvent
 
+    data object OpenCategoryFilter : HomeUiEvent
+
+    data object OpenFlagsFilter : HomeUiEvent
+
+    data object CloseFilter : HomeUiEvent
+
 }

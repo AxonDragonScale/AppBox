@@ -38,4 +38,10 @@ interface JokeDao {
     @Query("DELETE FROM joke WHERE 1")
     suspend fun deleteAllJokes()
 
+    @Query("SELECT COUNT(*) FROM joke")
+    fun getJokeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM joke WHERE favorite = 1")
+    fun getFavoriteCount(): Flow<Int>
+
 }

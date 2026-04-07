@@ -1,4 +1,4 @@
-package com.axondragonscale.jest.ui.tune
+package com.axondragonscale.jest.ui.filter
 
 import com.axondragonscale.jest.model.BlacklistFlag
 import com.axondragonscale.jest.model.Category

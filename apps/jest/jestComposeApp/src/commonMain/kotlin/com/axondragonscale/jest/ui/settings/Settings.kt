@@ -2,13 +2,12 @@ package com.axondragonscale.jest.ui.settings
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -18,24 +17,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.axondragonscale.jest.ui.util.WindowSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,9 +43,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.axondragonscale.commons.AppInfo
 import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.icon
-import com.axondragonscale.jest.ui.theme.JestTheme
 import com.axondragonscale.jest.resources.Res
 import com.axondragonscale.jest.resources.ic_github
+import com.axondragonscale.jest.ui.theme.DarkSecondary
+import com.axondragonscale.jest.ui.theme.DarkTextTertiary
+import com.axondragonscale.jest.ui.theme.JestTheme
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
@@ -67,6 +62,7 @@ private const val LINK_JEST = "https://github.com/AxonDragonScale/Jest"
 @Composable
 fun Settings(
     modifier: Modifier = Modifier,
+    windowSize: WindowSize = WindowSize.Compact,
     onNavigateToDevTools: () -> Unit,
 ) {
     val vm: SettingsVM = koinViewModel()
@@ -74,12 +70,13 @@ fun Settings(
     Settings(
         modifier = modifier,
         uiState = uiState,
+        windowSize = windowSize,
         onEvent = { event ->
             when (event) {
                 SettingsUiEvent.NavigateToDevTools -> onNavigateToDevTools()
                 else -> vm.onEvent(event)
             }
-        }
+        },
     )
 }
 
@@ -87,78 +84,143 @@ fun Settings(
 private fun Settings(
     modifier: Modifier = Modifier,
     uiState: SettingsUiState,
+    windowSize: WindowSize,
     onEvent: (SettingsUiEvent) -> Unit,
 ) {
+    val isCompact = windowSize == WindowSize.Compact
+    val isExpanded = windowSize == WindowSize.Expanded
+    val horizontalPadding = when (windowSize) {
+        WindowSize.Compact -> 20.dp
+        WindowSize.Medium -> 24.dp
+        WindowSize.Expanded -> 32.dp
+    }
+
     val scrollState = rememberScrollState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
             .verticalScroll(scrollState)
+            .then(if (isCompact) Modifier.statusBarsPadding() else Modifier)
+            .padding(horizontal = horizontalPadding)
+            .padding(top = 20.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        SettingsHeader(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(top = 16.dp)
-        )
+        // Screen title (mobile only — tablet/desktop use top bar)
+        if (isCompact) {
+            SettingsTitle()
+        }
 
-        AppearanceSection(
-            modifier = Modifier.padding(top = 24.dp),
-            uiMode = uiState.uiMode,
-            dynamicTheme = uiState.dynamicTheme,
-            onUiModeUpdated = { onEvent(SettingsUiEvent.UIModeUpdated(it)) },
-            onDynamicThemeToggled = { onEvent(SettingsUiEvent.DynamicThemeToggled(it)) },
-        )
+        when {
+            isExpanded -> {
+                // Desktop: 3-column layout
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    AppearanceSection(
+                        modifier = Modifier.weight(1f),
+                        uiMode = uiState.uiMode,
+                        dynamicTheme = uiState.dynamicTheme,
+                        onUiModeUpdated = { onEvent(SettingsUiEvent.UIModeUpdated(it)) },
+                        onDynamicThemeToggled = { onEvent(SettingsUiEvent.DynamicThemeToggled(it)) },
+                    )
+                    AboutSection(modifier = Modifier.weight(1f))
+                    DevToolsSection(
+                        modifier = Modifier.weight(1f),
+                        onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) },
+                    )
+                }
+            }
 
-        AboutSection(
-            modifier = Modifier.padding(top = 16.dp),
-        )
+            !isCompact -> {
+                // Tablet: 2-column layout (Appearance left, About + DevTools right)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    AppearanceSection(
+                        modifier = Modifier.weight(1f),
+                        uiMode = uiState.uiMode,
+                        dynamicTheme = uiState.dynamicTheme,
+                        onUiModeUpdated = { onEvent(SettingsUiEvent.UIModeUpdated(it)) },
+                        onDynamicThemeToggled = { onEvent(SettingsUiEvent.DynamicThemeToggled(it)) },
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        AboutSection()
+                        DevToolsSection(
+                            onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) },
+                        )
+                    }
+                }
+            }
 
-        DevToolsSection(
-            modifier = Modifier.padding(top = 16.dp),
-            onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) },
-        )
-
-        Spacer(modifier = Modifier.height(100.dp))
+            else -> {
+                // Mobile: single column stacked
+                AppearanceSection(
+                    uiMode = uiState.uiMode,
+                    dynamicTheme = uiState.dynamicTheme,
+                    onUiModeUpdated = { onEvent(SettingsUiEvent.UIModeUpdated(it)) },
+                    onDynamicThemeToggled = { onEvent(SettingsUiEvent.DynamicThemeToggled(it)) },
+                )
+                AboutSection()
+                DevToolsSection(
+                    onOpenDevTools = { onEvent(SettingsUiEvent.NavigateToDevTools) },
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun SettingsHeader(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
+private fun SettingsTitle(modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = "Settings",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
         )
+        Text(
+            text = "Customize your experience",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SectionLabel(
+    modifier: Modifier = Modifier,
+    text: String,
+) {
+    Text(
+        modifier = modifier.padding(bottom = 8.dp, start = 4.dp),
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = DarkTextTertiary,
+        letterSpacing = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Sp),
+    )
+}
+
+@Composable
+private fun SettingsCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Settings",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.ExtraBold,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Customize your experience",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
-        }
+        content()
     }
 }
 
@@ -170,152 +232,105 @@ private fun AppearanceSection(
     onUiModeUpdated: (UIMode) -> Unit,
     onDynamicThemeToggled: (Boolean) -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp),
-            text = "Appearance",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column {
-                SettingsCard(
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Filled.Brightness6,
-                            contentDescription = "UI Mode",
-                        )
-                    },
-                    headlineContent = { Text(text = "Dark Mode") },
-                    supportingContent = { Text(text = "Easy on the eyes") },
-                    trailingContent = {
-                        SingleChoiceSegmentedButtonRow(
-                            modifier = Modifier.size(width = 140.dp, height = 32.dp),
-                        ) {
-                            UIMode.entries.forEachIndexed { index, mode ->
-                                val isActive = mode == uiMode
-                                SegmentedButton(
-                                    selected = isActive,
-                                    onClick = { onUiModeUpdated(mode) },
-                                    label = {
-                                        Icon(
-                                            imageVector = mode.icon,
-                                            contentDescription = mode.displayName,
-                                            tint = if (isActive) MaterialTheme.colorScheme.primary
-                                            else LocalContentColor.current
-                                        )
-                                    },
-                                    icon = { /* Don't show tick */ },
-                                    shape = SegmentedButtonDefaults.itemShape(index, UIMode.entries.size),
-                                    colors = SegmentedButtonDefaults.colors()
-                                )
-                            }
+    Column(modifier = modifier) {
+        SectionLabel(text = "APPEARANCE")
+        SettingsCard {
+            SettingsToggleRow(
+                icon = Icons.Default.WbSunny,
+                iconTint = MaterialTheme.colorScheme.primary,
+                title = "Dark Mode",
+                description = "Easy on the eyes",
+                checked = uiMode == UIMode.DARK,
+                onCheckedChange = {
+                    onUiModeUpdated(if (it) UIMode.DARK else UIMode.LIGHT)
+                },
+            )
+            SettingsDivider()
+            SettingsLinkRow(
+                icon = Icons.Default.WbSunny,
+                iconTint = MaterialTheme.colorScheme.primary,
+                title = "UI Mode",
+                description = uiMode.displayName,
+                showChevron = false,
+                trailingContent = {
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.size(width = 120.dp, height = 32.dp),
+                    ) {
+                        UIMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                selected = mode == uiMode,
+                                onClick = { onUiModeUpdated(mode) },
+                                label = {
+                                    androidx.compose.material3.Icon(
+                                        imageVector = mode.icon,
+                                        contentDescription = mode.displayName,
+                                    )
+                                },
+                                icon = { /* no tick */ },
+                                shape = SegmentedButtonDefaults.itemShape(index, UIMode.entries.size),
+                            )
                         }
                     }
-                            )
-
-                SettingsCard(
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Filled.Palette,
-                            contentDescription = "Dynamic Theme",
-                        )
-                    },
-                    headlineContent = { Text(text = "Dynamic Theme") },
-                    supportingContent = { Text(text = "Use Material You") },
-                    trailingContent = {
-                        Switch(
-                            checked = dynamicTheme,
-                            onCheckedChange = onDynamicThemeToggled,
-                        )
-                    }
-                )
-            }
+                },
+            )
+            SettingsDivider()
+            SettingsToggleRow(
+                icon = Icons.Default.Palette,
+                iconTint = MaterialTheme.colorScheme.primary,
+                title = "Dynamic Theme",
+                description = "Use Material You",
+                checked = dynamicTheme,
+                onCheckedChange = onDynamicThemeToggled,
+            )
         }
     }
 }
 
 @Composable
-private fun AboutSection(
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp),
-            text = "About",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column {
-                val uriHandler = LocalUriHandler.current
-
-                SettingsCard(
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Filled.Android,
-                            contentDescription = "Android",
-                        )
-                    },
-                    headlineContent = { Text(text = "Jest") },
-                    supportingContent = { Text(text = "Version ${AppInfo.versionName}") }
-                )
-
-                SettingsCard(
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Author",
-                        )
-                    },
-                    headlineContent = { Text(text = "Developer") },
-                    supportingContent = { Text(text = "Ronak Harkhani") }
-                )
-
-                SettingsCard(
-                    onClick = { uriHandler.openUri(LINK_GITHUB) },
-                    leadingContent = {
-                        Image(
-                            modifier = Modifier.size(24.dp),
-                            painter = painterResource(Res.drawable.ic_github),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
-                        )
-                    },
-                    headlineContent = { Text(text = "Github") },
-                    supportingContent = { Text(text = "AxonDragonScale") },
-                )
-
-
-                SettingsCard(
-                    onClick = { uriHandler.openUri(LINK_JEST) },
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                            contentDescription = "Open Source Code",
-                        )
-                    },
-                    headlineContent = { Text(text = "Source Code") },
-                )
-            }
+private fun AboutSection(modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
+    Column(modifier = modifier) {
+        SectionLabel(text = "ABOUT")
+        SettingsCard {
+            SettingsLinkRow(
+                icon = Icons.Default.Android,
+                iconTint = DarkSecondary,
+                title = "Jest",
+                description = "Version ${AppInfo.versionName}",
+                showChevron = false,
+            )
+            SettingsDivider()
+            SettingsLinkRow(
+                icon = Icons.Default.Person,
+                iconTint = DarkSecondary,
+                title = "Developer",
+                description = "Ronak Harkhani",
+                showChevron = false,
+            )
+            SettingsDivider()
+            SettingsLinkRow(
+                icon = Icons.Default.Info,
+                iconTint = DarkSecondary,
+                title = "Github",
+                description = "AxonDragonScale",
+                trailingContent = {
+                    Image(
+                        modifier = Modifier.size(20.dp),
+                        painter = painterResource(Res.drawable.ic_github),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
+                    )
+                },
+                onClick = { uriHandler.openUri(LINK_GITHUB) },
+            )
+            SettingsDivider()
+            SettingsLinkRow(
+                icon = Icons.AutoMirrored.Filled.OpenInNew,
+                iconTint = DarkSecondary,
+                title = "Source Code",
+                description = "View on GitHub",
+                onClick = { uriHandler.openUri(LINK_JEST) },
+            )
         }
     }
 }
@@ -325,86 +340,30 @@ private fun DevToolsSection(
     modifier: Modifier = Modifier,
     onOpenDevTools: () -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            modifier = Modifier.padding(bottom = 12.dp, start = 4.dp),
-            text = "Dev Tools",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            SettingsCard(
+    Column(modifier = modifier) {
+        SectionLabel(text = "DEV TOOLS")
+        SettingsCard {
+            SettingsLinkRow(
+                icon = Icons.Default.BugReport,
+                iconTint = MaterialTheme.colorScheme.primary,
+                title = "Open Dev Tools",
+                description = "Debug utilities and settings",
                 onClick = onOpenDevTools,
-                leadingContent = {
-                    Icon(
-                        imageVector = Icons.Filled.Android,
-                        contentDescription = "Dev Tools",
-                    )
-                },
-                headlineContent = { Text(text = "Open Dev Tools") },
-                supportingContent = { Text(text = "Debug utilities and settings") },
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                        contentDescription = null,
-                    )
-                }
             )
         }
     }
 }
 
-@Composable
-private fun SettingsCard(
-    modifier: Modifier = Modifier,
-    leadingContent: @Composable (() -> Unit)? = null,
-    headlineContent: @Composable () -> Unit,
-    supportingContent: @Composable (() -> Unit)? = null,
-    trailingContent: @Composable (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null
-) {
-    ListItem(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-        leadingContent = leadingContent,
-        headlineContent = {
-            val style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-            CompositionLocalProvider(LocalTextStyle provides style) {
-                headlineContent()
-            }
-        },
-        supportingContent = {
-            val style = MaterialTheme.typography.labelSmall
-            CompositionLocalProvider(LocalTextStyle provides style) {
-                supportingContent?.invoke()
-            }
-        },
-        trailingContent = trailingContent,
-        colors = ListItemDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        )
-    )
-}
-
 @Preview
 @Composable
-private fun Preview() {
-    JestTheme {
+private fun SettingsPreview() {
+    JestTheme(darkTheme = true) {
         val uiState by remember { mutableStateOf(SettingsUiState()) }
         Settings(
             modifier = Modifier.background(MaterialTheme.colorScheme.background),
             uiState = uiState,
-            onEvent = { },
+            windowSize = WindowSize.Compact,
+            onEvent = {},
         )
     }
 }

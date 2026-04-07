@@ -55,19 +55,8 @@ class JestActivity : ComponentActivity() {
             if (!view.isInEditMode) {
                 // Resolve the actual color scheme for system bar tinting
                 val resolvedScheme = dynamicColorScheme
-                    ?: if (darkTheme) {
-                        androidx.compose.material3.darkColorScheme(
-                            primary = com.axondragonscale.jest.ui.theme.Purple80,
-                            secondary = com.axondragonscale.jest.ui.theme.PurpleGrey80,
-                            tertiary = com.axondragonscale.jest.ui.theme.Pink80,
-                        )
-                    } else {
-                        androidx.compose.material3.lightColorScheme(
-                            primary = com.axondragonscale.jest.ui.theme.Purple40,
-                            secondary = com.axondragonscale.jest.ui.theme.PurpleGrey40,
-                            tertiary = com.axondragonscale.jest.ui.theme.Pink40,
-                        )
-                    }
+                    ?: if (darkTheme) com.axondragonscale.jest.ui.theme.JestDarkColorScheme
+                    else com.axondragonscale.jest.ui.theme.JestLightColorScheme
 
                 SideEffect {
                     val window = this@JestActivity.window
