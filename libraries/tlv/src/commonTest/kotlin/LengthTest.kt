@@ -5,6 +5,9 @@ class LengthTest {
 
     @Test
     fun `length validity scenarios`() {
+        // Empty array
+        assertEquals(false, Length.isValid(byteArrayOf()))
+
         // Length of single byte must have 0 MSB
         assertEquals(false, Length.isValid(byteArrayOf(0b1000_0000.toByte())))
         assertEquals(false, Length.isValid(byteArrayOf(0b1000_0001.toByte())))
@@ -76,6 +79,12 @@ class LengthTest {
 
     @Test
     fun `length from actual length`() {
+        // Zero length
+        val length0 = Length.from(0)
+        assertEquals(true, length0.size == 1)
+        assertEquals(true, length0.lengthAsInt == 0)
+        assertEquals(true, length0.lengthAsLong == 0L)
+
         // Length of single byte with minimum value
         val length1 = Length.from(1)
         assertEquals(true, length1.size == 1)

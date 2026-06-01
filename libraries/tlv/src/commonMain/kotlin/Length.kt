@@ -10,6 +10,8 @@ value class Length private constructor(val lengthBytes: ByteArray) {
     companion object Companion {
 
         fun isValid(lengthBytes: ByteArray): Boolean {
+            if (lengthBytes.isEmpty()) return false
+
             if (lengthBytes.size == 1) {
                 return lengthBytes.first() and 0b1000_0000.toByte() == 0b0.toByte()
             }
@@ -32,7 +34,7 @@ value class Length private constructor(val lengthBytes: ByteArray) {
             from(lengthHex.hexToByteArray())
 
         fun from(length: Long): Length {
-            check(length > 0) { "Length must be positive" }
+            check(length >= 0) { "Length must be non-negative" }
 
             if (length <= 0b0111_1111)
                 return from(byteArrayOf(length.toByte()))

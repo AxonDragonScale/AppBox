@@ -16,23 +16,32 @@ data class TLV(
             from(tlvHex.hexToByteArray())
 
         fun from(tlvBytes: ByteArray): TLV {
+            require(tlvBytes.isNotEmpty()) { "TLV bytes must not be empty" }
+
             val tag = if (tlvBytes.first() and 0b0001_1111.toByte() != 0b0001_1111.toByte()) {
                 Tag.from(byteArrayOf(tlvBytes.first()))
             } else {
-                val lastTagByteIndex = 1 + tlvBytes.drop(1).indexOfFirst { it and 0b1000_0000.toByte() == 0.toByte() }
+                val terminatorIndex = tlvBytes.drop(1).indexOfFirst { it and 0b1000_0000.toByte() == 0.toByte() }
+                require(terminatorIndex >= 0) { "Multi-byte tag has no terminator byte" }
+                val lastTagByteIndex = 1 + terminatorIndex
                 Tag.from(tlvBytes.sliceArray(0 .. lastTagByteIndex))
             }
 
             val lengthStartIndex = tag.size
+            require(lengthStartIndex < tlvBytes.size) { "TLV bytes too short: missing length field" }
+
             val lengthEndIndex = lengthStartIndex + if (tlvBytes[lengthStartIndex] and 0b1000_0000.toByte() == 0.toByte()) {
                 0
             } else {
                 tlvBytes[lengthStartIndex].toInt() and 0b0111_1111
             }
-            val length = Length.from(tlvBytes.sliceArray(lengthStartIndex until lengthEndIndex))
+            require(lengthEndIndex < tlvBytes.size) { "TLV bytes too short: length field truncated" }
+            val length = Length.from(tlvBytes.sliceArray(lengthStartIndex .. lengthEndIndex))
 
+            val valueStartIndex = lengthEndIndex + 1
             val valueEndIndex = lengthEndIndex + length.lengthAsInt
-            val value = Value(tlvBytes.sliceArray(lengthEndIndex + 1 .. valueEndIndex))
+            require(valueEndIndex < tlvBytes.size) { "TLV bytes too short: value truncated (need ${length.lengthAsInt} bytes, have ${tlvBytes.size - valueStartIndex})" }
+            val value = Value(tlvBytes.sliceArray(valueStartIndex .. valueEndIndex))
 
             return TLV(tag = tag, length = length, value = value)
         }

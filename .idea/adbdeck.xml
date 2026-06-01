@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AdbDeckState">
+    <option name="lastPackageName" value="com.axondragonscale.cardy.debug" />
+    <option name="lastPackagePerDevice">
+      <map>
+        <entry key="adb-10BF3128UK0038S-ZYpkBk._adb-tls-connect._tcp" value="com.axondragonscale.cardy.debug" />
+      </map>
+    </option>
+  </component>
+</project>

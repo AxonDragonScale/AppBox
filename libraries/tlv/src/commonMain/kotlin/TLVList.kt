@@ -9,16 +9,19 @@ value class TLVList private constructor(
         fun from(tlvList: MutableList<TLV>): TLVList =
             TLVList(tlvList)
 
-        fun from(tlvList: ByteArray): TLVList {
+        fun from(tlvBytes: ByteArray): TLVList {
             val result = mutableListOf<TLV>()
-
-            var remainingSize = tlvList.size
-            while (remainingSize > 0) {
-                val tlv = TLV.from(tlvList)
+            var offset = 0
+            while (offset < tlvBytes.size) {
+                // Skip padding bytes (0x00 or 0xFF)
+                if (tlvBytes[offset] == 0x00.toByte() || tlvBytes[offset] == 0xFF.toByte()) {
+                    offset++
+                    continue
+                }
+                val tlv = TLV.from(tlvBytes.copyOfRange(offset, tlvBytes.size))
                 result.add(tlv)
-                remainingSize -= tlv.size
+                offset += tlv.size
             }
-
             return TLVList(result)
         }
 
