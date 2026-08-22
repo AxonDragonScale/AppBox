@@ -68,7 +68,9 @@ class DetailVM(
         }
 
         val cardData = result.toSerializable()
-        val tlvTrees = result.applications.map { EmvDataExtractor.buildTlvTree(it.rawTlvs) }
+        val tlvTrees = result.applications.map {
+            EmvDataExtractor.buildTlvTree(it.rawTlvs, it.network)
+        }
         val network = result.primaryNetwork
 
         TAG.logD { "loadFromLastRead: ${result.applications.size} application(s), network=$network" }
@@ -96,7 +98,7 @@ class DetailVM(
         val network = try { CardNetwork.valueOf(entity.network) } catch (_: Exception) { CardNetwork.UNKNOWN }
 
         val tlvTrees = decryptedData?.applications?.map { app ->
-            buildTlvTreeFromHex(app.rawTlvHex)
+            buildTlvTreeFromHex(app.rawTlvHex, CardNetwork.fromAid(app.aid))
         }.orEmpty()
 
         TAG.logD { "loadFromVault: cardId=$initialCardId, network=$network" }
@@ -117,12 +119,15 @@ class DetailVM(
         }
     }
 
-    private fun buildTlvTreeFromHex(rawTlvHex: String): List<ParsedTlvNode> {
+    private fun buildTlvTreeFromHex(
+        rawTlvHex: String,
+        network: CardNetwork,
+    ): List<ParsedTlvNode> {
         if (rawTlvHex.isBlank()) return emptyList()
         return try {
             val bytes = rawTlvHex.hexToBytes()
             val tlvs = EmvDataExtractor.parseTlvData(bytes)
-            EmvDataExtractor.buildTlvTree(tlvs)
+            EmvDataExtractor.buildTlvTree(tlvs, network)
         } catch (_: Exception) {
             emptyList()
         }

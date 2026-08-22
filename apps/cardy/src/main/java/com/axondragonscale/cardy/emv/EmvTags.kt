@@ -68,6 +68,8 @@ object EmvTags {
         put("9F47", TagInfo("9F47", "ICC Public Key Exponent", "Exponent for ICC's public key"))
         put("9F48", TagInfo("9F48", "ICC Public Key Remainder", "Remaining part of ICC public key"))
         put("9F4A", TagInfo("9F4A", "Static Data Authentication Tag List", "Tags to be included in SDA"))
+        put("9F4D", TagInfo("9F4D", "Log Entry", "Identifies the transaction log file and number of records"))
+        put("9F6E", TagInfo("9F6E", "Contactless Form Factor Data", "Payment-system-specific contactless device and form factor information"))
         put("A5", TagInfo("A5", "FCI Proprietary Template", "Identifies the data object proprietary to FCI"))
         put("BF0C", TagInfo("BF0C", "FCI Issuer Discretionary Data", "Issuer discretionary part of FCI"))
     }

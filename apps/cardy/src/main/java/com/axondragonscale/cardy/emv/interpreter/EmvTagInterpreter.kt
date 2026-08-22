@@ -1,5 +1,6 @@
 package com.axondragonscale.cardy.emv.interpreter
 
+import com.axondragonscale.cardy.emv.CardNetwork
 import com.axondragonscale.cardy.emv.EmvTags
 
 /** Created by Ronak on 05/30/26 */
@@ -17,7 +18,11 @@ object EmvTagInterpreter {
      * Interpret the value of a given EMV tag.
      * Returns null if no interpretation is available for this tag.
      */
-    fun interpret(tagHex: String, valueBytes: ByteArray): TagInterpretation? {
+    fun interpret(
+        tagHex: String,
+        valueBytes: ByteArray,
+        network: CardNetwork = CardNetwork.UNKNOWN,
+    ): TagInterpretation? {
         if (valueBytes.isEmpty()) return null
         return when (tagHex.uppercase()) {
             "82" -> interpretAip(valueBytes)
@@ -45,6 +50,7 @@ object EmvTagInterpreter {
             "5F25" -> interpretDate(valueBytes, "Effective")
             "9A" -> interpretDate(valueBytes, "Transaction")
             "9F35" -> interpretTerminalType(valueBytes)
+            "9F6E" -> interpretContactlessFormFactor(valueBytes, network)
             else -> null
         }
     }
@@ -54,7 +60,7 @@ object EmvTagInterpreter {
         "82", "95", "9F07", "9F27", "8E", "94", "9F38", "8C", "8D",
         "87", "9C", "9F33", "9F34", "9F36", "5F28", "5F2A", "9F42",
         "9F06", "4F", "84", "9F0D", "9F0E", "9F0F", "5F24", "5F25",
-        "9A", "9F35",
+        "9A", "9F35", "9F6E",
     )
 
     // region AIP (Tag 82) - Application Interchange Profile
@@ -686,6 +692,109 @@ object EmvTagInterpreter {
                 InterpretedEntry.DecodedValue("Attendance", attendance, ""),
             ),
         )
+    }
+
+    // endregion
+
+    // region Contactless Form Factor Data (Tag 9F6E)
+
+    private fun interpretContactlessFormFactor(
+        value: ByteArray,
+        network: CardNetwork,
+    ): TagInterpretation? = when (network) {
+        CardNetwork.MASTERCARD -> interpretMastercardThirdPartyData(value)
+        CardNetwork.VISA -> {
+            if (value.size != 4) {
+                TagInterpretation(summary = "Invalid Visa Form Factor Indicator")
+            } else {
+                val formFactor = "%02X".format(value[3].toInt() and 0xFF)
+                TagInterpretation(
+                    summary = "Visa Form Factor Indicator: $formFactor",
+                    entries = listOf(
+                        InterpretedEntry.DecodedValue(
+                            "Form Factor",
+                            "Code $formFactor",
+                            formFactor,
+                        ),
+                    ),
+                )
+            }
+        }
+        else -> null
+    }
+
+    private fun interpretMastercardThirdPartyData(value: ByteArray): TagInterpretation {
+        if (value.size < 6) {
+            return TagInterpretation(summary = "Invalid Mastercard Third Party Data")
+        }
+
+        val countryBytes = value.copyOfRange(0, 2)
+        val uniqueIdBytes = value.copyOfRange(2, 4)
+        val deviceTypeBytes = value.copyOfRange(4, 6)
+        val deviceTypeCode = deviceTypeBytes
+            .map { (it.toInt() and 0xFF).toChar() }
+            .joinToString("")
+            .takeIf { code -> code.all(Char::isDigit) }
+            ?: deviceTypeBytes.toHexString()
+        val deviceType = mastercardDeviceType(deviceTypeCode)
+        val entries = mutableListOf<InterpretedEntry>(
+            InterpretedEntry.DecodedValue(
+                "Country",
+                interpretCountryCode(countryBytes).summary.orEmpty(),
+                countryBytes.toHexString(),
+            ),
+            InterpretedEntry.DecodedValue(
+                "Unique Identifier",
+                uniqueIdBytes.toHexString(),
+                uniqueIdBytes.toHexString(),
+            ),
+            InterpretedEntry.DecodedValue(
+                "Device Type",
+                "$deviceType ($deviceTypeCode)",
+                deviceTypeBytes.toHexString(),
+            ),
+        )
+        if (value.size > 6) {
+            val proprietaryData = value.copyOfRange(6, value.size).toHexString()
+            entries += InterpretedEntry.DecodedValue(
+                "Proprietary Data",
+                proprietaryData,
+                proprietaryData,
+            )
+        }
+
+        return TagInterpretation(
+            summary = "Mastercard Third Party Data • $deviceType",
+            entries = entries,
+        )
+    }
+
+    private fun mastercardDeviceType(code: String): String = when (code) {
+        "00" -> "Card"
+        "01" -> "Mobile SIM/UICC"
+        "02" -> "Key fob"
+        "03" -> "Watch"
+        "04" -> "Mobile tag"
+        "05" -> "Wristband"
+        "06" -> "Phone case or sleeve"
+        "07" -> "Phone with MNO-controlled secure element"
+        "08" -> "Phone with removable secure element"
+        "09" -> "Phone with embedded secure element"
+        "10" -> "Tablet with SIM/UICC"
+        "11" -> "Tablet with MNO-controlled secure element"
+        "12" -> "Tablet with removable secure element"
+        "13" -> "Tablet with embedded secure element"
+        "14" -> "Mobile phone"
+        "15" -> "Tablet with host card emulation"
+        "16" -> "Mobile phone with trusted execution environment"
+        "17" -> "Tablet with trusted execution environment"
+        "18" -> "Watch with trusted execution environment"
+        "19" -> "Watch with host card emulation"
+        "20" -> "Card"
+        "21" -> "Mobile phone"
+        "22" -> "Tablet or e-reader"
+        "23" -> "Watch or wristband"
+        else -> "Unknown device type"
     }
 
     // endregion

@@ -120,7 +120,16 @@ class CardReader {
         val pdolData = pdol?.let { buildPdolData(it.value.valueBytes) }
         TAG.logD { "readApplication: PDOL ${if (pdol != null) "found (${pdolData?.size} bytes)" else "not found, using empty GPO"}" }
 
-        val gpoResponse = transceive(isoDep, EmvCommands.getProcessingOptions(pdolData))
+        var gpoResponse = transceive(isoDep, EmvCommands.getProcessingOptions(pdolData))
+        if (pdol == null && !gpoResponse.isSuccess && gpoResponse.statusWord == "6985") {
+            // Some Mastercard applications omit 9F38 but still reject an empty 83 template.
+            TAG.logD { "readApplication: empty GPO rejected; retrying with two-byte zero PDOL" }
+            gpoResponse = transceive(
+                isoDep,
+                EmvCommands.getProcessingOptions(ByteArray(2)),
+            )
+        }
+
         if (gpoResponse.isSuccess && gpoResponse.data.isNotEmpty()) {
             TAG.logD { "readApplication: GPO succeeded for $aidHex" }
             val gpoTlvs = EmvDataExtractor.parseTlvData(gpoResponse.data)
@@ -138,6 +147,9 @@ class CardReader {
             }
         } else {
             TAG.logD { "readApplication: GPO failed or empty for $aidHex (status=${gpoResponse.statusWord})" }
+            val recordTlvs = scanCommonRecords(isoDep)
+            TAG.logD { "readApplication: fallback record scan found ${recordTlvs.size} TLV(s)" }
+            allTlvs.addAll(recordTlvs)
         }
 
         return EmvDataExtractor.extractApplicationData(allTlvs, aid)
@@ -182,6 +194,25 @@ class CardReader {
                 } else {
                     TAG.logD { "readRecords: SFI=$sfi record=$record -> failed or empty (status=${response.statusWord})" }
                 }
+            }
+        }
+        return tlvs
+    }
+
+    /**
+     * Read-only fallback for applications that expose records but do not return an AFL.
+     * Stops each SFI at its first missing record to keep the scan fast enough for NFC.
+     */
+    private fun scanCommonRecords(isoDep: IsoDep): List<TLV> {
+        val tlvs = mutableListOf<TLV>()
+        for (sfi in 1..10) {
+            for (record in 1..16) {
+                val response = transceive(isoDep, EmvCommands.readRecord(record, sfi))
+                if (!response.isSuccess || response.data.isEmpty()) break
+
+                val recordTlvs = EmvDataExtractor.parseTlvData(response.data)
+                TAG.logD { "scanCommonRecords: SFI=$sfi record=$record -> ${recordTlvs.size} TLV(s)" }
+                tlvs.addAll(recordTlvs)
             }
         }
         return tlvs

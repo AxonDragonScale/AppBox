@@ -7,7 +7,7 @@ object EmvCommands {
 
     /** SELECT Payment System Environment (2PAY.SYS.DDF01) */
     fun selectPpse(): ByteArray =
-        "00A404000E325041592E5359532E4444463031".hexToBytes()
+        "00A404000E325041592E5359532E444446303100".hexToBytes()
 
     /** SELECT application by AID */
     fun selectAid(aid: ByteArray): ByteArray {

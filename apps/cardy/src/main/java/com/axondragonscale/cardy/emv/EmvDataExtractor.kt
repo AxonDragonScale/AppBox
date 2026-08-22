@@ -159,12 +159,15 @@ object EmvDataExtractor {
         )
     }
 
-    fun buildTlvTree(tlvs: List<TLV>): List<ParsedTlvNode> = tlvs.map { tlv ->
+    fun buildTlvTree(
+        tlvs: List<TLV>,
+        network: CardNetwork = CardNetwork.UNKNOWN,
+    ): List<ParsedTlvNode> = tlvs.map { tlv ->
         val tagHex = tlv.tag.asHex.uppercase()
         val tagInfo = EmvTags.getTagInfo(tagHex)
         val children = if (tlv.isNested) {
             try {
-                buildTlvTree(parseTlvData(tlv.value.valueBytes))
+                buildTlvTree(parseTlvData(tlv.value.valueBytes), network)
             } catch (_: Exception) {
                 emptyList()
             }
@@ -172,7 +175,7 @@ object EmvDataExtractor {
             emptyList()
         }
         val interpretation = if (!tlv.isNested) {
-            EmvTagInterpreter.interpret(tagHex, tlv.value.valueBytes)
+            EmvTagInterpreter.interpret(tagHex, tlv.value.valueBytes, network)
         } else {
             null
         }

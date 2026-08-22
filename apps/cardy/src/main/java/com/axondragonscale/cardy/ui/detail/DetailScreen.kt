@@ -69,6 +69,8 @@ import com.axondragonscale.cardy.ui.common.CardVisual
 import com.axondragonscale.cardy.ui.theme.CardyTheme
 import org.koin.androidx.compose.koinViewModel
 
+private val summaryOnlyTags = setOf("5F24", "5F25", "5F28", "9F42")
+
 @Composable
 fun DetailScreen(
     modifier: Modifier = Modifier,
@@ -182,6 +184,22 @@ private fun DetailScreen(
                 )
             }
 
+            if (cardData.primaryPan == null && cardData.primaryExpiry == null) {
+                Text(
+                    text = "Card detected, but its issuer did not expose the card number or expiry over contactless. If this is a new card, complete a chip-and-PIN transaction first, then try again.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.errorContainer,
+                            RoundedCornerShape(12.dp),
+                        )
+                        .padding(16.dp),
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Application selector (only shown when multiple apps present)
@@ -227,7 +245,7 @@ private fun DetailScreen(
                     InterpretableHexRow(label = "AIP", tagHex = "82", valueHex = selectedApp.aip)
                 }
                 if (selectedApp.appEffectiveDate != null) {
-                    InterpretableHexRow(label = "Effective", tagHex = "5F25", valueHex = selectedApp.appEffectiveDate)
+                    InterpretableHexRow(label = "Effective Date", tagHex = "5F25", valueHex = selectedApp.appEffectiveDate)
                 }
                 if (selectedApp.appExpiryDate != null) {
                     InterpretableHexRow(label = "Expiry Date", tagHex = "5F24", valueHex = selectedApp.appExpiryDate)
@@ -389,13 +407,14 @@ private fun InterpretableHexRow(
     val interpretation = remember(tagHex, valueBytes) {
         EmvTagInterpreter.interpret(tagHex, valueBytes)
     }
+    val hasDetails = tagHex !in summaryOnlyTags && interpretation?.entries?.isNotEmpty() == true
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (interpretation != null) Modifier.clickable { expanded = !expanded } else Modifier),
+                .then(if (hasDetails) Modifier.clickable { expanded = !expanded } else Modifier),
             verticalAlignment = Alignment.Top,
         ) {
             Text(
@@ -422,7 +441,7 @@ private fun InterpretableHexRow(
                     )
                 }
             }
-            if (interpretation != null) {
+            if (hasDetails) {
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = null,
@@ -432,7 +451,7 @@ private fun InterpretableHexRow(
             }
         }
 
-        if (expanded && interpretation != null) {
+        if (expanded && hasDetails) {
             InterpretationDetail(
                 interpretation = interpretation,
                 modifier = Modifier.padding(start = 100.dp, top = 4.dp, bottom = 4.dp),
@@ -575,7 +594,9 @@ private fun TlvNodeRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var interpretationExpanded by remember { mutableStateOf(false) }
-    val hasExpandableContent = node.isConstructed || node.interpretation != null
+    val hasInterpretationDetails =
+        node.tagHex !in summaryOnlyTags && node.interpretation?.entries?.isNotEmpty() == true
+    val hasExpandableContent = node.isConstructed || hasInterpretationDetails
 
     Column(
         modifier = modifier
@@ -650,7 +671,7 @@ private fun TlvNodeRow(
             TlvTree(nodes = node.children, depth = depth + 1)
         }
 
-        if (!node.isConstructed && interpretationExpanded && node.interpretation != null) {
+        if (!node.isConstructed && interpretationExpanded && hasInterpretationDetails) {
             InterpretationDetail(
                 interpretation = node.interpretation,
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
