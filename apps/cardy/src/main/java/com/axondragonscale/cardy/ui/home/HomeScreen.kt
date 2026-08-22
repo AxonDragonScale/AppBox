@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -116,8 +117,8 @@ private fun HomeScreen(
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
                     snackbarData = data,
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
         },
@@ -309,30 +310,38 @@ private fun NfcTapPrompt(
     ) {
         val primaryColor = MaterialTheme.colorScheme.primary
 
-        // Outermost ring (most delayed)
-        Box(
-            modifier = Modifier
-                .size(160.dp)
-                .scale(ring3Scale)
-                .alpha(ring3Alpha)
-                .background(color = primaryColor.copy(alpha = 0.1f), shape = CircleShape)
-        )
-        // Middle ring
-        Box(
-            modifier = Modifier
-                .size(160.dp)
-                .scale(ring2Scale)
-                .alpha(ring2Alpha)
-                .background(color = primaryColor.copy(alpha = 0.15f), shape = CircleShape)
-        )
-        // Innermost ring (least delayed)
-        Box(
-            modifier = Modifier
-                .size(160.dp)
-                .scale(ring1Scale)
-                .alpha(ring1Alpha)
-                .background(color = primaryColor.copy(alpha = 0.2f), shape = CircleShape)
-        )
+        if (isReading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(140.dp),
+                color = primaryColor,
+                strokeWidth = 5.dp,
+            )
+        } else {
+            // Outermost ring (most delayed)
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .scale(ring3Scale)
+                    .alpha(ring3Alpha)
+                    .background(color = primaryColor.copy(alpha = 0.1f), shape = CircleShape)
+            )
+            // Middle ring
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .scale(ring2Scale)
+                    .alpha(ring2Alpha)
+                    .background(color = primaryColor.copy(alpha = 0.15f), shape = CircleShape)
+            )
+            // Innermost ring (least delayed)
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .scale(ring1Scale)
+                    .alpha(ring1Alpha)
+                    .background(color = primaryColor.copy(alpha = 0.2f), shape = CircleShape)
+            )
+        }
 
         // Center icon
         Box(
@@ -346,7 +355,7 @@ private fun NfcTapPrompt(
         ) {
             Icon(
                 imageVector = Icons.Default.CreditCard,
-                contentDescription = "Tap card",
+                contentDescription = if (isReading) "Reading card" else "Tap card",
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )

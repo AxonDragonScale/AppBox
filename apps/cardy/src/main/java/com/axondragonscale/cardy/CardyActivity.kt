@@ -1,10 +1,7 @@
 package com.axondragonscale.cardy
 
-import android.app.PendingIntent
 import android.content.Intent
-import android.content.IntentFilter
 import android.nfc.NfcAdapter
-import android.nfc.tech.IsoDep
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,6 +22,10 @@ private const val TAG = "CardyActivity"
 class CardyActivity : FragmentActivity() {
 
     private var nfcAdapter: NfcAdapter? = null
+    private var isResumed = false
+    private var isReadingPage = false
+    private var isReaderModeEnabled = false
+    private var readerModeReadingPage: Boolean? = null
     private val nfcManager: NfcManager by inject()
     private val homeVM: HomeVM by viewModel()
 
@@ -39,7 +40,12 @@ class CardyActivity : FragmentActivity() {
 
         setContent {
             CardyTheme {
-                CardyApp()
+                CardyApp(
+                    onReadingPageChanged = {
+                        isReadingPage = it
+                        updateNfcReaderMode()
+                    },
+                )
             }
         }
 
@@ -50,13 +56,15 @@ class CardyActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         TAG.logD { "CardyActivity.onResume" }
-        enableNfcForegroundDispatch()
+        isResumed = true
+        updateNfcReaderMode()
         homeVM.onEvent(HomeUiEvent.RefreshNfcStatus)
     }
 
     override fun onPause() {
         TAG.logD { "CardyActivity.onPause" }
-        disableNfcForegroundDispatch()
+        isResumed = false
+        updateNfcReaderMode()
         super.onPause()
     }
 
@@ -76,27 +84,50 @@ class CardyActivity : FragmentActivity() {
         }
     }
 
-    private fun enableNfcForegroundDispatch() {
-        val adapter = nfcAdapter ?: run {
-            TAG.logD { "CardyActivity.enableNfcForegroundDispatch: no adapter, skipping" }
+    private fun updateNfcReaderMode() {
+        if (!isResumed) {
+            if (!isReaderModeEnabled) return
+            disableNfcReaderMode()
+            isReaderModeEnabled = false
+            readerModeReadingPage = null
             return
         }
-        val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_MUTABLE
-        )
-        val filters = arrayOf(
-            IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)
-        )
-        val techLists = arrayOf(
-            arrayOf(IsoDep::class.java.name)
-        )
-        adapter.enableForegroundDispatch(this, pendingIntent, filters, techLists)
-        TAG.logD { "CardyActivity.enableNfcForegroundDispatch: foreground dispatch enabled" }
+
+        if (isReaderModeEnabled && readerModeReadingPage == isReadingPage) return
+        enableNfcReaderMode()
+        isReaderModeEnabled = true
+        readerModeReadingPage = isReadingPage
     }
 
-    private fun disableNfcForegroundDispatch() {
-        nfcAdapter?.disableForegroundDispatch(this)
-        TAG.logD { "CardyActivity.disableNfcForegroundDispatch: foreground dispatch disabled" }
+    private fun enableNfcReaderMode() {
+        val adapter = nfcAdapter ?: run {
+            TAG.logD { "CardyActivity.enableNfcReaderMode: no adapter, skipping" }
+            return
+        }
+        adapter.enableReaderMode(
+            this,
+            { tag ->
+                TAG.logD { "CardyActivity.readerCallback: tag techs=${tag.techList.joinToString()}" }
+                if (!isReadingPage) {
+                    TAG.logD { "CardyActivity.readerCallback: not on reading page, ignoring tag" }
+                    return@enableReaderMode
+                }
+                handleNfcIntent(
+                    Intent(NfcAdapter.ACTION_TECH_DISCOVERED)
+                        .putExtra(NfcAdapter.EXTRA_TAG, tag),
+                )
+            },
+            NfcAdapter.FLAG_READER_NFC_A or
+                NfcAdapter.FLAG_READER_NFC_B or
+                NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
+                if (isReadingPage) 0 else NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
+            null,
+        )
+        TAG.logD { "CardyActivity.enableNfcReaderMode: reader mode enabled" }
+    }
+
+    private fun disableNfcReaderMode() {
+        nfcAdapter?.disableReaderMode(this)
+        TAG.logD { "CardyActivity.disableNfcReaderMode: reader mode disabled" }
     }
 }
