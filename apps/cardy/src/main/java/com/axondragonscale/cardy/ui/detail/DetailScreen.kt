@@ -24,15 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -118,7 +115,17 @@ private fun DetailScreen(
                     }
                 },
                 actions = {
-                    if (uiState.isSavedCard) {
+                    if (uiState.isFreshRead) {
+                        IconButton(
+                            onClick = { onEvent(DetailUiEvent.SaveToVault) },
+                            enabled = !uiState.isSaving,
+                        ) {
+                            Icon(
+                                Icons.Default.Save,
+                                contentDescription = if (uiState.isSaving) "Saving to Vault" else "Save to Vault",
+                            )
+                        }
+                    } else if (uiState.isSavedCard) {
                         IconButton(onClick = { showEditDialog = true }) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit label")
                         }
@@ -164,8 +171,16 @@ private fun DetailScreen(
                 network = uiState.network,
                 pan = cardData.primaryPan,
                 expiry = cardData.primaryExpiry,
-                cardholderName = cardData.cardholderName,
             )
+
+            if (uiState.label.isNotBlank()) {
+                Text(
+                    text = uiState.label,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 4.dp, top = 10.dp, end = 4.dp),
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -195,7 +210,6 @@ private fun DetailScreen(
             CollapsibleSection(title = "Basic Info") {
                 DataRow(label = "PAN", value = selectedApp.pan ?: "Not available")
                 DataRow(label = "Expiry", value = selectedApp.expiry ?: "Not available")
-                DataRow(label = "Cardholder", value = selectedApp.cardholderName ?: "Not available")
                 DataRow(label = "Network", value = selectedApp.network)
             }
 
@@ -224,29 +238,6 @@ private fun DetailScreen(
             RawTlvSection(nodes = uiState.selectedTlvTree)
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Save button (only for fresh reads)
-            if (uiState.isFreshRead) {
-                Button(
-                    onClick = { onEvent(DetailUiEvent.SaveToVault) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isSaving && !uiState.isSaved,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    if (uiState.isSaved) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Saved to Vault")
-                    } else {
-                        Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (uiState.isSaving) "Saving..." else "Save to Vault")
-                    }
-                }
-            }
         }
     }
 
@@ -459,8 +450,8 @@ private fun RawTlvSection(
     modifier: Modifier = Modifier,
     nodes: List<ParsedTlvNode>,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    var viewMode by remember { mutableIntStateOf(0) }
+    var expanded by remember { mutableStateOf(true) }
+    var viewMode by remember { mutableIntStateOf(1) }
 
     Column(modifier = modifier
         .fillMaxWidth()
@@ -506,17 +497,17 @@ private fun RawTlvSection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     FilterChip(
-                        selected = viewMode == 0,
-                        onClick = { viewMode = 0 },
-                        label = { Text("Tree") },
+                        selected = viewMode == 1,
+                        onClick = { viewMode = 1 },
+                        label = { Text("Flat") },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         ),
                     )
                     FilterChip(
-                        selected = viewMode == 1,
-                        onClick = { viewMode = 1 },
-                        label = { Text("Flat") },
+                        selected = viewMode == 0,
+                        onClick = { viewMode = 0 },
+                        label = { Text("Tree") },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         ),
@@ -828,7 +819,7 @@ private fun DetailScreenFreshReadPreview() {
             uiState = DetailUiState(
                 isLoaded = true,
                 mode = DetailMode.FreshRead,
-                label = "Visa •••• 4111",
+                label = "Visa - 4111",
                 network = CardNetwork.VISA,
                 cardData = SerializableCardData(
                     applications = listOf(
@@ -877,7 +868,7 @@ private fun DetailScreenSavedPreview() {
                 isLoaded = true,
                 mode = DetailMode.SavedCard,
                 cardId = 2,
-                label = "Mastercard •••• 4444",
+                label = "Mastercard - 4444",
                 network = CardNetwork.MASTERCARD,
                 lastFourDigits = "4444",
                 expiry = "03/26",

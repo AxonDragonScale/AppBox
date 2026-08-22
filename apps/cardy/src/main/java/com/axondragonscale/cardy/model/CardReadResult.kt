@@ -15,6 +15,6 @@ data class CardReadResult(
         get() {
             val network = primaryNetwork.displayName
             val last4 = primaryPan?.takeLast(4) ?: "????"
-            return "$network •••• $last4"
+            return "$network - $last4"
         }
 }

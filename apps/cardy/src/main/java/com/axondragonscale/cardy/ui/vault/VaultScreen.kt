@@ -3,10 +3,8 @@ package com.axondragonscale.cardy.ui.vault
 
 import android.content.res.Configuration
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -15,17 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,7 +49,7 @@ import com.axondragonscale.cardy.emv.CardNetwork
 import com.axondragonscale.cardy.security.BiometricAuthManager
 import com.axondragonscale.cardy.security.SessionManager
 import com.axondragonscale.cardy.ui.Route
-import com.axondragonscale.cardy.ui.common.getNetworkGradient
+import com.axondragonscale.cardy.ui.common.CardVisual
 import com.axondragonscale.cardy.ui.theme.CardyTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -156,14 +149,12 @@ private fun VaultScreen(
                     .padding(innerPadding),
             )
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
                 contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 items(uiState.cards, key = { it.id }) { card ->
                     SavedCardTile(
@@ -254,60 +245,29 @@ private fun SavedCardTile(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     val network = try { CardNetwork.valueOf(card.network) } catch (_: Exception) { CardNetwork.UNKNOWN }
-    val gradient = getNetworkGradient(network)
 
-    Card(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = { showDeleteDialog = true },
             ),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .background(brush = gradient),
+        CardVisual(
+            network = network,
+            pan = card.lastFourDigits,
+            expiry = card.expiry,
+            maskPan = true,
         )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = network.displayName,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = "•••• ${card.lastFourDigits}",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = FontFamily.Monospace,
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Column {
-                if (card.expiry != null) {
-                    Text(
-                        text = card.expiry,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    text = card.label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
+        Text(
+            text = card.label,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 4.dp, top = 10.dp, end = 4.dp),
+        )
     }
 
     if (showDeleteDialog) {
@@ -364,7 +324,7 @@ private fun VaultScreenWithCardsPreview() {
                 cards = listOf(
                     CardEntity(
                         id = 1,
-                        label = "Visa •••• 4111",
+                        label = "Visa - 4111",
                         network = "VISA",
                         lastFourDigits = "4111",
                         expiry = "12/27",
@@ -373,7 +333,7 @@ private fun VaultScreenWithCardsPreview() {
                     ),
                     CardEntity(
                         id = 2,
-                        label = "Mastercard •••• 4444",
+                        label = "Mastercard - 4444",
                         network = "MASTERCARD",
                         lastFourDigits = "4444",
                         expiry = "03/26",
