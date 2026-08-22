@@ -37,11 +37,11 @@ class DetailVM(
 
     // endregion
 
-    private val cardId: Long = savedStateHandle.toRoute<Route.CardDetail>().cardId
-    val isFreshRead: Boolean = cardId == -1L
+    private val initialCardId: Long = savedStateHandle.toRoute<Route.CardDetail>().cardId
+    val isFreshRead: Boolean = initialCardId == -1L
 
     init {
-        TAG.logD { "DetailVM created, cardId=$cardId, isFreshRead=$isFreshRead" }
+        TAG.logD { "DetailVM created, cardId=$initialCardId, isFreshRead=$isFreshRead" }
         if (isFreshRead) {
             loadFromLastRead()
         } else {
@@ -90,7 +90,7 @@ class DetailVM(
     }
 
     private fun loadFromVault() = viewModelScope.launch {
-        val entity = cardRepository.getCardById(cardId) ?: return@launch
+        val entity = cardRepository.getCardById(initialCardId) ?: return@launch
         val decryptedData = cardRepository.decryptCardData(entity)
 
         val network = try { CardNetwork.valueOf(entity.network) } catch (_: Exception) { CardNetwork.UNKNOWN }
@@ -99,7 +99,7 @@ class DetailVM(
             buildTlvTreeFromHex(app.rawTlvHex)
         }.orEmpty()
 
-        TAG.logD { "loadFromVault: cardId=$cardId, network=$network" }
+        TAG.logD { "loadFromVault: cardId=$initialCardId, network=$network" }
 
         _uiState.update {
             it.copy(
@@ -143,6 +143,7 @@ class DetailVM(
     }
 
     private fun updateLabel(newLabel: String) = viewModelScope.launch {
+        val cardId = _uiState.value.cardId
         if (cardId > 0) {
             cardRepository.updateLabel(cardId, newLabel)
             _uiState.update { it.copy(label = newLabel) }
@@ -150,6 +151,7 @@ class DetailVM(
     }
 
     private fun deleteCard() = viewModelScope.launch {
+        val cardId = _uiState.value.cardId
         if (cardId > 0) {
             cardRepository.deleteCard(cardId)
             _uiState.update { it.copy(isDeleted = true) }

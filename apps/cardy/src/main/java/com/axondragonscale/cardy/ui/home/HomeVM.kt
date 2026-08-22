@@ -2,13 +2,16 @@
 package com.axondragonscale.cardy.ui.home
 
 import android.content.Intent
+import android.nfc.TagLostException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.cardy.model.CardReadResultHolder
+import com.axondragonscale.cardy.nfc.CardReadException
 import com.axondragonscale.cardy.nfc.CardReader
 import com.axondragonscale.cardy.nfc.NfcManager
 import com.axondragonscale.commons.logD
 import com.axondragonscale.commons.logE
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,10 +107,23 @@ class HomeVM(
         result.onFailure { error ->
             TAG.logE { "handleNfcIntent: readCard failure — ${error.message}" }
             _uiState.update {
-                it.copy(isReading = false, readError = error.message ?: "Failed to read card")
+                it.copy(isReading = false, readError = error.toUserMessage())
             }
         }
     }
+}
+
+internal fun Throwable.toUserMessage(): String = when (this) {
+    is TagLostException ->
+        "Card moved too soon. Hold it against your phone until reading finishes."
+    is CardReadException.UnsupportedCard ->
+        "This card does not expose a supported contactless payment application."
+    is CardReadException.UnreadableCard ->
+        "Card detected, but its payment data could not be read. Hold it steady and try again."
+    is IOException ->
+        "Could not communicate with the card. Hold it steady and try again."
+    else ->
+        "Could not read this card. Hold it steady and try again."
 }
 
 data class HomeUiState(

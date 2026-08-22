@@ -6,14 +6,30 @@ import com.axondragonscale.cardy.emv.CardNetwork
 import com.axondragonscale.cardy.emv.EmvDataExtractor
 import com.axondragonscale.cardy.model.CardReadResult
 import com.axondragonscale.cardy.model.EmvApplication
+import com.axondragonscale.cardy.util.hexToBytes
 import com.axondragonscale.cardy.util.toHex
 import com.axondragonscale.commons.logD
 import com.axondragonscale.commons.logE
+import java.security.SecureRandom
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /** Created by Ronak on 05/30/26 */
 private const val TAG = "CardReader"
 
 class CardReader {
+
+    private val knownAids = listOf(
+        "A0000000031010", // Visa
+        "A0000000032010", // Visa Electron
+        "A0000000041010", // Mastercard
+        "A0000000043060", // Maestro
+        "A0000005241010", // RuPay
+        "A00000002501",   // American Express
+        "A0000001523010", // Discover
+        "A0000000651010", // JCB
+        "A000000333010101", // UnionPay
+    ).map { it.hexToBytes() }
 
     fun readCard(isoDep: IsoDep): Result<CardReadResult> = runCatching {
         TAG.logD { "readCard: starting card read" }
@@ -23,21 +39,12 @@ class CardReader {
         try {
             val applications = mutableListOf<EmvApplication>()
 
-            // Step 1: SELECT PPSE
-            TAG.logD { "readCard: Step 1 - selecting PPSE" }
-            val ppseResponse = transceive(isoDep, EmvCommands.selectPpse())
-            if (!ppseResponse.isSuccess) {
-                TAG.logE { "readCard: PPSE selection failed with status ${ppseResponse.statusWord}" }
-                error("PPSE selection failed: ${ppseResponse.statusWord}")
-            }
-            TAG.logD { "readCard: PPSE selection succeeded" }
-
-            // Step 2: Extract AIDs from PPSE response
-            TAG.logD { "readCard: Step 2 - extracting AIDs from PPSE response" }
-            val aids = EmvDataExtractor.extractAidsFromPpse(ppseResponse.data)
+            // Discover applications through PPSE, then probe common AIDs for cards
+            // that do not expose a contactless directory.
+            val aids = discoverAids(isoDep)
             if (aids.isEmpty()) {
-                TAG.logE { "readCard: no AIDs found in PPSE response" }
-                error("No AIDs found in PPSE response")
+                TAG.logE { "readCard: no supported payment applications found" }
+                throw CardReadException.UnsupportedCard
             }
             TAG.logD { "readCard: found ${aids.size} AID(s): ${aids.joinToString { it.toHex() }}" }
 
@@ -56,7 +63,7 @@ class CardReader {
 
             if (applications.isEmpty()) {
                 TAG.logE { "readCard: no applications could be read from card" }
-                error("No applications could be read from card")
+                throw CardReadException.UnreadableCard
             }
 
             // Build result using primary application (first with PAN, or first overall)
@@ -75,6 +82,20 @@ class CardReader {
             result
         } finally {
             try { isoDep.close() } catch (_: Exception) {}
+        }
+    }
+
+    private fun discoverAids(isoDep: IsoDep): List<ByteArray> {
+        TAG.logD { "discoverAids: selecting PPSE" }
+        val ppseResponse = transceive(isoDep, EmvCommands.selectPpse())
+        if (ppseResponse.isSuccess) {
+            val discovered = EmvDataExtractor.extractAidsFromPpse(ppseResponse.data)
+            if (discovered.isNotEmpty()) return discovered
+        }
+
+        TAG.logD { "discoverAids: PPSE unavailable or empty; probing known AIDs" }
+        return knownAids.filter { aid ->
+            transceive(isoDep, EmvCommands.selectAid(aid)).isSuccess
         }
     }
 
@@ -166,29 +187,36 @@ class CardReader {
         return tlvs
     }
 
-    /**
-     * Build minimal PDOL data (all zeros) to satisfy GPO requirements.
-     * PDOL is a list of tag+length pairs indicating what terminal data the card expects.
-     */
+    /** Build minimal, read-only terminal data for the tags requested by the card. */
     private fun buildPdolData(pdolBytes: ByteArray): ByteArray {
-        var totalLength = 0
+        val result = mutableListOf<Byte>()
         var i = 0
         while (i < pdolBytes.size) {
-            // Skip tag bytes
-            if (pdolBytes[i].toInt() and 0x1F == 0x1F) {
-                i++ // multi-byte tag
-                while (i < pdolBytes.size && pdolBytes[i].toInt() and 0x80 != 0) i++
-                i++ // last tag byte
-            } else {
-                i++ // single byte tag
+            val tagStart = i
+            val firstTagByte = pdolBytes[i++].toInt() and 0xFF
+            if (firstTagByte and 0x1F == 0x1F) {
+                while (i < pdolBytes.size) {
+                    val tagByte = pdolBytes[i++].toInt() and 0xFF
+                    if (tagByte and 0x80 == 0) break
+                }
             }
-            // Read length
-            if (i < pdolBytes.size) {
-                totalLength += pdolBytes[i].toInt() and 0xFF
-                i++
+            if (i >= pdolBytes.size) break
+
+            val tag = pdolBytes.copyOfRange(tagStart, i).toHex()
+            val length = pdolBytes[i++].toInt() and 0xFF
+            val value = when (tag) {
+                "9F66" -> "26000000".hexToBytes() // Terminal Transaction Qualifiers
+                "9F02" -> "000000000001".hexToBytes() // Minimal non-zero amount
+                "9A" -> LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd")).hexToBytes()
+                "9C" -> byteArrayOf(0x00) // Purchase
+                "9F37" -> ByteArray(length).also(SecureRandom()::nextBytes)
+                else -> ByteArray(length)
+            }
+            repeat(length) { index ->
+                result += value.getOrElse(index) { 0 }
             }
         }
-        return ByteArray(totalLength) // All zeros
+        return result.toByteArray()
     }
 
     private fun transceive(isoDep: IsoDep, command: ByteArray): ApduResponse {
@@ -218,4 +246,9 @@ class CardReader {
 
         return response
     }
+}
+
+sealed class CardReadException : Exception() {
+    data object UnsupportedCard : CardReadException()
+    data object UnreadableCard : CardReadException()
 }
