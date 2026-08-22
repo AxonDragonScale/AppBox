@@ -14,27 +14,4 @@ data class CardEntity(
     val expiry: String?,
     val timestamp: Long,
     val encryptedData: ByteArray,
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is CardEntity) return false
-        return id == other.id &&
-            label == other.label &&
-            network == other.network &&
-            lastFourDigits == other.lastFourDigits &&
-            expiry == other.expiry &&
-            timestamp == other.timestamp &&
-            encryptedData.contentEquals(other.encryptedData)
-    }
-
-    override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + label.hashCode()
-        result = 31 * result + network.hashCode()
-        result = 31 * result + lastFourDigits.hashCode()
-        result = 31 * result + (expiry?.hashCode() ?: 0)
-        result = 31 * result + timestamp.hashCode()
-        result = 31 * result + encryptedData.contentHashCode()
-        return result
-    }
-}
+)

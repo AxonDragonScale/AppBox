@@ -1,8 +1,10 @@
 package com.axondragonscale.cardy.model
 
 import com.axondragonscale.cardy.emv.CardNetwork
+import kotlinx.serialization.Serializable
 
 /** Created by Ronak on 05/30/26 */
+@Serializable
 data class CardReadResult(
     val applications: List<EmvApplication>,
     val primaryNetwork: CardNetwork,

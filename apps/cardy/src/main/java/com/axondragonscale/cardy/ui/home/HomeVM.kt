@@ -5,7 +5,7 @@ import android.content.Intent
 import android.nfc.TagLostException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.cardy.model.CardReadResultHolder
+import com.axondragonscale.cardy.model.CardReadSession
 import com.axondragonscale.cardy.nfc.CardReadException
 import com.axondragonscale.cardy.nfc.CardReader
 import com.axondragonscale.cardy.nfc.NfcManager
@@ -26,7 +26,7 @@ private const val TAG = "HomeVM"
 class HomeVM(
     private val nfcManager: NfcManager,
     private val cardReader: CardReader,
-    private val cardReadResultHolder: CardReadResultHolder,
+    private val cardReadSession: CardReadSession,
 ) : ViewModel() {
 
     // region State
@@ -61,13 +61,13 @@ class HomeVM(
 
     // region Event Handling
 
-    fun onEvent(event: HomeUiEvent): Any = when (event) {
-        is HomeUiEvent.RefreshNfcStatus -> refreshNfcStatus()
-        is HomeUiEvent.HandleNfcIntent -> handleNfcIntent(event.intent)
-        is HomeUiEvent.NavigateToVault -> Unit // Handled in composable
-        is HomeUiEvent.NavigateToSettings -> Unit // Handled in composable
-        is HomeUiEvent.OpenNfcSettings -> Unit // Handled in composable
-    }.also { TAG.logD { "onEvent: $event" } }
+    fun onEvent(event: HomeUiEvent) {
+        TAG.logD { "onEvent: $event" }
+        when (event) {
+            is HomeUiEvent.RefreshNfcStatus -> refreshNfcStatus()
+            is HomeUiEvent.HandleNfcIntent -> handleNfcIntent(event.intent)
+        }
+    }
 
     // endregion
 
@@ -99,7 +99,7 @@ class HomeVM(
             _uiState.update { state ->
                 state.copy(isReading = false, readError = null)
             }
-            cardReadResultHolder.result = cardReadResult
+            cardReadSession.update(cardReadResult)
             TAG.logD { "handleNfcIntent: sending NavigateToCardDetail effect" }
             uiEffectChannel.send(HomeUiEffect.NavigateToCardDetail)
         }
@@ -136,9 +136,6 @@ data class HomeUiState(
 sealed interface HomeUiEvent {
     data class HandleNfcIntent(val intent: Intent) : HomeUiEvent
     data object RefreshNfcStatus : HomeUiEvent
-    data object NavigateToVault : HomeUiEvent
-    data object NavigateToSettings : HomeUiEvent
-    data object OpenNfcSettings : HomeUiEvent
 }
 
 sealed interface HomeUiEffect {

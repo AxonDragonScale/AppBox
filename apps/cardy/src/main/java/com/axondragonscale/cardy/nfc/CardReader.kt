@@ -19,17 +19,9 @@ private const val TAG = "CardReader"
 
 class CardReader {
 
-    private val knownAids = listOf(
-        "A0000000031010", // Visa
-        "A0000000032010", // Visa Electron
-        "A0000000041010", // Mastercard
-        "A0000000043060", // Maestro
-        "A0000005241010", // RuPay
-        "A00000002501",   // American Express
-        "A0000001523010", // Discover
-        "A0000000651010", // JCB
-        "A000000333010101", // UnionPay
-    ).map { it.hexToBytes() }
+    private val knownAids = CardNetwork.entries
+        .flatMap(CardNetwork::aids)
+        .map(String::hexToBytes)
 
     fun readCard(isoDep: IsoDep): Result<CardReadResult> = runCatching {
         TAG.logD { "readCard: starting card read" }

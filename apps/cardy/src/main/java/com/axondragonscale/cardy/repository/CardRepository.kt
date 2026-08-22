@@ -5,7 +5,6 @@ import com.axondragonscale.cardy.database.dao.CardDao
 import com.axondragonscale.cardy.database.entity.CardEntity
 import com.axondragonscale.cardy.model.CardReadResult
 import com.axondragonscale.cardy.security.CardEncryption
-import com.axondragonscale.cardy.util.toSerializable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -17,7 +16,7 @@ class CardRepository(private val cardDao: CardDao) {
     suspend fun getCardById(id: Long): CardEntity? = cardDao.getCardById(id)
 
     suspend fun saveCard(result: CardReadResult): Long {
-        val serialized = Json.encodeToString(result.toSerializable())
+        val serialized = Json.encodeToString(result)
         val encrypted = CardEncryption.encryptString(serialized)
         val entity = CardEntity(
             label = result.displayLabel,
@@ -30,9 +29,9 @@ class CardRepository(private val cardDao: CardDao) {
         return cardDao.insertCard(entity)
     }
 
-    suspend fun decryptCardData(entity: CardEntity): SerializableCardData? = try {
+    suspend fun decryptCardData(entity: CardEntity): CardReadResult? = try {
         val json = CardEncryption.decryptString(entity.encryptedData)
-        Json.decodeFromString<SerializableCardData>(json)
+        Json.decodeFromString<CardReadResult>(json)
     } catch (e: Exception) {
         null
     }

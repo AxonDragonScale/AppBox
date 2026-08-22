@@ -10,6 +10,10 @@ import androidx.fragment.app.FragmentActivity
 
 class BiometricAuthManager {
 
+    @Volatile
+    var isSessionAuthenticated: Boolean = false
+        private set
+
     sealed interface AuthResult {
         data object Success : AuthResult
         data class Error(val message: String) : AuthResult
@@ -20,6 +24,10 @@ class BiometricAuthManager {
         val biometricManager = BiometricManager.from(activity)
         val result = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         return result == BiometricManager.BIOMETRIC_SUCCESS
+    }
+
+    fun markSessionAuthenticated() {
+        isSessionAuthenticated = true
     }
 
     fun authenticate(

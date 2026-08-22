@@ -86,15 +86,11 @@ fun HomeScreen(
     HomeScreen(
         modifier = modifier,
         uiState = uiState,
-        onEvent = { event ->
-            when (event) {
-                is HomeUiEvent.NavigateToVault -> navController.navigate(Route.Vault)
-                is HomeUiEvent.NavigateToSettings -> navController.navigate(Route.Settings)
-                is HomeUiEvent.OpenNfcSettings -> {
-                    context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
-                }
-                else -> viewModel.onEvent(event)
-            }
+        onEvent = viewModel::onEvent,
+        onVaultClick = { navController.navigate(Route.Vault) },
+        onSettingsClick = { navController.navigate(Route.Settings) },
+        onOpenNfcSettings = {
+            context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
         },
     )
 }
@@ -104,6 +100,9 @@ private fun HomeScreen(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
     onEvent: (HomeUiEvent) -> Unit,
+    onVaultClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onOpenNfcSettings: () -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -125,8 +124,8 @@ private fun HomeScreen(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             BottomBar(
-                onVaultClick = { onEvent(HomeUiEvent.NavigateToVault) },
-                onSettingsClick = { onEvent(HomeUiEvent.NavigateToSettings) },
+                onVaultClick = onVaultClick,
+                onSettingsClick = onSettingsClick,
             )
         },
     ) { innerPadding ->
@@ -141,7 +140,7 @@ private fun HomeScreen(
             if (!uiState.isNfcEnabled) {
                 NfcDisabledContent(
                     isNfcSupported = uiState.isNfcSupported,
-                    onOpenNfcSettings = { onEvent(HomeUiEvent.OpenNfcSettings) },
+                    onOpenNfcSettings = onOpenNfcSettings,
                 )
             } else {
                 NfcTapPrompt(isReading = uiState.isReading)
@@ -403,6 +402,9 @@ private fun HomeScreenPreview() {
         HomeScreen(
             uiState = HomeUiState(),
             onEvent = {},
+            onVaultClick = {},
+            onSettingsClick = {},
+            onOpenNfcSettings = {},
         )
     }
 }
@@ -415,6 +417,9 @@ private fun HomeScreenNfcDisabledPreview() {
         HomeScreen(
             uiState = HomeUiState(isNfcEnabled = false),
             onEvent = {},
+            onVaultClick = {},
+            onSettingsClick = {},
+            onOpenNfcSettings = {},
         )
     }
 }

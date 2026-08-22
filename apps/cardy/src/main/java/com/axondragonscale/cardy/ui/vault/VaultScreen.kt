@@ -47,9 +47,8 @@ import androidx.navigation.NavController
 import com.axondragonscale.cardy.database.entity.CardEntity
 import com.axondragonscale.cardy.emv.CardNetwork
 import com.axondragonscale.cardy.security.BiometricAuthManager
-import com.axondragonscale.cardy.security.SessionManager
 import com.axondragonscale.cardy.ui.Route
-import com.axondragonscale.cardy.ui.common.CardVisual
+import com.axondragonscale.cardy.ui.common.PaymentCard
 import com.axondragonscale.cardy.ui.theme.CardyTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -62,12 +61,11 @@ fun VaultScreen(
     val viewModel: VaultVM = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val biometricAuthManager: BiometricAuthManager = koinInject()
-    val sessionManager: SessionManager = koinInject()
     val context = LocalContext.current
 
     // Only ask for biometric auth once per app session
     LaunchedEffect(Unit) {
-        if (sessionManager.isAuthenticated) {
+        if (biometricAuthManager.isSessionAuthenticated) {
             viewModel.onEvent(VaultUiEvent.Authenticated)
             return@LaunchedEffect
         }
@@ -81,19 +79,19 @@ fun VaultScreen(
             ) { result ->
                 when (result) {
                     is BiometricAuthManager.AuthResult.Success -> {
-                        sessionManager.markAuthenticated()
+                        biometricAuthManager.markSessionAuthenticated()
                         viewModel.onEvent(VaultUiEvent.Authenticated)
                     }
                     is BiometricAuthManager.AuthResult.Error ->
                         viewModel.onEvent(VaultUiEvent.AuthFailed(result.message))
                     is BiometricAuthManager.AuthResult.Unavailable -> {
-                        sessionManager.markAuthenticated()
+                        biometricAuthManager.markSessionAuthenticated()
                         viewModel.onEvent(VaultUiEvent.Authenticated)
                     }
                 }
             }
         } else {
-            sessionManager.markAuthenticated()
+            biometricAuthManager.markSessionAuthenticated()
             viewModel.onEvent(VaultUiEvent.Authenticated)
         }
     }
@@ -101,13 +99,9 @@ fun VaultScreen(
     VaultScreen(
         modifier = modifier,
         uiState = uiState,
-        onEvent = { event ->
-            when (event) {
-                is VaultUiEvent.NavigateToDetail -> navController.navigate(Route.CardDetail(event.cardId))
-                is VaultUiEvent.NavigateBack -> navController.popBackStack()
-                else -> viewModel.onEvent(event)
-            }
-        },
+        onEvent = viewModel::onEvent,
+        onCardClick = { navController.navigate(Route.CardDetail(it)) },
+        onBack = { navController.popBackStack() },
     )
 }
 
@@ -117,6 +111,8 @@ private fun VaultScreen(
     modifier: Modifier = Modifier,
     uiState: VaultUiState,
     onEvent: (VaultUiEvent) -> Unit,
+    onCardClick: (Long) -> Unit = {},
+    onBack: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -125,7 +121,7 @@ private fun VaultScreen(
             TopAppBar(
                 title = { Text("Vault") },
                 navigationIcon = {
-                    IconButton(onClick = { onEvent(VaultUiEvent.NavigateBack) }) {
+                    IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -159,7 +155,7 @@ private fun VaultScreen(
                 items(uiState.cards, key = { it.id }) { card ->
                     SavedCardTile(
                         card = card,
-                        onClick = { onEvent(VaultUiEvent.NavigateToDetail(card.id)) },
+                        onClick = { onCardClick(card.id) },
                         onDelete = { onEvent(VaultUiEvent.DeleteCard(card.id)) },
                     )
                 }
@@ -244,7 +240,7 @@ private fun SavedCardTile(
     onDelete: () -> Unit,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val network = try { CardNetwork.valueOf(card.network) } catch (_: Exception) { CardNetwork.UNKNOWN }
+    val network = CardNetwork.fromName(card.network)
 
     Column(
         modifier = modifier
@@ -254,7 +250,7 @@ private fun SavedCardTile(
                 onLongClick = { showDeleteDialog = true },
             ),
     ) {
-        CardVisual(
+        PaymentCard(
             network = network,
             pan = card.lastFourDigits,
             expiry = card.expiry,

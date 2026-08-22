@@ -27,12 +27,12 @@ class VaultVM(
 
     // region Event Handling
 
-    fun onEvent(event: VaultUiEvent): Any = when (event) {
-        is VaultUiEvent.Authenticated -> onAuthenticated()
-        is VaultUiEvent.AuthFailed -> onAuthFailed(event.message)
-        is VaultUiEvent.DeleteCard -> deleteCard(event.cardId)
-        is VaultUiEvent.NavigateToDetail -> Unit // Handled in composable
-        is VaultUiEvent.NavigateBack -> Unit // Handled in composable
+    fun onEvent(event: VaultUiEvent) {
+        when (event) {
+            is VaultUiEvent.Authenticated -> onAuthenticated()
+            is VaultUiEvent.AuthFailed -> onAuthFailed(event.message)
+            is VaultUiEvent.DeleteCard -> deleteCard(event.cardId)
+        }
     }
 
     // endregion
@@ -66,6 +66,4 @@ sealed interface VaultUiEvent {
     data object Authenticated : VaultUiEvent
     data class AuthFailed(val message: String) : VaultUiEvent
     data class DeleteCard(val cardId: Long) : VaultUiEvent
-    data class NavigateToDetail(val cardId: Long) : VaultUiEvent
-    data object NavigateBack : VaultUiEvent
 }

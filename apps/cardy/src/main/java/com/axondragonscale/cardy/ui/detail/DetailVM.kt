@@ -7,14 +7,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.axondragonscale.cardy.emv.CardNetwork
 import com.axondragonscale.cardy.emv.EmvDataExtractor
-import com.axondragonscale.cardy.model.CardReadResultHolder
+import com.axondragonscale.cardy.model.CardReadResult
+import com.axondragonscale.cardy.model.CardReadSession
+import com.axondragonscale.cardy.model.EmvApplication
 import com.axondragonscale.cardy.model.ParsedTlvNode
 import com.axondragonscale.cardy.repository.CardRepository
-import com.axondragonscale.cardy.repository.SerializableApplication
-import com.axondragonscale.cardy.repository.SerializableCardData
 import com.axondragonscale.cardy.ui.Route
 import com.axondragonscale.cardy.util.hexToBytes
-import com.axondragonscale.cardy.util.toSerializable
 import com.axondragonscale.commons.logD
 import com.axondragonscale.commons.logE
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +26,7 @@ private const val TAG = "DetailVM"
 class DetailVM(
     savedStateHandle: SavedStateHandle,
     private val cardRepository: CardRepository,
-    private val cardReadResultHolder: CardReadResultHolder,
+    private val cardReadSession: CardReadSession,
 ) : ViewModel() {
 
     // region State
@@ -51,25 +50,25 @@ class DetailVM(
 
     // region Event Handling
 
-    fun onEvent(event: DetailUiEvent): Any = when (event) {
-        is DetailUiEvent.UpdateLabel -> updateLabel(event.newLabel)
-        is DetailUiEvent.DeleteCard -> deleteCard()
-        is DetailUiEvent.SelectApplication -> selectApplication(event.index)
-        is DetailUiEvent.SaveToVault -> saveToVault()
-        is DetailUiEvent.NavigateBack -> Unit // Handled in composable
+    fun onEvent(event: DetailUiEvent) {
+        when (event) {
+            is DetailUiEvent.UpdateLabel -> updateLabel(event.newLabel)
+            is DetailUiEvent.DeleteCard -> deleteCard()
+            is DetailUiEvent.SelectApplication -> selectApplication(event.index)
+            is DetailUiEvent.SaveToVault -> saveToVault()
+        }
     }
 
     // endregion
 
     private fun loadFromLastRead() {
-        val result = cardReadResultHolder.result ?: run {
+        val result = cardReadSession.latest ?: run {
             TAG.logD { "loadFromLastRead: lastReadResult is null" }
             return
         }
 
-        val cardData = result.toSerializable()
         val tlvTrees = result.applications.map {
-            EmvDataExtractor.buildTlvTree(it.rawTlvs, it.network)
+            buildTlvTreeFromHex(it.rawTlvHex, it.network)
         }
         val network = result.primaryNetwork
 
@@ -82,9 +81,7 @@ class DetailVM(
                 cardId = -1L,
                 label = result.displayLabel,
                 network = network,
-                lastFourDigits = result.primaryPan?.takeLast(4) ?: "????",
-                expiry = result.primaryExpiry,
-                cardData = cardData,
+                cardData = result,
                 tlvTrees = tlvTrees,
                 selectedAppIndex = 0,
             )
@@ -95,7 +92,7 @@ class DetailVM(
         val entity = cardRepository.getCardById(initialCardId) ?: return@launch
         val decryptedData = cardRepository.decryptCardData(entity)
 
-        val network = try { CardNetwork.valueOf(entity.network) } catch (_: Exception) { CardNetwork.UNKNOWN }
+        val network = CardNetwork.fromName(entity.network)
 
         val tlvTrees = decryptedData?.applications?.map { app ->
             buildTlvTreeFromHex(app.rawTlvHex, CardNetwork.fromAid(app.aid))
@@ -110,8 +107,6 @@ class DetailVM(
                 cardId = entity.id,
                 label = entity.label,
                 network = network,
-                lastFourDigits = entity.lastFourDigits,
-                expiry = entity.expiry,
                 cardData = decryptedData,
                 tlvTrees = tlvTrees,
                 selectedAppIndex = 0,
@@ -134,13 +129,13 @@ class DetailVM(
     }
 
     private fun saveToVault() = viewModelScope.launch {
-        val result = cardReadResultHolder.result ?: return@launch
+        val result = cardReadSession.latest ?: return@launch
         TAG.logD { "saveToVault: saving card" }
         _uiState.update { it.copy(isSaving = true) }
         try {
             val savedId = cardRepository.saveCard(result)
             TAG.logD { "saveToVault: saved with id=$savedId" }
-            _uiState.update { it.copy(isSaving = false, isSaved = true, mode = DetailMode.SavedCard, cardId = savedId) }
+            _uiState.update { it.copy(isSaving = false, mode = DetailMode.SavedCard, cardId = savedId) }
         } catch (e: Exception) {
             TAG.logE { "saveToVault: failed — ${e.message}" }
             _uiState.update { it.copy(isSaving = false, saveError = e.message) }
@@ -179,17 +174,14 @@ data class DetailUiState(
     val cardId: Long = 0,
     val label: String = "",
     val network: CardNetwork = CardNetwork.UNKNOWN,
-    val lastFourDigits: String = "????",
-    val expiry: String? = null,
-    val cardData: SerializableCardData? = null,
+    val cardData: CardReadResult? = null,
     val tlvTrees: List<List<ParsedTlvNode>> = emptyList(),
     val selectedAppIndex: Int = 0,
     val isDeleted: Boolean = false,
     val isSaving: Boolean = false,
-    val isSaved: Boolean = false,
     val saveError: String? = null,
 ) {
-    val selectedApp: SerializableApplication?
+    val selectedApp: EmvApplication?
         get() = cardData?.applications?.getOrNull(selectedAppIndex)
 
     val selectedTlvTree: List<ParsedTlvNode>
@@ -198,8 +190,8 @@ data class DetailUiState(
     val hasMultipleApps: Boolean
         get() = (cardData?.applications?.size ?: 0) > 1
 
-    val isFreshRead: Boolean get() = mode == DetailMode.FreshRead && !isSaved
-    val isSavedCard: Boolean get() = mode == DetailMode.SavedCard || isSaved
+    val isFreshRead: Boolean get() = mode == DetailMode.FreshRead
+    val isSavedCard: Boolean get() = mode == DetailMode.SavedCard
 }
 
 sealed interface DetailUiEvent {
@@ -207,5 +199,4 @@ sealed interface DetailUiEvent {
     data object DeleteCard : DetailUiEvent
     data class SelectApplication(val index: Int) : DetailUiEvent
     data object SaveToVault : DetailUiEvent
-    data object NavigateBack : DetailUiEvent
 }

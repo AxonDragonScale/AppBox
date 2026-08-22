@@ -59,13 +59,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.cardy.emv.CardNetwork
+import com.axondragonscale.cardy.emv.EmvTagInfo
 import com.axondragonscale.cardy.emv.interpreter.EmvTagInterpreter
 import com.axondragonscale.cardy.emv.interpreter.InterpretedEntry
 import com.axondragonscale.cardy.emv.interpreter.TagInterpretation
+import com.axondragonscale.cardy.model.CardReadResult
+import com.axondragonscale.cardy.model.EmvApplication
 import com.axondragonscale.cardy.model.ParsedTlvNode
-import com.axondragonscale.cardy.repository.SerializableApplication
-import com.axondragonscale.cardy.repository.SerializableCardData
-import com.axondragonscale.cardy.ui.common.CardVisual
+import com.axondragonscale.cardy.ui.common.PaymentCard
 import com.axondragonscale.cardy.ui.theme.CardyTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -86,12 +87,8 @@ fun DetailScreen(
     DetailScreen(
         modifier = modifier,
         uiState = uiState,
-        onEvent = { event ->
-            when (event) {
-                is DetailUiEvent.NavigateBack -> navController.popBackStack()
-                else -> viewModel.onEvent(event)
-            }
-        },
+        onEvent = viewModel::onEvent,
+        onBack = { navController.popBackStack() },
     )
 }
 
@@ -101,6 +98,7 @@ private fun DetailScreen(
     modifier: Modifier = Modifier,
     uiState: DetailUiState,
     onEvent: (DetailUiEvent) -> Unit,
+    onBack: () -> Unit = {},
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -112,7 +110,7 @@ private fun DetailScreen(
             TopAppBar(
                 title = { Text("Card Details") },
                 navigationIcon = {
-                    IconButton(onClick = { onEvent(DetailUiEvent.NavigateBack) }) {
+                    IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -169,7 +167,7 @@ private fun DetailScreen(
                 .padding(16.dp),
         ) {
             // Card Visual
-            CardVisual(
+            PaymentCard(
                 network = uiState.network,
                 pan = cardData.primaryPan,
                 expiry = cardData.primaryExpiry,
@@ -214,7 +212,7 @@ private fun DetailScreen(
                         FilterChip(
                             selected = index == uiState.selectedAppIndex,
                             onClick = { onEvent(DetailUiEvent.SelectApplication(index)) },
-                            label = { Text(app.label ?: app.network) },
+                            label = { Text(app.label ?: app.network.displayName) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             ),
@@ -228,7 +226,7 @@ private fun DetailScreen(
             CollapsibleSection(title = "Basic Info") {
                 DataRow(label = "PAN", value = selectedApp.pan ?: "Not available")
                 DataRow(label = "Expiry", value = selectedApp.expiry ?: "Not available")
-                DataRow(label = "Network", value = selectedApp.network)
+                DataRow(label = "Network", value = selectedApp.network.displayName)
             }
 
             // Section 2: Application Data
@@ -627,7 +625,7 @@ private fun TlvNodeRow(
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = node.tagName,
+                    text = node.tagInfo.name,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium,
@@ -842,11 +840,11 @@ private fun DetailScreenFreshReadPreview() {
                 mode = DetailMode.FreshRead,
                 label = "Visa - 4111",
                 network = CardNetwork.VISA,
-                cardData = SerializableCardData(
+                cardData = CardReadResult(
                     applications = listOf(
-                        SerializableApplication(
+                        EmvApplication(
                             aid = "A0000000031010",
-                            network = "VISA",
+                            network = CardNetwork.VISA,
                             label = "VISA DEBIT",
                             pan = "4111111111111111",
                             expiry = "12/27",
@@ -862,7 +860,7 @@ private fun DetailScreenFreshReadPreview() {
                             rawTlvHex = "",
                         ),
                     ),
-                    primaryNetwork = "VISA",
+                    primaryNetwork = CardNetwork.VISA,
                     primaryPan = "4111111111111111",
                     primaryExpiry = "12/27",
                     cardholderName = "JOHN DOE",
@@ -870,8 +868,8 @@ private fun DetailScreenFreshReadPreview() {
                 ),
                 tlvTrees = listOf(
                     listOf(
-                        ParsedTlvNode("4F", "AID", "Application Identifier", "A0000000031010", null, 7, false, emptyList()),
-                        ParsedTlvNode("50", "Application Label", "Mnemonic", "564953412044454249540000", "VISA DEBIT", 12, false, emptyList()),
+                        ParsedTlvNode("4F", EmvTagInfo("AID", "Application Identifier"), "A0000000031010", null, 7, false, emptyList()),
+                        ParsedTlvNode("50", EmvTagInfo("Application Label", "Mnemonic"), "564953412044454249540000", "VISA DEBIT", 12, false, emptyList()),
                     ),
                 ),
             ),
@@ -891,13 +889,11 @@ private fun DetailScreenSavedPreview() {
                 cardId = 2,
                 label = "Mastercard - 4444",
                 network = CardNetwork.MASTERCARD,
-                lastFourDigits = "4444",
-                expiry = "03/26",
-                cardData = SerializableCardData(
+                cardData = CardReadResult(
                     applications = listOf(
-                        SerializableApplication(
+                        EmvApplication(
                             aid = "A0000000041010",
-                            network = "MASTERCARD",
+                            network = CardNetwork.MASTERCARD,
                             label = "MASTERCARD",
                             pan = "5500000000004444",
                             expiry = "03/26",
@@ -910,7 +906,7 @@ private fun DetailScreenSavedPreview() {
                             rawTlvHex = "",
                         ),
                     ),
-                    primaryNetwork = "MASTERCARD",
+                    primaryNetwork = CardNetwork.MASTERCARD,
                     primaryPan = "5500000000004444",
                     primaryExpiry = "03/26",
                     cardholderName = "JANE DOE",

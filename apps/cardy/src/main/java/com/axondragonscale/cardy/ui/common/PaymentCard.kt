@@ -43,7 +43,7 @@ import com.axondragonscale.cardy.ui.theme.VisaBlue
 private const val PAYMENT_CARD_ASPECT_RATIO = 85.60f / 53.98f
 
 @Composable
-fun CardVisual(
+fun PaymentCard(
     modifier: Modifier = Modifier,
     network: CardNetwork,
     pan: String?,
@@ -121,100 +121,123 @@ private fun EmvChip(
     variant: Int,
     modifier: Modifier = Modifier,
 ) {
-    val lineColor = Color(0xFF7A642D)
-    val chipGradient = when (variant) {
-        0 -> listOf(Color(0xFFE9CF7A), Color(0xFFC89B3C))
-        1 -> listOf(Color(0xFFF0D98A), Color(0xFFD2AA4F))
-        else -> listOf(Color(0xFFE2C067), Color(0xFFB98932))
+    when (variant) {
+        0 -> ClassicEmvChip(modifier)
+        1 -> GridEmvChip(modifier)
+        else -> DiamondEmvChip(modifier)
     }
+}
+
+@Composable
+private fun ClassicEmvChip(modifier: Modifier = Modifier) {
+    EmvChipCanvas(
+        colors = listOf(Color(0xFFE9CF7A), Color(0xFFC89B3C)),
+        modifier = modifier,
+    ) { w, h ->
+        moveTo(w / 2, 0f)
+        lineTo(w / 2, h)
+        moveTo(0f, h / 2)
+        lineTo(w, h / 2)
+
+        moveTo(0f, h * 0.27f)
+        lineTo(w * 0.28f, h * 0.27f)
+        quadraticTo(w * 0.36f, h * 0.27f, w * 0.36f, h * 0.36f)
+        lineTo(w / 2, h * 0.42f)
+        moveTo(w, h * 0.27f)
+        lineTo(w * 0.72f, h * 0.27f)
+        quadraticTo(w * 0.64f, h * 0.27f, w * 0.64f, h * 0.36f)
+        lineTo(w / 2, h * 0.42f)
+
+        moveTo(0f, h * 0.73f)
+        lineTo(w * 0.28f, h * 0.73f)
+        quadraticTo(w * 0.36f, h * 0.73f, w * 0.36f, h * 0.64f)
+        lineTo(w / 2, h * 0.58f)
+        moveTo(w, h * 0.73f)
+        lineTo(w * 0.72f, h * 0.73f)
+        quadraticTo(w * 0.64f, h * 0.73f, w * 0.64f, h * 0.64f)
+        lineTo(w / 2, h * 0.58f)
+    }
+}
+
+@Composable
+private fun GridEmvChip(modifier: Modifier = Modifier) {
+    EmvChipCanvas(
+        colors = listOf(Color(0xFFF0D98A), Color(0xFFD2AA4F)),
+        modifier = modifier,
+    ) { w, h ->
+        moveTo(w / 2, 0f)
+        lineTo(w / 2, h)
+        for (fraction in listOf(0.25f, 0.5f, 0.75f)) {
+            moveTo(0f, h * fraction)
+            lineTo(w, h * fraction)
+        }
+        moveTo(w * 0.23f, 0f)
+        lineTo(w * 0.23f, h * 0.25f)
+        moveTo(w * 0.77f, 0f)
+        lineTo(w * 0.77f, h * 0.25f)
+        moveTo(w * 0.23f, h * 0.75f)
+        lineTo(w * 0.23f, h)
+        moveTo(w * 0.77f, h * 0.75f)
+        lineTo(w * 0.77f, h)
+    }
+}
+
+@Composable
+private fun DiamondEmvChip(modifier: Modifier = Modifier) {
+    EmvChipCanvas(
+        colors = listOf(Color(0xFFE2C067), Color(0xFFB98932)),
+        modifier = modifier,
+    ) { w, h ->
+        moveTo(0f, h / 2)
+        lineTo(w, h / 2)
+        moveTo(w * 0.38f, 0f)
+        lineTo(w * 0.38f, h * 0.34f)
+        lineTo(w / 2, h * 0.43f)
+        lineTo(w * 0.62f, h * 0.34f)
+        lineTo(w * 0.62f, 0f)
+        moveTo(w * 0.38f, h)
+        lineTo(w * 0.38f, h * 0.66f)
+        lineTo(w / 2, h * 0.57f)
+        lineTo(w * 0.62f, h * 0.66f)
+        lineTo(w * 0.62f, h)
+        moveTo(0f, h * 0.25f)
+        lineTo(w * 0.38f, h * 0.25f)
+        moveTo(w * 0.62f, h * 0.25f)
+        lineTo(w, h * 0.25f)
+        moveTo(0f, h * 0.75f)
+        lineTo(w * 0.38f, h * 0.75f)
+        moveTo(w * 0.62f, h * 0.75f)
+        lineTo(w, h * 0.75f)
+    }
+}
+
+@Composable
+private fun EmvChipCanvas(
+    colors: List<Color>,
+    modifier: Modifier,
+    grooves: Path.(width: Float, height: Float) -> Unit,
+) {
     Canvas(
         modifier = modifier
             .size(width = 46.dp, height = 35.dp)
             .clip(RoundedCornerShape(5.dp))
-            .background(
-                Brush.linearGradient(chipGradient),
-            ),
+            .background(Brush.linearGradient(colors)),
     ) {
-        val stroke = 1.dp.toPx()
-        val w = size.width
-        val h = size.height
-        val grooves = Path().apply {
-            when (variant) {
-                0 -> {
-                    moveTo(w / 2, 0f)
-                    lineTo(w / 2, h)
-                    moveTo(0f, h / 2)
-                    lineTo(w, h / 2)
-
-                    moveTo(0f, h * 0.27f)
-                    lineTo(w * 0.28f, h * 0.27f)
-                    quadraticTo(w * 0.36f, h * 0.27f, w * 0.36f, h * 0.36f)
-                    lineTo(w / 2, h * 0.42f)
-                    moveTo(w, h * 0.27f)
-                    lineTo(w * 0.72f, h * 0.27f)
-                    quadraticTo(w * 0.64f, h * 0.27f, w * 0.64f, h * 0.36f)
-                    lineTo(w / 2, h * 0.42f)
-
-                    moveTo(0f, h * 0.73f)
-                    lineTo(w * 0.28f, h * 0.73f)
-                    quadraticTo(w * 0.36f, h * 0.73f, w * 0.36f, h * 0.64f)
-                    lineTo(w / 2, h * 0.58f)
-                    moveTo(w, h * 0.73f)
-                    lineTo(w * 0.72f, h * 0.73f)
-                    quadraticTo(w * 0.64f, h * 0.73f, w * 0.64f, h * 0.64f)
-                    lineTo(w / 2, h * 0.58f)
-                }
-                1 -> {
-                    moveTo(w / 2, 0f)
-                    lineTo(w / 2, h)
-                    for (fraction in listOf(0.25f, 0.5f, 0.75f)) {
-                        moveTo(0f, h * fraction)
-                        lineTo(w, h * fraction)
-                    }
-                    moveTo(w * 0.23f, 0f)
-                    lineTo(w * 0.23f, h * 0.25f)
-                    moveTo(w * 0.77f, 0f)
-                    lineTo(w * 0.77f, h * 0.25f)
-                    moveTo(w * 0.23f, h * 0.75f)
-                    lineTo(w * 0.23f, h)
-                    moveTo(w * 0.77f, h * 0.75f)
-                    lineTo(w * 0.77f, h)
-                }
-                else -> {
-                    moveTo(0f, h / 2)
-                    lineTo(w, h / 2)
-                    moveTo(w * 0.38f, 0f)
-                    lineTo(w * 0.38f, h * 0.34f)
-                    lineTo(w / 2, h * 0.43f)
-                    lineTo(w * 0.62f, h * 0.34f)
-                    lineTo(w * 0.62f, 0f)
-                    moveTo(w * 0.38f, h)
-                    lineTo(w * 0.38f, h * 0.66f)
-                    lineTo(w / 2, h * 0.57f)
-                    lineTo(w * 0.62f, h * 0.66f)
-                    lineTo(w * 0.62f, h)
-                    moveTo(0f, h * 0.25f)
-                    lineTo(w * 0.38f, h * 0.25f)
-                    moveTo(w * 0.62f, h * 0.25f)
-                    lineTo(w, h * 0.25f)
-                    moveTo(0f, h * 0.75f)
-                    lineTo(w * 0.38f, h * 0.75f)
-                    moveTo(w * 0.62f, h * 0.75f)
-                    lineTo(w, h * 0.75f)
-                }
-            }
-        }
+        val width = size.width
+        val height = size.height
+        val path = Path().apply { grooves(width, height) }
         drawPath(
-            path = grooves,
-            color = lineColor,
-            style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round),
+            path = path,
+            color = Color(0xFF7A642D),
+            style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
     }
 }
 
 fun getNetworkGradient(network: CardNetwork): Brush = when (network) {
     CardNetwork.VISA -> Brush.linearGradient(listOf(VisaBlue, Color(0xFF2A3080)))
-    CardNetwork.MASTERCARD -> Brush.linearGradient(listOf(MastercardRed, MastercardOrange))
+    CardNetwork.MASTERCARD,
+    CardNetwork.MAESTRO -> Brush.linearGradient(listOf(MastercardRed, MastercardOrange))
     CardNetwork.RUPAY -> Brush.linearGradient(listOf(RupayTeal, Color(0xFF0CA88A)))
     CardNetwork.AMEX -> Brush.linearGradient(listOf(AmexBlue, Color(0xFF0099FF)))
     CardNetwork.DISCOVER -> Brush.linearGradient(listOf(DiscoverOrange, Color(0xFFFF8C33)))
@@ -232,9 +255,9 @@ private fun formatPanForDisplay(pan: String?, maskPan: Boolean): String {
 @Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun CardVisualPreview() {
+private fun PaymentCardPreview() {
     CardyTheme {
-        CardVisual(
+        PaymentCard(
             network = CardNetwork.VISA,
             pan = "4111111111111111",
             expiry = "12/27",
