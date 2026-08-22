@@ -2,7 +2,6 @@
 package com.axondragonscale.cardy.di
 
 import com.axondragonscale.cardy.database.CardyDatabase
-import com.axondragonscale.cardy.model.CardReadSession
 import com.axondragonscale.cardy.nfc.CardReader
 import com.axondragonscale.cardy.nfc.NfcManager
 import com.axondragonscale.cardy.repository.CardRepository
@@ -21,7 +20,6 @@ val CardyModule = module {
     single { CardReader() }
     single { BiometricAuthManager() }
     single { CardRepository(get()) }
-    single { CardReadSession() }
     viewModelOf(::HomeVM)
     viewModelOf(::VaultVM)
     viewModelOf(::DetailVM)

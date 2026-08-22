@@ -1,7 +1,9 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
+import kotlinx.serialization.Serializable
 import kotlin.experimental.and
 
+@Serializable(with = TLVSerializer::class)
 data class TLV(
     val tag: Tag,
     val length: Length,

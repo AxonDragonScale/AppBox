@@ -1,14 +1,14 @@
 /** Created by Ronak on 05/30/26 */
 package com.axondragonscale.cardy.ui.home
 
-import android.content.Intent
+import android.nfc.Tag
 import android.nfc.TagLostException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.cardy.model.CardReadSession
 import com.axondragonscale.cardy.nfc.CardReadException
 import com.axondragonscale.cardy.nfc.CardReader
 import com.axondragonscale.cardy.nfc.NfcManager
+import com.axondragonscale.cardy.repository.CardRepository
 import com.axondragonscale.commons.logD
 import com.axondragonscale.commons.logE
 import java.io.IOException
@@ -26,7 +26,7 @@ private const val TAG = "HomeVM"
 class HomeVM(
     private val nfcManager: NfcManager,
     private val cardReader: CardReader,
-    private val cardReadSession: CardReadSession,
+    private val cardRepository: CardRepository,
 ) : ViewModel() {
 
     // region State
@@ -59,18 +59,6 @@ class HomeVM(
         }
     }
 
-    // region Event Handling
-
-    fun onEvent(event: HomeUiEvent) {
-        TAG.logD { "onEvent: $event" }
-        when (event) {
-            is HomeUiEvent.RefreshNfcStatus -> refreshNfcStatus()
-            is HomeUiEvent.HandleNfcIntent -> handleNfcIntent(event.intent)
-        }
-    }
-
-    // endregion
-
     private fun refreshNfcStatus() {
         _uiState.update {
             it.copy(
@@ -81,31 +69,29 @@ class HomeVM(
         TAG.logD { "refreshNfcStatus: supported=${nfcManager.isNfcSupported}, enabled=${nfcManager.isNfcEnabled}" }
     }
 
-    private fun handleNfcIntent(intent: Intent) = viewModelScope.launch(Dispatchers.IO) {
-        TAG.logD { "handleNfcIntent: action=${intent.action}, extras=${intent.extras}" }
-
-        val isoDep = nfcManager.getIsoDep(intent) ?: run {
-            TAG.logD { "handleNfcIntent: getIsoDep returned null, aborting" }
+    fun readTag(tag: Tag) = viewModelScope.launch(Dispatchers.IO) {
+        val isoDep = nfcManager.getIsoDep(tag) ?: run {
+            TAG.logD { "readTag: getIsoDep returned null, aborting" }
             return@launch
         }
 
-        TAG.logD { "handleNfcIntent: isReading=true" }
+        TAG.logD { "readTag: isReading=true" }
         _uiState.update { it.copy(isReading = true) }
 
         val result = cardReader.readCard(isoDep)
 
         result.onSuccess { cardReadResult ->
-            TAG.logD { "handleNfcIntent: readCard success — network=${cardReadResult.primaryNetwork}, pan_last4=${cardReadResult.primaryPan?.takeLast(4)}" }
+            TAG.logD { "readTag: readCard success — network=${cardReadResult.primaryNetwork}, pan_last4=${cardReadResult.primaryPan?.takeLast(4)}" }
             _uiState.update { state ->
                 state.copy(isReading = false, readError = null)
             }
-            cardReadSession.update(cardReadResult)
-            TAG.logD { "handleNfcIntent: sending NavigateToCardDetail effect" }
+            cardRepository.setPendingRead(cardReadResult)
+            TAG.logD { "readTag: sending NavigateToCardDetail effect" }
             uiEffectChannel.send(HomeUiEffect.NavigateToCardDetail)
         }
 
         result.onFailure { error ->
-            TAG.logE { "handleNfcIntent: readCard failure — ${error.message}" }
+            TAG.logE { "readTag: readCard failure — ${error.message}" }
             _uiState.update {
                 it.copy(isReading = false, readError = error.toUserMessage())
             }
@@ -132,11 +118,6 @@ data class HomeUiState(
     val isReading: Boolean = false,
     val readError: String? = null,
 )
-
-sealed interface HomeUiEvent {
-    data class HandleNfcIntent(val intent: Intent) : HomeUiEvent
-    data object RefreshNfcStatus : HomeUiEvent
-}
 
 sealed interface HomeUiEffect {
     data object NavigateToCardDetail : HomeUiEffect

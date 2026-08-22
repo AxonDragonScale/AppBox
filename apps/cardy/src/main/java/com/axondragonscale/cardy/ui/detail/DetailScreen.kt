@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.cardy.emv.CardNetwork
-import com.axondragonscale.cardy.emv.EmvTagInfo
+import com.axondragonscale.cardy.emv.EmvTag
 import com.axondragonscale.cardy.emv.interpreter.EmvTagInterpreter
 import com.axondragonscale.cardy.emv.interpreter.InterpretedEntry
 import com.axondragonscale.cardy.emv.interpreter.TagInterpretation
@@ -70,7 +70,12 @@ import com.axondragonscale.cardy.ui.common.PaymentCard
 import com.axondragonscale.cardy.ui.theme.CardyTheme
 import org.koin.androidx.compose.koinViewModel
 
-private val summaryOnlyTags = setOf("5F24", "5F25", "5F28", "9F42")
+private val summaryOnlyTags = setOf(
+    EmvTag.APPLICATION_EXPIRATION_DATE,
+    EmvTag.APPLICATION_EFFECTIVE_DATE,
+    EmvTag.ISSUER_COUNTRY_CODE,
+    EmvTag.APPLICATION_CURRENCY_CODE,
+)
 
 @Composable
 fun DetailScreen(
@@ -234,19 +239,19 @@ private fun DetailScreen(
                 DataRow(label = "AID", value = selectedApp.aid)
                 DataRow(label = "Label", value = selectedApp.label ?: "Not available")
                 if (selectedApp.appPriorityIndicator != null) {
-                    InterpretableHexRow(label = "Priority", tagHex = "87", valueHex = selectedApp.appPriorityIndicator)
+                    InterpretableHexRow(label = "Priority", tag = EmvTag.APPLICATION_PRIORITY_INDICATOR, valueHex = selectedApp.appPriorityIndicator)
                 }
                 if (selectedApp.cvmList != null) {
-                    InterpretableHexRow(label = "CVM List", tagHex = "8E", valueHex = selectedApp.cvmList)
+                    InterpretableHexRow(label = "CVM List", tag = EmvTag.CVM_LIST, valueHex = selectedApp.cvmList)
                 }
                 if (selectedApp.aip != null) {
-                    InterpretableHexRow(label = "AIP", tagHex = "82", valueHex = selectedApp.aip)
+                    InterpretableHexRow(label = "AIP", tag = EmvTag.AIP, valueHex = selectedApp.aip)
                 }
                 if (selectedApp.appEffectiveDate != null) {
-                    InterpretableHexRow(label = "Effective Date", tagHex = "5F25", valueHex = selectedApp.appEffectiveDate)
+                    InterpretableHexRow(label = "Effective Date", tag = EmvTag.APPLICATION_EFFECTIVE_DATE, valueHex = selectedApp.appEffectiveDate)
                 }
                 if (selectedApp.appExpiryDate != null) {
-                    InterpretableHexRow(label = "Expiry Date", tagHex = "5F24", valueHex = selectedApp.appExpiryDate)
+                    InterpretableHexRow(label = "Expiry Date", tag = EmvTag.APPLICATION_EXPIRATION_DATE, valueHex = selectedApp.appExpiryDate)
                 }
             }
 
@@ -395,17 +400,17 @@ private fun DataRow(
 private fun InterpretableHexRow(
     modifier: Modifier = Modifier,
     label: String,
-    tagHex: String,
+    tag: EmvTag,
     valueHex: String,
 ) {
     val valueBytes = remember(valueHex) {
         try { valueHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray() }
         catch (_: Exception) { byteArrayOf() }
     }
-    val interpretation = remember(tagHex, valueBytes) {
-        EmvTagInterpreter.interpret(tagHex, valueBytes)
+    val interpretation = remember(tag, valueBytes) {
+        EmvTagInterpreter.interpret(tag, valueBytes)
     }
-    val hasDetails = tagHex !in summaryOnlyTags && interpretation?.entries?.isNotEmpty() == true
+    val hasDetails = tag !in summaryOnlyTags && interpretation?.entries?.isNotEmpty() == true
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -593,7 +598,7 @@ private fun TlvNodeRow(
     var expanded by remember { mutableStateOf(false) }
     var interpretationExpanded by remember { mutableStateOf(false) }
     val hasInterpretationDetails =
-        node.tagHex !in summaryOnlyTags && node.interpretation?.entries?.isNotEmpty() == true
+        node.tag !in summaryOnlyTags && node.interpretation?.entries?.isNotEmpty() == true
     val hasExpandableContent = node.isConstructed || hasInterpretationDetails
 
     Column(
@@ -615,7 +620,7 @@ private fun TlvNodeRow(
             verticalAlignment = Alignment.Top,
         ) {
             Text(
-                text = node.tagHex,
+                text = node.tag.hex,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -625,7 +630,7 @@ private fun TlvNodeRow(
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = node.tagInfo.name,
+                    text = node.tag.displayName,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium,
@@ -857,7 +862,7 @@ private fun DetailScreenFreshReadPreview() {
                             appPriorityIndicator = "01",
                             appEffectiveDate = "200101",
                             appExpiryDate = "271231",
-                            rawTlvHex = "",
+                            rawTlvs = emptyList(),
                         ),
                     ),
                     primaryNetwork = CardNetwork.VISA,
@@ -868,8 +873,8 @@ private fun DetailScreenFreshReadPreview() {
                 ),
                 tlvTrees = listOf(
                     listOf(
-                        ParsedTlvNode("4F", EmvTagInfo("AID", "Application Identifier"), "A0000000031010", null, 7, false, emptyList()),
-                        ParsedTlvNode("50", EmvTagInfo("Application Label", "Mnemonic"), "564953412044454249540000", "VISA DEBIT", 12, false, emptyList()),
+                        ParsedTlvNode(EmvTag.AID, "A0000000031010", null, 7, false, emptyList()),
+                        ParsedTlvNode(EmvTag.APPLICATION_LABEL, "564953412044454249540000", "VISA DEBIT", 12, false, emptyList()),
                     ),
                 ),
             ),
@@ -903,7 +908,7 @@ private fun DetailScreenSavedPreview() {
                             cvmList = null,
                             cdol1 = null,
                             cdol2 = null,
-                            rawTlvHex = "",
+                            rawTlvs = emptyList(),
                         ),
                     ),
                     primaryNetwork = CardNetwork.MASTERCARD,

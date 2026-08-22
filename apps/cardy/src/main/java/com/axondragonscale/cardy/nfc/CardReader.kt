@@ -4,6 +4,7 @@ import TLV
 import android.nfc.tech.IsoDep
 import com.axondragonscale.cardy.emv.CardNetwork
 import com.axondragonscale.cardy.emv.EmvDataExtractor
+import com.axondragonscale.cardy.emv.EmvTag
 import com.axondragonscale.cardy.model.CardReadResult
 import com.axondragonscale.cardy.model.EmvApplication
 import com.axondragonscale.cardy.util.hexToBytes
@@ -108,7 +109,7 @@ class CardReader {
         allTlvs.addAll(selectTlvs)
 
         // GET PROCESSING OPTIONS
-        val pdol = EmvDataExtractor.findTag(selectTlvs, "9F38")
+        val pdol = EmvDataExtractor.findTag(selectTlvs, EmvTag.PDOL)
         val pdolData = pdol?.let { buildPdolData(it.value.valueBytes) }
         TAG.logD { "readApplication: PDOL ${if (pdol != null) "found (${pdolData?.size} bytes)" else "not found, using empty GPO"}" }
 
@@ -149,14 +150,14 @@ class CardReader {
 
     private fun extractAfl(gpoTlvs: List<TLV>, rawData: ByteArray): ByteArray? {
         // Format 2 (tag 77): AFL is in tag 94
-        val aflTag = EmvDataExtractor.findTag(gpoTlvs, "94")
+        val aflTag = EmvDataExtractor.findTag(gpoTlvs, EmvTag.AFL)
         if (aflTag != null) {
             TAG.logD { "extractAfl: Format 2 (tag 94) AFL found, ${aflTag.value.valueBytes.size} bytes" }
             return aflTag.value.valueBytes
         }
 
         // Format 1 (tag 80): AIP (2 bytes) + AFL (rest)
-        val format1 = EmvDataExtractor.findTag(gpoTlvs, "80")
+        val format1 = EmvDataExtractor.findTag(gpoTlvs, EmvTag.RESPONSE_MESSAGE_TEMPLATE_1)
         if (format1 != null && format1.value.valueBytes.size > 2) {
             TAG.logD { "extractAfl: Format 1 (tag 80) AFL found, ${format1.value.valueBytes.size - 2} bytes (after AIP)" }
             return format1.value.valueBytes.copyOfRange(2, format1.value.valueBytes.size)
@@ -225,14 +226,14 @@ class CardReader {
             }
             if (i >= pdolBytes.size) break
 
-            val tag = pdolBytes.copyOfRange(tagStart, i).toHex()
+            val tag = EmvTag.resolve(pdolBytes.copyOfRange(tagStart, i).toHex())
             val length = pdolBytes[i++].toInt() and 0xFF
             val value = when (tag) {
-                "9F66" -> "26000000".hexToBytes() // Terminal Transaction Qualifiers
-                "9F02" -> "000000000001".hexToBytes() // Minimal non-zero amount
-                "9A" -> LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd")).hexToBytes()
-                "9C" -> byteArrayOf(0x00) // Purchase
-                "9F37" -> ByteArray(length).also(SecureRandom()::nextBytes)
+                EmvTag.TERMINAL_TRANSACTION_QUALIFIERS -> "26000000".hexToBytes()
+                EmvTag.AMOUNT_AUTHORIZED -> "000000000001".hexToBytes()
+                EmvTag.TRANSACTION_DATE -> LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd")).hexToBytes()
+                EmvTag.TRANSACTION_TYPE -> byteArrayOf(0x00)
+                EmvTag.UNPREDICTABLE_NUMBER -> ByteArray(length).also(SecureRandom()::nextBytes)
                 else -> ByteArray(length)
             }
             repeat(length) { index ->

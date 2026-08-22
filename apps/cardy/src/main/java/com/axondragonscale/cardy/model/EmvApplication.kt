@@ -1,5 +1,6 @@
 package com.axondragonscale.cardy.model
 
+import TLV
 import com.axondragonscale.cardy.emv.CardNetwork
 import kotlinx.serialization.Serializable
 
@@ -20,5 +21,5 @@ data class EmvApplication(
     val appPriorityIndicator: String? = null,
     val appEffectiveDate: String? = null,
     val appExpiryDate: String? = null,
-    val rawTlvHex: String,
+    val rawTlvs: List<TLV>,
 )

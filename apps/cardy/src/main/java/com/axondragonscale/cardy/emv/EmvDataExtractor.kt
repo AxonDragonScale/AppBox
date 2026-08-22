@@ -37,7 +37,7 @@ object EmvDataExtractor {
 
     fun extractAidsFromPpse(responseData: ByteArray): List<ByteArray> {
         val aids = flatten(parseTlvData(responseData))
-            .filter { it.tag.asHex.equals("4F", ignoreCase = true) }
+            .filter { it.tag.asHex.equals(EmvTag.AID.hex, ignoreCase = true) }
             .map { it.value.valueBytes }
             .toList()
         TAG.logD { "extractAidsFromPpse: found ${aids.size} AID(s): ${aids.joinToString { it.toHex() }}" }
@@ -53,51 +53,49 @@ object EmvDataExtractor {
         }
     }
 
-    fun findTag(tlvs: List<TLV>, tagHex: String): TLV? =
-        flatten(tlvs).firstOrNull { it.tag.asHex.equals(tagHex, ignoreCase = true) }
+    fun findTag(tlvs: List<TLV>, tag: EmvTag): TLV? =
+        flatten(tlvs).firstOrNull { it.tag.asHex.equals(tag.hex, ignoreCase = true) }
 
     /** Extract structured application data from all TLVs collected during a read */
     fun extractApplicationData(allTlvs: List<TLV>, aidBytes: ByteArray): EmvApplication {
         val aidHex = aidBytes.toHex()
         val network = CardNetwork.fromAid(aidHex)
         val tags = buildMap {
-            flatten(allTlvs).forEach { putIfAbsent(it.tag.asHex.uppercase(), it) }
+            flatten(allTlvs).forEach { tlv ->
+                EmvTag.fromHex(tlv.tag.asHex)?.let { putIfAbsent(it, tlv) }
+            }
         }
-        fun value(tag: String): ByteArray? = tags[tag]?.value?.valueBytes
+        fun value(tag: EmvTag): ByteArray? = tags[tag]?.value?.valueBytes
 
         TAG.logD { "extractApplicationData: AID=$aidHex network=$network" }
 
-        val label = value("50")
+        val label = value(EmvTag.APPLICATION_LABEL)
             ?.toString(Charsets.US_ASCII)?.trim()
 
         // Try tag 5A first, then fall back to Track 2 (tag 57)
-        var pan = value("5A")?.toHex()
+        var pan = value(EmvTag.APPLICATION_PAN)?.toHex()
             ?.trimEnd('F', 'f')
-        var expiryRaw = value("5F24")?.toHex()
+        var expiryRaw = value(EmvTag.APPLICATION_EXPIRATION_DATE)?.toHex()
 
         // Track 2 fallback: format is PAN + 'D' + YYMM + service code + ...
         if (pan == null || expiryRaw == null) {
-            val track2 = value("57")?.toHex()
-                ?.uppercase()?.trimEnd('F')
+            val track2 = value(EmvTag.TRACK_2_EQUIVALENT_DATA)?.let(::parseTrack2EquivalentData)
             if (track2 != null) {
                 TAG.logD { "extractApplicationData: using Track 2 fallback" }
-                val separatorIndex = track2.indexOf('D')
-                if (separatorIndex > 0) {
-                    if (pan == null) {
-                        pan = track2.substring(0, separatorIndex)
-                        TAG.logD { "extractApplicationData: PAN from Track 2" }
-                    }
-                    if (expiryRaw == null && separatorIndex + 4 < track2.length) {
-                        expiryRaw = track2.substring(separatorIndex + 1, separatorIndex + 5)
-                        TAG.logD { "extractApplicationData: expiry from Track 2: $expiryRaw" }
-                    }
+                if (pan == null) {
+                    pan = track2.pan
+                    TAG.logD { "extractApplicationData: PAN from Track 2" }
+                }
+                if (expiryRaw == null) {
+                    expiryRaw = track2.expirationDate
+                    TAG.logD { "extractApplicationData: expiry from Track 2: $expiryRaw" }
                 }
             }
         }
 
         val expiry = expiryRaw?.let { formatExpiry(it) }
 
-        val cardholderName = value("5F20")
+        val cardholderName = value(EmvTag.CARDHOLDER_NAME)
             ?.toString(Charsets.US_ASCII)?.trim()?.replace("/", " ")
 
         val maskedPan = pan?.let { p ->
@@ -112,15 +110,15 @@ object EmvDataExtractor {
             pan = pan,
             expiry = expiry,
             cardholderName = cardholderName,
-            aip = value("82")?.toHex(),
-            afl = value("94")?.toHex(),
-            cvmList = value("8E")?.toHex(),
-            cdol1 = value("8C")?.toHex(),
-            cdol2 = value("8D")?.toHex(),
-            appPriorityIndicator = value("87")?.toHex(),
-            appEffectiveDate = value("5F25")?.toHex(),
-            appExpiryDate = value("5F24")?.toHex(),
-            rawTlvHex = allTlvs.joinToString("") { it.hex },
+            aip = value(EmvTag.AIP)?.toHex(),
+            afl = value(EmvTag.AFL)?.toHex(),
+            cvmList = value(EmvTag.CVM_LIST)?.toHex(),
+            cdol1 = value(EmvTag.CDOL1)?.toHex(),
+            cdol2 = value(EmvTag.CDOL2)?.toHex(),
+            appPriorityIndicator = value(EmvTag.APPLICATION_PRIORITY_INDICATOR)?.toHex(),
+            appEffectiveDate = value(EmvTag.APPLICATION_EFFECTIVE_DATE)?.toHex(),
+            appExpiryDate = value(EmvTag.APPLICATION_EXPIRATION_DATE)?.toHex(),
+            rawTlvs = allTlvs,
         )
     }
 
@@ -128,21 +126,19 @@ object EmvDataExtractor {
         tlvs: List<TLV>,
         network: CardNetwork = CardNetwork.UNKNOWN,
     ): List<ParsedTlvNode> = tlvs.map { tlv ->
-        val tagHex = tlv.tag.asHex.uppercase()
-        val tagInfo = EmvTags.getTagInfo(tagHex)
+        val tag = EmvTag.resolve(tlv.tag.asHex)
         val children = if (tlv.isNested) {
             buildTlvTree(parseTlvData(tlv.value.valueBytes), network)
         } else {
             emptyList()
         }
         val interpretation = if (!tlv.isNested) {
-            EmvTagInterpreter.interpret(tagHex, tlv.value.valueBytes, network)
+            EmvTagInterpreter.interpret(tag, tlv.value.valueBytes, network)
         } else {
             null
         }
         ParsedTlvNode(
-            tagHex = tagHex,
-            tagInfo = tagInfo,
+            tag = tag,
             valueHex = tlv.value.asHex.uppercase(),
             valueAscii = tlv.value.valueBytes.decodeToAsciiOrNull(),
             length = tlv.length.lengthAsInt,

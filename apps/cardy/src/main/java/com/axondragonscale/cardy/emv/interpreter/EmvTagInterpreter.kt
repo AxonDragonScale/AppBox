@@ -1,7 +1,9 @@
 package com.axondragonscale.cardy.emv.interpreter
 
 import com.axondragonscale.cardy.emv.CardNetwork
-import com.axondragonscale.cardy.emv.EmvTags
+import com.axondragonscale.cardy.emv.EmvTag
+import com.axondragonscale.cardy.emv.IEmvTag
+import com.axondragonscale.cardy.emv.parseTrack2EquivalentData
 
 /** Created by Ronak on 05/30/26 */
 
@@ -19,49 +21,79 @@ object EmvTagInterpreter {
      * Returns null if no interpretation is available for this tag.
      */
     fun interpret(
-        tagHex: String,
+        tag: IEmvTag,
         valueBytes: ByteArray,
         network: CardNetwork = CardNetwork.UNKNOWN,
     ): TagInterpretation? {
         if (valueBytes.isEmpty()) return null
-        return when (tagHex.uppercase()) {
-            "82" -> interpretAip(valueBytes)
-            "95" -> interpretTvr(valueBytes)
-            "9F07" -> interpretAuc(valueBytes)
-            "9F27" -> interpretCid(valueBytes)
-            "8E" -> interpretCvmList(valueBytes)
-            "94" -> interpretAfl(valueBytes)
-            "9F38" -> interpretDol(valueBytes, "PDOL")
-            "8C" -> interpretDol(valueBytes, "CDOL1")
-            "8D" -> interpretDol(valueBytes, "CDOL2")
-            "87" -> interpretAppPriorityIndicator(valueBytes)
-            "9C" -> interpretTransactionType(valueBytes)
-            "9F33" -> interpretTerminalCapabilities(valueBytes)
-            "9F34" -> interpretCvmResults(valueBytes)
-            "9F36" -> interpretAtc(valueBytes)
-            "5F28" -> interpretCountryCode(valueBytes)
-            "5F2A" -> interpretCurrencyCode(valueBytes)
-            "9F42" -> interpretCurrencyCode(valueBytes)
-            "9F06", "4F", "84" -> interpretAid(valueBytes)
-            "9F0D" -> interpretIssuerActionCode(valueBytes, "Default")
-            "9F0E" -> interpretIssuerActionCode(valueBytes, "Denial")
-            "9F0F" -> interpretIssuerActionCode(valueBytes, "Online")
-            "5F24" -> interpretDate(valueBytes, "Expiration")
-            "5F25" -> interpretDate(valueBytes, "Effective")
-            "9A" -> interpretDate(valueBytes, "Transaction")
-            "9F35" -> interpretTerminalType(valueBytes)
-            "9F6E" -> interpretContactlessFormFactor(valueBytes, network)
+        return when (tag) {
+            EmvTag.AIP -> interpretAip(valueBytes)
+            EmvTag.TVR -> interpretTvr(valueBytes)
+            EmvTag.APPLICATION_USAGE_CONTROL -> interpretAuc(valueBytes)
+            EmvTag.CRYPTOGRAM_INFORMATION_DATA -> interpretCid(valueBytes)
+            EmvTag.CVM_LIST -> interpretCvmList(valueBytes)
+            EmvTag.AFL -> interpretAfl(valueBytes)
+            EmvTag.PDOL -> interpretDol(valueBytes, "PDOL")
+            EmvTag.CDOL1 -> interpretDol(valueBytes, "CDOL1")
+            EmvTag.CDOL2 -> interpretDol(valueBytes, "CDOL2")
+            EmvTag.APPLICATION_PRIORITY_INDICATOR -> interpretAppPriorityIndicator(valueBytes)
+            EmvTag.TRANSACTION_TYPE -> interpretTransactionType(valueBytes)
+            EmvTag.TERMINAL_CAPABILITIES -> interpretTerminalCapabilities(valueBytes)
+            EmvTag.CVM_RESULTS -> interpretCvmResults(valueBytes)
+            EmvTag.APPLICATION_TRANSACTION_COUNTER -> interpretAtc(valueBytes)
+            EmvTag.ISSUER_COUNTRY_CODE -> interpretCountryCode(valueBytes)
+            EmvTag.TRANSACTION_CURRENCY_CODE,
+            EmvTag.APPLICATION_CURRENCY_CODE -> interpretCurrencyCode(valueBytes)
+            EmvTag.TERMINAL_AID,
+            EmvTag.AID,
+            EmvTag.DF_NAME -> interpretAid(valueBytes)
+            EmvTag.ISSUER_ACTION_CODE_DEFAULT -> interpretIssuerActionCode(valueBytes, "Default")
+            EmvTag.ISSUER_ACTION_CODE_DENIAL -> interpretIssuerActionCode(valueBytes, "Denial")
+            EmvTag.ISSUER_ACTION_CODE_ONLINE -> interpretIssuerActionCode(valueBytes, "Online")
+            EmvTag.APPLICATION_EXPIRATION_DATE -> interpretDate(valueBytes, "Expiration")
+            EmvTag.APPLICATION_EFFECTIVE_DATE -> interpretDate(valueBytes, "Effective")
+            EmvTag.TRACK_2_EQUIVALENT_DATA -> interpretTrack2EquivalentData(valueBytes)
+            EmvTag.TRANSACTION_DATE -> interpretDate(valueBytes, "Transaction")
+            EmvTag.TERMINAL_TYPE -> interpretTerminalType(valueBytes)
+            EmvTag.CONTACTLESS_FORM_FACTOR_DATA -> interpretContactlessFormFactor(valueBytes, network)
             else -> null
         }
     }
 
     /** Returns true if interpretation is available for this tag */
-    fun hasInterpretation(tagHex: String): Boolean = tagHex.uppercase() in setOf(
-        "82", "95", "9F07", "9F27", "8E", "94", "9F38", "8C", "8D",
-        "87", "9C", "9F33", "9F34", "9F36", "5F28", "5F2A", "9F42",
-        "9F06", "4F", "84", "9F0D", "9F0E", "9F0F", "5F24", "5F25",
-        "9A", "9F35", "9F6E",
+    fun hasInterpretation(tag: IEmvTag): Boolean = tag in interpretedTags
+
+    private val interpretedTags = setOf(
+        EmvTag.AIP, EmvTag.TVR, EmvTag.APPLICATION_USAGE_CONTROL,
+        EmvTag.CRYPTOGRAM_INFORMATION_DATA, EmvTag.CVM_LIST, EmvTag.AFL,
+        EmvTag.PDOL, EmvTag.CDOL1, EmvTag.CDOL2, EmvTag.APPLICATION_PRIORITY_INDICATOR,
+        EmvTag.TRANSACTION_TYPE, EmvTag.TERMINAL_CAPABILITIES, EmvTag.CVM_RESULTS,
+        EmvTag.APPLICATION_TRANSACTION_COUNTER, EmvTag.TERMINAL_TYPE,
+        EmvTag.ISSUER_COUNTRY_CODE, EmvTag.TRANSACTION_CURRENCY_CODE,
+        EmvTag.APPLICATION_CURRENCY_CODE, EmvTag.TERMINAL_AID, EmvTag.AID,
+        EmvTag.DF_NAME, EmvTag.ISSUER_ACTION_CODE_DEFAULT, EmvTag.ISSUER_ACTION_CODE_DENIAL,
+        EmvTag.ISSUER_ACTION_CODE_ONLINE, EmvTag.APPLICATION_EXPIRATION_DATE,
+        EmvTag.APPLICATION_EFFECTIVE_DATE, EmvTag.TRACK_2_EQUIVALENT_DATA,
+        EmvTag.TRANSACTION_DATE, EmvTag.CONTACTLESS_FORM_FACTOR_DATA,
     )
+
+    private fun interpretTrack2EquivalentData(value: ByteArray): TagInterpretation {
+        val track2 = parseTrack2EquivalentData(value)
+            ?: return TagInterpretation(summary = "Invalid Track 2 equivalent data")
+        val expiry = "${track2.expirationDate.substring(2, 4)}/${track2.expirationDate.substring(0, 2)}"
+        val entries = buildList {
+            add(InterpretedEntry.DecodedValue("PAN", track2.pan, ""))
+            add(InterpretedEntry.DecodedValue("Expiration date", expiry, track2.expirationDate))
+            add(InterpretedEntry.DecodedValue("Service code", track2.serviceCode, ""))
+            if (track2.discretionaryData.isNotEmpty()) {
+                add(InterpretedEntry.DecodedValue("Discretionary data", track2.discretionaryData, ""))
+            }
+        }
+        return TagInterpretation(
+            summary = "PAN ending ${track2.pan.takeLast(4)} · expires $expiry",
+            entries = entries,
+        )
+    }
 
     // region AIP (Tag 82) - Application Interchange Profile
 
@@ -385,7 +417,7 @@ object EmvTagInterpreter {
             offset++
             totalRequestedLength += requestedLength
 
-            val tagName = EmvTags.getTagName(tagHex)
+            val tagName = EmvTag.resolve(tagHex).displayName
             entries.add(InterpretedEntry.DolEntry(tagHex, tagName, requestedLength))
         }
 

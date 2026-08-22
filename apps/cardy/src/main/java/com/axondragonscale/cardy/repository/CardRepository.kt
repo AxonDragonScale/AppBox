@@ -11,6 +11,13 @@ import kotlinx.serialization.json.Json
 
 class CardRepository(private val cardDao: CardDao) {
 
+    var pendingRead: CardReadResult? = null
+        private set
+
+    fun setPendingRead(result: CardReadResult) {
+        pendingRead = result
+    }
+
     fun getAllCards(): Flow<List<CardEntity>> = cardDao.getAllCards()
 
     suspend fun getCardById(id: Long): CardEntity? = cardDao.getCardById(id)

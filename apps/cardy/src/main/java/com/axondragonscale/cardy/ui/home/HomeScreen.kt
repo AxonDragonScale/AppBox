@@ -86,7 +86,6 @@ fun HomeScreen(
     HomeScreen(
         modifier = modifier,
         uiState = uiState,
-        onEvent = viewModel::onEvent,
         onVaultClick = { navController.navigate(Route.Vault) },
         onSettingsClick = { navController.navigate(Route.Settings) },
         onOpenNfcSettings = {
@@ -99,7 +98,6 @@ fun HomeScreen(
 private fun HomeScreen(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
-    onEvent: (HomeUiEvent) -> Unit,
     onVaultClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onOpenNfcSettings: () -> Unit,
@@ -401,7 +399,6 @@ private fun HomeScreenPreview() {
     CardyTheme {
         HomeScreen(
             uiState = HomeUiState(),
-            onEvent = {},
             onVaultClick = {},
             onSettingsClick = {},
             onOpenNfcSettings = {},
@@ -416,7 +413,6 @@ private fun HomeScreenNfcDisabledPreview() {
     CardyTheme {
         HomeScreen(
             uiState = HomeUiState(isNfcEnabled = false),
-            onEvent = {},
             onVaultClick = {},
             onSettingsClick = {},
             onOpenNfcSettings = {},

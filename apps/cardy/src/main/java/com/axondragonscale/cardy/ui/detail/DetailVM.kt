@@ -8,12 +8,10 @@ import androidx.navigation.toRoute
 import com.axondragonscale.cardy.emv.CardNetwork
 import com.axondragonscale.cardy.emv.EmvDataExtractor
 import com.axondragonscale.cardy.model.CardReadResult
-import com.axondragonscale.cardy.model.CardReadSession
 import com.axondragonscale.cardy.model.EmvApplication
 import com.axondragonscale.cardy.model.ParsedTlvNode
 import com.axondragonscale.cardy.repository.CardRepository
 import com.axondragonscale.cardy.ui.Route
-import com.axondragonscale.cardy.util.hexToBytes
 import com.axondragonscale.commons.logD
 import com.axondragonscale.commons.logE
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +24,6 @@ private const val TAG = "DetailVM"
 class DetailVM(
     savedStateHandle: SavedStateHandle,
     private val cardRepository: CardRepository,
-    private val cardReadSession: CardReadSession,
 ) : ViewModel() {
 
     // region State
@@ -62,13 +59,13 @@ class DetailVM(
     // endregion
 
     private fun loadFromLastRead() {
-        val result = cardReadSession.latest ?: run {
+        val result = cardRepository.pendingRead ?: run {
             TAG.logD { "loadFromLastRead: lastReadResult is null" }
             return
         }
 
         val tlvTrees = result.applications.map {
-            buildTlvTreeFromHex(it.rawTlvHex, it.network)
+            EmvDataExtractor.buildTlvTree(it.rawTlvs, it.network)
         }
         val network = result.primaryNetwork
 
@@ -95,7 +92,7 @@ class DetailVM(
         val network = CardNetwork.fromName(entity.network)
 
         val tlvTrees = decryptedData?.applications?.map { app ->
-            buildTlvTreeFromHex(app.rawTlvHex, CardNetwork.fromAid(app.aid))
+            EmvDataExtractor.buildTlvTree(app.rawTlvs, CardNetwork.fromAid(app.aid))
         }.orEmpty()
 
         TAG.logD { "loadFromVault: cardId=$initialCardId, network=$network" }
@@ -114,22 +111,8 @@ class DetailVM(
         }
     }
 
-    private fun buildTlvTreeFromHex(
-        rawTlvHex: String,
-        network: CardNetwork,
-    ): List<ParsedTlvNode> {
-        if (rawTlvHex.isBlank()) return emptyList()
-        return try {
-            val bytes = rawTlvHex.hexToBytes()
-            val tlvs = EmvDataExtractor.parseTlvData(bytes)
-            EmvDataExtractor.buildTlvTree(tlvs, network)
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-
     private fun saveToVault() = viewModelScope.launch {
-        val result = cardReadSession.latest ?: return@launch
+        val result = _uiState.value.cardData ?: return@launch
         TAG.logD { "saveToVault: saving card" }
         _uiState.update { it.copy(isSaving = true) }
         try {
