@@ -3,8 +3,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Components live in the jestComposeApp KMP library, so they are fully qualified. -->
     <application
-        android:name=".JestApplication"
+        android:name="com.axondragonscale.jest.JestApplication"
         android:allowBackup="true"
         android:icon="@mipmap/jest_icon"
         android:roundIcon="@mipmap/jest_icon_round"
@@ -13,7 +14,7 @@
         android:theme="@style/Theme.Jest">
 
         <activity
-            android:name=".JestActivity"
+            android:name="com.axondragonscale.jest.JestActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,7 +23,7 @@
         </activity>
 
         <receiver
-            android:name=".widget.JestWidgetReceiver"
+            android:name="com.axondragonscale.jest.widget.JestWidgetReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

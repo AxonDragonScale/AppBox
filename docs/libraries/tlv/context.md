@@ -16,7 +16,7 @@ This library is **independently publishable** to Maven Central via the Vanniktec
 | Build System   | Gradle (Kotlin DSL) + Version Catalog |
 | Publishing     | Vanniktech Maven Publish            |
 | Testing        | kotlin-test                         |
-| Targets        | JVM, Android, iOS (x64/arm64/simulatorArm64), Linux x64 |
+| Targets        | JVM, Android, iOS (arm64/simulatorArm64), Linux x64 |
 
 ## Project Structure
 

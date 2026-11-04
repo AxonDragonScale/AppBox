@@ -43,7 +43,7 @@ Each app can be built independently:
 ./gradlew assembleDebug
 
 # Build specific app
-./gradlew :apps:jest:assembleDebug
+./gradlew :apps:jest:jestAndroid:assembleDebug
 ./gradlew :apps:wallmatic:assembleDebug
 ./gradlew :apps:topty:assembleDebug
 ```

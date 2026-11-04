@@ -4,10 +4,10 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "com.axondragonscale.bitops"
         compileSdk {
-            version = release(36) { minorApiLevel = 1 }
+            version = release(37)
         }
         minSdk = 24
     }
@@ -20,12 +20,6 @@ kotlin {
     // project can be found here:
     // https://developer.android.com/kotlin/multiplatform/migrate
     val xcfName = "bitopsKit"
-
-    iosX64 {
-        binaries.framework {
-            baseName = xcfName
-        }
-    }
 
     iosArm64 {
         binaries.framework {

@@ -169,7 +169,7 @@ Everything else — Application class, Koin module, database, Room entities, DAO
 - **Min SDK**: 31 (Android 12)
 - **Target SDK**: 36
 - **Java/Kotlin**: JVM 21
-- **Convention Plugin**: `id("app-convention")`
+- **Convention Plugin**: `id("android-app-convention")`
 
 ## Related Context
 

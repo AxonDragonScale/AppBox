@@ -7,7 +7,8 @@
 Jest is a joke/humor app within AppBox that fetches and displays jokes from an external API. It features a daily joke system, favorites management, history tracking, a settings screen, and a home screen widget.
 
 - **Package**: `com.axondragonscale.jest`
-- **Module path**: `:apps:jest`
+- **Module path**: `:apps:jest:jestComposeApp`
+- **Android shell**: `:apps:jest:jestAndroid` (application module; holds `applicationId` and the manifest)
 - **Module directory**: `apps/jest/jestComposeApp/`
 - **Platforms**: Android, Desktop (JVM), iOS
 - **Key Tech**: Ktor (API calls), Room (caching), Koin (DI), Compose Multiplatform, Glance (Android widget)
@@ -299,7 +300,9 @@ Database version: `1`. Schema exported to `jestComposeApp/schemas/`.
 
 ## Build Configuration (`build.gradle.kts`)
 
-**Targets**: `androidTarget`, `jvm`, `iosArm64`, `iosSimulatorArm64`
+**Targets**: `android`, `jvm`, `iosArm64`, `iosSimulatorArm64`
+
+The module applies `id("kmp-app-convention")`, which supplies the KMP/Compose plugins and target configuration. Dependencies are declared in this build file.
 
 **`commonMain` dependencies** (highlights):
 - `projects.core.commons`

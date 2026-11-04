@@ -1,48 +1,34 @@
-
 plugins {
-    id("com.android.library")
     id("org.jetbrains.kotlin.multiplatform")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 kotlin {
-    androidTarget()
+    // The Android-KMP plugin is single-variant: no buildTypes/proguardFiles here.
+    // Modules still set their own `namespace` inside `kotlin { android { } }`.
+    android {
+        compileSdk { version = release(37) }
+        minSdk = 31
+
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
+
+        optimization {
+            consumerKeepRules.apply {
+                publish = true
+                file("consumer-rules.pro")
+            }
+        }
+    }
+
     jvm()
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 //    js() { browser() }
 //    wasmJs() { browser() }
 
     jvmToolchain(21)
-}
-
-android {
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 31
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-
-    buildFeatures {
-        compose = true
-    }
 }

@@ -4,7 +4,7 @@
 
 ## Overview
 
-The `commons` module is a **Kotlin Multiplatform** library that provides shared utilities, Compose UI components, and infrastructure used across all apps in the AppBox monorepo. It targets Android, JVM, and iOS (x64, arm64, simulatorArm64).
+The `commons` module is a **Kotlin Multiplatform** library that provides shared utilities, Compose UI components, and infrastructure used across all apps in the AppBox monorepo. It targets Android, JVM, and iOS (arm64, simulatorArm64).
 
 **Package**: `com.axondragonscale.commons`
 

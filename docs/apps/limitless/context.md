@@ -8,7 +8,8 @@ Limitless is a fully-featured habit tracking app built as a **Kotlin Multiplatfo
 
 **Package**: `com.axondragonscale.limitless`  
 **Module path**: `:apps:limitless:limitlessComposeApp`  
-**Targets**: `androidTarget`, `jvm`, `iosArm64`, `iosSimulatorArm64`
+**Android shell**: `:apps:limitless:limitlessAndroid` (application module; holds `applicationId` and the manifest)  
+**Targets**: `android`, `jvm`, `iosArm64`, `iosSimulatorArm64`
 
 ## Architecture
 
@@ -355,12 +356,12 @@ Creates 7 sample habits with varied colors, views, goals, and historical records
 - **Namespace**: `com.axondragonscale.limitless`
 - **Min SDK**: 31 (Android 12)
 - **JVM target**: 21
-- **Convention plugin**: `app-convention`
-- **KSP targets**: `kspAndroid`, `kspIosSimulatorArm64`, `kspIosArm64`, `kspJvm` (all configured for Room)
+- **Convention plugin**: `kmp-app-convention` (Compose module) / `android-app-convention` (Android shell)
+- **KSP**: declared in the Compose module for `kspAndroid`, `kspIosSimulatorArm64`, `kspIosArm64`, `kspJvm` (all configured for Room)
 - **Compose resources**: `packageOfResClass = "com.axondragonscale.limitless.resources"`
 - **Room schema dir**: `$projectDir/schemas`
 - **Desktop main class**: `com.axondragonscale.limitless.MainKt`
-- **`buildConfig = true`** (retained for tooling; runtime app info uses `AppInfo` from commons)
+- **`buildConfig`** is generated in the `limitlessAndroid` shell (the Android-KMP library plugin has no BuildConfig); runtime app info uses `AppInfo` from commons
 
 ## Related Context
 

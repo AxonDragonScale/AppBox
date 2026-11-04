@@ -1,10 +1,9 @@
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 31
@@ -28,6 +27,9 @@ android {
     }
 }
 
-kotlin {
+extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension>("kotlin") {
     jvmToolchain(21)
+    compilerOptions {
+        freeCompilerArgs.addAll(AppBoxCompilerArgs.optIns)
+    }
 }

@@ -1,5 +1,5 @@
 plugins {
-    id("app-convention")
+    id("android-app-convention")
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
 }

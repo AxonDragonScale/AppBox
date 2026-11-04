@@ -28,8 +28,8 @@ This project uses a **context graph** — a set of interlinked markdown files th
 
 | Module            |  Purpose                                                    | Context                                                                                                                      |
 |-------------------|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `:apps:jest`      |  Daily jokes/humor with home screen widget                  | [context](./apps/jest/context.md)                                                                                            |
-| `:apps:limitless` |  Habit tracking with statistics                             | [context](./apps/limitless/context.md)                                                                                       |
+| `:apps:jest:jestComposeApp`      |  Daily jokes/humor with home screen widget                  | [context](./apps/jest/context.md)                                                                                            |
+| `:apps:limitless:limitlessComposeApp` |  Habit tracking with statistics                             | [context](./apps/limitless/context.md)                                                                                       |
 | `:apps:npinner`   |  Persistent notification pinning with scheduling            | [context](./apps/npinner/context.md) ∙ [notification-system](./apps/npinner/notification-system.md)                          |
 | `:apps:qrqanvas`  |  Customizable QR code generator & scanner                   | [context](./apps/qrqanvas/context.md)                                                                                        |
 | `:apps:topty`     |  TOTP-based 2FA code manager                                | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |

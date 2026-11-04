@@ -763,7 +763,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 
 ### 16.3 Convention plugin strategy
 
-The existing `app-convention` and `library-convention` plugins are Android-only. Options:
+The existing `android-app-convention` and `android-library-convention` plugins are Android-only. Options:
 
 1. **Create a `kmp-app-convention` plugin** — applies KMP + Compose MP + common targets config
 2. **Extend existing plugins** — add KMP support conditionally (higher complexity)
@@ -859,7 +859,7 @@ Track these risks **per app** throughout migration. Each risk must have an owner
 2. **Migrate `:core:commons` to KMP first** (or in parallel with Jest) — every app depends on it
 3. **Leverage `:libraries:tlv` as a reference** — it's already a working KMP module in the repo with `commonMain`/`commonTest`, multiple targets, and a `build.gradle.kts` you can reference for KMP configuration patterns
 4. **Reuse this playbook unchanged** for each app — only swap the app-specific parity matrix and checklist
-5. **Keep existing convention plugins** for non-migrated apps — they continue using `app-convention` until migrated
+5. **Keep existing convention plugins** for non-migrated apps — they continue using `android-app-convention` until migrated
 6. **Don't migrate all apps at once** — complete one, learn, then start the next
 7. **Web (wasmJs) is the lowest priority target** — it has the most limitations. Wire it during bootstrap but defer feature implementation until Android, iOS, and Desktop are stable
 8. **Harden module boundaries** when warning signs appear (see [Section 15](#15-module-splitting-triggers))
