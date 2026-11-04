@@ -12,17 +12,17 @@ import org.koin.core.component.inject
 import kotlin.system.measureTimeMillis
 
 /**
- * This receiver is responsible for rescheduling wallpaper updates after system events.
+ * This receiver makes sure the wallpaper update chain exists after system events.
  *
  * It listens for the following system broadcasts:
- * - **ACTION_BOOT_COMPLETED:** Re-kicks the WorkManager chain when the device reboots.
- * - **ACTION_TIME_CHANGED:** Reschedules the update when the device time is changed.
- * - **ACTION_TIMEZONE_CHANGED:** Reschedules the update when the device timezone is changed.
+ * - **ACTION_BOOT_COMPLETED:** Re-establishes the WorkManager chain when the device reboots.
+ * - **ACTION_TIME_CHANGED:** Makes sure the chain exists after the device time is changed.
+ * - **ACTION_TIMEZONE_CHANGED:** Same as above, after a timezone change.
  * - **ACTION_MY_PACKAGE_REPLACED:** Revives both the update chain and the watchdog after an
  *   app update wipes all pending WorkManager work.
  *
- * WorkManager survives reboots natively, but this ensures any missed or drifted chain is
- * revived immediately after a system event rather than waiting for the watchdog.
+ * WorkManager survives reboots natively, but this ensures a chain wiped by a system event is
+ * revived immediately rather than waiting for the watchdog.
  */
 class WallmaticReceiver : BroadcastReceiver(), KoinComponent {
 
@@ -40,7 +40,12 @@ class WallmaticReceiver : BroadcastReceiver(), KoinComponent {
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
-                scheduler.scheduleNextUpdate()
+                // The schedule is derived from `lastUpdated` in the config, so the receiver's job
+                // is only to make sure the chain exists. `ensureScheduled` (KEEP) is idempotent
+                // and never cancels or resets a run that is already pending or in flight; a clock
+                // change needs no immediate reschedule because the next run re-evaluates the due
+                // check itself.
+                scheduler.ensureScheduled()
                 scheduler.scheduleWatchdog()
             }
         }

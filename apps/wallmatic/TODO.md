@@ -7,8 +7,8 @@
 - [ ] **Error Handling**
   - [x] Add try-catch blocks in `WallpaperUpdater.setWallpaper()` for IOException
   - [ ] Add proper error reporting to UI layer (use sealed classes for states)
-  - [ ] Handle edge case when `getWhitelistedWallpapers()` returns empty list (avoid crash on `.random()`)
-  - [ ] Add error recovery mechanism when wallpaper setting fails
+  - [x] Handle edge case when `getWhitelistedWallpapers()` returns empty list (avoid crash on `.random()`) — `getRandomWallpaperOrNull()`; the screen is skipped, not failed
+  - [x] Add error recovery mechanism when wallpaper setting fails — `WallpaperWorker` schedules a bounded retry (1–5 min) and never dead-ends the chain
 
 - [ ] **Resource Management**
   - [ ] Audit and fix potential URI permission leaks

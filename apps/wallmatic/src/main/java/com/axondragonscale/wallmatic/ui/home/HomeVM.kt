@@ -99,7 +99,7 @@ class HomeVM(
             }
         )
         wallpaperUpdater.updateWallpaper(event.target)
-        scheduler.scheduleNextUpdate()
+        scheduler.reschedule()
     }
 
     private suspend fun onMirrorHomeConfigForLockToggled() {
@@ -111,7 +111,7 @@ class HomeVM(
         if (!updatedConfig.homeConfig.autoCycleEnabled && !updatedConfig.lockConfig.autoCycleEnabled)
             scheduler.cancelScheduledUpdates()
         else
-            scheduler.scheduleNextUpdate()
+            scheduler.reschedule()
     }
 
     private suspend fun onAutoCycleToggled(event: HomeUiEvent.AutoCycleToggled) {
@@ -124,7 +124,7 @@ class HomeVM(
             if (!homeConfig.autoCycleEnabled && !lockConfig.autoCycleEnabled)
                 scheduler.cancelScheduledUpdates()
             else if (homeConfig.autoCycleEnabled || lockConfig.autoCycleEnabled)
-                scheduler.scheduleNextUpdate()
+                scheduler.reschedule()
         }
     }
 
@@ -135,6 +135,6 @@ class HomeVM(
         }
         val coercedInterval = interval.coerceAtMost(24.hours.inWholeMilliseconds)
         appPrefsRepository.setConfig(uiState.value.config.copy { updateInterval = coercedInterval })
-        scheduler.scheduleNextUpdate()
+        scheduler.reschedule()
     }
 }

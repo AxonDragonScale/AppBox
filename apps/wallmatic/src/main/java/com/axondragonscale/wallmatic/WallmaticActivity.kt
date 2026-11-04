@@ -42,7 +42,8 @@ class WallmaticActivity : ComponentActivity() {
         // and the app onStart is called.
         lifecycleScope.launch(Dispatchers.IO) {
             syncManager.syncAlbums()
-            scheduler.scheduleNextUpdate()
+            // KEEP: opening the app must not cancel or reset a pending/ongoing update.
+            scheduler.ensureScheduled()
             scheduler.scheduleWatchdog()
         }
 

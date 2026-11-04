@@ -14,10 +14,15 @@ import org.koin.core.component.inject
 /**
  * Periodic safety-net worker that revives the wallpaper update chain if it has died.
  *
- * The primary chain is a self-rescheduling [WallpaperWorker] (one-time work). It can die
+ * The primary chain is a self-appending [WallpaperWorker] (one-time work). It can die
  * silently due to force-stops, OEM task killers, or other edge cases not covered by
  * [WallmaticReceiver]. This worker runs on a 15-minute period and re-kicks the chain
- * whenever it finds no ENQUEUED or RUNNING work under [WALLPAPER_WORK_NAME].
+ * whenever it finds no ENQUEUED, RUNNING or BLOCKED work under [WALLPAPER_WORK_NAME].
+ *
+ * [WorkInfo.State.BLOCKED] counts as alive because the successor a running [WallpaperWorker]
+ * appends is its dependent, and dependents sit in BLOCKED until the run finishes. Without it the
+ * watchdog would see "chain is dead" during every run and replace the chain, cancelling the very
+ * run it is supposed to protect.
  *
  * Uses [ExistingPeriodicWorkPolicy.KEEP] when enqueued, so re-enqueuing from multiple
  * call sites (app start, receiver) is always a safe no-op.
@@ -37,14 +42,16 @@ class WatchdogWorker(
             .first()
 
         val isChainAlive = workInfos.any {
-            it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING
+            it.state == WorkInfo.State.ENQUEUED ||
+                it.state == WorkInfo.State.RUNNING ||
+                it.state == WorkInfo.State.BLOCKED
         }
 
         if (isChainAlive) {
             this.logD { "doWork: chain is alive, nothing to do" }
         } else {
-            this.logD { "doWork: chain is dead, rescheduling" }
-            scheduler.scheduleNextUpdate()
+            this.logD { "doWork: chain is dead, ensuring a scheduled update" }
+            scheduler.ensureScheduled()
         }
 
         return Result.success()

@@ -3,6 +3,9 @@ package com.axondragonscale.wallmatic.core
 import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
+import com.axondragonscale.commons.log
+import com.axondragonscale.commons.logD
+import com.axondragonscale.commons.logE
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.TargetScreen
@@ -12,6 +15,7 @@ import com.axondragonscale.wallmatic.model.hasWallpapers
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.util.FileUtil
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 /**
@@ -31,32 +35,42 @@ class SyncManager(
      *  - Removes invalid wallpapers and folders from albums.
      *  - Updates album covers if necessary.
      *  - Updates the current wallpaper if it is no longer valid.
+     *
+     * Syncing is housekeeping, so a failure is logged and swallowed here: it must never block
+     * the wallpaper update that follows, nor app start.
      */
     suspend fun syncAlbums() {
-        val albums = repository.getAllFullAlbums()
-        albums.forEach { album ->
-            // Remove invalid wallpapers
-            val (validWallpapers, invalidWallpapers) = album.wallpapers.partition {
-                FileUtil.isValidFile(context, Uri.parse(it.uri))
+        try {
+            val albums = repository.getAllFullAlbums()
+            albums.forEach { album ->
+                // Remove invalid wallpapers
+                val (validWallpapers, invalidWallpapers) = album.wallpapers.partition {
+                    FileUtil.isValidFile(context, Uri.parse(it.uri))
+                }
+                repository.deleteWallpapers(invalidWallpapers.map { it.id })
+
+                // Remove invalid folders
+                val validFolders = syncFolders(album.folders)
+
+                // Update album cover if needed
+                val validCoverUri = validFolders.firstOrNull()?.coverUri
+                    ?: validWallpapers.firstOrNull()?.uri
+
+                repository.updateAlbum(album.id) {
+                    coverUri = validCoverUri
+                    folderIds = validFolders.map { it.id }
+                    wallpaperIds = validWallpapers.map { it.id }
+                }
             }
-            repository.deleteWallpapers(invalidWallpapers.map { it.id })
 
-            // Remove invalid folders
-            val validFolders = syncFolders(album.folders)
-
-            // Update album cover if needed
-            val validCoverUri = validFolders.firstOrNull()?.coverUri
-                ?: validWallpapers.firstOrNull()?.uri
-
-            repository.updateAlbum(album.id) {
-                coverUri = validCoverUri
-                folderIds = validFolders.map { it.id }
-                wallpaperIds = validWallpapers.map { it.id }
-            }
+            // Update wallpaper and config if current wallpaper is not in the album
+            syncConfig()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            this.logE { "Album sync failed. error: ${e.message}" }
+            this.log { e }
         }
-
-        // Update wallpaper and config if current wallpaper is not in the album
-        syncConfig()
     }
 
     /**
@@ -126,8 +140,10 @@ class SyncManager(
             val album = repository.getFullAlbum(albumId)
             if (album == null || !album.hasWallpapers())
                 appPrefsRepository.setConfig(config.copy { isInit = false })
-            else if (currentWallpaperId !in album.getAllWallpapers().map { it.id })
-                wallpaperUpdater.updateWallpaper(target)
+            else if (currentWallpaperId !in album.getAllWallpapers().map { it.id }) {
+                val result = wallpaperUpdater.updateWallpaper(target)
+                this.logD { "Config repair wallpaper update. target: $target, result: $result" }
+            }
         }
 
         refreshConfig(config.homeConfig.albumId, config.homeConfig.currentWallpaperId, TargetScreen.Home)

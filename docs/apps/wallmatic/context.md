@@ -162,8 +162,8 @@ Key settings:
 
 ### Wallpaper Auto-Cycle (Summary)
 1. `WallpaperWorkScheduler` enqueues `WallpaperWorker` with a calculated delay
-2. `WallpaperWorker` runs → `SyncManager.syncAlbums()` → `WallpaperUpdater.updateWallpaper()` → `scheduleNextUpdate()`
-3. `WallmaticReceiver` re-kicks the chain on `BOOT_COMPLETED`, `TIME_SET`, and `TIMEZONE_CHANGED`
+2. `WallpaperWorker` runs → `SyncManager.syncAlbums()` → `WallpaperUpdater.updateWallpaper()` → `appendNextUpdate()`
+3. `WallmaticReceiver` re-establishes the chain on `BOOT_COMPLETED`, `TIME_SET`, and `TIMEZONE_CHANGED`
 
 For full details on scheduling, workers, tiles, and the update lifecycle, see [Background Services](./background-services.md).
 

@@ -22,7 +22,7 @@ fun FullAlbum.getAllWallpapers() =
 fun FullAlbum.getWhitelistedWallpapers() =
     this.getAllWallpapers().filter { !it.isBlacklisted }
 
-fun FullAlbum.getRandomWallpaper() =
-    getWhitelistedWallpapers().random()
+fun FullAlbum.getRandomWallpaperOrNull(): Wallpaper? =
+    getWhitelistedWallpapers().randomOrNull()
 
 
