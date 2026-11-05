@@ -8,7 +8,7 @@ Wallmatic automatically cycles through user-created albums of wallpapers on a sc
 
 - **Package**: `com.axondragonscale.wallmatic`
 - **Module path**: `:apps:wallmatic`
-- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), WorkManager (scheduling), Quick Settings Tiles
+- **Key Tech**: Room (persistence), Proto DataStore (settings), DocumentFile (SAF), AlarmManager + WorkManager (scheduling), Quick Settings Tiles
 
 ## Architecture
 
@@ -17,7 +17,7 @@ Wallmatic automatically cycles through user-created albums of wallpapers on a sc
 - **DI**: Koin (`WallmaticApplication` initializes `CommonsModule` + `WallmaticModule`)
 - **State Management**: ViewModel + StateFlow
 - **Persistence**: Room database + Proto DataStore
-- **Background Work**: WorkManager (`WallpaperWorker`) + BroadcastReceiver — see [Background Services sub-context](./background-services.md) for details
+- **Background Work**: `AlarmManager` tick + `TickReceiver` → `UpdateCoordinator`, with `WorkManager` for sync and a fallback net — see [Background Services sub-context](./background-services.md) for details
 - **Image Loading**: Coil
 
 ## Package Structure
@@ -26,11 +26,13 @@ Wallmatic automatically cycles through user-created albums of wallpapers on a sc
 com.axondragonscale.wallmatic/
 ├── WallmaticActivity.kt              # Entry point with edge-to-edge display
 ├── background/                       # See background-services.md for details
+│   ├── FallbackWorker.kt             # Periodic safety net: re-evaluates the rule
 │   ├── HomeTileService.kt            # Quick settings tile (home screen)
 │   ├── LockTileService.kt            # Quick settings tile (lock screen)
-│   ├── WallmaticReceiver.kt          # Boot/time change broadcast receiver
-│   ├── WallpaperWorker.kt            # Coordinator worker: sync → update → reschedule
-│   ├── WallpaperWorkScheduler.kt     # WorkManager scheduling for auto-cycle
+│   ├── SyncWorker.kt                 # Deferred album sync (WorkManager)
+│   ├── TickReceiver.kt               # Tick alarm + boot/time/update broadcasts
+│   ├── TickScheduler.kt              # The single AlarmManager tick
+│   ├── UpdateCoordinator.kt          # The auto-cycle rule: apply if due, then arm
 │   └── WallmaticTileService.kt       # Quick settings tile (both screens)
 ├── core/
 │   ├── AlbumManager.kt               # Album CRUD operations
@@ -161,9 +163,10 @@ Key settings:
 4. Album updated with folder/wallpaper IDs
 
 ### Wallpaper Auto-Cycle (Summary)
-1. `WallpaperWorkScheduler` enqueues `WallpaperWorker` with a calculated delay
-2. `WallpaperWorker` runs → `SyncManager.syncAlbums()` → `WallpaperUpdater.updateWallpaper()` → `appendNextUpdate()`
-3. `WallmaticReceiver` re-establishes the chain on `BOOT_COMPLETED`, `TIME_SET`, and `TIMEZONE_CHANGED`
+1. `TickScheduler` keeps exactly one `AlarmManager` tick armed at `config.nextUpdate` (`lastUpdated + updateInterval`)
+2. `TickReceiver` handles the tick plus `BOOT_COMPLETED`, `TIME_SET`, `TIMEZONE_CHANGED` and `MY_PACKAGE_REPLACED`, and forwards all of them to `UpdateCoordinator.reconcile()`
+3. `reconcile()` applies the wallpaper if due (`WallpaperUpdater.updateWallpaper()`) and re-arms the tick from the new `lastUpdated` — or a bounded 1–5 minute retry when nothing applied
+4. `FallbackWorker` re-evaluates the same rule every 15 minutes in case the alarm was dropped; `SyncWorker` refreshes albums off the timed path; `WallmaticActivity.onStart` reconciles on every return to the foreground
 
 For full details on scheduling, workers, tiles, and the update lifecycle, see [Background Services](./background-services.md).
 

@@ -8,7 +8,7 @@
   - [x] Add try-catch blocks in `WallpaperUpdater.setWallpaper()` for IOException
   - [ ] Add proper error reporting to UI layer (use sealed classes for states)
   - [x] Handle edge case when `getWhitelistedWallpapers()` returns empty list (avoid crash on `.random()`) — `getRandomWallpaperOrNull()`; the screen is skipped, not failed
-  - [x] Add error recovery mechanism when wallpaper setting fails — `WallpaperWorker` schedules a bounded retry (1–5 min) and never dead-ends the chain
+  - [x] Add error recovery mechanism when wallpaper setting fails — `UpdateCoordinator` arms a bounded retry (1–5 min) instead of dead-ending
 
 - [ ] **Resource Management**
   - [ ] Audit and fix potential URI permission leaks
@@ -141,15 +141,14 @@
 
 ## 🔧 Technical Debt
 
-- [ ] Migrate from AlarmManager to WorkManager for better battery optimization
-- [ ] Add Doze mode handling
+- [x] Doze-safe scheduling — inexact `setAndAllowWhileIdle` tick plus a `WorkManager` fallback (see `docs/apps/wallmatic/background-services.md`)
 - [ ] Optimize ProtoDataStore usage
 - [ ] Review and optimize Coil image loading configuration
 
 ## 📋 Existing TODOs in Code
 
 From code analysis:
-- [ ] `WallmaticReceiver.kt:L43` - Handle 10s time limit for BroadcastReceiver (consider using WallmaticService instead)
+- [x] `TickReceiver` - BroadcastReceiver 10s limit handled: a provisional tick is armed before `goAsync()` and the apply path never touches SAF
 - [ ] `AlbumManager.kt:L55` - Verify wallpaper deduplication logic
 - [ ] `WallmaticApp.kt:L34` - Implement deep linking to tabs
 - [ ] `WallmaticApp.kt:L35` - Create composables/NavGraphs in screen packages

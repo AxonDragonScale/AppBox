@@ -2,7 +2,6 @@ package com.axondragonscale.wallmatic.background
 
 import android.service.quicksettings.TileService
 import com.axondragonscale.commons.logD
-import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.model.TargetScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,12 +14,12 @@ import org.koin.core.component.inject
  */
 class WallmaticTileService: TileService(), KoinComponent {
 
-    private val wallpaperUpdater: WallpaperUpdater by inject()
+    private val updateCoordinator: UpdateCoordinator by inject()
 
     override fun onClick() {
         this.logD { "onClick" }
         CoroutineScope(Dispatchers.IO).launch {
-            wallpaperUpdater.updateWallpaper(TargetScreen.Both)
+            updateCoordinator.applyNow(TargetScreen.Both)
         }
     }
 

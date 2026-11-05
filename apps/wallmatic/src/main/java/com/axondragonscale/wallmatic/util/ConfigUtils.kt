@@ -22,6 +22,8 @@ fun Config.lockConfig(block: WallpaperConfigKt.Dsl.() -> Unit) = this.copy {
     lockConfig = lockConfig.copy { block() }
 }
 
+val Config.isAutoCycleEnabled: Boolean
+    get() = homeConfig.autoCycleEnabled || lockConfig.autoCycleEnabled
+
 val Config.nextUpdate: Long
-    get() = if (homeConfig.autoCycleEnabled || lockConfig.autoCycleEnabled) lastUpdated + updateInterval
-            else Long.MAX_VALUE
+    get() = if (isAutoCycleEnabled) lastUpdated + updateInterval else Long.MAX_VALUE

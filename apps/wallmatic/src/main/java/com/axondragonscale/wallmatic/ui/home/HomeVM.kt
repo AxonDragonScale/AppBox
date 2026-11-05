@@ -3,8 +3,7 @@ package com.axondragonscale.wallmatic.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.commons.collect
-import com.axondragonscale.wallmatic.background.WallpaperWorkScheduler
-import com.axondragonscale.wallmatic.core.WallpaperUpdater
+import com.axondragonscale.wallmatic.background.UpdateCoordinator
 import com.axondragonscale.wallmatic.model.config
 import com.axondragonscale.wallmatic.model.copy
 import com.axondragonscale.wallmatic.model.wallpaperConfig
@@ -28,8 +27,7 @@ import kotlin.time.Duration.Companion.minutes
 class HomeVM(
     private val wallmaticRepository: WallmaticRepository,
     private val appPrefsRepository: AppPrefsRepository,
-    private val scheduler: WallpaperWorkScheduler,
-    private val wallpaperUpdater: WallpaperUpdater,
+    private val updateCoordinator: UpdateCoordinator,
 ) : ViewModel() {
 
     val uiState = MutableStateFlow(HomeUiState())
@@ -67,7 +65,7 @@ class HomeVM(
             is HomeUiEvent.MirrorHomeConfigForLockToggled -> onMirrorHomeConfigForLockToggled()
             is HomeUiEvent.AutoCycleToggled -> onAutoCycleToggled(event)
             is HomeUiEvent.IntervalUpdated -> onIntervalUpdated(event.interval)
-            is HomeUiEvent.ChangeWallpaper -> wallpaperUpdater.updateWallpaper(event.target)
+            is HomeUiEvent.ChangeWallpaper -> updateCoordinator.applyNow(event.target)
 
             // Handled in Compose
             is HomeUiEvent.CreateAlbumClick -> Unit
@@ -98,20 +96,15 @@ class HomeVM(
                     .lockConfig { if (event.target.isLock()) albumId = event.albumId }
             }
         )
-        wallpaperUpdater.updateWallpaper(event.target)
-        scheduler.reschedule()
+        updateCoordinator.applyNow(event.target)
     }
 
     private suspend fun onMirrorHomeConfigForLockToggled() {
-        val updatedConfig = uiState.value.config.copy {
+        appPrefsRepository.setConfig(uiState.value.config.copy {
             lockConfig = homeConfig
             mirrorHomeConfigForLock = !mirrorHomeConfigForLock
-        }
-        appPrefsRepository.setConfig(updatedConfig)
-        if (!updatedConfig.homeConfig.autoCycleEnabled && !updatedConfig.lockConfig.autoCycleEnabled)
-            scheduler.cancelScheduledUpdates()
-        else
-            scheduler.reschedule()
+        })
+        updateCoordinator.reschedule()
     }
 
     private suspend fun onAutoCycleToggled(event: HomeUiEvent.AutoCycleToggled) {
@@ -120,12 +113,7 @@ class HomeVM(
                 .homeConfig { if (event.target.isHome()) autoCycleEnabled = event.enabled }
                 .lockConfig { if (event.target.isLock()) autoCycleEnabled = event.enabled }
         )
-        with(uiState.value.config) {
-            if (!homeConfig.autoCycleEnabled && !lockConfig.autoCycleEnabled)
-                scheduler.cancelScheduledUpdates()
-            else if (homeConfig.autoCycleEnabled || lockConfig.autoCycleEnabled)
-                scheduler.reschedule()
-        }
+        updateCoordinator.reschedule()
     }
 
     private suspend fun onIntervalUpdated(interval: Long) {
@@ -135,6 +123,6 @@ class HomeVM(
         }
         val coercedInterval = interval.coerceAtMost(24.hours.inWholeMilliseconds)
         appPrefsRepository.setConfig(uiState.value.config.copy { updateInterval = coercedInterval })
-        scheduler.reschedule()
+        updateCoordinator.reschedule()
     }
 }
