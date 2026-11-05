@@ -149,6 +149,12 @@ class MyVM : ViewModel() {
 
 ## Documentation
 
+### Comments
+
+- Default to none. Write one only when it states something the code cannot: *why* a non-obvious decision was made, a platform/spec constraint, or a workaround for an external bug
+- Never restate what the code does — well-named symbols and types already say it; delete commented-out code instead of keeping it
+- If a comment is explaining *how* something works, fix the code first; keep the comment only for what stays genuinely non-obvious
+
 ### File Header Format
 `/** Created by <author> on MM/DD/YY */`
 
