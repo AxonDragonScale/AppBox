@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Devinator launcher foreground on the 108 dp adaptive grid.
+
+  One path, three subpaths: the accent capsule plus the caret and the knob, wound opposite so
+  they punch through. That is what makes the same drawable usable as the monochrome (themed)
+  layer, where the system tints the fill and the knockouts stay transparent.
+
+  Source art: apps/devinator/devinator.fig, Foundations > 05 · App icon. The farthest point is
+  29 dp from the centre, 4 dp inside the 33 dp safe circle, so no launcher mask clips it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#5FD3A6"
+        android:fillType="nonZero"
+        android:pathData="M41.000,38.000 L67.000,38.000 A16.000,16.000 0 0 1 67.000,70.000 L41.000,70.000 A16.000,16.000 0 0 1 41.000,38.000 Z M33.702,47.298 L40.404,54.000 L33.702,60.702 L38.298,65.298 L49.596,54.000 L38.298,42.702 Z M55.000,54.000 A12.000,12.000 0 0 0 79.000,54.000 A12.000,12.000 0 0 0 55.000,54.000 Z" />
+</vector>

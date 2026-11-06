@@ -1,13 +1,35 @@
 package com.axondragonscale.commons
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
+
+/**
+ * Read failures are logged and treated as an empty store, so every wrapper below reads a default
+ * (or null) instead of throwing at its caller.
+ */
+private val DataStore<Preferences>.guarded: Flow<Preferences>
+    get() = data.catch { e ->
+        log { e }
+        emit(emptyPreferences())
+    }
+
+/** A write that cannot take the app down; the caller has no useful recovery either way. */
+private suspend fun DataStore<Preferences>.editQuietly(block: (MutablePreferences) -> Unit) {
+    try {
+        edit(block)
+    } catch (e: Exception) {
+        log { e }
+    }
+}
 
 /**
  * A wrapper that encapsulates a DataStore preference with its read [flow] and [set] function.
@@ -17,13 +39,11 @@ class Pref<T>(
     private val key: Preferences.Key<T>,
     private val default: T,
 ) {
-    val flow: Flow<T> = dataStore.data.map { it[key] ?: default }
+    val flow: Flow<T> = dataStore.guarded.map { it[key] ?: default }
 
     suspend fun get(): T = flow.first()
 
-    suspend fun set(value: T) {
-        dataStore.edit { it[key] = value }
-    }
+    suspend fun set(value: T) = dataStore.editQuietly { it[key] = value }
 }
 
 /**
@@ -35,15 +55,13 @@ class EnumPref<E : Enum<E>>(
     private val default: E,
     private val valueOf: (String) -> E,
 ) {
-    val flow: Flow<E> = dataStore.data.map { prefs ->
+    val flow: Flow<E> = dataStore.guarded.map { prefs ->
         prefs[key]?.let(valueOf) ?: default
     }
 
     suspend fun get(): E = flow.first()
 
-    suspend fun set(value: E) {
-        dataStore.edit { it[key] = value.name }
-    }
+    suspend fun set(value: E) = dataStore.editQuietly { it[key] = value.name }
 }
 
 /**
@@ -57,16 +75,38 @@ class SerializedPref<T>(
     private val serializer: (T) -> String,
     private val deserializer: (String) -> T,
 ) {
-    val flow: Flow<T> = dataStore.data.map { prefs ->
+    val flow: Flow<T> = dataStore.guarded.map { prefs ->
         prefs[key]?.let { deserializer(it) } ?: default
     }
 
     suspend fun get(): T = flow.first()
 
-    suspend fun set(value: T) {
-        dataStore.edit { it[key] = serializer(value) }
+    suspend fun set(value: T) = dataStore.editQuietly { it[key] = serializer(value) }
+}
+
+/**
+ * A preference that may be **absent**. [get] answers null when nothing is stored, and [set] removes
+ * the key for a null value — use this instead of encoding null as a sentinel inside a [Pref].
+ */
+class NullablePref<T>(
+    private val dataStore: DataStore<Preferences>,
+    private val key: Preferences.Key<T>,
+) {
+    val flow: Flow<T?> = dataStore.guarded.map { it[key] }
+
+    suspend fun get(): T? = flow.first()
+
+    suspend fun set(value: T?) = dataStore.editQuietly { prefs ->
+        if (value == null) prefs.remove(key) else prefs[key] = value
     }
 }
+
+/**
+ * Creates a [NullablePref] for the given key. Nothing stored means null; there is no default.
+ */
+fun <T> DataStore<Preferences>.nullablePref(
+    key: Preferences.Key<T>,
+) = NullablePref(this, key)
 
 /**
  * Creates a [Pref] for the given key and default value.

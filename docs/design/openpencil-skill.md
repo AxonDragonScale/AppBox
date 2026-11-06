@@ -1,0 +1,351 @@
+---
+name: openpencil-skill
+description: Build and edit .fig design files with the OpenPencil MCP server — JSX rendering, design tokens and variables, components and variants, multi-page files, screens, overlays, bulk colour binding, and verification. Use whenever a task involves creating, changing, or inspecting an app design in apps/*/*.fig through OpenPencil.
+---
+
+# OpenPencil MCP — working skill
+
+How to drive the OpenPencil MCP tools without rediscovering the same traps. Every rule
+below was learned the hard way while building `apps/devinator/devinator.fig`.
+
+**Read this before your first `render` call.** Then follow the
+[update protocol](#update-protocol-required) at the end — this file is expected to grow.
+
+## Golden rules
+
+1. **Pass `page_id` to every call.** `switch_page` reports success but does **not** change
+   the page that `render`, `lint_fix`, `arrange` or `export_image` act on. Without an
+   explicit `page_id` you will silently write into the wrong page.
+2. **`render` with JSX is the workhorse.** Don't build screens with dozens of
+   `create_shape` calls. One `render` can create a whole card or screen.
+3. **A frame with no `flex` and no `h` becomes 100 × 100.** This is the #1 cause of
+   "mystery empty space" under text. Every wrapper frame gets `flex="col"` / `flex="row"`
+   or an explicit height.
+4. **Text does not inherit fonts.** The default is Inter (not Android's Roboto). Set
+   `font="Roboto"` (or `font="Roboto Mono"`) on **every** `<Text>`.
+5. **Rows need `w="fill"`** before `justify` or `grow` does anything. A hugging row
+   collapses its `grow` child to ~100 px and text wraps absurdly.
+6. **Read the `warnings` array from `render`.** Unsupported props are silently ignored,
+   then confirmed in the warnings. When unsure, `get_jsx` the node and copy the canonical
+   attribute spelling.
+7. **An RPC timeout is not a failure.** Heavy `render` / `arrange` calls regularly exceed
+   the 20 s transport limit and still commit. See [Timeouts](#timeouts-and-stalls).
+8. **Nothing is autosaved reliably.** Call `save_file` at every milestone. The `.fig` is
+   binary — never touch it from a terminal.
+9. **Tokens are one collection per theme** (there is no add-mode API), and `lint_fix`
+   binds hardcoded colours to them in bulk — far cheaper than `bind_variable` per node.
+10. **Screens are built from frames, not instances.** Instances cannot take text
+    overrides through this API, and `create_instance` has no parent parameter.
+
+## Tool map
+
+| Job | Tools |
+|---|---|
+| Documents / pages | `list_documents`, `list_pages`, `get_current_page`, `create_page`, `switch_page`, `update_node` (rename a page) |
+| Create content | `render` (JSX), `create_shape`, `create_vector`, `create_slice`, `import_svg`, `insert_icon`, `fetch_icons`, `search_icons` |
+| Inspect | `get_page_tree`, `get_node`, `get_jsx`, `node_children`, `node_bounds`, `query_nodes`, `describe`, `get_selection` |
+| Mutate one node | `node_move`, `node_resize`, `rename_node`, `set_fill`, `set_stroke`, `set_radius`, `set_opacity`, `set_effects`, `set_text`, `set_font`, `set_text_resize`, `set_layout`, `set_layout_child`, `set_minmax`, `set_visible`, `set_locked` |
+| Mutate many nodes | `batch_update` (one layout recompute), `reparent_node`, `clone_node`, `delete_node`, `arrange` |
+| Tokens | `create_collection`, `create_variable`, `set_variable`, `list_variables`, `design_to_tokens`, `design_to_tokens(format="dtcg")` |
+| Components | `node_to_component`, `combine_as_variants`, `create_component`, `create_instance`, `create_slot`, `expose_instance_swap`, `set_behaviour` |
+| Verify | `export_image`, `export_svg`, `export_pdf`, `lint`, `lint_fix`, `analyze_overlaps`, `analyze_spacing`, `analyze_typography`, `analyze_colors` |
+| Persist | `save_file`, `close_file` |
+
+## Reaching the server (Delta and any terminal)
+
+Delta's MCP client cannot connect to a localhost server on this setup. The server speaks
+streamable HTTP, so it can be driven with curl through
+[`scripts/pencil-mcp.sh`](../../../scripts/pencil-mcp.sh):
+
+```sh
+scripts/pencil-mcp.sh tools                                  # all tool names
+scripts/pencil-mcp.sh call list_documents                    # documents + page ids
+scripts/pencil-mcp.sh call get_page_tree '{"page_id":"1506858273:1144","depth":1}'
+scripts/pencil-mcp.sh image /tmp/setup.png export_image '{"ids":["1506858273:1474"],"maxEdge":560}'
+```
+
+- Endpoint `http://127.0.0.1:7600/mcp`. `GET /health` returns the version and the full tool list and
+  is the cheapest liveness probe; `GET /` answers 404 and means nothing.
+- **One session per run, terminated on exit.** `initialize` returns an `mcp-session-id` header; the
+  script deletes it with `DELETE /mcp` when it finishes. Leaked sessions trigger
+  `Too many active MCP sessions` (HTTP 503) on every later `initialize` until the server restarts —
+  indistinguishable from "app not running" unless you read the body. Check the body before
+  restarting anything.
+- The server serialises work: a call that arrives while another is in flight gets `503` +
+  `retry-after`. The script retries up to 20 times. Repeated 503s mean leaked sessions, not load.
+- Responses are plain JSON today; still branch on SSE (`data: ` lines), which the transport may use.
+- `export_image` returns PNG base64 inline; the `image` command decodes it to a file for review.
+
+Node ids are per file, so read them, never hardcode them: `list_documents` → page ids,
+`get_page_tree` → screen ids, `query_nodes` → anything deeper.
+
+## JSX reference
+
+```jsx
+<Frame name="Card" flex="col" w={380} p={16} gap={8} bg="#171A1F" rounded={20}>
+  <Frame name="Row" flex="row" w="fill" h={56} gap={12} justify="between" items="center">
+    <Frame name="Badge" w={40} h={40} flex="col" justify="center" items="center" bg="#20242B" rounded={12}>
+      <Icon name="material-symbols:usb" size={20} color="#E6E9EE" />
+    </Frame>
+    <Text font="Roboto" size={16} weight={600} color="#E6E9EE">USB debugging</Text>
+  </Frame>
+</Frame>
+```
+
+| Prop | Applies to | Values / notes |
+|---|---|---|
+| `flex` | Frame | `"row"` / `"col"` — sets auto-layout. Plain frames have absolute children |
+| `w`, `h` | all | number, or `"fill"` (child of a layout frame). `w="fill"` compiles to `grow={1}` |
+| `grow` | layout child | number; use in a row/col that has a resolved width |
+| `gap` | Frame | item spacing |
+| `p`, `px`, `py` | Frame | padding; `px`/`py` are supported |
+| `justify` | Frame | `"start"` · `"center"` · `"end"` · `"between"` (round-trips as `"between"`) |
+| `items` | Frame | `"start"` · `"center"` · `"end"` · `"stretch"` |
+| `bg`, `rounded`, `opacity` | all | `#RRGGBB`, px, `0–1` |
+| `stroke`, `strokeWidth` | all | |
+| `wrap` | Frame | wrap children onto new lines |
+| `font` | Text | family name. **Required for Roboto / Roboto Mono** |
+| `size`, `weight`, `color`, `lineHeight` | Text | |
+| `name` | all | layer name; use `Parent/Prop=Value` for variants |
+
+**Ignored silently** (confirmed by `render` warnings): `layout`, `fontFamily` (use `font`),
+`mt`/margins, `align` on text (centre it with the parent's `items`/`justify`), `clip`.
+
+**Text sizing**
+- no `w` → hug content, single line, grows to the right (`WIDTH_AND_HEIGHT`)
+- with `w` → fixed width, wraps, height grows (`HEIGHT`)
+- to fill a row: wrap it in a `Frame flex="col" grow={1}` instead of giving the text `grow`
+
+**Icons** — call `fetch_icons` once, then `<Icon name="material-symbols:usb" size={20} color="#..." />`.
+Iconify names are kebab-case: `open-in-new`, `wifi-tethering`, `progress-activity`,
+`arrow-back`, `content-copy`, `grid-view`, `developer-mode`.
+
+## Recipes
+
+### Page scaffolding
+
+```
+create_page("Foundations")           → page id
+create_page("Components")
+create_page("Screens")
+```
+Rename an existing page with `update_node(id=<page id>, name="Foundations")` — `create_page`
+is the only page-creator, and `switch_page` is not a reliable way to aim later calls.
+
+### Tokens (two themes)
+
+```
+create_collection("Dark")            → collectionId
+create_variable("bg", "COLOR", "#0E1013", collectionId)
+... one variable per token, same names in a "Light" collection
+```
+- A collection exposes exactly **one mode**; there is no tool to add a second. Use one
+  collection per theme and keep names identical across them.
+- Then bulk-bind literals: `lint_fix(page_id=..., rules=["no-hardcoded-colors"])`. It
+  reports `{"applied": N}`; 400+ bindings in one call is normal.
+- Same hex twice inside one collection (`primary` and `on`) makes the target ambiguous —
+  harmless because the values are identical, but bind those by hand if the distinction
+  matters.
+
+### Component library
+
+1. Draw a **specimen**: a 420-wide frame with a label row (name + mono spec line), the
+   component, and a note. Consistent specimens read like documentation.
+2. `node_to_component(ids=[...])` converts in place and returns the new ids.
+3. Name variants `Button/Style=Primary`, then
+   `combine_as_variants(ids=[...])` → a set named `Button` with property `Style`.
+   Components must be **siblings**; `reparent_node` them into one parent first.
+4. `create_slot(frame id)` on an inner frame of a main component gives instances a
+   `Content` slot.
+5. Screens still use plain frames (see golden rule 10); the library is the contract.
+
+### Screens
+
+```
+<Frame name="01 · Home · dark" flex="col" w={412} h={915} bg="#0E1013"> … </Frame>
+```
+- Number frames `01 · …`, `02 · …` so `arrange` order and the layers panel agree.
+- Clone for near-identical states: `clone_node` → `rename_node` → tweak. Much cheaper and
+  more consistent than re-rendering.
+- Insert an extra block at a specific index with
+  `render(parent_id=<col>, insert_index=4, jsx=…)`.
+
+### Overlays (dialogs over a screen)
+
+```
+render(parent_id=<screen>, jsx=<scrim frame 412×915 bg #000 opacity .45>)   → scrimId
+render(parent_id=<screen>, jsx=<layer 412×915 justify="center" items="center"> dialog </Frame>)
+set_layout_child(scrimId, positioning="ABSOLUTE"); node_move(scrimId, 0, 0)
+set_layout_child(layerId, positioning="ABSOLUTE"); node_move(layerId, 0, 0)
+set_effects(dialogId, type="DROP_SHADOW", offset_y=12, radius=32, color="#000000")
+```
+**Never nest the dialog inside the scrim** — opacity applies to the whole subtree and the
+dialog turns grey. Two sibling layers, both absolute at `0, 0`.
+
+### Cross-page moves and tidy-up
+
+- `reparent_node(id, parent_id=<page id>)` moves a node between pages.
+- `arrange(ids=[...], mode="grid", cols=3, gap=40, page_id=...)` packs nodes and puts the
+  block at the origin. A header that should sit above the grid can be `node_move`d to a
+  negative y, or you shift the grid instead.
+- `viewport_get` / `viewport_set` are the only viewport tools in 0.16.0 — there is no
+  `viewport_zoom_to_fit` (corrected 2026-11-06, see learnings log).
+
+### Bulk property changes
+
+`batch_update` applies many `{id, props}` operations with **one** layout pass. Supported
+props: `spacing`, `padding`, `padding_horizontal`, `padding_vertical`, `counter_align`,
+`sizing_horizontal`, `sizing_vertical`, `grow`, `name`, `visible`, `corner_radius`,
+`auto_resize`, `direction`. Two passes are often needed because `HUG` only works on
+auto-layout frames — set `direction` first, then `sizing_vertical: "HUG"`.
+
+### Finding nodes
+
+XPath via `query_nodes` beats scanning trees:
+
+```
+//FRAME[starts-with(@name, 'Button/')]
+//*[@id='0:12']//FRAME[@name='Switch']
+//TEXT[contains(@text, 'Setup')]
+//FRAME[@width < 300]
+```
+
+## Failure modes
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Text renders in Inter | `fontFamily` was used, or no `font` at all | add `font="Roboto"` to the node |
+| Text squeezes into a 100 px column | row hugged instead of filling | add `w="fill"` to the row |
+| Big empty space inside a card | wrapper frame had no height → 100 × 100 default | `flex="col"` or explicit `h` |
+| `justify`/`items` ignored, children stack oddly | frame is not auto-layout | add `flex="row"` / `flex="col"` |
+| Dialog looks washed out | scrim is the dialog's parent | split into sibling layers |
+| Render landed on the wrong page | no `page_id`; `switch_page` did not stick | pass `page_id`, move nodes with `reparent_node` |
+| `combine_as_variants` fails | components are not siblings | reparent into one parent first |
+| Variant set is named after a whole component | names not `Name/Prop=Value` | rename, then combine |
+| Instance shows the master's text everywhere | instances have no text overrides here | build screens from frames |
+| `HUG` rejected by `batch_update` | frame is not auto-layout | set `direction` first, then `HUG` |
+| RPC timeout on `render` | heavy subtree / app throttled | see below — verify before retrying |
+
+## Timeouts and stalls
+
+The transport gives up at ~20 s, but the app usually finishes the work.
+
+1. Wait 15–30 s and probe with a light call (`get_current_page`).
+2. If still stuck, run `open -a OpenPencil` (macOS App Nap throttles the background app)
+   and probe again.
+3. **Then** verify with `get_page_tree` / `query_nodes` before re-running anything — a
+   retried `render` creates a duplicate frame.
+4. After a wake the app may report a different "current page". One more reason to pass
+   `page_id` everywhere.
+5. Keep a single `render` under roughly 120 nodes; split big screens into two calls.
+
+## Verification loop
+
+1. `export_image(ids=[...], page_id=..., maxEdge=500)` — eyeball the result; images come
+   back inline, so no files are needed.
+2. `lint(page_id=..., rules=["no-hardcoded-colors"])` — should end at 0 after `lint_fix`.
+   Also worth running the `accessibility` preset (contrast, touch targets, min text size).
+3. `analyze_overlaps(page_id=...)` — catches text bleeding out of frames and sibling
+   collisions that look fine at thumbnail size.
+4. `get_jsx(id)` — ground truth for what actually persisted.
+5. `save_file` — then `list_pages` / `page_bounds` to confirm the shape of the file.
+
+## Repository conventions
+
+- One design per app: `apps/<app>/<app>.fig`, sourced from `docs/apps/<app>/ui.md`
+  (copy in the spec is literal — do not paraphrase it in the design).
+- Three pages, always the same order and names: **Foundations**, **Components**, **Screens**.
+- Foundations panels are 1000 wide in one column, gap 48: cover, colour, typography,
+  shape/spacing/layout, iconography, app icon.
+- App icons live in that Foundations panel (`NN · App icon`, contents named `Icon …`):
+  glyph concepts, a 512 master, the 108 dp adaptive layers (background / foreground /
+  monochrome with the 66 dp safe circle), circle and squircle mask previews, a
+  192/96/48/24 size ladder, and a mono spec line bottom-right — art imported with
+  `import_svg` at its review size.
+- Component specimens are 420 wide (`380` content + `20` padding), 3 per row, gap 40.
+- Screen frames are 412 × 915, side padding 16, content width 380, 4-pt grid, radii
+  card 20 / inner 12 / button 16 / pill 999.
+- Name components `Family/Prop=Value`; name screens `NN · Screen · state`.
+
+## Update protocol (required)
+
+This skill is only useful if it stays true. **Every agent that uses it must update it in
+the same change as the work it learns from.**
+
+- Add a dated line to the [Learnings log](#learnings-log) for anything new: a prop that
+  works, a prop that is silently dropped, a tool limitation, a timing fix, a better recipe.
+- Correct the tables and recipes instead of appending a contradiction next to an old rule.
+- Never delete a learning silently. If it no longer holds, mark it `superseded` with the
+  date and what replaced it.
+- When a tool is added or removed from the MCP server, update the [tool map](#tool-map).
+- Keep code blocks copy-pasteable and tested. A recipe that has not been run is marked
+  *(unverified)*.
+
+## Learnings log
+
+- **2026-11-06** — Delta's MCP client cannot reach the localhost server; the same tools are
+  reachable over streamable HTTP at `127.0.0.1:7600/mcp` via `scripts/pencil-mcp.sh`.
+- **2026-11-06** — Sessions are capped. Each `initialize` creates one, `DELETE /mcp` with the
+  session header frees it; leaked sessions block every new session with `503 Too many active MCP
+  sessions` until the server restarts. Always terminate the session.
+- **2026-11-06** — Concurrent calls answer `503` + `retry-after` because the server serialises work.
+  Retry rather than assuming the app died; `GET /health` stays `200` throughout.
+- **2026-11-06** — `query_nodes` takes `selector`; passing `xpath` fails validation
+  ("Expected selector"). `limit` / `page` paginate results.
+- **2026-11-06** — `viewport_zoom_to_fit` does not exist in 0.16.0; only `viewport_get` and
+  `viewport_set` (**supersedes** the tidy-up recipe that used it).
+- **2026-11-06** — Text defaults to Inter. `fontFamily` is ignored; only `font` sets the
+  family, and there is no inheritance from the parent frame.
+- **2026-11-06** — A frame with no `flex` and no `h` is 100 × 100. This, not padding,
+  was the cause of empty space inside cards and dialogs.
+- **2026-11-06** — `justify` / `grow` are no-ops on a hugging row. `w="fill"` on the row
+  is required; without it a `grow` text collapses to ~100 px and wraps.
+- **2026-11-06** — `switch_page` returns success but does not redirect `render`. Pass
+  `page_id` on every call, including `lint_fix`, `arrange` and `export_image`.
+- **2026-11-06** — Nodes move between pages with `reparent_node(id, parent_id=<page id>)`;
+  pages are renamed with `update_node(id=<page id>, name=…)` even though `create_page` is
+  the only page creator.
+- **2026-11-06** — `lint_fix(rules=["no-hardcoded-colors"])` bound 451 literals to the
+  palette variables in a single call; `lint` then reported zero remaining.
+- **2026-11-06** — Rendering an overlay inside a screen leaves it in flow. `set_layout_child`
+  with `positioning="ABSOLUTE"` plus `node_move(0, 0)` pins it; the scrim must be a
+  sibling of the dialog, never its parent (parent opacity dims the dialog).
+- **2026-11-06** — `combine_as_variants` requires sibling components and names of the form
+  `Family/Prop=Value`; the set takes the family name and the property name from the name.
+- **2026-11-06** — `create_instance` takes only `component_id`, `x`, `y` — no parent — and
+  instances expose no text overrides, so screen frames are composed literally.
+- **2026-11-06** — MCP calls time out at ~20 s on heavy renders while still committing.
+  Probing and `open -a OpenPencil` (App Nap) recovers the server; always verify before
+  retrying so you don't duplicate frames.
+- **2026-11-06** — `arrange` places the block at the origin, so a page header has to be
+  moved above it (`y` may be negative) or the grid shifted down.
+- **2026-11-07** — `import_svg` sizes the frame it creates from the SVG's `width`/`height`
+  attributes and ignores the parent: 512 px art dropped into a 288 px slot overflows the
+  layout. Author every SVG at the px size it is displayed at, then import.
+- **2026-11-07** — `import_svg` always gives the new frame a white SOLID fill, even with
+  `fill="none"` on the root `<svg>`; it shows through wherever the art is transparent.
+  `set_fill` the frame to the backdrop right after importing.
+- **2026-11-07** — a `<clipPath>` in imported SVG becomes a mask node that `save_file` then
+  rejects with `Invalid value "VECTOR" for enum "MaskType"` — the whole document becomes
+  unsaveable until that node is deleted. Fake a mask with a shaped background path instead.
+- **2026-11-07** — `set_stroke` takes `weight`, not `width`; `width` fails validation with
+  `width: Invalid key`.
+- **2026-11-07** — `export_image` requires `maxEdge` ≥ 64, so a 24 or 48 px node cannot be
+  exported at its native size through it. Omit `maxEdge` and the export lands at the node's
+  own size (it never upscales).
+- **2026-11-07** — `export_svg` answers instantly for a single VECTOR node and times out at
+  20 s for a FRAME or a multi-node selection; export the path, not the frame.
+- **2026-11-07** — `save_file` without `path` writes back to the path the document was
+  opened from, which is the source checkout, not the Delta worktree; the worktree copy
+  stays stale until it is mirrored.
+
+## Related
+
+- [Devinator UI spec](../../apps/devinator/ui.md) — tokens, components and copy this skill
+  was first exercised against.
+- [scripts/pencil-mcp.sh](../../../scripts/pencil-mcp.sh) — HTTP bridge used when Delta's MCP
+  client is not connected to the server.
+- Linked from [docs/context.md](../context.md) so agents load it before any `apps/*/*.fig`
+  design task. It lives here as a flat doc rather than a `.agents/skills/` folder; if it ever
+  needs Zed's automatic skill discovery, move it to
+  `.agents/skills/openpencil-skill/SKILL.md` unchanged.

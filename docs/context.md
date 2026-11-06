@@ -34,7 +34,8 @@ This project uses a **context graph** — a set of interlinked markdown files th
 | `:apps:qrqanvas`  |  Customizable QR code generator & scanner                   | [context](./apps/qrqanvas/context.md)                                                                                        |
 | `:apps:topty`     |  TOTP-based 2FA code manager                                | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
 | `:apps:wallmatic` |  Auto-change wallpapers on schedule                         | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md)                      |
-| `:core:commons`   |  Shared utilities, networking, DI, DevTools                 | [context](./core/commons/context.md)                                                                                         |
+| `:apps:devinator` |  Developer options / USB / wireless debugging toggles + QS tiles (planned) | [context](./apps/devinator/context.md) ∙ [design](./apps/devinator/design.md) ∙ [ui](./apps/devinator/ui.md) |
+| `:core:commons`   |  Shared utilities, networking, DI, DevTools              | [context](./core/commons/context.md)                                                       |
 | `:libraries:tlv`  |  BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md)                                                                                        |
 
 ## Agent Efficiency Guidelines
@@ -139,3 +140,4 @@ See [build-system.md](./build-system.md) for convention plugins and build config
 - [Coding Conventions](./coding-conventions.md) — Compose patterns, Kotlin idioms, naming, state management
 - [Build System](./build-system.md) — Convention plugins, version catalog, build commands
 - [Commons Module](./core/commons/context.md) — Shared utilities available to all apps
+- [OpenPencil MCP skill](./design/openpencil-skill.md) — building `apps/*/*.fig` designs; read before any design task

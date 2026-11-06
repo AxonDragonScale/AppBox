@@ -23,7 +23,10 @@ fun Any.logW(msg: MsgProvider) = this.log(LogPriority.WARN, msg)
 fun Any.logV(msg: MsgProvider) = this.log(LogPriority.VERBOSE, msg)
 fun Any.logA(msg: MsgProvider) = this.log(LogPriority.ASSERT, msg)
 
-fun Any.log(e: ExceptionProvider) = this.log(LogPriority.ERROR) { "Handled Exception:\n" + e().stackTraceToString() }
+fun Any.log(e: ThrowableProvider) = this.log(LogPriority.ERROR) {
+    val throwable = e()
+    "Handled ${throwable::class.simpleName}:\n" + throwable.stackTraceToString()
+}
 
 // -------------------- Private Helper Functions --------------------
 
@@ -40,7 +43,7 @@ internal fun Any.getTag() = when {
 }
 
 typealias MsgProvider = () -> String
-typealias ExceptionProvider = () -> Exception
+typealias ThrowableProvider = () -> Throwable
 
 enum class LogPriority { VERBOSE, DEBUG, INFO, WARN, ERROR, ASSERT }
 

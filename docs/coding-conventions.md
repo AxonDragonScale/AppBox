@@ -145,6 +145,15 @@ class MyVM : ViewModel() {
 }
 ```
 
+### Shared Utilities and Failure Handling
+
+- **Extend `:core:commons` instead of writing a one-off.** If a shared helper is missing a case — a
+  `Throwable` overload, a nullable pref, a formatter — add it to the shared helper. A private
+  variant of a commons function sitting next to its call site is a review failure.
+- **Handle recoverable failure inside the function that can fail.** Callers get a safe value or a
+  result type; `runCatching` chains and `try`/`catch` sprinkled at call sites are not. Resource-bound
+  code (DataStore, alarms, network) absorbs and logs its own exceptions.
+
 ---
 
 ## Documentation

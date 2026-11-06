@@ -39,6 +39,7 @@ include(":apps:wallmatic")
 include(":apps:topty")
 include(":apps:npinner")
 include(":apps:qrqanvas")
+include(":apps:devinator")
 include(":apps:limitless:limitlessComposeApp")
 include(":apps:limitless:limitlessAndroid")
 
