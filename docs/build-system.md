@@ -8,7 +8,7 @@ Located in `build-logic/src/main/kotlin/`:
 
 ### `android-app-convention.gradle.kts`
 
-Applied to Android application modules (including the thin shells of Compose Multiplatform apps) via `id("android-app-convention")`:
+Applied to Android application modules (including the thin shells of Compose Multiplatform apps) via `alias(libs.plugins.android.app.convention)`:
 
 - Android Application plugin — AGP 9 has built-in Kotlin support, so `org.jetbrains.kotlin.android` is not applied
 - Kotlin Compose compiler plugin
@@ -20,7 +20,7 @@ Applied to Android application modules (including the thin shells of Compose Mul
 
 ### `android-library-convention.gradle.kts`
 
-Applied to Android-only library modules via `id("android-library-convention")`:
+Applied to Android-only library modules via `alias(libs.plugins.android.library.convention)`:
 
 - Android Library plugin (built-in Kotlin)
 - Common SDK versions and compile options (same as `android-app-convention`)
@@ -29,7 +29,7 @@ It is Android-only (not KMP) and is currently unused — `:core:commons` uses `k
 
 ### `kmp-library-convention.gradle.kts`
 
-Applied to Kotlin Multiplatform library modules via `id("kmp-library-convention")`:
+Applied to Kotlin Multiplatform library modules via `alias(libs.plugins.kmp.library.convention)`:
 
 - Kotlin Multiplatform plugin
 - `com.android.kotlin.multiplatform.library` — the AGP 9 KMP Android target (`androidTarget()` and the `com.android.library` plugin are no longer used)
@@ -42,7 +42,7 @@ Currently used by: `:core:commons`
 
 ### `kmp-app-convention.gradle.kts`
 
-Applied to Compose Multiplatform application modules via `id("kmp-app-convention")`:
+Applied to Compose Multiplatform application modules via `alias(libs.plugins.kmp.app.convention)`:
 
 - Kotlin Multiplatform plugin + `com.android.kotlin.multiplatform.library`
 - Compose Multiplatform plugin + Kotlin Compose compiler plugin
@@ -54,11 +54,20 @@ It intentionally contains **no dependency declarations** — each app module own
 
 Used by `:apps:jest:jestComposeApp` and `:apps:limitless:limitlessComposeApp`.
 
+### `compiler-args-convention.gradle.kts`
+
+Applied by the **root project only** (`alias(libs.plugins.compiler.args.convention)` in `build.gradle.kts`). It adds the shared compiler flags to every KMP module through a `subprojects` hook — including `:libraries:tlv` and `:libraries:bitops`, which apply the Kotlin Multiplatform plugin directly.
+
+### Shared compiler flags
+
+Defined once in `AppBoxCompilerArgs.optIns` (`build-logic/src/main/kotlin/AppBoxCompilerArgs.kt`); add new opt-ins there, never in a module build file. Android modules get them from the `android-*` convention plugins, KMP modules from `compiler-args-convention`.
+
 ## Version Catalog
 
 Located at `gradle/libs.versions.toml`. Defines all dependency versions centrally.
 
 Key patterns:
+- **Plugins**: every plugin id lives in `[plugins]` — external ones with a `version.ref`, the build-logic convention plugins without a version. Module build files apply them with `alias(libs.plugins.…)`, never a raw `id("…")`
 - **BOM-based**: Compose BOM, Koin BOM — never specify individual versions for these
 - **Bundles**: `libs.bundles.compose` (AndroidX), `libs.bundles.compose.mp` (Compose Multiplatform), `libs.bundles.koin` (Android), `libs.bundles.koin.common` (KMP), `libs.bundles.ktor`, `libs.bundles.ktor.common`, `libs.bundles.kotlinx`, `libs.bundles.room.kmp`, `libs.bundles.lifecycle.compose`, `libs.bundles.coroutines`, `libs.bundles.coil`, `libs.bundles.camerax`, `libs.bundles.datastore`
 - **Individual**: `libs.androidx.room.runtime`, `libs.androidx.room.compiler`, etc.
@@ -97,7 +106,7 @@ Koin DSL conventions:
 2. Create `build.gradle.kts`:
    ```kotlin
    plugins {
-       id("android-app-convention")
+       alias(libs.plugins.android.app.convention)
    }
 
    android {
@@ -122,13 +131,13 @@ Koin DSL conventions:
 AGP 9 does not allow `com.android.application` in a Kotlin Multiplatform module, so a multiplatform app is three modules:
 
 1. Create the app directory:
-   - `<app>ComposeApp/` — KMP + Compose library (`id("kmp-app-convention")`)
-   - `<app>Android/` — Android application shell (`id("android-app-convention")`)
+   - `<app>ComposeApp/` — KMP + Compose library (`libs.plugins.kmp.app.convention`)
+   - `<app>Android/` — Android application shell (`libs.plugins.android.app.convention`)
    - `<app>IosApp/` — Xcode project (not a Gradle module)
 2. The Compose module keeps only app-specific config:
    ```kotlin
    plugins {
-       id("kmp-app-convention")
+       alias(libs.plugins.kmp.app.convention)
        alias(libs.plugins.ksp)
        alias(libs.plugins.room)
        alias(libs.plugins.kotlin.serialization)
@@ -143,7 +152,7 @@ AGP 9 does not allow `com.android.application` in a Kotlin Multiplatform module,
 3. The Android shell owns `applicationId` and the manifest, and depends on the Compose module:
    ```kotlin
    plugins {
-       id("android-app-convention")
+       alias(libs.plugins.android.app.convention)
    }
 
    android {
@@ -170,8 +179,8 @@ AGP 9 does not allow `com.android.application` in a Kotlin Multiplatform module,
 
 1. Create directory under `core/`
 2. Create `build.gradle.kts`:
-   - Use `id("android-library-convention")` for Android-only library modules
-   - Use `id("kmp-library-convention")` for Kotlin Multiplatform library modules
+   - Use `alias(libs.plugins.android.library.convention)` for Android-only library modules
+   - Use `alias(libs.plugins.kmp.library.convention)` for Kotlin Multiplatform library modules
 3. Register in `settings.gradle.kts`
 
 ### Project Accessors

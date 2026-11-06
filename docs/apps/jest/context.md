@@ -302,7 +302,7 @@ Database version: `1`. Schema exported to `jestComposeApp/schemas/`.
 
 **Targets**: `android`, `jvm`, `iosArm64`, `iosSimulatorArm64`
 
-The module applies `id("kmp-app-convention")`, which supplies the KMP/Compose plugins and target configuration. Dependencies are declared in this build file.
+The module applies `alias(libs.plugins.kmp.app.convention)`, which supplies the KMP/Compose plugins and target configuration. Dependencies are declared in this build file.
 
 **`commonMain` dependencies** (highlights):
 - `projects.core.commons`

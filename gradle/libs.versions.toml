@@ -170,6 +170,13 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 
 [plugins]
+# Convention plugins from build-logic
+android-app-convention = { id = "android-app-convention" }
+android-library-convention = { id = "android-library-convention" }
+kmp-app-convention = { id = "kmp-app-convention" }
+kmp-library-convention = { id = "kmp-library-convention" }
+compiler-args-convention = { id = "compiler-args-convention" }
+
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

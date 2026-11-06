@@ -1,5 +1,4 @@
-// Compiler flags shared by the pure-Android modules. KMP modules get the same
-// flags from the root build script's `org.jetbrains.kotlin.multiplatform` hook.
+// The one definition of the compiler flags shared by every module; applied by the convention plugins.
 internal object AppBoxCompilerArgs {
     val optIns = listOf(
         "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",

@@ -1,5 +1,5 @@
 plugins {
-    id("android-app-convention")
+    alias(libs.plugins.android.app.convention)
 }
 
 android {

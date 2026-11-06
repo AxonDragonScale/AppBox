@@ -1,6 +1,6 @@
 
 plugins {
-    id("kmp-library-convention")
+    alias(libs.plugins.kmp.library.convention)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
 }

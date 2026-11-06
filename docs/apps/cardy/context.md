@@ -279,7 +279,7 @@ object Route {
 - **Min SDK**: 31 (Android 12)
 - **Target SDK**: 36
 - **Java/Kotlin**: JVM 21
-- **Convention Plugin**: `id("android-app-convention")`
+- **Convention Plugin**: `alias(libs.plugins.android.app.convention)`
 
 ## Design Decisions
 
