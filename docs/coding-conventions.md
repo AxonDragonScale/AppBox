@@ -151,17 +151,20 @@ class MyVM : ViewModel() {
 
 ### Comments
 
-- Default to none. Write one only when it states something the code cannot: *why* a non-obvious decision was made, a platform/spec constraint, or a workaround for an external bug
-- Never restate what the code does — well-named symbols and types already say it; delete commented-out code instead of keeping it
-- If a comment is explaining *how* something works, fix the code first; keep the comment only for what stays genuinely non-obvious
+A comment must state what the code cannot. Otherwise delete it.
+
+- One line, two at most — longer means the code or the name needs fixing, not the comment
+- Reason only, never mechanics; no commented-out code, narration, decoration, or hedging (`maybe`, `not sure why`)
+- `// TODO: <action>` only, never a question or bare verb; the commit that does the work deletes it
+- `// region` / `// endregion` is the only structural marker; single-noun labels (`// Compose`, `# Android` in the catalog) only around dependencies
+- Failing these is a defect, not a taste call
 
 ### File Header Format
 `/** Created by <author> on MM/DD/YY */`
 
 ### KDoc Comments
-- Use KDoc for public APIs and complex functions to describe what the function does, not how
-- Document non-obvious parameters; skip anything self-evident
-- Keep it concise
+- Only on public APIs and genuinely non-obvious functions — the contract, not the mechanics
+- One or two sentences; document only non-obvious parameters
 
 ---
 
