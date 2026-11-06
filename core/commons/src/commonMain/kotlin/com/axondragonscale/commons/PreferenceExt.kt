@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -13,19 +14,41 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 
 /**
- * Read failures are logged and treated as an empty store, so every wrapper below reads a default
- * (or null) instead of throwing at its caller.
+ * Reads never throw at their caller: a store that fails to read is treated as empty, and a stored
+ * value that fails to decode — a renamed enum constant, JSON written by an older app version —
+ * falls back to [default]. Both cases are logged, so every wrapper below always answers a value.
+ *
+ * Only what a decoder can reject is caught here: a raw `Pref<T>`/`NullablePref<T>` whose stored
+ * value has a different runtime type than its key promises still fails at the use site, because its
+ * generic type is erased before this point.
  */
-private val DataStore<Preferences>.guarded: Flow<Preferences>
-    get() = data.catch { e ->
-        log { e }
+private inline fun <T> DataStore<Preferences>.read(
+    default: T,
+    crossinline decode: (Preferences) -> T,
+): Flow<T> = data
+    .catch { e ->
+        this@read.log { e }
         emit(emptyPreferences())
     }
+    .map { prefs ->
+        // Decoding is not suspending, so swallowing everything here cannot hide cancellation.
+        try {
+            decode(prefs)
+        } catch (e: Exception) {
+            this@read.log { e }
+            default
+        }
+    }
 
-/** A write that cannot take the app down; the caller has no useful recovery either way. */
+/**
+ * A write that cannot take the app down; the caller has no useful recovery either way.
+ * Cancellation still propagates, so a stalled scope is never reported as a successful write.
+ */
 private suspend fun DataStore<Preferences>.editQuietly(block: (MutablePreferences) -> Unit) {
     try {
         edit(block)
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         log { e }
     }
@@ -39,7 +62,7 @@ class Pref<T>(
     private val key: Preferences.Key<T>,
     private val default: T,
 ) {
-    val flow: Flow<T> = dataStore.guarded.map { it[key] ?: default }
+    val flow: Flow<T> = dataStore.read(default) { prefs -> prefs[key] ?: default }
 
     suspend fun get(): T = flow.first()
 
@@ -55,9 +78,7 @@ class EnumPref<E : Enum<E>>(
     private val default: E,
     private val valueOf: (String) -> E,
 ) {
-    val flow: Flow<E> = dataStore.guarded.map { prefs ->
-        prefs[key]?.let(valueOf) ?: default
-    }
+    val flow: Flow<E> = dataStore.read(default) { prefs -> prefs[key]?.let(valueOf) ?: default }
 
     suspend fun get(): E = flow.first()
 
@@ -75,9 +96,7 @@ class SerializedPref<T>(
     private val serializer: (T) -> String,
     private val deserializer: (String) -> T,
 ) {
-    val flow: Flow<T> = dataStore.guarded.map { prefs ->
-        prefs[key]?.let { deserializer(it) } ?: default
-    }
+    val flow: Flow<T> = dataStore.read(default) { prefs -> prefs[key]?.let(deserializer) ?: default }
 
     suspend fun get(): T = flow.first()
 
@@ -92,7 +111,7 @@ class NullablePref<T>(
     private val dataStore: DataStore<Preferences>,
     private val key: Preferences.Key<T>,
 ) {
-    val flow: Flow<T?> = dataStore.guarded.map { it[key] }
+    val flow: Flow<T?> = dataStore.read<T?>(null) { prefs -> prefs[key] }
 
     suspend fun get(): T? = flow.first()
 

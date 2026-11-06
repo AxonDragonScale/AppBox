@@ -162,9 +162,46 @@ result
     .onSuccess { data -> /* use data */ }
     .onFailure { error -> /* handle error */ }
 
+// Collapse both outcomes into one value (replaces a `when` in expression position)
+val message = result.fold(
+    onSuccess = { "loaded ${it.size}" },
+    onFailure = { "failed: $it" },
+)
+
+// Transform one side, leaving the other untouched
+result.map { it.total }              // Result<Int, Error>
+result.mapFailure { it.userMessage } // Result<Data, String>
+result.recover { cachedValue }       // Result<Data, Nothing>
+
+// Unwrap with a fallback
+result.getOrElse { fallback }
+result.getOrDefault(fallback)
+
 // Safe access
 val dataOrNull = result.getSuccessResultOrNull()
 ```
+
+Bridges for code that still uses exceptions / `kotlin.Result`:
+
+```kotlin
+// kotlin.Result -> Result, converting the thrown exception
+val typed: Result<Data, String> = runCatching { load() }.toResult { it.message ?: "failed" }
+
+// The same, for a block that throws: typed failure instead of an exception
+val typed2 = resultOf(onThrow = { it.message ?: "failed" }) { load() }
+```
+
+The combinators are top-level `inline` extensions on `Result`, not interface members: interface
+methods can't be inlined, and inlining is what lets a lambda use a non-local `return`. Extensions
+need their own import, unlike the accessor members:
+
+```kotlin
+import com.axondragonscale.commons.onFailure
+import com.axondragonscale.commons.onSuccess
+```
+
+Existing accessors: `isSuccess()`, `isFailure()`, `getSuccessResultOrNull()`,
+`getFailureResultOrNull()`, `getSuccessResult()`, `getFailureResult()`.
 
 ### Flow Extensions (`FlowExt.kt` / `FlowExt.android.kt`)
 
@@ -241,7 +278,7 @@ fun UIMode.isDarkTheme(): Boolean  // import com.axondragonscale.commons.isDarkT
 Usage in apps:
 ```kotlin
 // In a preferences repository
-val uiMode = dataStore.enumSetting(
+val uiMode = dataStore.enumPref(
     key = stringPreferencesKey("ui_mode"),
     default = UIMode.AUTO
 )
@@ -251,34 +288,43 @@ val isDark = uiMode.isDarkTheme()
 MyAppTheme(darkTheme = isDark) { ... }
 ```
 
-### DataStore Preferences (`PreferenceExt.kt`) — `androidMain`
+### DataStore Preferences (`PreferenceExt.kt`) — `commonMain`
 
 Typed wrappers for DataStore preference access:
 
 ```kotlin
 // Simple preference
-val themeMode = dataStore.setting(
+val themeMode = dataStore.pref(
     key = stringPreferencesKey("theme_mode"),
     default = "system"
 )
 
 // Enum preference (stored as string)
-val uiMode = dataStore.enumSetting(
+val uiMode = dataStore.enumPref(
     key = stringPreferencesKey("ui_mode"),
     default = UIMode.AUTO
 )
 
 // Serializable object preference (stored as JSON)
-val userSettings = dataStore.serializedSetting(
+val userSettings = dataStore.serializedPref(
     key = "user_settings",
     default = UserSettings()
 )
+
+// Optionally-present preference: no default, `set(null)` removes the key
+val deadline = dataStore.nullablePref(longPreferencesKey("auto_off_deadline"))
 
 // Usage
 val currentTheme = themeMode.flow.collectAsState()
 themeMode.set("dark")
 val value = themeMode.get() // suspend function
 ```
+
+Reads and writes never throw at the caller — both are logged and fall back instead. A store that
+fails to read is treated as empty; a stored value that fails to decode (a renamed enum constant,
+JSON written by an older app version) reads as `default`/`null`; a failed write is logged but not
+propagated. `CancellationException` still propagates, so a cancelled scope is never reported as a
+successful write.
 
 ### Permission Utilities (`PermissionExt.kt`) — `androidMain`
 

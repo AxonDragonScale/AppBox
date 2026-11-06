@@ -1,5 +1,7 @@
 package com.axondragonscale.commons
 
+import kotlinx.coroutines.CancellationException
+
 /**
  * Created by Ronak Harkhani on 27 January 2026.
 A sealed interface representing the result of an operation that can either succeed or fail.
@@ -8,6 +10,9 @@ A sealed interface representing the result of an operation that can either succe
  * The interface uses two type parameters:
  * - S: The type of successful result
  * - F: The type of failure result
+ *
+ * The value accessors are members; the combinators are `inline` extensions declared below the
+ * interface, so a lambda passed to them may use a non-local `return`.
  */
 sealed interface Result<out S, out F> {
 
@@ -49,21 +54,97 @@ sealed interface Result<out S, out F> {
      * @throws ClassCastException if this result is not a [Failure]
      */
     fun getFailureResult(): F = (this as Failure).data
-
-    /**
-     * Executes the given [block] if this is a [Success].
-     *
-     * @param block The function to execute with the success data
-     * @return This result, to allow for chaining
-     */
-    fun onSuccess(block: (S) -> Unit) = this.apply { if (this is Success) block.invoke(this.data) }
-
-    /**
-     * Executes the given [block] if this is a [Failure].
-     *
-     * @param block The function to execute with the failure data
-     * @return This result, to allow for chaining
-     */
-    fun onFailure(block: (F) -> Unit) = this.apply { if (this is Failure) block.invoke(this.data) }
-
 }
+
+/**
+ * Executes [block] with the success data and returns this result, so calls can be chained.
+ */
+inline fun <S, F> Result<S, F>.onSuccess(block: (S) -> Unit): Result<S, F> = when (this) {
+    is Result.Success<S> -> {
+        block(data)
+        this
+    }
+
+    is Result.Failure<F> -> this
+}
+
+/**
+ * Executes [block] with the failure data and returns this result, so calls can be chained.
+ */
+inline fun <S, F> Result<S, F>.onFailure(block: (F) -> Unit): Result<S, F> = when (this) {
+    is Result.Success<S> -> this
+    is Result.Failure<F> -> {
+        block(data)
+        this
+    }
+}
+
+/**
+ * Collapses this result into a single value by applying one of the two cases.
+ */
+inline fun <S, F, R> Result<S, F>.fold(onSuccess: (S) -> R, onFailure: (F) -> R): R = when (this) {
+    is Result.Success<S> -> onSuccess(data)
+    is Result.Failure<F> -> onFailure(data)
+}
+
+/**
+ * Transforms the success data, leaving a failure untouched.
+ */
+inline fun <S, F, R> Result<S, F>.map(transform: (S) -> R): Result<R, F> = when (this) {
+    is Result.Success<S> -> Result.Success(transform(data))
+    is Result.Failure<F> -> this
+}
+
+/**
+ * Transforms the failure data, leaving a success untouched — e.g. turning a domain error into a
+ * message to display, without touching the success path.
+ */
+inline fun <S, F, G> Result<S, F>.mapFailure(transform: (F) -> G): Result<S, G> = when (this) {
+    is Result.Success<S> -> this
+    is Result.Failure<F> -> Result.Failure(transform(data))
+}
+
+/**
+ * Turns a failure into a success using [transform]; a success passes through unchanged.
+ */
+inline fun <S, F> Result<S, F>.recover(transform: (F) -> S): Result<S, Nothing> = when (this) {
+    is Result.Success<S> -> this
+    is Result.Failure<F> -> Result.Success(transform(data))
+}
+
+/**
+ * Returns the success data, or [default] when this result is a failure.
+ */
+inline fun <S, F> Result<S, F>.getOrDefault(default: S): S = when (this) {
+    is Result.Success<S> -> data
+    is Result.Failure<F> -> default
+}
+
+/**
+ * Returns the success data, or the value [onFailure] produces from the failure data.
+ */
+inline fun <S, F> Result<S, F>.getOrElse(onFailure: (F) -> S): S = when (this) {
+    is Result.Success<S> -> data
+    is Result.Failure<F> -> onFailure(data)
+}
+
+/**
+ * Wraps [block] in a [Result], converting a thrown exception with [onThrow]. The counterpart of
+ * [runCatching] for a typed failure, and the way to build a [Result] from code that still throws.
+ *
+ * Cancellation is rethrown rather than turned into a failure, so a cancelled scope stays cancelled.
+ */
+inline fun <S, F> resultOf(onThrow: (Throwable) -> F, block: () -> S): Result<S, F> =
+    try {
+        Result.Success(block())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.Failure(onThrow(e))
+    }
+
+/**
+ * Bridges a [kotlin.Result] into this type, converting the thrown exception with [onThrow].
+ */
+fun <S, F> kotlin.Result<S>.toResult(onThrow: (Throwable) -> F): Result<S, F> =
+    fold({ Result.Success(it) }, { Result.Failure(onThrow(it)) })
