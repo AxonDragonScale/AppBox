@@ -58,7 +58,10 @@ visible but disabled with the reason attached, because `adbd` cannot run without
 | Turn Wireless debugging off | Silent, immediate; also cancels the auto-off timer |
 | Tap the copy control on the endpoint | Copies `adb connect <ip>:<port>` for the address shown |
 | Tap the Auto-off row | Menu: Off / 5 / 15 / 30 min. Default Off. The row's trailing value shows the current choice |
-| Tap "Add tiles" | `StatusBarManager.requestAddTileService` on API 33+, one platform prompt per tile; older APIs get a snackbar pointing at the Quick Settings editor |
+| Tap the tiles card on Home | Opens the Quick Settings Tiles page — a navigation, not an action |
+| Tap a row on the Quick Settings Tiles page | Adds the tile via `StatusBarManager.requestAddTileService` (API 33+) if absent, removes it from the shell's list if present. The whole row is the target; there is no per-row button |
+| Add a tile | The system shows its own "Add … to Control center" prompt; the row flips to `Remove` only once the shell's list contains it, so an add made from the system editor reads the same way |
+| Remove a tile | Immediate, no dialog: the shell's list is rewritten without that entry |
 | Tap a tile | Same write as the corresponding switch; never opens the app |
 | Long-press a tile | System behaviour (opens Settings tile placement) — do not override |
 

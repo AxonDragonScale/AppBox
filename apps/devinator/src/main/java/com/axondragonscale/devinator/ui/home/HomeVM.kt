@@ -63,6 +63,7 @@ class HomeVM(
         is HomeUiEvent.SetWirelessDebugging -> setWirelessDebugging(event.enabled)
         is HomeUiEvent.SelectAutoOff -> selectAutoOff(event.duration)
         HomeUiEvent.OpenSettings -> Unit
+        HomeUiEvent.OpenTiles -> Unit
     }
 
     private fun setDeveloperOptions(enabled: Boolean) = viewModelScope.launch {
@@ -118,6 +119,7 @@ sealed interface HomeUiEvent {
     data class SetWirelessDebugging(val enabled: Boolean) : HomeUiEvent
     data class SelectAutoOff(val duration: AutoOffDuration) : HomeUiEvent
     data object OpenSettings : HomeUiEvent
+    data object OpenTiles : HomeUiEvent
 }
 
 sealed interface HomeUiEffect {

@@ -4,10 +4,12 @@ import com.axondragonscale.devinator.background.AutoOffScheduler
 import com.axondragonscale.devinator.repository.AppPrefsRepository
 import com.axondragonscale.devinator.repository.DevSettingsRepository
 import com.axondragonscale.devinator.repository.GlobalSettingsRepository
+import com.axondragonscale.devinator.repository.QuickSettingsTileRepository
 import com.axondragonscale.devinator.repository.WirelessEndpointRepository
 import com.axondragonscale.devinator.ui.home.HomeVM
 import com.axondragonscale.devinator.ui.settings.SettingsVM
 import com.axondragonscale.devinator.ui.setup.SetupVM
+import com.axondragonscale.devinator.ui.tiles.QuickSettingsTilesVM
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -17,10 +19,12 @@ val DevinatorModule = module {
     singleOf(::AppPrefsRepository)
     singleOf(::GlobalSettingsRepository)
     singleOf(::WirelessEndpointRepository)
+    singleOf(::QuickSettingsTileRepository)
     singleOf(::AutoOffScheduler)
     singleOf(::DevSettingsRepository)
 
     viewModelOf(::SetupVM)
     viewModelOf(::HomeVM)
     viewModelOf(::SettingsVM)
+    viewModelOf(::QuickSettingsTilesVM)
 }

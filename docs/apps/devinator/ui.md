@@ -125,8 +125,8 @@ Screen 412×915 · fill bg · vertical
    │     └─ "Stays on until you turn it off." 12 textMuted
    └─ Card · tiles   (normal flow — never pinned to the bottom)
       ├─ IconBadge grid_view
-      ├─ column · grow · gap 2: "Add tiles to the shade" 16/600 · "Developer options, USB, wireless." 12 textMuted
-      └─ text button "Add" 15/600 primary, 48 high
+      ├─ column · grow · gap 2: "Quick Settings Tiles" 16/600 · "Add tiles to Quick Settings" 12 textMuted
+      └─ chevron_right 20 textMuted, 48 tap target — the whole card navigates, it is an action on the page
 ```
 
 **One address and one port.** The card shows the top-ranked address only, the same thing Android's
@@ -224,7 +224,40 @@ choice, including `Off` — the control must look like a control, not a readout.
 "Couldn't change this setting." (failure). One line, `cornerRadius 12`; no Undo action here. There is
 no confirmation dialog for any toggle.
 
-## Quick Settings tiles
+## Quick Settings Tiles
+
+Reached from the Home tiles card. One row per tile, and the row itself is the control.
+
+```
+TopBar h64: arrow_back + "Quick Settings Tiles"
+column · padding 16 · gap 12
+├─ "Choose which Devinator tiles appear in the shade." 12 textMuted
+├─ Card · gap 0 · no padding — rows run edge to edge
+│  ├─ TileRow · title "Developer options"  caption "Master switch for ADB"  icon developer_mode
+│  ├─ Divider · inset 16 both sides
+│  ├─ TileRow · title "USB debugging"  caption "ADB over USB"  icon usb
+│  ├─ Divider · inset 16 both sides
+│  └─ TileRow · title "Wireless debugging"  caption "ADB over Wi-Fi or hotspot"  icon wifi_tethering
+└─ "New tiles land at the end — rearrange them in the Quick Settings editor." 12 textMuted
+```
+
+**TileRow** — `fill_container`, `height 64`, `padding 4/16`, `gap 12`, items centre, no corner radius:
+full-bleed like a list item, so the press ripple reaches the card's edges, and the 4 vertical padding
+belongs to the row rather than the parent, so the tap target and ripple still meet the dividers. The
+whole row is the tap target: 40 IconBadge, a text column `gap 2` (title 16/600, caption 12
+`textMuted`), then the state label 15/600. There is no per-row button — the label is a readout, not a
+control.
+
+| State | Change |
+|---|---|
+| Tile not added | Label reads `Add` in `primary`; tapping asks the system to add it |
+| Tile added | Label reads `Remove` in `error`; tapping removes it immediately. Tiles added from the system's own editor land here too, since the page reads the shell's list |
+| Add refused or already present | Snackbar "Couldn't add this tile." / "Already in Quick Settings."; the row only flips once the shell reports the tile |
+| Remove failed | Snackbar "Couldn't remove this tile." |
+
+The system's Add prompt is OS chrome and is not drawn.
+
+## Quick Settings tiles in the shade
 
 Three 2×1 tiles, standard shade layout: icon 32 top-left of a 24-inset block, label at the bottom.
 Active = `primary` container, inactive = `surfaceHigh` with `textMuted` content.
@@ -235,8 +268,8 @@ Active = `primary` container, inactive = `surfaceHigh` with `textMuted` content.
 | USB debugging | `usb` | "USB debugging" | "On" / "Off" |
 | Wireless debugging | `wifi_tethering` | "Wireless debugging" | "On" / "Off" (+ " · 12:04" while the timer runs) |
 
-The platform's Add prompt is one per tile and is OS chrome, so it is not drawn; the app requests the
-three in sequence, starting with Developer options.
+The platform's Add prompt is one per tile and is OS chrome, so it is not drawn; tiles are added one
+at a time from the Quick Settings Tiles page.
 
 ## Frames to draw
 
@@ -248,6 +281,7 @@ One file, dark only, numbered in flow order:
 4. Home — developer options off (red hero, disabled USB and wireless)
 5. Settings
 6. QS tiles — three tiles, on and off
+7. Quick Settings Tiles — the page, one tile already added (mixed `Remove` / `Add` rows)
 
 The OS trust and Add-tile prompts are not drawn, and neither is the write-failure state: the system
 owns the prompts, and a failed write is a snackbar.

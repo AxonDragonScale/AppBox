@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import com.axondragonscale.devinator.ui.home.HomeScreen
 import com.axondragonscale.devinator.ui.settings.SettingsScreen
 import com.axondragonscale.devinator.ui.setup.SetupScreen
+import com.axondragonscale.devinator.ui.tiles.QuickSettingsTilesScreen
 
 /** Created by Ronak on 11/06/26 */
 @Composable
@@ -29,6 +30,9 @@ fun DevinatorApp(
         }
         composable<Route.Settings> {
             SettingsScreen(navController = navController)
+        }
+        composable<Route.QuickSettingsTiles> {
+            QuickSettingsTilesScreen(navController = navController)
         }
     }
 }

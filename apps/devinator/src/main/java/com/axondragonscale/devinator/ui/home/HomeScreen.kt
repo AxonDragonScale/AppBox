@@ -1,13 +1,7 @@
 package com.axondragonscale.devinator.ui.home
 
-import android.app.StatusBarManager
 import android.content.ClipData
-import android.content.ComponentName
-import android.content.Context
 import android.content.res.Configuration
-import android.graphics.drawable.Icon as AndroidIcon
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -50,7 +45,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,7 +61,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,14 +68,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
-import com.axondragonscale.commons.log
-import com.axondragonscale.devinator.R
 import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.AutoOffDuration
 import com.axondragonscale.devinator.model.EndpointKind
-import com.axondragonscale.devinator.tile.DeveloperOptionsTileService
-import com.axondragonscale.devinator.tile.UsbDebuggingTileService
-import com.axondragonscale.devinator.tile.WirelessDebuggingTileService
 import com.axondragonscale.devinator.ui.Route
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
@@ -90,7 +78,6 @@ import com.axondragonscale.devinator.ui.theme.LocalDevinatorColors
 import com.axondragonscale.devinator.ui.theme.MonoCommandTextStyle
 import com.axondragonscale.devinator.ui.theme.MonoTextStyle
 import com.axondragonscale.devinator.ui.theme.SectionTitleTextStyle
-import java.util.function.Consumer
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
@@ -125,6 +112,7 @@ fun HomeScreen(
         onEvent = { event ->
             when (event) {
                 HomeUiEvent.OpenSettings -> navController.navigate(Route.Settings)
+                HomeUiEvent.OpenTiles -> navController.navigate(Route.QuickSettingsTiles)
                 else -> viewModel.onEvent(event)
             }
         },
@@ -138,7 +126,6 @@ private fun HomeScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onEvent: (HomeUiEvent) -> Unit,
 ) {
-    val context = LocalContext.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
 
@@ -150,18 +137,6 @@ private fun HomeScreen(
         val text = command ?: return
         scope.launch {
             clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("ADB command", text)))
-        }
-    }
-
-    fun addTiles() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            scope.launch {
-                snackbarHostState.showSnackbar("Add Devinator tiles from the Quick Settings editor.")
-            }
-            return
-        }
-        requestAddTiles(context) { message ->
-            scope.launch { snackbarHostState.showSnackbar(message) }
         }
     }
 
@@ -211,7 +186,7 @@ private fun HomeScreen(
                 onCopy = ::copyCommand,
                 onSelectAutoOff = { onEvent(HomeUiEvent.SelectAutoOff(it)) },
             )
-            TilesCard(onAdd = ::addTiles)
+            TilesCard(onOpen = { onEvent(HomeUiEvent.OpenTiles) })
         }
     }
 }
@@ -368,7 +343,7 @@ private fun WirelessDebuggingCard(
 @Composable
 private fun TilesCard(
     modifier: Modifier = Modifier,
-    onAdd: () -> Unit,
+    onOpen: () -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -376,7 +351,10 @@ private fun TilesCard(
         color = MaterialTheme.colorScheme.surface,
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpen)
+                .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -386,19 +364,22 @@ private fun TilesCard(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = "Add tiles to the shade",
+                    text = "Quick Settings Tiles",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "Developer options, USB, wireless.",
+                    text = "Add tiles to Quick Settings",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            TextButton(onClick = onAdd, modifier = Modifier.height(48.dp)) {
-                Text(text = "Add", style = MaterialTheme.typography.titleSmall)
-            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -824,77 +805,6 @@ private fun rememberCountdown(deadline: Instant?): String? {
     if (remaining.inWholeSeconds <= 0) return null
     val seconds = remaining.inWholeSeconds
     return "Turns off in ${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}."
-}
-
-// endregion
-
-// region Tiles
-
-private data class TileRequest(
-    val component: ComponentName,
-    val label: String,
-    val iconRes: Int,
-)
-
-/**
- * The platform prompt is per tile, so each request starts after the previous one is answered. A
- * decline stops the chain: the user has said no.
- */
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
-private fun requestAddTiles(
-    context: Context,
-    onResult: (String) -> Unit,
-) {
-    val statusBarManager = context.getSystemService(StatusBarManager::class.java)
-    if (statusBarManager == null) {
-        onResult("Add Devinator tiles from the Quick Settings editor.")
-        return
-    }
-    val tiles = listOf(
-        TileRequest(
-            ComponentName(context, DeveloperOptionsTileService::class.java),
-            "Dev options",
-            R.drawable.ic_tile_developer_mode,
-        ),
-        TileRequest(
-            ComponentName(context, UsbDebuggingTileService::class.java),
-            "USB debugging",
-            R.drawable.ic_tile_usb,
-        ),
-        TileRequest(
-            ComponentName(context, WirelessDebuggingTileService::class.java),
-            "Wireless debugging",
-            R.drawable.ic_tile_wireless,
-        ),
-    )
-
-    fun request(index: Int, added: Int) {
-        if (index == tiles.size) {
-            if (added > 0) onResult("Tiles added to Quick Settings.")
-            return
-        }
-        val tile = tiles[index]
-        try {
-            statusBarManager.requestAddTileService(
-                tile.component,
-                tile.label,
-                AndroidIcon.createWithResource(context, tile.iconRes),
-                context.mainExecutor,
-                Consumer { result ->
-                    when (result) {
-                        StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> request(index + 1, added + 1)
-                        StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> request(index + 1, added)
-                        else -> onResult("You can add the rest from the Quick Settings editor.")
-                    }
-                },
-            )
-        } catch (e: Exception) {
-            context.log { e }
-            onResult("Add Devinator tiles from the Quick Settings editor.")
-        }
-    }
-
-    request(0, 0)
 }
 
 // endregion

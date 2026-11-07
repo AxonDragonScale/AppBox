@@ -56,6 +56,7 @@ com.axondragonscale.devinator/
 │   ├── DevSettingsRepository.kt    # the one writer; state, endpoints, timer, writes
 │   ├── GlobalSettingsRepository.kt # the only code that touches Settings.Global
 │   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice, deadline, restore snapshot
+│   ├── QuickSettingsTileRepository.kt # reads/edits the shell's tile list
 │   └── WirelessEndpointRepository.kt # local IPv4s + mDNS port lookup
 ├── background/
 │   ├── AutoOffScheduler.kt         # AlarmManager one-shot
@@ -63,9 +64,9 @@ com.axondragonscale.devinator/
 ├── permission/SecureSettingsPermission.kt # grant check, grant command, settings deep links
 ├── tile/                           # three TileServices, same repository
 ├── ui/
-│   ├── Route.kt                    # Setup, Home, Settings
+│   ├── Route.kt                    # Setup, Home, Settings, QuickSettingsTiles
 │   ├── components/DevinatorTopBar.kt # the shared top bar: logo + name (+ subtitle, actions)
-│   ├── theme/  setup/  home/  settings/
+│   ├── theme/  setup/  home/  settings/  tiles/
 └── util/
 ```
 
@@ -139,6 +140,25 @@ appending its `Settings.Global` key to that list.
 - **Degradation rule**: unknown port → show the address without one and point at the Developer
   options screen. Discovery never blocks a toggle.
 
+### Quick Settings tiles
+
+Adding goes through `StatusBarManager.requestAddTileService` (API 33+), which raises the system's own
+"Add … to Control center" prompt. There is no public API to remove a tile, so removal writes the
+shell's tile list back without that entry.
+
+Which setting holds that list depends on the device, and reading it depends on the app's target SDK:
+
+| Store | Device | Readable? |
+|---|---|---|
+| `sysui_qs_tiles` (comma-separated, `custom(pkg/cls)` entries) | AOSP | Only up to target SDK 33 — `Settings.Secure.QS_TILES` is `@Readable(maxTargetSdk = TIRAMISU)`, and the provider rejects it above that for reads, `query()` and `call()` alike |
+| `super_qs_tiles` (JSON grid, `items[].childItems[].spec`) | OriginOS | Yes — it is not a declared `Settings.*` key, so the restriction never applies |
+
+The repository takes the first store it can read, extracts `custom(…)` entries with one regex (both
+formats spell tiles the same way), and only ever rewrites the value it just read — so a failed read
+means no write, never a list that drops the user's other tiles. A `ContentObserver` on both keys feeds
+the same `Flow` the page collects, so a tile added from the system editor shows up too. Where no store
+is readable, the page can only add, and the row cannot offer `Remove`.
+
 ### Auto-off timer
 
 `AlarmManager.setAndAllowWhileIdle` (inexact, no permission) → `WirelessAutoOffReceiver` writes
@@ -201,6 +221,7 @@ Everything here is verified the first time the app is installed on the iQOO.
 | Trust dialog is skinned or behaves differently | toggle wireless debugging on | the neutral "waiting for confirmation" state, never a hard error |
 | OEM battery manager drops the timer alarm | set a 5-minute auto-off, lock the screen | move the timer to WorkManager |
 | mDNS discovery finds nothing | check while on Wi-Fi | address without port |
+| `sysui_qs_tiles` is unreadable above target SDK 33, so tile state and removal vanish on AOSP | open Quick Settings Tiles on a non-OriginOS device | read OriginOS's `super_qs_tiles` where present; otherwise the page is add-only |
 | Several networks at once (Wi-Fi + VPN + hotspot) | connect with a VPN up | rank Wi-Fi → hotspot → VPN and show the top one only |
 
 ## Related Context
