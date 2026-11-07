@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.axondragonscale.devinator.ui.home.HomeScreen
+import com.axondragonscale.devinator.ui.settings.PermissionScreen
 import com.axondragonscale.devinator.ui.settings.SettingsScreen
 import com.axondragonscale.devinator.ui.setup.SetupScreen
 import com.axondragonscale.devinator.ui.tiles.QuickSettingsTilesScreen
@@ -30,6 +31,9 @@ fun DevinatorApp(
         }
         composable<Route.Settings> {
             SettingsScreen(navController = navController)
+        }
+        composable<Route.Permission> {
+            PermissionScreen(navController = navController)
         }
         composable<Route.QuickSettingsTiles> {
             QuickSettingsTilesScreen(navController = navController)

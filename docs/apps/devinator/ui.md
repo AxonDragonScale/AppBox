@@ -98,7 +98,8 @@ Define these once and reuse by name in the trees below.
 - **ErrorCard** — same fill at `cornerRadius 12`, row `gap 10` centred: 18 `error` icon + 13/600
   `error` label. Used for a state message above the primary action.
 - **Button** — `fill_container`, `height 52`, `cornerRadius 16`, fill `primary`, `Button` label.
-- **Divider** — 1 high, `fill_container`, `outline` at 60% opacity.
+- **Divider** — 1 high, inset **16 on both sides**, `outline` at 60% opacity. It never runs the full
+  card width: rows are full-bleed and their ripple reaches the corners, the divider stays inside them.
 
 ## Home
 
@@ -199,26 +200,61 @@ shape of the line, not the exact package, is what matters.
 ```
 TopBar h64: arrow_back + "Settings"
 column · padding 16 · gap 12
-├─ Card · row h56 space_between: "Appearance" 16/600 · segmented System / Light / Dark
 ├─ Card
-│  ├─ row h56 space_between: "Write secure settings" 16/600 · StatusChip "Granted" (on dot)
-│  ├─ Divider
-│  └─ row h56 space_between: "How to re-grant" 14 · chevron
-├─ Card · row h56 gap 8: "Auto-off" 16/600 · value "Off" 14/500 textMuted · expand_more 20
+│  ├─ row h56 space_between: "Appearance" 16/600 · segmented System / Light / Dark
+│  ├─ Divider · inset 16 both sides
+│  └─ row h56 space_between: "Dynamic colour" 16/600 · M3 switch 52×32 (default off)
+├─ Card
+│  ├─ row h56 space_between: "Write secure settings" 16/600 · StatusChip "Granted" (`primaryContainer` fill, `primary` dot and label)
+│  ├─ Divider · inset 16 both sides
+│  └─ row h56 space_between: "Grant or revoke" 16/600 · chevron
 ├─ Card · row h56 space_between: "Open Developer options" 16/600 · open_in_new
-└─ Card: "Devinator" 16/600 · "Version 1.0.0" 12 textMuted · "No network permission. No data
-   collected. Nothing leaves this device." 12 textMuted
+└─ Card · row h56 space_between: "Devinator" 16/600 · "Version 1.0.0" 14/500 textMuted
 ```
 
-The Settings row mirrors the current auto-off choice and edits the same value as the Home AutoOffRow —
-reachable while wireless debugging is off and that card is hidden. With the default it reads `Off`.
+Every navigation label is 16/600: two rows of the same kind must not be two different sizes. The
+status row carries a chip instead of a chevron, which is what keeps it from reading as tappable.
+
+Appearance is the only card with two controls: the segmented control picks System / Light / Dark, and
+`Dynamic colour` layers Material You over that choice. Dynamic colour defaults off, because the app
+ships its own palette and only the fallback palette has been contrast-reviewed.
+
+Auto-off is not repeated here: it belongs on Home, beside the wireless switch it applies to, and it is
+meaningless while wireless debugging is off.
+
+The chevron and `open_in_new` are the two navigation idioms: a chevron stays inside the app, an
+external-link glyph leaves it. Never use one for the other.
+
+## Permission
+
+Reached from Settings › Grant or revoke. Both directions of the one permission, because neither
+command can run from inside the app: this page is reference, which is why it is a page and not a
+sheet. Each block copies its own command.
+
+```
+TopBar h64: arrow_back + "Permission"
+column · padding 16 · gap 12
+├─ "Devinator needs the Write Secure Settings permission to change Developer options." 14 text
+├─ "Grant" 16/600
+├─ "Run this on a computer that has adb installed:" 12 textMuted
+├─ CodeBlock · mono 12 · copy 16
+├─ Divider · full content width, 60% outline
+├─ "Revoke" 16/600
+├─ "To take the permission back — before uninstalling, for example:" 12 textMuted
+├─ CodeBlock · mono 12 · copy 16
+└─ "The grant survives reboots and app updates. Revoking it leaves Devinator unable to change
+   anything until it is granted again." 12 textMuted
+```
+
+The intro stays at 14 so the two section titles are the loudest thing on the page.
+Both commands are composed from `context.packageName`, so a debug install reads `.debug`.
 
 ## Overlays
 
-**Auto-off menu** — bottom sheet or popup menu, opened by the AutoOffRow on Home and by the Auto-off
-row in Settings: `5 min` · `15 min` · `30 min` · `Off`, current item checkmarked, caption "Wireless
-debugging turns itself off when the timer ends." The row's trailing value always mirrors the current
-choice, including `Off` — the control must look like a control, not a readout.
+**Auto-off menu** — bottom sheet or popup menu, opened by the AutoOffRow on Home: `5 min` · `15 min` ·
+`30 min` · `Off`, current item checkmarked, caption "Wireless debugging turns itself off when the timer
+ends." The row's trailing value always mirrors the current choice, including `Off` — the control must
+look like a control, not a readout.
 
 **Snackbars** — "Opened Developer options" · "Wireless debugging not confirmed" (neutral) ·
 "Couldn't change this setting." (failure). One line, `cornerRadius 12`; no Undo action here. There is
@@ -271,17 +307,39 @@ Active = `primary` container, inactive = `surfaceHigh` with `textMuted` content.
 The platform's Add prompt is one per tile and is OS chrome, so it is not drawn; tiles are added one
 at a time from the Quick Settings Tiles page.
 
-## Frames to draw
+## Screens page layout
 
-One file, dark only, numbered in flow order:
+`devinator.fig` → `Screens` is a **flow diagram**, not a gallery: columns are steps, and every arrow is
+a CTA. A screen with several CTAs gets one arrow per exit, pointing at either the next step or the
+state variant it produces. Connectors are 1.5 vectors in `textMuted` with an open head; the label sits
+beside the line at 12 `textMuted`. Frames keep 160 between them so a label fits in the gutter.
+
+| From | To | CTA |
+|---|---|---|
+| 01 Setup | 03 Home | permission granted |
+| 01 Setup | 02 Setup · not granted | `Check again` fails |
+| 02 Setup · not granted | 03 Home | permission granted |
+| 03 Home · dark | 04 Home · developer options off | developer options off |
+| 04 Home · developer options off | 03 Home · dark | developer options on |
+| 03 Home · dark | 05 Settings | settings gear |
+| 03 Home · dark | 07 Quick Settings Tiles | tiles card |
+| 05 Settings | 08 Permission | `Grant or revoke` |
+
+`Open Developer options` leaves the app for Android's own screen, so it has no target frame.
+
+## Frames
+
+One file, dark only:
 
 1. Setup — default
 2. Setup — permission still missing (the error card above the button)
 3. Home — all on (hero developer options, USB card, wireless card with endpoint, command and auto-off)
 4. Home — developer options off (red hero, disabled USB and wireless)
 5. Settings
-6. QS tiles — three tiles, on and off
-7. Quick Settings Tiles — the page, one tile already added (mixed `Remove` / `Add` rows)
+6. Quick Settings Tiles — the page, one tile already added (mixed `Remove` / `Add` rows)
+7. Permission — grant and revoke commands, each with a copy control
+
+The Quick Settings tiles themselves are specified below but have no frame: the system draws them.
 
 The OS trust and Add-tile prompts are not drawn, and neither is the write-failure state: the system
 owns the prompts, and a failed write is a snackbar.

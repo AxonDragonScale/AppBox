@@ -55,7 +55,7 @@ com.axondragonscale.devinator/
 ├── repository/
 │   ├── DevSettingsRepository.kt    # the one writer; state, endpoints, timer, writes
 │   ├── GlobalSettingsRepository.kt # the only code that touches Settings.Global
-│   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice, deadline, restore snapshot
+│   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice, deadline, restore snapshot, UI mode, dynamic colour
 │   ├── QuickSettingsTileRepository.kt # reads/edits the shell's tile list
 │   └── WirelessEndpointRepository.kt # local IPv4s + mDNS port lookup
 ├── background/
@@ -64,9 +64,10 @@ com.axondragonscale.devinator/
 ├── permission/SecureSettingsPermission.kt # grant check, grant command, settings deep links
 ├── tile/                           # three TileServices, same repository
 ├── ui/
-│   ├── Route.kt                    # Setup, Home, Settings, QuickSettingsTiles
+│   ├── Route.kt                    # Setup, Home, Settings, Permission, QuickSettingsTiles
 │   ├── components/DevinatorTopBar.kt # the shared top bar: logo + name (+ subtitle, actions)
-│   ├── theme/  setup/  home/  settings/  tiles/
+│   ├── components/DevinatorSwitch.kt # the one switch; `dangerOff` is the developer-options red
+│   ├── theme/  setup/  home/  settings/  tiles/  tiles/
 └── util/
 ```
 
@@ -139,6 +140,17 @@ appending its `Settings.Global` key to that list.
   (`registerServiceInfoCallback` on API 34+, `resolveService` below).
 - **Degradation rule**: unknown port → show the address without one and point at the Developer
   options screen. Discovery never blocks a toggle.
+
+### Theme
+
+`DevinatorTheme` takes `darkTheme` and `dynamicColor`, and `DevinatorActivity` feeds both from
+`AppPrefsRepository`: `uiMode` (`UIMode`, default `AUTO`) and `dynamicColor` (default `false`). Both are
+read in `setContent`, so a change in Settings repaints the whole app.
+
+The fixed palette is the shipped look. Under dynamic colour Material You sets `surface` equal to
+`background`, which flattens every card into the page, so the theme steps the tones
+(`surfaceContainer` in dark, `surfaceContainerLowest` in light, `surfaceContainerHigh` for insets).
+`DevinatorColors` (the hero card's green and the off-state red) stay fixed either way.
 
 ### Quick Settings tiles
 

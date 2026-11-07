@@ -2,7 +2,6 @@ package com.axondragonscale.devinator.ui.home
 
 import android.content.ClipData
 import android.content.res.Configuration
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,18 +12,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.GridView
@@ -45,7 +41,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
@@ -72,6 +66,7 @@ import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.AutoOffDuration
 import com.axondragonscale.devinator.model.EndpointKind
 import com.axondragonscale.devinator.ui.Route
+import com.axondragonscale.devinator.ui.components.DevinatorSwitch
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
 import com.axondragonscale.devinator.ui.theme.LocalDevinatorColors
@@ -484,76 +479,6 @@ private fun StatusChip(
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
             color = contentColor,
         )
-    }
-}
-
-@Composable
-private fun DevinatorSwitch(
-    modifier: Modifier = Modifier,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean = true,
-    large: Boolean = false,
-    dangerOff: Boolean = false,
-) {
-    val trackWidth = if (large) 60.dp else 52.dp
-    val trackHeight = if (large) 36.dp else 32.dp
-    val thumbSize = if (large) 28.dp else 24.dp
-    val iconSize = if (large) 16.dp else 14.dp
-    val padding = 4.dp
-
-    val trackColor = when {
-        checked -> MaterialTheme.colorScheme.primary
-        dangerOff -> LocalDevinatorColors.current.errorSurfaceHigh
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
-    val thumbColor = when {
-        checked -> MaterialTheme.colorScheme.onPrimary
-        dangerOff -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val iconTint = when {
-        checked -> MaterialTheme.colorScheme.primary
-        dangerOff -> MaterialTheme.colorScheme.errorContainer
-        else -> Color.Transparent
-    }
-    val thumbOffset by animateDpAsState(
-        targetValue = if (checked) trackWidth - thumbSize - padding * 2 else 0.dp,
-        label = "switchThumbOffset",
-    )
-
-    Box(
-        modifier = modifier
-            .minimumInteractiveComponentSize()
-            .size(trackWidth, trackHeight)
-            .clip(RoundedCornerShape(trackHeight / 2))
-            .background(trackColor)
-            .toggleable(
-                value = checked,
-                enabled = enabled,
-                role = Role.Switch,
-                onValueChange = onCheckedChange,
-            ),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(padding)
-                .offset(x = thumbOffset)
-                .size(thumbSize)
-                .clip(CircleShape)
-                .background(thumbColor),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (checked || dangerOff) {
-                Icon(
-                    imageVector = if (checked) Icons.Filled.Check else Icons.Filled.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSize),
-                    tint = iconTint,
-                )
-            }
-        }
     }
 }
 

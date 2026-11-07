@@ -1,11 +1,14 @@
 package com.axondragonscale.devinator.repository
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.enumPref
 import com.axondragonscale.commons.nullablePref
+import com.axondragonscale.commons.pref
 import com.axondragonscale.devinator.model.AutoOffDuration
 
 /** Created by Ronak on 11/06/26 */
@@ -29,6 +32,12 @@ class AppPrefsRepository(
     }
 
     private val dataStore = context.appPrefs
+
+    /** System by default: the app has always followed the device's dark mode. */
+    val uiMode = dataStore.enumPref(stringPreferencesKey("ui_mode"), UIMode.DEFAULT)
+
+    /** Material You over the app's own palette; off, because only the fallback palette is reviewed. */
+    val dynamicColor = dataStore.pref(booleanPreferencesKey("dynamic_color"), false)
 
     val autoOffDuration = dataStore.enumPref(stringPreferencesKey("auto_off_duration"), DEFAULT_AUTO_OFF_DURATION)
 

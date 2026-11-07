@@ -62,6 +62,9 @@ visible but disabled with the reason attached, because `adbd` cannot run without
 | Tap a row on the Quick Settings Tiles page | Adds the tile via `StatusBarManager.requestAddTileService` (API 33+) if absent, removes it from the shell's list if present. The whole row is the target; there is no per-row button |
 | Add a tile | The system shows its own "Add … to Control center" prompt; the row flips to `Remove` only once the shell's list contains it, so an add made from the system editor reads the same way |
 | Remove a tile | Immediate, no dialog: the shell's list is rewritten without that entry |
+| Tap "Grant or revoke" | Opens the Permission page: both `pm grant` and `pm revoke` commands, each with a copy control |
+| Change Appearance | System / Light / Dark, plus a Dynamic colour switch. Both persist and repaint the app immediately; dynamic colour defaults off |
+| Tap "Open Developer options" | Leaves for Android's own Developer options screen |
 | Tap a tile | Same write as the corresponding switch; never opens the app |
 | Long-press a tile | System behaviour (opens Settings tile placement) — do not override |
 

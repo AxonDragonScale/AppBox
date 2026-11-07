@@ -27,6 +27,10 @@ object SecureSettingsPermission {
     fun grantCommand(packageName: String): String =
         "adb shell pm grant $packageName $PERMISSION"
 
+    /** The same command backwards, for anyone who wants the permission off the device. */
+    fun revokeCommand(packageName: String): String =
+        "adb shell pm revoke $packageName $PERMISSION"
+
     /** Step 1 of setup: the screen where USB debugging is switched on. */
     fun developmentSettingsIntent(): Intent =
         Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)

@@ -81,9 +81,9 @@ private val LightDevinatorColors = DevinatorColors(
 val LocalDevinatorColors = staticCompositionLocalOf { DarkDevinatorColors }
 
 /**
- * The app ships its own palette. Dynamic colour stays off by default — a settings toggle can pass
- * `dynamicColor = true` later — and the previews pin it to the fallback palette so contrast is
- * reviewed against what the device actually shows.
+ * The app ships its own palette by default. Settings can switch on dynamic colour (Material You) and
+ * pick Light / Dark / System; previews pin the fallback palette so contrast is reviewed against what
+ * a device without a wallpaper theme actually shows.
  */
 @Composable
 fun DevinatorTheme(
@@ -94,7 +94,17 @@ fun DevinatorTheme(
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            val scheme = if (darkTheme) {
+                dynamicDarkColorScheme(context)
+            } else {
+                dynamicLightColorScheme(context)
+            }
+            // Material You gives `surface` the same tone as `background`, which flattens every card
+            // into the page. Step the card and inset tones so the layout still reads.
+            scheme.copy(
+                surface = if (darkTheme) scheme.surfaceContainer else scheme.surfaceContainerLowest,
+                surfaceVariant = scheme.surfaceContainerHigh,
+            )
         }
 
         darkTheme -> DarkColorScheme

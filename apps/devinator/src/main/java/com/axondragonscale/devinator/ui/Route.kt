@@ -7,5 +7,6 @@ object Route {
     @Serializable data object Setup
     @Serializable data object Home
     @Serializable data object Settings
+    @Serializable data object Permission
     @Serializable data object QuickSettingsTiles
 }
