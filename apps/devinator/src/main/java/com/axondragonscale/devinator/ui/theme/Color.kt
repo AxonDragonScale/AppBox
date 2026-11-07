@@ -16,6 +16,13 @@ val DarkOnSurfaceVariant = Color(0xFF98A0AC)
 val DarkPrimary = Color(0xFF5FD3A6)
 val DarkOnPrimary = Color(0xFF05231A)
 
+// Hero card and its state tints
+val DarkPrimarySurface = Color(0xFF15241E)
+val DarkPrimaryContainer = Color(0xFF1F3A30)
+val DarkPrimaryOutline = Color(0xFF2B4C3F)
+val DarkErrorSurfaceHigh = Color(0xFF4E2323)
+val DarkErrorOutline = Color(0xFF774A49)
+
 // Error
 val DarkError = Color(0xFFF2B8B5)
 val DarkOnError = Color(0xFF3A1414)
@@ -33,6 +40,13 @@ val LightOnSurfaceVariant = Color(0xFF5A6472)
 // Primary (status, actions)
 val LightPrimary = Color(0xFF0E6E52)
 val LightOnPrimary = Color(0xFFFFFFFF)
+
+// Hero card and its state tints
+val LightPrimarySurface = Color(0xFFE8F3EE)
+val LightPrimaryContainer = Color(0xFFD3EBE1)
+val LightPrimaryOutline = Color(0xFFA4CFBD)
+val LightErrorSurfaceHigh = Color(0xFFF6CFCB)
+val LightErrorOutline = Color(0xFFE5A5A1)
 
 // Error
 val LightError = Color(0xFFB3261E)

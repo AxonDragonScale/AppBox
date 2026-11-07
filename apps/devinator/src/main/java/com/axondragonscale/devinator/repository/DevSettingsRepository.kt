@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /** Created by Ronak on 11/06/26 */
 
@@ -40,7 +43,8 @@ internal fun confirmPollOutcome(attempt: Int, confirmed: Boolean): WriteResult? 
  *
  * Process-lifetime singleton: the observer has to outlive every screen, because Home, the setup gate
  * and the tiles must not disagree about what the settings database says. Only the last observed
- * value is kept — switch state is never persisted here.
+ * value is kept — switch state is never persisted here. Turning developer options off writes a
+ * restore snapshot to prefs; that is an intent, not cached state.
  */
 class DevSettingsRepository(
     private val settings: GlobalSettingsRepository,
@@ -54,18 +58,26 @@ class DevSettingsRepository(
     private val _state = MutableStateFlow(settings.readState())
     val state: StateFlow<DevState> = _state.asStateFlow()
 
-    /** Candidate `adb connect` endpoints while wireless debugging is on; VPN first. */
+    /** Candidate `adb connect` endpoints while wireless debugging is on; Wi-Fi first. */
     val endpoints: StateFlow<List<AdbEndpoint>> = endpointsRepository.endpoints
 
     /** Null when no auto-off timer is armed. */
     val autoOffDeadline: StateFlow<Instant?> = autoOff.deadline
 
-    private val configuredDuration = MutableStateFlow(AppPrefsRepository.DEFAULT_AUTO_OFF_DURATION)
+    private val _autoOffDuration = MutableStateFlow(AppPrefsRepository.DEFAULT_AUTO_OFF_DURATION)
+
+    private val snapshotJson = Json
+
+    /** The last developer-options value seen, so an off→on transition can replay the snapshot. */
+    private var lastDeveloperOptions: Boolean? = null
+
+    /** The configured auto-off choice. */
+    val autoOffDuration: StateFlow<AutoOffDuration> = _autoOffDuration.asStateFlow()
 
     init {
         scope.launch {
             // Hydrate before observing: the first sync arms the timer and reads this value.
-            configuredDuration.value = prefs.autoOffDuration.get()
+            _autoOffDuration.value = prefs.autoOffDuration.get()
             autoOff.restoreDeadline()
             settings.observeState().collect(::sync)
         }
@@ -73,16 +85,40 @@ class DevSettingsRepository(
 
     // region Writes
 
-    suspend fun setDeveloperOptions(
-        enabled: Boolean,
-        alsoDisableDebugging: Boolean,
-    ): WriteResult = guarded {
-        settings.writeFlag(KEY_DEVELOPER_OPTIONS, enabled)
-        if (!enabled && alsoDisableDebugging) {
-            settings.writeFlag(KEY_USB_DEBUGGING, false)
-            settings.writeFlag(KEY_WIRELESS_DEBUGGING, false)
+    /**
+     * Turning developer options off remembers every restorable flag and then zeroes it; turning it
+     * back on writes the remembered values. The screen asks nothing.
+     */
+    suspend fun setDeveloperOptions(enabled: Boolean): WriteResult = guarded {
+        if (enabled) {
+            settings.writeFlag(KEY_DEVELOPER_OPTIONS, true)
+        } else {
+            disableDeveloperOptions()
         }
         WriteResult.Ok
+    }
+
+    private suspend fun disableDeveloperOptions() {
+        val snapshot = RESTORABLE_FLAG_KEYS.associateWith { settings.readFlag(it) }
+        prefs.developerFlagsSnapshot.set(snapshotJson.encodeToString(snapshot))
+        settings.writeFlag(KEY_DEVELOPER_OPTIONS, false)
+        RESTORABLE_FLAG_KEYS.forEach { settings.writeFlag(it, false) }
+    }
+
+    /** Consumes the snapshot; a missing or unreadable one leaves the flags as they are. */
+    private suspend fun restoreDeveloperFlags() {
+        val raw = prefs.developerFlagsSnapshot.get() ?: return
+        val snapshot = try {
+            snapshotJson.decodeFromString<Map<String, Boolean>>(raw)
+        } catch (e: Exception) {
+            log { e }
+            prefs.developerFlagsSnapshot.set(null)
+            return
+        }
+        snapshot.forEach { (key, enabled) ->
+            if (key in RESTORABLE_FLAG_KEYS) settings.writeFlag(key, enabled)
+        }
+        prefs.developerFlagsSnapshot.set(null)
     }
 
     suspend fun setUsbDebugging(enabled: Boolean): WriteResult = guarded {
@@ -101,7 +137,7 @@ class DevSettingsRepository(
 
     /** [AutoOffDuration.OFF] removes the timer; the choice is persisted for the next session. */
     suspend fun setAutoOffDuration(duration: AutoOffDuration) {
-        configuredDuration.value = duration
+        _autoOffDuration.value = duration
         prefs.autoOffDuration.set(duration)
         if (!state.value.wirelessDebugging) return
         val minutes = duration.minutes
@@ -109,12 +145,11 @@ class DevSettingsRepository(
         if (minutes == null) autoOff.cancel() else autoOff.armAt(Clock.System.now() + minutes.minutes)
     }
 
-    /** The configured auto-off choice. */
-    fun autoOffDuration(): AutoOffDuration = configuredDuration.value
-
     // endregion
 
     private suspend fun sync(current: DevState) {
+        val wasOn = lastDeveloperOptions
+        lastDeveloperOptions = current.developerOptions
         _state.value = current
         try {
             if (current.wirelessDebugging) {
@@ -125,6 +160,8 @@ class DevSettingsRepository(
                 // Unrelated keys change often; only touch the alarm when one is actually armed.
                 if (autoOff.deadline.value != null) autoOff.cancel()
             }
+            // Enabling developer options, here or in Settings, replays the last restore snapshot.
+            if (current.developerOptions && wasOn != true) restoreDeveloperFlags()
         } catch (e: Exception) {
             log { e }
         }
@@ -136,7 +173,7 @@ class DevSettingsRepository(
      * preference survived.
      */
     private suspend fun ensureTimerArmed() {
-        val minutes = configuredDuration.value.minutes
+        val minutes = _autoOffDuration.value.minutes
         val pending = autoOff.deadline.value?.takeIf { it > Clock.System.now() }
         when {
             minutes == null -> if (autoOff.deadline.value != null) autoOff.cancel()

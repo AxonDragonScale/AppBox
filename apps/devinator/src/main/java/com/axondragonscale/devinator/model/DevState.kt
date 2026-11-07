@@ -11,7 +11,7 @@ data class DevState(
     val wirelessDebugging: Boolean = false,
 )
 
-enum class EndpointKind { VPN, WIFI, HOTSPOT, OTHER }
+enum class EndpointKind { WIFI, HOTSPOT, VPN, OTHER }
 
 /** One `adb connect` candidate. [port] is null while mDNS has not reported one. */
 data class AdbEndpoint(

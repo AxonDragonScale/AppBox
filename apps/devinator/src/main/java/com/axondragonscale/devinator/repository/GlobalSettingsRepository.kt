@@ -20,7 +20,13 @@ const val KEY_USB_DEBUGGING = Settings.Global.ADB_ENABLED
 // `Settings.Global.ADB_WIFI_ENABLED` is @hide since API 30; the literal is the only handle on it.
 const val KEY_WIRELESS_DEBUGGING = "adb_wifi_enabled"
 
-private val FLAG_KEYS = listOf(KEY_DEVELOPER_OPTIONS, KEY_USB_DEBUGGING, KEY_WIRELESS_DEBUGGING)
+/**
+ * The flags that follow developer options: turning it off zeroes them and remembers their values,
+ * and turning it back on restores them. Add a new toggle key here and both sides pick it up.
+ */
+val RESTORABLE_FLAG_KEYS = listOf(KEY_USB_DEBUGGING, KEY_WIRELESS_DEBUGGING)
+
+private val FLAG_KEYS = listOf(KEY_DEVELOPER_OPTIONS) + RESTORABLE_FLAG_KEYS
 
 /**
  * Reads a flag value as the database stored it. `adb shell settings put` stores text while

@@ -25,7 +25,7 @@ class AppPrefsRepository(
 
     companion object {
         /** Auto-off duration used until the user picks another one. */
-        val DEFAULT_AUTO_OFF_DURATION = AutoOffDuration.MIN_30
+        val DEFAULT_AUTO_OFF_DURATION = AutoOffDuration.OFF
     }
 
     private val dataStore = context.appPrefs
@@ -34,4 +34,11 @@ class AppPrefsRepository(
 
     /** Stored as epoch milliseconds; null when no auto-off deadline is armed. */
     val autoOffDeadline = dataStore.nullablePref(longPreferencesKey("auto_off_deadline"))
+
+    /**
+     * The developer flags captured when developer options was turned off, as JSON. Null when there
+     * is nothing to restore.
+     */
+    val developerFlagsSnapshot =
+        dataStore.nullablePref(stringPreferencesKey("developer_flags_snapshot"))
 }

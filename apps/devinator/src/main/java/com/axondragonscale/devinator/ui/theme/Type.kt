@@ -59,7 +59,7 @@ val DevinatorTypography = Typography(
     labelMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         lineHeight = 16.sp,
     ),
 )
@@ -75,8 +75,8 @@ private val MonoBaseTextStyle = TextStyle(
 /** A command the user pastes into a terminal: 12sp. */
 val MonoCommandTextStyle = MonoBaseTextStyle.copy(fontSize = 12.sp)
 
-/** An `ip:port` endpoint the user reads out: 13sp. */
-val MonoTextStyle = MonoBaseTextStyle.copy(fontSize = 13.sp)
+/** An `ip:port` endpoint the user reads out: 18sp. */
+val MonoTextStyle = MonoBaseTextStyle.copy(fontSize = 18.sp)
 
 /**
  * A section title above a card, one step under the 22sp screen title: 20/600.

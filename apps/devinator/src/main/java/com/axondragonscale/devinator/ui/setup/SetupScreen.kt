@@ -30,14 +30,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -103,11 +100,9 @@ private fun SetupScreen(
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { DevinatorTopBar() },
     ) { contentPadding ->
         Column(
@@ -133,7 +128,6 @@ private fun SetupScreen(
                         val command = uiState.grantCommand
                         scope.launch {
                             clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Setup command", command)))
-                            snackbarHostState.showSnackbar("Copied")
                         }
                     },
                 )

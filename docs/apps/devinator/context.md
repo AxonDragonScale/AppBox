@@ -55,7 +55,7 @@ com.axondragonscale.devinator/
 ├── repository/
 │   ├── DevSettingsRepository.kt    # the one writer; state, endpoints, timer, writes
 │   ├── GlobalSettingsRepository.kt # the only code that touches Settings.Global
-│   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice + deadline
+│   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice, deadline, restore snapshot
 │   └── WirelessEndpointRepository.kt # local IPv4s + mDNS port lookup
 ├── background/
 │   ├── AutoOffScheduler.kt         # AlarmManager one-shot
@@ -76,6 +76,8 @@ one implementation of each, so none of them is an interface.
 ### The one invariant
 
 **`Settings.Global` is the only source of truth.** No switch state is ever persisted or cached. The
+one exception is a **restore snapshot**: turning developer options off writes the restorable flags to
+app prefs so the next enable can put them back; the snapshot is an intent, never read as state. The
 repository exposes a `StateFlow` fed by a `ContentObserver`, so Home, the Setup gate and the tiles
 cannot disagree — including after a change made in the Settings app, or a write the system rejected.
 
@@ -87,9 +89,10 @@ class DevSettingsRepository(
     prefs: AppPrefsRepository,
 ) {
     val state: StateFlow<DevState>
-    val endpoints: StateFlow<List<AdbEndpoint>>    // VPN first, then Wi-Fi, then hotspot
+    val endpoints: StateFlow<List<AdbEndpoint>>    // ranked Wi-Fi, hotspot, VPN, other — first is primary
     val autoOffDeadline: StateFlow<Instant?>       // null = no timer armed
-    suspend fun setDeveloperOptions(enabled: Boolean, alsoDisableDebugging: Boolean): WriteResult
+    val autoOffDuration: StateFlow<AutoOffDuration> // the configured timer choice
+    suspend fun setDeveloperOptions(enabled: Boolean): WriteResult
     suspend fun setUsbDebugging(enabled: Boolean): WriteResult
     suspend fun setWirelessDebugging(enabled: Boolean): WriteResult
     suspend fun setAutoOffDuration(duration: AutoOffDuration)
@@ -115,13 +118,22 @@ fun readFlag(key: String): Boolean =
 
 `setWirelessDebugging(true)`: write `1`, then poll the key 10× at 250 ms. Reads `1` → `Ok`. Still
 `0` → `AwaitingConsent`; the observer pushes the real value whenever the user accepts or walks away.
-Disabling is silent and immediate. Turning developer options off writes `0` and, when
-`alsoDisableDebugging` is set, also zeroes `ADB_ENABLED` and `ADB_WIFI_ENABLED`.
+Disabling is silent and immediate. Turning developer options off first serializes every key in
+`RESTORABLE_FLAG_KEYS` (currently USB and wireless) into the prefs snapshot, then writes `0` and zeroes
+those keys. Turning it back on writes `1`; the observer sees the off→on transition and replays the
+snapshot, so an enable from Android Settings restores too. A new developer toggle joins both sides by
+appending its `Settings.Global` key to that list.
 
 ### Endpoint discovery (best effort)
 
 - **Addresses**: IPv4 per interface via `ConnectivityManager` / `NetworkInterface`, labelled
   Wi-Fi / VPN / Hotspot. No permission.
+- **Ranking**: the list is rank-ordered, not transport-ordered — Wi-Fi first, then hotspot, then VPN
+  (a VPN address rarely routes from another machine and mDNS does not cross the tunnel). The UI draws
+  only `endpoints.first()`; the network pill names that network. Rationale and the copy live in
+  [design.md](./design.md#which-address-is-primary).
+- **One port**: adbd runs a single TLS listener and advertises `_adb-tls-connect._tcp` on every
+  interface at that port, so `AdbEndpoint.port` is identical for all candidates in a session.
 - **Port**: `NsdManager` discovery of `_adb-tls-connect._tcp`, resolving each instance
   (`registerServiceInfoCallback` on API 34+, `resolveService` below).
 - **Degradation rule**: unknown port → show the address without one and point at the Developer
@@ -131,7 +143,7 @@ Disabling is silent and immediate. Turning developer options off writes `0` and,
 
 `AlarmManager.setAndAllowWhileIdle` (inexact, no permission) → `WirelessAutoOffReceiver` writes
 `adb_wifi_enabled = 0`. Cancelled when wireless debugging is switched off manually, re-armed on each
-enable. The choice is an `AutoOffDuration` (`OFF`, 5, 15, 30 min, default 30): "off" is a decision
+enable. The choice is an `AutoOffDuration` (`OFF`, 5, 15, 30 min, default `OFF`): "off" is a decision
 the user makes, not a missing value, so it is an enum rather than a nullable count. The deadline is a
 nullable pref — absent means no timer — persisted so the countdown survives process death.
 Known gap: the alarm is not restored automatically after reboot; it comes back on the next app
@@ -184,12 +196,12 @@ Everything here is verified the first time the app is installed on the iQOO.
 
 | Risk | How to check | Fallback if it bites |
 |---|---|---|
-| OriginOS accepts the write but the platform ignores it | flip each switch, confirm in the Settings app | banner + "Open Developer options" deep link instead of a silent no-op |
-| `adbd` keeps running after developer options is turned off | `adb devices` on the computer after switching off | make the cascade dialog mandatory, always zero the debugging keys |
+| OriginOS accepts the write but the platform ignores it | flip each switch, confirm in the Settings app | snackbar naming the failure; the switch stays where the database says |
+| `adbd` keeps running after developer options is turned off | `adb devices` on the computer after switching off | always zero the debugging keys in the same write |
 | Trust dialog is skinned or behaves differently | toggle wireless debugging on | the neutral "waiting for confirmation" state, never a hard error |
 | OEM battery manager drops the timer alarm | set a 5-minute auto-off, lock the screen | move the timer to WorkManager |
 | mDNS discovery finds nothing | check while on Wi-Fi | address without port |
-| Several networks at once (Wi-Fi + VPN + hotspot) | connect with a VPN up | list every candidate, VPN first |
+| Several networks at once (Wi-Fi + VPN + hotspot) | connect with a VPN up | rank Wi-Fi → hotspot → VPN and show the top one only |
 
 ## Related Context
 

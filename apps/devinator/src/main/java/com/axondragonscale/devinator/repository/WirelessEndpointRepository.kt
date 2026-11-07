@@ -24,7 +24,12 @@ private const val SERVICE_TYPE = "_adb-tls-connect._tcp"
 private data class InterfaceAddress(val name: String, val host: String)
 
 /**
- * Labels each address and puts VPN first, then Wi-Fi, then hotspot.
+ * Labels each address and ranks it Wi-Fi, then hotspot, then VPN, then everything else.
+ *
+ * The order is the reachability guess, not a preference: a computer on the same router is the common
+ * case, a computer on the phone's own hotspot is the next, and a tunnel address rarely routes from
+ * another machine. The screen draws only the first candidate, like Android's own wireless debugging
+ * screen.
  *
  * No permission-free API says which interface is tethered, so the Wi-Fi/hotspot split falls back to
  * interface names; [vpnInterfaces] from `ConnectivityManager` stays authoritative for VPN.

@@ -9,7 +9,11 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -18,6 +22,8 @@ import androidx.core.view.WindowCompat
 private val DarkColorScheme = darkColorScheme(
     primary = DarkPrimary,
     onPrimary = DarkOnPrimary,
+    primaryContainer = DarkPrimaryContainer,
+    onPrimaryContainer = DarkPrimary,
     background = DarkBackground,
     onBackground = DarkOnSurface,
     surface = DarkSurface,
@@ -34,6 +40,8 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = LightPrimary,
     onPrimary = LightOnPrimary,
+    primaryContainer = LightPrimaryContainer,
+    onPrimaryContainer = LightPrimary,
     background = LightBackground,
     onBackground = LightOnSurface,
     surface = LightSurface,
@@ -46,6 +54,31 @@ private val LightColorScheme = lightColorScheme(
     errorContainer = LightErrorContainer,
     onErrorContainer = LightOnErrorContainer,
 )
+
+/** The hero card's tints, which have no Material role of their own. */
+@Immutable
+data class DevinatorColors(
+    val primarySurface: Color,
+    val primaryOutline: Color,
+    val errorSurfaceHigh: Color,
+    val errorOutline: Color,
+)
+
+private val DarkDevinatorColors = DevinatorColors(
+    primarySurface = DarkPrimarySurface,
+    primaryOutline = DarkPrimaryOutline,
+    errorSurfaceHigh = DarkErrorSurfaceHigh,
+    errorOutline = DarkErrorOutline,
+)
+
+private val LightDevinatorColors = DevinatorColors(
+    primarySurface = LightPrimarySurface,
+    primaryOutline = LightPrimaryOutline,
+    errorSurfaceHigh = LightErrorSurfaceHigh,
+    errorOutline = LightErrorOutline,
+)
+
+val LocalDevinatorColors = staticCompositionLocalOf { DarkDevinatorColors }
 
 /**
  * The app ships its own palette. Dynamic colour stays off by default — a settings toggle can pass
@@ -85,6 +118,10 @@ fun DevinatorTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = DevinatorTypography,
-        content = content,
-    )
+    ) {
+        CompositionLocalProvider(
+            LocalDevinatorColors provides if (darkTheme) DarkDevinatorColors else LightDevinatorColors,
+            content = content,
+        )
+    }
 }

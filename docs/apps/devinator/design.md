@@ -13,8 +13,9 @@ lives in [context.md](./context.md).
    last tapped. A rejected write looks rejected.
 3. **Android's security gates stay visible.** We trigger the trust dialog; we never route around it
    and never pretend it is our own prompt.
-4. **The one destructive action asks.** Turning developer options off can kill a session someone is
-   in the middle of; everything else is silent.
+4. **No confirmation dialogs.** Turning developer options off zeroes USB and wireless debugging but
+   remembers their values; turning it back on restores them. A failed write is a snackbar, never a
+   modal.
 5. **Local only.** No telemetry, no analytics, no outbound requests, no data collected. `INTERNET`
    arrives transitively with `:core:commons` (see [context.md](./context.md#build--manifest)); it is
    never used to reach a server, so the app's promise is about behaviour, not the permission list.
@@ -36,28 +37,52 @@ stateDiagram-v2
 | State | What the user sees |
 |---|---|
 | `Setup` | Guided one-time permission screen; Home is not reachable |
-| `Home` | Three switches, live values |
-| `Pending` | Wireless row shows a spinner and "Confirm the system dialog" for up to ~3 s, then settles to whatever the key says |
-| `Connected` | Endpoint card appears with `adb connect` lines |
-| Failure | Inline banner above the switches with a retry action; the switch snaps back |
+| `Home` | Developer options hero, USB and wireless cards, live values |
+| `Pending` | Wireless card header shows a spinner and "Confirm the system dialog" for up to ~3 s, then settles to whatever the key says |
+| `Connected` | The wireless card shows the top-ranked address, the `adb connect` command and auto-off |
+| Failure | Snackbar "Couldn't change this setting."; the switch stays wherever the settings database says |
 
-**Developer options off** is not an error state: USB and Wireless rows stay visible but disabled with
-the reason attached, because `adbd` cannot run without developer options.
+**Developer options off** is not an error state even though the hero card turns red: red is the off
+signal (green = on), a state marker rather than a failed write. The USB and wireless cards stay
+visible but disabled with the reason attached, because `adbd` cannot run without developer options.
 
 ## Interactions
 
 | Interaction | Result |
 |---|---|
 | Tap Developer options switch | Writes the key immediately |
-| Turn Developer options **off** | Confirmation dialog, "Also turn off USB and wireless debugging" pre-checked, affirmative button in error colour |
+| Turn Developer options **off** | Writes `0`, snapshots USB and wireless debugging, then zeroes them; no dialog |
+| Turn Developer options **on** | Writes `1` and restores the values captured when it was turned off |
 | Tap USB / Wireless switch | Writes the key immediately; no dialog of our own |
 | Turn Wireless debugging on | Our write raises the system trust dialog; UI shows `Pending` until the key changes |
 | Turn Wireless debugging off | Silent, immediate; also cancels the auto-off timer |
-| Tap an endpoint line | Copies `adb connect <ip>:<port>` |
-| Tap the timer chip | Menu: 5 / 15 / 30 min / Off. Default 30 min |
-| Tap "Add tiles" | `requestAddTileService` on API 33+; on older APIs, caption explaining manual add |
+| Tap the copy control on the endpoint | Copies `adb connect <ip>:<port>` for the address shown |
+| Tap the Auto-off row | Menu: Off / 5 / 15 / 30 min. Default Off. The row's trailing value shows the current choice |
+| Tap "Add tiles" | `StatusBarManager.requestAddTileService` on API 33+, one platform prompt per tile; older APIs get a snackbar pointing at the Quick Settings editor |
 | Tap a tile | Same write as the corresponding switch; never opens the app |
 | Long-press a tile | System behaviour (opens Settings tile placement) — do not override |
+
+### Which address is primary
+
+The phone cannot see the computer's network, so "which address can I use" is answered by a ranked
+best guess:
+
+1. **Wi-Fi** — the interface carrying the phone's active network. A computer on the same router is
+the overwhelmingly common case.
+2. **Hotspot** — the phone's own AP address; reachable only by a machine joined to that hotspot, and
+the only candidate when the phone is tethered and off Wi-Fi.
+3. **VPN** — a tunnel address rarely routes from another machine, and mDNS does not cross the tunnel.
+4. **Other** — anything left.
+
+Only the first candidate is drawn: **one address and one port, like Android's own wireless debugging
+screen**. The network pill names the network the computer must be on; there is no second row. This
+replaces an earlier rule that put VPN first (a VPN being up does not stop the Wi-Fi address from
+working, so promoting it only produced a dead end) and an interim rule that showed an alternate.
+
+All candidates share **one port** — adbd runs a single TLS listener and advertises
+`_adb-tls-connect._tcp` on every interface at that port. Several addresses can reach it depending on
+which network the computer is on, but the port never differs, so a second row was never a choice of
+transport. If the fallback is ever needed, it belongs behind the network pill, not on the card.
 
 ### Timer rules
 
@@ -65,24 +90,30 @@ the reason attached, because `adbd` cannot run without developer options.
 - Countdown is visible in the wireless card ("turns off in 12:04") — a timer nobody sees is a
   surprise, and a surprise port is a lost session.
 - Manual off cancels it; manual on re-arms it; process death or reboot loses it (accepted).
-- Default 30 min: long enough for a working session, short enough to matter.
+- Default `Off`: a timer is opt-in, so the port cannot change under a session unless the user asked
+  for it.
 
 ## Edge cases
 
 | Case | Behaviour |
 |---|---|
-| System dialog declined | No error. Toggle returns to off; `Pending` fades; no toast |
-| Write throws (OEM restriction) | Banner: setting could not be changed + "Open Developer options" |
+| System dialog declined | No error state. Toggle returns to off; `Pending` fades; neutral snackbar "Wireless debugging not confirmed" |
+| Write throws (OEM restriction) | Snackbar "Couldn't change this setting."; the switch stays where the database says |
 | Permission revoked while running | Next write fails → route to `Setup` on the next resume |
 | Port discovery finds nothing | Endpoint shows address only, plus "port is on the Developer options screen" |
-| No network | Endpoint card shows "No network" and stays empty; the toggle still works (hotspot and VPN count as networks) |
-| Multiple addresses | Wi-Fi, VPN, Hotspot in that order; VPN first when a VPN is up |
+| No network | The wireless card's endpoint row shows "No network" and the command block is hidden; the toggle still works (hotspot and VPN count as networks) |
+| Multiple addresses | Show the top-ranked one only: Wi-Fi first, then Hotspot, VPN last; never two ports |
+| Developer options re-enabled | USB and wireless return to their pre-off values; wireless may raise the trust dialog again because adbd restarts |
 | User changes settings in the Settings app | Values update live via the observer; no manual refresh |
 | Airplane mode mid-session | Key stays `1`, endpoint empties, card states why |
 
 ## Copy rules
 
-- Toggle captions name the transport, not the API: "ADB over cable", "ADB over Wi-Fi".
+- Toggle captions name the transport, not the API: "ADB over USB", "ADB over Wi-Fi or hotspot".
+  Developer options gets the dependency instead, because that is what the row is for: "Master switch
+  for ADB".
+- An endpoint line names the network the **computer** must be on, not the phone's interface: a reader
+  who types the hotspot address from a laptop on the home Wi-Fi gets a timeout, not a hint.
 - The permission is explained once, on setup: one line for what it is for, one for why granting it
   is safe — no scare wording, no legalese.
 - Never surface a raw exception, a stack trace, or an internal key name in the UI. Key names belong

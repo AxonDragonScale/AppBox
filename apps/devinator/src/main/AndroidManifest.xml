@@ -26,6 +26,39 @@
         <receiver
             android:name=".background.WirelessAutoOffReceiver"
             android:exported="false" />
+
+        <service
+            android:name=".tile.DeveloperOptionsTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_developer_mode"
+            android:label="@string/tile_dev_options"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.UsbDebuggingTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_usb"
+            android:label="@string/tile_usb_debugging"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.WirelessDebuggingTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_wireless"
+            android:label="@string/tile_wireless_debugging"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
