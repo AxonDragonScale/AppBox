@@ -276,7 +276,11 @@ XPath via `query_nodes` beats scanning trees:
 |---|---|---|
 | Text renders as garbage glyph clusters (`? o ʃ ɥ ʞ ɿ d`) in one node only | The string contains `&` and the node is shaped against the **variable** `Roboto[wdth,wght].ttf` | Content is stored correctly; it is a render bug. Confirm by retyping the same string without `&` (renders clean), then restore the copy |
 | Fig text breaks a few characters later than the app at the same size | OpenPencil lays a `grow` text child out ~10 dp wider than its frame | Accept it, or give the node an explicit width. Never widen the app to match |
-| `tree --page` prints ids that do not exist | It drops earlier pages when loading and renumbers ids (`0:512` shown where the real node is `0:797`, offset = node count of the skipped page) | Use `query` or `find --page`, which return true ids |
+| Node ids from `query --page` export the wrong frame | `--page` makes headless skip the earlier pages and renumber every id (same cause as `tree --page`) | Get ids from the host you will mutate: app-mode `query_nodes` for app-mode edits, a headless query **without** `--page` for headless reads |
+| `node_resize` fails with `width: Invalid key` | Both dimensions are required | Pass `width` **and** `height` |
+| No way to change a font size | `set_font` takes `family` only, `set_text_properties` accepts `id` and nothing else, `batch_update` has no fontSize | Delete the text node and `render` a replacement: `<Text size={12} font="Roboto" weight={500}>…</Text>` |
+| A footer card will not stay at the bottom | the spacer was a fixed-height frame | Insert `<Frame name="Spacer" grow={1} h={0} />` **before** the card in the column |
+| Headless PNG shows text overflowing a card the app renders cleanly | the rasteriser re-measures text with substituted fonts but does not re-solve the layout | Review screens with `scripts/pencil-mcp.sh image … export_image` (app mode); headless export is only a round-trip check |
 | `pages` reports 0 nodes after the first page | Known bug | Use `info` or `query` |
 | Headless `render` rejects `page_id` | Schema differs from MCP | Pass `parent_id=<page id>`; response ids are not the persisted ids — re-derive with `query` |
 | `batch_update` fails with "Expected operations" | It wants a JSON **string** for `operations` | Pass the array as a string |
@@ -425,6 +429,34 @@ the same change as the work it learns from.**
   the first page, headless `render` rejects `page_id`, `batch_update.operations` must be a JSON
   string, `set_font` takes `family`, `export -f pdf` is broken, and `--font-policy` is a no-op.
   See the CLI traps table.
+- **2026-11-08** — `--page` renumbers ids in `query` **and** `export`, not just `tree`: a page-filtered
+  headless query returned `0:519` for the frame whose real id is `0:804`, and exporting the filtered
+  id rendered an unrelated node from another page. App-mode `query_nodes` ids differ from headless
+  ids for the same document — derive ids from the host you are about to mutate, never mix the two.
+- **2026-11-08** — there is no font-size tool. `set_font` takes `family`, `set_text_properties`
+  rejects every key except `id`, and `batch_update` has no fontSize. Changing a size means deleting
+  the text node and rendering a replacement — which is why a specimen whose label changes size gets
+  rebuilt instead of edited.
+- **2026-11-08** — `node_resize` requires both `width` and `height`; `{"id", "height"}` fails with
+  `width: Invalid key`. Ids read off a lint `path` are easy to point at the wrong node — `get_node`
+  first (a banner title was resized to 140 × 40 this way).
+- **2026-11-08** — `grow={1}` works as a JSX prop on a layout child: `<Frame name="Spacer" grow={1}
+  h={0} />` inserted **before** a footer card pins that card to the bottom, with the spacer absorbing
+  the difference. The serialized JSX drops `h={0}` but the layout still fills.
+- **2026-11-08** — `lint` takes an explicit rule list (`min-text-size`, `touch-target-size`,
+  `color-contrast`, …); `accessibility` is not an accepted preset. `lint` returns `suggestions`, but
+  nothing applies them — `lint_fix` only knows `no-hardcoded-colors`.
+- **2026-11-08** — headless PNG export re-measures text with substitute fonts without re-solving
+  auto-layout, so a HUG card can look clipped and overlap its siblings in a file that the app renders
+  perfectly. Judge screens in app mode (`scripts/pencil-mcp.sh image …`); use headless export only to
+  confirm the file round-trips.
+- **2026-11-08** — a `render` script that dies after the RPC (a `NameError` in the trailing `print`)
+  still committed the frame; re-running it produced a duplicate card. Check `node_children` before
+  retrying any script that renders.
+- **2026-11-08** — rebuilding a variant set in place: render plain sibling frames, then
+  `node_to_component(ids=…)`, `rename_node` each to `Family/Prop=Value`, `combine_as_variants(ids=…)`.
+  Replacing a specimen's rows this way keeps the page grid intact; only the specimen's own height
+  changes, so keep ≥8 px of slack to the row below.
 
 ## Related
 
