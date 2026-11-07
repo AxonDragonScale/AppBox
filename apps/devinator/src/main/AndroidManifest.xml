@@ -3,6 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <!--
+        Android 16's local-network protection. Only mDNS needs it, to read the adbd port; without a
+        declaration the platform answers discovery with its own "choose a device" picker instead of
+        a normal permission prompt.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application
         android:name=".DevinatorApplication"

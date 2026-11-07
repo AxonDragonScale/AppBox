@@ -54,7 +54,7 @@ visible but disabled with the reason attached, because `adbd` cannot run without
 | Turn Developer options **off** | Writes `0`, snapshots USB and wireless debugging, then zeroes them; no dialog |
 | Turn Developer options **on** | Writes `1` and restores the values captured when it was turned off |
 | Tap USB / Wireless switch | Writes the key immediately; no dialog of our own |
-| Turn Wireless debugging on | Our write raises the system trust dialog; UI shows `Pending` until the key changes |
+| Turn Wireless debugging on | Our write raises the system trust dialog; UI shows `Pending` until the key changes. The first time, Android also asks for local-network access — that grant only covers the mDNS port lookup, so declining still turns wireless debugging on and just leaves the port unknown |
 | Turn Wireless debugging off | Silent, immediate; also cancels the auto-off timer |
 | Tap the copy control on the endpoint | Copies `adb connect <ip>:<port>` for the address shown |
 | Tap the Auto-off row | Menu: Off / 5 / 15 / 30 min. Default Off. The row's trailing value shows the current choice |

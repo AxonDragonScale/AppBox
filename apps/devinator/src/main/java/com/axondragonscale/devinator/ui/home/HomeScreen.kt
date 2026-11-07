@@ -1,7 +1,12 @@
 package com.axondragonscale.devinator.ui.home
 
+import android.Manifest
 import android.content.ClipData
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,10 +60,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
@@ -93,6 +100,32 @@ fun HomeScreen(
     val viewModel: HomeVM = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    // Local-network access is only how the adbd port is discovered, so it is asked for at the moment
+    // wireless debugging is switched on. A refusal costs the port, never the toggle.
+    val requestLocalNetwork = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {
+        viewModel.onEvent(HomeUiEvent.SetWirelessDebugging(true))
+    }
+
+    fun enableWirelessDebugging() {
+        // Below API 37 there is no local-network grant to ask for.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN) {
+            viewModel.onEvent(HomeUiEvent.SetWirelessDebugging(true))
+            return
+        }
+        val granted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_LOCAL_NETWORK,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            viewModel.onEvent(HomeUiEvent.SetWirelessDebugging(true))
+        } else {
+            requestLocalNetwork.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+        }
+    }
 
     viewModel.uiEffect.collectWithLifecycle { effect ->
         when (effect) {
@@ -108,6 +141,9 @@ fun HomeScreen(
             when (event) {
                 HomeUiEvent.OpenSettings -> navController.navigate(Route.Settings)
                 HomeUiEvent.OpenTiles -> navController.navigate(Route.QuickSettingsTiles)
+                is HomeUiEvent.SetWirelessDebugging ->
+                    if (event.enabled) enableWirelessDebugging() else viewModel.onEvent(event)
+
                 else -> viewModel.onEvent(event)
             }
         },

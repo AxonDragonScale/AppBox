@@ -206,6 +206,12 @@ are out of scope for v1.
   and bundle, Koin bundle, `navigation.compose`, coroutines, `kotlinx.serialization.json`.
 - `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
   tools:ignore="ProtectedPermissions" />`
+- `<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />` — Android 16's
+  local-network protection, needed only for the mDNS port lookup. It is `dangerous`, so Home requests
+  it when wireless debugging is switched on and a refusal costs the port, never the toggle.
+  Declaring it is not enough on its own: the connectivity module's "choose a device" picker keys off
+  the **grant**, so `WirelessEndpointRepository.start()` skips discovery until it is granted rather
+  than letting the platform substitute that picker.
 - Three tile services: `exported="true"`, `android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"`,
   each with a label and icon. Auto-off receiver: `exported="false"`.
 - Launcher icon: `drawable/ic_launcher_foreground.xml` is the Devinator mark on the 108 dp grid —
@@ -233,6 +239,7 @@ Everything here is verified the first time the app is installed on the iQOO.
 | Trust dialog is skinned or behaves differently | toggle wireless debugging on | the neutral "waiting for confirmation" state, never a hard error |
 | OEM battery manager drops the timer alarm | set a 5-minute auto-off, lock the screen | move the timer to WorkManager |
 | mDNS discovery finds nothing | check while on Wi-Fi | address without port |
+| Local-network grant is missing or revoked | launch on a device that never granted it | discovery is skipped, so no picker and no port; the caption points at Developer options |
 | `sysui_qs_tiles` is unreadable above target SDK 33, so tile state and removal vanish on AOSP | open Quick Settings Tiles on a non-OriginOS device | read OriginOS's `super_qs_tiles` where present; otherwise the page is add-only |
 | Several networks at once (Wi-Fi + VPN + hotspot) | connect with a VPN up | rank Wi-Fi → hotspot → VPN and show the top one only |
 

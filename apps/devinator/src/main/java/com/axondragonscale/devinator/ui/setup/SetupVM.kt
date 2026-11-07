@@ -1,5 +1,6 @@
 package com.axondragonscale.devinator.ui.setup
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.axondragonscale.devinator.permission.SecureSettingsPermission
@@ -14,8 +15,12 @@ import kotlinx.coroutines.flow.update
  * state is a fresh read on every resume instead of anything stored.
  */
 class SetupVM(
-    private val context: Context,
+    context: Context,
 ) : ViewModel() {
+
+    // Application context, not an activity: holding it cannot leak a screen.
+    @SuppressLint("StaticFieldLeak")
+    private val context: Context = context.applicationContext
 
     private val _uiState = MutableStateFlow(
         SetupUiState(grantCommand = SecureSettingsPermission.grantCommand(context.packageName)),

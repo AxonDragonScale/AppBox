@@ -1,6 +1,8 @@
 package com.axondragonscale.devinator.repository
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.nsd.NsdManager
@@ -59,6 +61,7 @@ private fun kindOf(interfaceName: String, vpnInterfaces: Set<String>): EndpointK
  */
 class WirelessEndpointRepository(context: Context) {
 
+    private val context: Context = context.applicationContext
     private val executor = context.mainExecutor
     private val nsdManager = context.getSystemService(Context.NSD_SERVICE) as? NsdManager
     private val connectivityManager =
@@ -75,6 +78,12 @@ class WirelessEndpointRepository(context: Context) {
     /** Re-reads the addresses and starts discovery. Idempotent; returns without waiting for mDNS. */
     fun start() {
         if (running) return
+        if (!canReachLocalNetwork()) {
+            // Without the grant the platform answers discovery with its own "choose a device"
+            // picker, so publish the addresses alone and wait to be asked again.
+            _endpoints.value = classifyEndpoints(readAddresses(), vpnInterfaces(), null)
+            return
+        }
         running = true
         publish(port)
         val listener = DiscoveryListener()
@@ -82,6 +91,9 @@ class WirelessEndpointRepository(context: Context) {
             nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener)
             discoveryListener = listener
         } catch (e: Exception) {
+            // A missing local-network grant lands here. Leaving `running` set would block every
+            // later attempt, so the next settings change gets to try again.
+            running = false
             this.log { e }
         }
     }
@@ -111,7 +123,10 @@ class WirelessEndpointRepository(context: Context) {
 
         override fun onDiscoveryStopped(serviceType: String) = Unit
 
-        override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
+        override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
+            // Most often refused local-network access; allow a later start() to retry.
+            running = false
+        }
 
         override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
     }
@@ -177,6 +192,12 @@ class WirelessEndpointRepository(context: Context) {
             }
         }
     }
+
+    /** mDNS is local-network traffic; before API 37 the platform does not ask for a grant. */
+    private fun canReachLocalNetwork(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
+            context.checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) ==
+            PackageManager.PERMISSION_GRANTED
 
     private fun readAddresses(): List<InterfaceAddress> = try {
         NetworkInterface.getNetworkInterfaces().toList()

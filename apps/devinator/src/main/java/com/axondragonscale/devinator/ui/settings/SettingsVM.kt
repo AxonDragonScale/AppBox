@@ -1,5 +1,6 @@
 package com.axondragonscale.devinator.ui.settings
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,8 +22,12 @@ import kotlinx.coroutines.launch
  */
 class SettingsVM(
     private val prefs: AppPrefsRepository,
-    private val context: Context,
+    context: Context,
 ) : ViewModel() {
+
+    // Application context, not an activity: holding it cannot leak a screen.
+    @SuppressLint("StaticFieldLeak")
+    private val context: Context = context.applicationContext
 
     private val _uiState = MutableStateFlow(
         SettingsUiState(
