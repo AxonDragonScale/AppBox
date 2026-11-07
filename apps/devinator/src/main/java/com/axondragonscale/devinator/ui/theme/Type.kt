@@ -65,10 +65,36 @@ val DevinatorTypography = Typography(
 )
 
 /** Commands and `ip:port`; not a Material type role, so call sites opt in explicitly. */
-val MonoTextStyle = TextStyle(
+private val MonoBaseTextStyle = TextStyle(
     fontFamily = FontFamily.Monospace,
     fontWeight = FontWeight.Normal,
-    fontSize = 13.sp,
     lineHeight = 20.sp,
     letterSpacing = 0.sp,
+)
+
+/** A command the user pastes into a terminal: 12sp. */
+val MonoCommandTextStyle = MonoBaseTextStyle.copy(fontSize = 12.sp)
+
+/** An `ip:port` endpoint the user reads out: 13sp. */
+val MonoTextStyle = MonoBaseTextStyle.copy(fontSize = 13.sp)
+
+/**
+ * A section title above a card, one step under the 22sp screen title: 20/600.
+ */
+val SectionTitleTextStyle = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 20.sp,
+    lineHeight = 26.sp,
+)
+
+/**
+ * Step actions and inline links: 13/600, a step under the 15sp button label. Also not a Material
+ * type role, so the name is the contract.
+ */
+val ActionTextStyle = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 13.sp,
+    lineHeight = 18.sp,
 )

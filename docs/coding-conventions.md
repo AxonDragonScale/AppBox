@@ -6,6 +6,20 @@
 
 ## Jetpack Compose
 
+### Design Fidelity
+
+- Every app has one design file, `apps/<app>/<app>.fig`. It is the source of truth for layout,
+sizes, spacing and colour; `docs/apps/<app>/ui.md` is the source of truth for copy
+- When the app and the design disagree, **fix the `.fig` first**, then `ui.md`, then the code. Never
+  patch the app to hide a design-side mismatch — a screen that compensates for the design rots as
+  soon as the next screen is drawn
+- Draw real tap targets in the design (a text action is a 40 dp frame, an icon button is a 32 dp
+  slot) so the design's geometry is the shipped geometry
+- Verify a screen by rendering its previews (`android preview render :apps:<module> --fqn=…`) against
+  an export of the design frame, in both themes
+- Do not judge text geometry from the OpenPencil CLI in headless mode: it has no access to system
+  fonts, substitutes them and measures text ~25 % too wide. Font-faithful checks need the running app
+
 ### Modifier Parameter Position
 - `modifier: Modifier = Modifier` **must** always be the **first parameter** in every composable, even when there are other mandatory parameters
 
@@ -86,6 +100,20 @@ class MyVM(
     private fun handleAction1(event: MyUiEvent.Action1) = viewModelScope.launch { ... }
 }
 ```
+
+---
+
+## Testing
+
+### No Tests In Apps
+
+- The apps ship **no unit, integration or instrumentation tests**. Do not add a `src/test` or
+  `src/androidTest` source set, a test dependency, or test configuration to an app module
+- App correctness rests on three things instead: `assembleDebug` compiling, Compose previews
+  rendered against the app's design file (`android preview render :apps:<module> --fqn=<composable>`),
+  and the on-device checks in that module's risk table in `docs/apps/<app>/context.md`
+- The publishable libraries (`libraries/tlv`, `libraries/bitops`) keep their own `commonTest`
+  suites — those are the only tests in the repo
 
 ---
 

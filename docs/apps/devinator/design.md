@@ -83,7 +83,8 @@ the reason attached, because `adbd` cannot run without developer options.
 ## Copy rules
 
 - Toggle captions name the transport, not the API: "ADB over cable", "ADB over Wi-Fi".
-- The permission is explained once, on setup, in one sentence — no scare wording, no legalese.
+- The permission is explained once, on setup: one line for what it is for, one for why granting it
+  is safe — no scare wording, no legalese.
 - Never surface a raw exception, a stack trace, or an internal key name in the UI. Key names belong
   in [context.md](./context.md).
 - Empty and pending states say what is happening, not "Loading…".

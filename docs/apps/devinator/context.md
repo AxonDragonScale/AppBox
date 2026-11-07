@@ -64,6 +64,7 @@ com.axondragonscale.devinator/
 ├── tile/                           # three TileServices, same repository
 ├── ui/
 │   ├── Route.kt                    # Setup, Home, Settings
+│   ├── components/DevinatorTopBar.kt # the shared top bar: logo + name (+ subtitle, actions)
 │   ├── theme/  setup/  home/  settings/
 └── util/
 ```
@@ -139,7 +140,11 @@ start.
 ### Setup / grant
 
 Detection is `SecureSettingsPermission.isGranted(context)` (`checkSelfPermission`), re-checked on
-`ON_RESUME` and by a deliberate "Check again". The command shown on screen is built from
+`ON_RESUME` and by a deliberate "Check again". Nothing about setup is persisted: the permission is
+itself the source of truth, so a revoked grant shows Setup again. Setup is the NavHost's start
+destination; once the grant is read, `SetupScreen` navigates to Home with
+`popUpTo<Route.Setup> { inclusive = true }`, which keeps Home the only reachable destination and off
+the back stack. The command shown on screen is built from
 `context.packageName`, never hardcoded: the convention plugin suffixes debug builds, so a debug
 install is `com.axondragonscale.devinator.debug` and a hardcoded grant would target a package that
 is not installed.
@@ -164,7 +169,8 @@ are out of scope for v1.
   `fillType="nonZero"`), so the same drawable doubles as the monochrome layer under a system tint.
   Background is `@color/devinator_icon_background` (`#0E1013`). Source art:
   `apps/devinator/devinator.fig` → Foundations › `05 · App icon`. Do not split the glyph into
-  stacked shapes; the knockouts are what keep the themed layer working.
+  stacked shapes; the knockouts are what keep the themed layer working. `drawable/ic_devinator_logo.xml`
+  is the same path at 28×16 for the Setup top bar, tinted `primary` at the call site.
 - `INTERNET` is **not** declared in this module, but the merged manifest requests it: `:core:commons`
   brings `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE_LOCK`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`
   and `FOREGROUND_SERVICE` (HttpClient + Chucker in debug). Confirmed with

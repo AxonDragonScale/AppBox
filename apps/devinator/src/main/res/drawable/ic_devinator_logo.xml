@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The Devinator mark: accent capsule with the caret and knob wound as knockouts. Path data is the
+    512 master from apps/devinator/devinator.fig (Foundations › 05 · App icon); tinted at the call site.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="16dp"
+    android:viewportWidth="412.44"
+    android:viewportHeight="227.56">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="nonZero"
+        android:pathData="M113.78,0L298.67,0C361.5,0 412.44,50.94 412.44,113.78C412.44,176.62 361.5,227.56 298.67,227.56L113.78,227.56C50.94,227.56 0,176.62 0,113.78C0,50.94 50.94,0 113.78,0M61.88,66.12L109.54,113.78L61.88,161.44L94.56,194.12L174.9,113.78L94.56,33.44L61.88,66.12ZM213.33,113.78C213.33,160.91 251.54,199.11 298.67,199.11C345.79,199.11 384,160.91 384,113.78C384,66.65 345.79,28.44 298.67,28.44C251.54,28.44 213.33,66.65 213.33,113.78" />
+</vector>

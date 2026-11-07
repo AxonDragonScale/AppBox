@@ -42,7 +42,7 @@ class AutoOffScheduler(
 
     /** Loads the persisted deadline, so the countdown survives process death. */
     suspend fun restoreDeadline() {
-        _deadline.value = prefs.autoOffDeadline()
+        _deadline.value = prefs.autoOffDeadline.get()?.let(Instant::fromEpochMilliseconds)
     }
 
     suspend fun armAt(at: Instant) {
@@ -52,7 +52,7 @@ class AutoOffScheduler(
         } catch (e: Exception) {
             log { e }
         }
-        prefs.setAutoOffDeadline(Instant.fromEpochMilliseconds(triggerAt))
+        prefs.autoOffDeadline.set(triggerAt)
         _deadline.value = Instant.fromEpochMilliseconds(triggerAt)
     }
 
@@ -62,7 +62,7 @@ class AutoOffScheduler(
         } catch (e: Exception) {
             log { e }
         }
-        prefs.setAutoOffDeadline(null)
+        prefs.autoOffDeadline.set(null)
         _deadline.value = null
     }
 }

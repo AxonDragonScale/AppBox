@@ -9,7 +9,8 @@ keys and permissions live in [context.md](./context.md). Copy below is literal.
 
 - Phone frame **412 × 915**, 4-pt grid, screen side padding **16**.
 - Everything below is dp at 1×.
-- Two themes: **dark** (primary target) and **light**. Draw both for Home; either for the rest.
+- **Dark only** for now: every frame is drawn in the dark palette, which is the shipped theme.
+  A light pass comes later.
 - Corner radii: card `20`, inner item `12`, button `16`, pill `999`.
 
 ## Tokens
@@ -26,16 +27,19 @@ keys and permissions live in [context.md](./context.md). Copy below is literal.
 | `on` (status dot) | `#5FD3A6` | `#0E6E52` |
 | `error` / `errorContainer` | `#F2B8B5` / `#3A1414` | `#B3261E` / `#FCE4E2` |
 
-Runtime uses Material You dynamic colour on top of this fallback palette; design against the
-fallback so contrast is verified.
+The app ships this palette and only this palette: dynamic colour (Material You) is off by default, so
+the fallback is what every device renders. A settings toggle may opt in later; until then, verify
+contrast against the values above.
 
 | Type role | Size / weight | Use |
 |---|---|---|
-| Screen title | 22 / 600 | top bar |
+| Screen title | 22 / 600 + logo | top bar |
+| Section title | 20 / 600 | screen section above a card |
 | Card title | 16 / 600 | switch titles, card headers |
 | Row label | 14 / 500 | secondary rows |
 | Caption | 12 / 400 `textMuted` | explanations, hints |
-| Mono | 13 / 400 mono, letterSpacing 0 | commands, `ip:port` |
+| Mono (endpoint) | 13 / 400 mono, letterSpacing 0 | `ip:port` |
+| Mono (command) | 12 / 400 mono, letterSpacing 0 | commands to copy |
 | Button | 15 / 600 | primary actions |
 | Chip | 11 / 500 | network chip, timer chip |
 
@@ -46,14 +50,27 @@ Icons: Material Symbols `developer_mode`, `usb`, `wifi_tethering`, `content_copy
 
 Define these once and reuse by name in the trees below.
 
+- **TopBar** — component `TopBar`, instanced into every screen: `fill_container`, `height 64`,
+  `padding 16`, `gap 10`, logo 28×16 tinted `primary`, then a column `gap 2` with "Devinator" 22/600
+  and the tagline "Developer options, minus the hassle." 12 `textMuted`. Home adds a trailing
+  settings button through the component's action slot.
 - **Card** — vertical frame, `fill_container`, `padding 16`, `gap 8`, `cornerRadius 20`, fill `surface`.
 - **SwitchRow** — horizontal, `fill_container`, `height 56`, `gap 12`, `justifyContent space_between`,
   `alignItems center`. Children: 40-wide icon slot (24 icon), text column (title + caption, gap 2),
   M3 switch 52×32. Off track `surfaceHigh`, on track `primary`.
-- **IconBadge** — 40×40, `cornerRadius 12`, `surfaceHigh`, centred 20 icon.
+- **IconBadge** — `surfaceHigh`, centred icon. Hero size 56×56, `cornerRadius 16`, 28 icon;
+  row size 40×40, `cornerRadius 12`, 20 icon.
+- **StepRow** — row, `gap 12`: 24 marker circle (`surfaceHigh`, 12/600 `primary` digit), text column
+  `gap 6` holding title 16/600, caption 12 muted and the optional text action 13/600 `primary`.
 - **CodeBlock** — horizontal, `fill_container`, `padding 12`, `cornerRadius 12`, `surfaceHigh`,
-  mono text `fill_container` with `textGrowth "fixed-width"`, plus a 32 copy icon.
+  mono command text at 12 `fill_container`, plus a 32 copy slot holding a 16 copy glyph pinned to
+  the block's top-right.
 - **StatusChip** — pill, `padding 8`, `cornerRadius 999`, `surfaceHigh`, 8 dot + `Chip` label.
+- **NoticeCard** — `fill_container`, `padding 12`, `cornerRadius 16`, fill `errorContainer`, row
+  `gap 10` aligned top: 18 lock icon in `error`, then a column `gap 4` with a 13/600 `error` line and
+  a 12 `error` line at 75% opacity. Used for the one permission explanation.
+- **ErrorCard** — same fill at `cornerRadius 12`, row `gap 10` centred: 18 `error` icon + 13/600
+  `error` label. Used for a state message above the primary action.
 - **Button** — `fill_container`, `height 52`, `cornerRadius 16`, fill `primary`, `Button` label.
 - **Divider** — 1 high, `fill_container`, `outline` at 60% opacity.
 
@@ -61,9 +78,7 @@ Define these once and reuse by name in the trees below.
 
 ```
 Screen 412×915 · fill bg · vertical
-├─ TopBar · h64 · padding 8 · horizontal · space_between · alignItems center
-│  ├─ column gap2: "Devinator" 22/600 · "Developer options & ADB" 12 textMuted
-│  └─ icon button 48 · settings
+├─ TopBar · component `TopBar` · trailing icon button 48 · settings
 └─ column · fill_container · padding 16 · gap 12
    ├─ Banner            (failure state only — see Deltas)
    ├─ Card
@@ -105,18 +120,19 @@ Shown instead of Home while `WRITE_SECURE_SETTINGS` is missing.
 
 ```
 Screen 412×915 · fill bg · vertical
-├─ TopBar · h64 · padding 8: "Devinator" 22/600
-└─ column · fill_container · padding 20 · gap 20
-   ├─ column gap 8
-   │  ├─ IconBadge 56 · cornerRadius 16 · primary tint · key icon
-   │  ├─ "One-time setup" 24/600
-   │  └─ "Devinator needs one system permission to flip these switches. Android only grants it from
-   │     a computer over ADB — once, and it survives reboots and updates." 14 textMuted
+├─ TopBar · component `TopBar`
+└─ column · fill_container · padding 20 horizontal / 16 vertical · gap 16
+   ├─ Header · row gap 12 · items centre
+   │  ├─ IconBadge 40 · cornerRadius 12 · surfaceHigh · 20 key icon
+   │  └─ column gap 2: "One-time setup" 20/600 · "One permission, granted once over ADB." 12 textMuted
+   ├─ NoticeCard
+   │  ├─ "Devinator needs the Write Secure Settings permission to control Developer options." 13/600
+   │  └─ "It is safe to grant and is used only to adjust Developer options." 12 at 75% opacity
    ├─ Card · gap 16
    │  ├─ Step 1 · row gap 12
    │  │  ├─ step marker "1" 12/600 primary, 24 circle surfaceHigh
    │  │  └─ column gap 6: "Enable USB debugging" 16/600 · "Settings → System → Developer options →
-   │  │     USB debugging" 12 textMuted · [text button "Open Developer options"]
+   │  │     USB debugging" 12 textMuted · [text action "Open Developer options" 13/600 primary]
    │  ├─ Divider
    │  ├─ Step 2 · row gap 12
    │  │  └─ column gap 6: "Run this command" 16/600 · CodeBlock mono
@@ -127,12 +143,12 @@ Screen 412×915 · fill bg · vertical
    │     └─ column gap 6: "Come back here" 16/600 · "Devinator checks automatically when you return."
    │        12 textMuted
    ├─ spacer fill_container
-   ├─ Button "Check again"
-   └─ "Setup stays done until you uninstall the app." 12 textMuted · centred
+   ├─ column gap 16: ErrorCard (state only) · Button "Check again" · "Setup stays done until you
+   │  uninstall the app." 12 textMuted centred
 ```
 
-Setup states: after a failed check, add "Permission not granted yet." 12 in `error` under the
-button. No spinner state — the check is instant.
+Setup states: after a failed check, show an ErrorCard above the button reading "Permission not
+ granted yet." No spinner state — the check is instant.
 
 The command text is composed from `context.packageName` at runtime, so a debug install reads
 `adb shell pm grant com.axondragonscale.devinator.debug …`. Design against the release name; the
@@ -186,17 +202,21 @@ naming the three tiles, Cancel / Add.
 
 ## Frames to draw
 
-1. Home — dark, developer options and wireless on, endpoint card visible
-2. Home — light, same content
-3. Home — developer options off (disabled rows)
-4. Home — wireless pending consent (spinner, dialog impression)
-5. Home — write-failed banner
-6. Setup — default, dark
-7. Setup — permission still missing (error line under the button)
-8. Settings — dark
-9. Turn-off dialog over Home
-10. QS tiles — three tiles, on and off
-11. Add-tiles system prompt
+One file, dark only, numbered in flow order:
+
+1. Setup — default
+2. Setup — permission still missing (the error card above the button)
+3. Home — developer options and wireless on, endpoint card visible
+4. Home — developer options off (disabled rows)
+5. Home — wireless pending consent (spinner, dialog impression)
+6. Home — write-failed banner
+7. Settings
+8. Turn-off dialog over Home
+9. QS tiles — three tiles, on and off
+10. Add-tiles system prompt
+
+A light-theme pass was dropped for now; when it returns, add a `Style=Light` variant to the `TopBar`
+and `Card` components rather than redrawing every screen.
 
 ## Related Context
 

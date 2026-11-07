@@ -47,11 +47,15 @@ private val LightColorScheme = lightColorScheme(
     onErrorContainer = LightOnErrorContainer,
 )
 
-/** Dynamic colour is on by default; pass `dynamicColor = false` to see the fallback palette. */
+/**
+ * The app ships its own palette. Dynamic colour stays off by default — a settings toggle can pass
+ * `dynamicColor = true` later — and the previews pin it to the fallback palette so contrast is
+ * reviewed against what the device actually shows.
+ */
 @Composable
 fun DevinatorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {

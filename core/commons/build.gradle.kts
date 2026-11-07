@@ -38,7 +38,6 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
 
             implementation(libs.androidx.compose.ui.tooling)
-            implementation(libs.androidx.compose.ui.test.manifest)
 
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.android)

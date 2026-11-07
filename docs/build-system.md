@@ -228,8 +228,8 @@ For typed settings (used in wallmatic, npinner uses Preferences DataStore):
 ./gradlew :apps:npinner:assembleDebug
 ./gradlew :apps:qrqanvas:assembleDebug
 
-# Run tests
-./gradlew test
+# Library test suites — apps have no tests, see Coding Conventions
+./gradlew :libraries:tlv:jvmTest :libraries:bitops:jvmTest
 
 # Lint checks
 ./gradlew lint

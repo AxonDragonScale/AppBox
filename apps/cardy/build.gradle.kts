@@ -42,5 +42,4 @@ dependencies {
     // Kotlin
     implementation(libs.bundles.coroutines)
     implementation(libs.kotlinx.serialization.json)
-    testImplementation(libs.kotlin.test)
 }

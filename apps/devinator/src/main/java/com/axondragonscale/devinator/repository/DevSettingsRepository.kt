@@ -65,7 +65,7 @@ class DevSettingsRepository(
     init {
         scope.launch {
             // Hydrate before observing: the first sync arms the timer and reads this value.
-            configuredDuration.value = prefs.autoOffDuration()
+            configuredDuration.value = prefs.autoOffDuration.get()
             autoOff.restoreDeadline()
             settings.observeState().collect(::sync)
         }
@@ -102,7 +102,7 @@ class DevSettingsRepository(
     /** [AutoOffDuration.OFF] removes the timer; the choice is persisted for the next session. */
     suspend fun setAutoOffDuration(duration: AutoOffDuration) {
         configuredDuration.value = duration
-        prefs.setAutoOffDuration(duration)
+        prefs.autoOffDuration.set(duration)
         if (!state.value.wirelessDebugging) return
         val minutes = duration.minutes
         // A new duration restarts the countdown the user is looking at.

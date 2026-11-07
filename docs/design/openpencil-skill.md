@@ -49,7 +49,51 @@ below was learned the hard way while building `apps/devinator/devinator.fig`.
 | Tokens | `create_collection`, `create_variable`, `set_variable`, `list_variables`, `design_to_tokens`, `design_to_tokens(format="dtcg")` |
 | Components | `node_to_component`, `combine_as_variants`, `create_component`, `create_instance`, `create_slot`, `expose_instance_swap`, `set_behaviour` |
 | Verify | `export_image`, `export_svg`, `export_pdf`, `lint`, `lint_fix`, `analyze_overlaps`, `analyze_spacing`, `analyze_typography`, `analyze_colors` |
-| Persist | `save_file`, `close_file` |
+| Persist | `save_file`, `close_file`; `openpencil documents save --path`, headless `-o` |
+
+## CLI first (preferred)
+
+`openpencil` (`@open-pencil/cli`, same 0.16.0 as the MCP server) is the default front end; the curl
+bridge below is the fallback. Two modes:
+
+- **Headless** — pass a document path, no app involved, no MCP session, ~0.5 s:
+  `openpencil info|pages|tree|node|find|query|fonts|variables|tokens|analyze|lint|export|diff <file>`,
+  `openpencil tool call <name> <file> --args '<json>' [-o out.fig]`, `openpencil eval <file> -o`.
+  Use it for every read, export, lint and diff: it cannot hit a 20 s RPC timeout or leak a session,
+  and `-o` writes anywhere, including the worktree.
+- **App mode** — omit the path; it talks to the running app over a unix socket, not the MCP endpoint,
+  so there is no `initialize`, no session cap and no `503` retry dance. Same tools, ~0.5 s, but a
+  **hard 20 s timeout and no retry**, so keep the bridge (120 s, 20 retries on 503) for heavy
+  `render` / `lint_fix` work.
+
+Parity: 121 of the 132 MCP tools are reachable through `openpencil tool call`; the 11 app-only ones
+(`activate_document`, `close_file`, `get_settings`, `list_documents`, `new_document`, `open_file`,
+`redo`, `save_file`, `undo`, `update_settings`, `get_codegen_prompt`) sit behind `openpencil documents`,
+`settings`, `undo` / `redo` and `selection`.
+
+**Never judge text geometry headless** — see [Fonts](#fonts-must-resolve-or-the-design-lies).
+
+## Fonts must resolve or the design lies
+
+A design authored in `Roboto` / `Roboto Mono` is metric-fictional until those families are installed
+on the machine: OpenPencil substitutes silently, and its headless host exposes **zero** fonts.
+
+```sh
+brew install --cask font-roboto font-roboto-mono   # then quit and reopen the app
+```
+
+- Faithful check (app mode, read-only, cheap): `openpencil tool call get_font_status` →
+  `{"faithful": true, "faces": [{"family":"Roboto","status":"available","source":"local"}]}`.
+  `list_available_fonts` lists what the app can actually use.
+- Do **not** trust `openpencil fonts <file>` for the live document: it walks only the current page,
+  ignores `--page`, reports `unresolved` without naming the substitute, and in app mode returns `{}`.
+- Measured cost of a substitution (same string, stored vs headless): `Devinator` 32/700 138×38 →
+  173×45; `Devinator` 22/600 95×26 → 119×31; `Developer options` 16/600 130×19 → 164×23;
+  `Developer options & ADB` 12/400 133×14 → 166×17. A flat **+25 %**: unresolved families are laid out
+  with a monospace fallback while the rasteriser draws plausible glyphs, so exports look right and
+  every box is wrong.
+- Consequence: export, lint, tokens, colour and structure analysis are safe headless; **wrapping,
+  overflow and row/tile fit are not**. Author and judge them in the app.
 
 ## Reaching the server (Delta and any terminal)
 
@@ -226,6 +270,22 @@ XPath via `query_nodes` beats scanning trees:
 | `HUG` rejected by `batch_update` | frame is not auto-layout | set `direction` first, then `HUG` |
 | RPC timeout on `render` | heavy subtree / app throttled | see below — verify before retrying |
 
+## CLI traps (0.16.0)
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Text renders as garbage glyph clusters (`? o ʃ ɥ ʞ ɿ d`) in one node only | The string contains `&` and the node is shaped against the **variable** `Roboto[wdth,wght].ttf` | Content is stored correctly; it is a render bug. Confirm by retyping the same string without `&` (renders clean), then restore the copy |
+| Fig text breaks a few characters later than the app at the same size | OpenPencil lays a `grow` text child out ~10 dp wider than its frame | Accept it, or give the node an explicit width. Never widen the app to match |
+| `tree --page` prints ids that do not exist | It drops earlier pages when loading and renumbers ids (`0:512` shown where the real node is `0:797`, offset = node count of the skipped page) | Use `query` or `find --page`, which return true ids |
+| `pages` reports 0 nodes after the first page | Known bug | Use `info` or `query` |
+| Headless `render` rejects `page_id` | Schema differs from MCP | Pass `parent_id=<page id>`; response ids are not the persisted ids — re-derive with `query` |
+| `batch_update` fails with "Expected operations" | It wants a JSON **string** for `operations` | Pass the array as a string |
+| `set_font` rejects `font` | Schema drift | It takes `family` |
+| `export -f pdf` dies with `Cannot read properties of undefined (reading 'jsPDF')` | Bundled svg2pdf missing | Use png or svg |
+| `--font-policy strict` changes nothing | No-op on PNG (byte-identical output) | Do not rely on it |
+| `openpencil info` (app mode) hangs for 20 s while another agent edits | App Nap / busy app | Use headless `info` plus app-mode `tool call list_documents` |
+| `openpencil fonts --json` returns `{}` in app mode | Fonts only works headless | Use `tool call get_font_status` for the live document |
+
 ## Timeouts and stalls
 
 The transport gives up at ~20 s, but the app usually finishes the work.
@@ -248,12 +308,19 @@ The transport gives up at ~20 s, but the app usually finishes the work.
 3. `analyze_overlaps(page_id=...)` — catches text bleeding out of frames and sibling
    collisions that look fine at thumbnail size.
 4. `get_jsx(id)` — ground truth for what actually persisted.
-5. `save_file` — then `list_pages` / `page_bounds` to confirm the shape of the file.
+5. `save_file` / `openpencil documents save --path <worktree>` — then `list_pages` /
+   `page_bounds` to confirm the shape of the file.
 
 ## Repository conventions
 
 - One design per app: `apps/<app>/<app>.fig`, sourced from `docs/apps/<app>/ui.md`
-  (copy in the spec is literal — do not paraphrase it in the design).
+  (copy in the spec is literal — do not paraphrase it in the design). When the design and the app
+  disagree, the `.fig` is fixed first, then `ui.md`, then the code.
+- Type is `Roboto` for UI and `Roboto Mono` for commands and endpoints, at the sizes the app ships
+  (command 12, endpoint 13). None of it is metric-accurate until both families are installed — see
+  [Fonts](#fonts-must-resolve-or-the-design-lies).
+- Draw real tap targets so the design's geometry is the shipped geometry: a text action sits in a
+  40 dp frame, an icon button in a 32 dp slot.
 - Three pages, always the same order and names: **Foundations**, **Components**, **Screens**.
 - Foundations panels are 1000 wide in one column, gap 48: cover, colour, typography,
   shape/spacing/layout, iconography, app icon.
@@ -292,8 +359,9 @@ the same change as the work it learns from.**
   Retry rather than assuming the app died; `GET /health` stays `200` throughout.
 - **2026-11-06** — `query_nodes` takes `selector`; passing `xpath` fails validation
   ("Expected selector"). `limit` / `page` paginate results.
-- **2026-11-06** — `viewport_zoom_to_fit` does not exist in 0.16.0; only `viewport_get` and
-  `viewport_set` (**supersedes** the tidy-up recipe that used it).
+- **2026-11-06** — `viewport_zoom_to_fit` **does** exist in 0.16.0 (headless tool registry); the
+  earlier "does not exist" note was wrong — **superseded 2026-11-07** by the CLI-first section,
+  which also replaces the probe-after-timeout workaround for reads.
 - **2026-11-06** — Text defaults to Inter. `fontFamily` is ignored; only `font` sets the
   family, and there is no inheritance from the parent frame.
 - **2026-11-06** — A frame with no `flex` and no `h` is 100 × 100. This, not padding,
@@ -335,9 +403,28 @@ the same change as the work it learns from.**
   own size (it never upscales).
 - **2026-11-07** — `export_svg` answers instantly for a single VECTOR node and times out at
   20 s for a FRAME or a multi-node selection; export the path, not the frame.
-- **2026-11-07** — `save_file` without `path` writes back to the path the document was
-  opened from, which is the source checkout, not the Delta worktree; the worktree copy
-  stays stale until it is mirrored.
+- **2026-11-07** — `save_file` always accepted a `path`; the "save writes back to the opening
+  path" note only describes the default. **App mode:** `openpencil documents save --document-id
+  tab-1 --path <abs worktree path>` writes straight into the Delta worktree (verified).
+  **Headless:** `-o` on `export -f fig` / `eval` / `tool call` / `lint --fix` writes anywhere, and
+  `openpencil diff files <a> <b>` reports `✓ Documents match` on a fig round-trip, so hand
+  mirroring is no longer needed.
+- **2026-11-07** — the CLI's headless host has no fonts: it substitutes Roboto / Roboto Mono with
+  Inter and measures text **+25 %** wide. `brew install --cask font-roboto font-roboto-mono` plus
+  an app restart fixes the app side; headless text geometry stays untrustworthy.
+- **2026-11-07** — one node (`Developer options & ADB`, `0:516` in `01 · Home · dark`) renders
+  garbage glyph clusters because the string contains `&`; the same string without `&` renders
+  clean and `get_node` shows the characters stored correctly. A shaping bug against the variable
+  Roboto face — restore the copy, never reword it.
+- **2026-11-07** — App Nap throttles the app when it is in the background: every app-mode call then
+  dies at the 20 s RPC timeout with no retry. `open -a OpenPencil` wakes it, and one wake covers a
+  batch of calls for a while, so batch app-mode work and wake once at the start instead of before
+  every call. Headless commands never need it. App mode is a unix-socket RPC with no MCP session, so
+  there is no `503` leak risk; the curl bridge stays the fallback for calls the CLI abandons at 20 s.
+- **2026-11-07** — `tree --page` renumbers ids when it skips pages, `pages` reports 0 nodes after
+  the first page, headless `render` rejects `page_id`, `batch_update.operations` must be a JSON
+  string, `set_font` takes `family`, `export -f pdf` is broken, and `--font-policy` is a no-op.
+  See the CLI traps table.
 
 ## Related
 
