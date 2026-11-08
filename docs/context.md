@@ -140,4 +140,4 @@ See [build-system.md](./build-system.md) for convention plugins and build config
 - [Coding Conventions](./coding-conventions.md) — Compose patterns, Kotlin idioms, naming, state management
 - [Build System](./build-system.md) — Convention plugins, version catalog, build commands
 - [Commons Module](./core/commons/context.md) — Shared utilities available to all apps
-- [OpenPencil MCP skill](./design/openpencil-skill.md) — building `apps/*/*.fig` designs; read before any design task
+- [OpenPencil MCP skill](./design/openpencil-skill.md) — building `apps/*/*.fig` designs; read before any design task (Zed edits via MCP, other hosts read-only)

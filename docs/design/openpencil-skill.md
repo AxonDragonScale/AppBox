@@ -1,6 +1,6 @@
 ---
 name: openpencil-skill
-description: Build and edit .fig design files with the OpenPencil MCP server — JSX rendering, design tokens and variables, components and variants, multi-page files, screens, overlays, bulk colour binding, and verification. Use whenever a task involves creating, changing, or inspecting an app design in apps/*/*.fig through OpenPencil.
+description: Build and edit .fig design files with the OpenPencil MCP tools in Zed — JSX rendering, design tokens and variables, components and variants, multi-page files, screens, overlays, bulk colour binding, and verification. Use whenever a task involves creating, changing, or inspecting an app design in apps/*/*.fig through OpenPencil. Zed is the only host that writes; other hosts are read-only.
 ---
 
 # OpenPencil MCP — working skill
@@ -10,6 +10,18 @@ below was learned the hard way while building `apps/devinator/devinator.fig`.
 
 **Read this before your first `render` call.** Then follow the
 [update protocol](#update-protocol-required) at the end — this file is expected to grow.
+
+## Who edits what
+
+- **Zed + the OpenPencil MCP tools — the only editing path.** Every mutation (render, move,
+  restyle, rename, save) happens here. Use the tools directly; do not shell out to a bridge.
+- **Delta — read-only.** Read and export freely (`get_page_tree`, `query_nodes`, `get_jsx`,
+  `export_image`); never attempt a mutation.
+- **`openpencil` CLI — inspect, lint, export.** Headless runs read, diff and write copies with
+  `-o`. They never edit the open document.
+
+`.fig` is a binary format: never edit it by hand, from a terminal, or with a script. A host that
+cannot reach the MCP tools inspects and reports — the human or a Zed agent makes the change.
 
 ## Golden rules
 
@@ -49,29 +61,30 @@ below was learned the hard way while building `apps/devinator/devinator.fig`.
 | Tokens | `create_collection`, `create_variable`, `set_variable`, `list_variables`, `design_to_tokens`, `design_to_tokens(format="dtcg")` |
 | Components | `node_to_component`, `combine_as_variants`, `create_component`, `create_instance`, `create_slot`, `expose_instance_swap`, `set_behaviour` |
 | Verify | `export_image`, `export_svg`, `export_pdf`, `lint`, `lint_fix`, `analyze_overlaps`, `analyze_spacing`, `analyze_typography`, `analyze_colors` |
-| Persist | `save_file`, `close_file`; `openpencil documents save --path`, headless `-o` |
+| Persist | `save_file`, `close_file` (MCP — the only write path); headless `-o` writes a copy, never the open document |
 
-## CLI first (preferred)
+## Front ends
 
-`openpencil` (`@open-pencil/cli`, same 0.16.0 as the MCP server) is the default front end; the curl
-bridge below is the fallback. Two modes:
+| Front end | Edits the open document | Use for |
+|---|---|---|
+| **Zed + MCP tools** | **yes — the only editing path** | every mutation, plus verification and `save_file` |
+| **Delta** | **no — read-only** | `get_page_tree`, `query_nodes`, `get_jsx`, `export_image` |
+| `openpencil` CLI, headless (`<file>`) | no — `-o` writes a copy | bulk reads, exports, lint, `diff`, anything scriptable |
+| `openpencil` CLI, app mode (no path) | avoid | liveness probe and `tool call get_font_status` |
 
-- **Headless** — pass a document path, no app involved, no MCP session, ~0.5 s:
+- Headless commands are ~0.5 s, cannot hit the 20 s RPC timeout, and need no app:
   `openpencil info|pages|tree|node|find|query|fonts|variables|tokens|analyze|lint|export|diff <file>`,
-  `openpencil tool call <name> <file> --args '<json>' [-o out.fig]`, `openpencil eval <file> -o`.
-  Use it for every read, export, lint and diff: it cannot hit a 20 s RPC timeout or leak a session,
-  and `-o` writes anywhere, including the worktree.
-- **App mode** — omit the path; it talks to the running app over a unix socket, not the MCP endpoint,
-  so there is no `initialize`, no session cap and no `503` retry dance. Same tools, ~0.5 s, but a
-  **hard 20 s timeout and no retry**, so keep the bridge (120 s, 20 retries on 503) for heavy
-  `render` / `lint_fix` work.
-
-Parity: 121 of the 132 MCP tools are reachable through `openpencil tool call`; the 11 app-only ones
-(`activate_document`, `close_file`, `get_settings`, `list_documents`, `new_document`, `open_file`,
-`redo`, `save_file`, `undo`, `update_settings`, `get_codegen_prompt`) sit behind `openpencil documents`,
-`settings`, `undo` / `redo` and `selection`.
-
-**Never judge text geometry headless** — see [Fonts](#fonts-must-resolve-or-the-design-lies).
+  `openpencil tool call <name> <file> --args '<json>' [-o out.fig]`. `-o` writes anywhere,
+  including the worktree — that is how a script produces a *new* file, never how the document
+  being edited is changed.
+- App mode is a unix-socket RPC with a hard 20 s timeout and no retry. It is useful for
+  `get_font_status` and for a cheap read, not as a fallback editor.
+- Parity: 121 of the 132 MCP tools are reachable through `openpencil tool call`; the 11 app-only
+  ones (`activate_document`, `close_file`, `get_settings`, `list_documents`, `new_document`,
+  `open_file`, `redo`, `save_file`, `undo`, `update_settings`, `get_codegen_prompt`) live behind
+  `openpencil documents`, `settings`, `undo` / `redo` and `selection`.
+- **Never judge text geometry headless** — see
+  [Fonts](#fonts-must-resolve-or-the-design-lies).
 
 ## Fonts must resolve or the design lies
 
@@ -95,33 +108,21 @@ brew install --cask font-roboto font-roboto-mono   # then quit and reopen the ap
 - Consequence: export, lint, tokens, colour and structure analysis are safe headless; **wrapping,
   overflow and row/tile fit are not**. Author and judge them in the app.
 
-## Reaching the server (Delta and any terminal)
+## Documents and ids
 
-Delta's MCP client cannot connect to a localhost server on this setup. The server speaks
-streamable HTTP, so it can be driven with curl through
-[`scripts/pencil-mcp.sh`](../../../scripts/pencil-mcp.sh):
-
-```sh
-scripts/pencil-mcp.sh tools                                  # all tool names
-scripts/pencil-mcp.sh call list_documents                    # documents + page ids
-scripts/pencil-mcp.sh call get_page_tree '{"page_id":"1506858273:1144","depth":1}'
-scripts/pencil-mcp.sh image /tmp/setup.png export_image '{"ids":["1506858273:1474"],"maxEdge":560}'
+```
+list_documents                 → open tabs, file paths, page ids
+list_pages / get_page_tree     → page → screen ids
+query_nodes                    → anything deeper
 ```
 
-- Endpoint `http://127.0.0.1:7600/mcp`. `GET /health` returns the version and the full tool list and
-  is the cheapest liveness probe; `GET /` answers 404 and means nothing.
-- **One session per run, terminated on exit.** `initialize` returns an `mcp-session-id` header; the
-  script deletes it with `DELETE /mcp` when it finishes. Leaked sessions trigger
-  `Too many active MCP sessions` (HTTP 503) on every later `initialize` until the server restarts —
-  indistinguishable from "app not running" unless you read the body. Check the body before
-  restarting anything.
-- The server serialises work: a call that arrives while another is in flight gets `503` +
-  `retry-after`. The script retries up to 20 times. Repeated 503s mean leaked sessions, not load.
-- Responses are plain JSON today; still branch on SSE (`data: ` lines), which the transport may use.
-- `export_image` returns PNG base64 inline; the `image` command decodes it to a file for review.
-
-Node ids are per file, so read them, never hardcode them: `list_documents` → page ids,
-`get_page_tree` → screen ids, `query_nodes` → anything deeper.
+- Node ids are per file **and per host**: the same frame has different ids through MCP, CLI app
+  mode and headless. Derive ids from the host you are about to mutate — never hardcode or mix them.
+- MCP arguments and `openpencil tool call` arguments are **not** the same schema. MCP takes
+  `page_id`; headless `render` rejects it (`Invalid key: Expected never but received "page_id"`) and
+  wants `parent_id=<page id>` instead.
+- `switch_page` reports success but does not change which page a tool acts on; pass `page_id`
+  explicitly (golden rule 1).
 
 ## JSX reference
 
@@ -226,14 +227,28 @@ set_effects(dialogId, type="DROP_SHADOW", offset_y=12, radius=32, color="#000000
 **Never nest the dialog inside the scrim** — opacity applies to the whole subtree and the
 dialog turns grey. Two sibling layers, both absolute at `0, 0`.
 
+### Menus (dropdown over a card)
+
+A duration/permission menu must match what Material emits, or design and code drift:
+
+- Panel: 16 dp radius, 8 dp vertical content padding, drop shadow.
+- Selected row: highlighted fill, **8 dp** radius, `padding(horizontal = 8.dp)`. 16 − 8 = 8 keeps
+  the selected row concentric with the panel.
+- Panel width hugs its widest item — no fixed width. A `width(148.dp)` menu was rejected.
+- Anchor to the trailing control, not the full-width row: a `DropdownMenu` inside a `Box` that
+  wraps only the trailing icon/value opens right-aligned; anchored to the row it opens at the
+  left edge. Do not compensate with a custom `Popup` — standard `DropdownMenu` with the shape
+  and padding above is the accepted implementation.
+- Subtitle text that would widen the menu unnecessarily belongs under the label, not in it.
+
 ### Cross-page moves and tidy-up
 
 - `reparent_node(id, parent_id=<page id>)` moves a node between pages.
 - `arrange(ids=[...], mode="grid", cols=3, gap=40, page_id=...)` packs nodes and puts the
   block at the origin. A header that should sit above the grid can be `node_move`d to a
   negative y, or you shift the grid instead.
-- `viewport_get` / `viewport_set` are the only viewport tools in 0.16.0 — there is no
-  `viewport_zoom_to_fit` (corrected 2026-11-06, see learnings log).
+- `viewport_get` / `viewport_set` / `viewport_zoom_to_fit` all exist in 0.16.0 (corrected
+  2026-11-08; the older "no `viewport_zoom_to_fit`" note was wrong — see learnings log).
 
 ### Bulk property changes
 
@@ -280,7 +295,7 @@ XPath via `query_nodes` beats scanning trees:
 | `node_resize` fails with `width: Invalid key` | Both dimensions are required | Pass `width` **and** `height` |
 | No way to change a font size | `set_font` takes `family` only, `set_text_properties` accepts `id` and nothing else, `batch_update` has no fontSize | Delete the text node and `render` a replacement: `<Text size={12} font="Roboto" weight={500}>…</Text>` |
 | A footer card will not stay at the bottom | the spacer was a fixed-height frame | Insert `<Frame name="Spacer" grow={1} h={0} />` **before** the card in the column |
-| Headless PNG shows text overflowing a card the app renders cleanly | the rasteriser re-measures text with substituted fonts but does not re-solve the layout | Review screens with `scripts/pencil-mcp.sh image … export_image` (app mode); headless export is only a round-trip check |
+| Headless PNG shows text overflowing a card the app renders cleanly | the rasteriser re-measures text with substituted fonts but does not re-solve the layout | Review screens with MCP `export_image` (inline PNG) or the running app; headless export is only a round-trip check |
 | `pages` reports 0 nodes after the first page | Known bug | Use `info` or `query` |
 | Headless `render` rejects `page_id` | Schema differs from MCP | Pass `parent_id=<page id>`; response ids are not the persisted ids — re-derive with `query` |
 | `batch_update` fails with "Expected operations" | It wants a JSON **string** for `operations` | Pass the array as a string |
@@ -292,13 +307,14 @@ XPath via `query_nodes` beats scanning trees:
 
 ## Timeouts and stalls
 
-The transport gives up at ~20 s, but the app usually finishes the work.
+MCP calls give up at ~20 s on the client, but the app usually finishes the work.
 
-1. Wait 15–30 s and probe with a light call (`get_current_page`).
-2. If still stuck, run `open -a OpenPencil` (macOS App Nap throttles the background app)
-   and probe again.
-3. **Then** verify with `get_page_tree` / `query_nodes` before re-running anything — a
-   retried `render` creates a duplicate frame.
+1. Wait 15–30 s and probe with a light read (`get_current_page`).
+2. If it is still stuck, run `open -a OpenPencil` — macOS App Nap throttles a background app and
+   every call then dies at the timeout. One wake covers a batch, so batch work and wake once.
+3. **Verify before retrying.** A timed-out `render` / `clone_node` frequently committed. Check
+   `query_nodes` / `node_children` first (a timed-out `clone_node` did create `09 · timed pause`
+   on 2026-11-08, and a retry would have duplicated it).
 4. After a wake the app may report a different "current page". One more reason to pass
    `page_id` everywhere.
 5. Keep a single `render` under roughly 120 nodes; split big screens into two calls.
@@ -308,12 +324,14 @@ The transport gives up at ~20 s, but the app usually finishes the work.
 1. `export_image(ids=[...], page_id=..., maxEdge=500)` — eyeball the result; images come
    back inline, so no files are needed.
 2. `lint(page_id=..., rules=["no-hardcoded-colors"])` — should end at 0 after `lint_fix`.
-   Also worth running the `accessibility` preset (contrast, touch targets, min text size).
+   Also worth running the accessibility rules explicitly (`color-contrast`, `touch-target-size`,
+   `min-text-size`) — there is no `accessibility` preset, and `lint_fix` cannot apply those
+   suggestions.
 3. `analyze_overlaps(page_id=...)` — catches text bleeding out of frames and sibling
    collisions that look fine at thumbnail size.
 4. `get_jsx(id)` — ground truth for what actually persisted.
-5. `save_file` / `openpencil documents save --path <worktree>` — then `list_pages` /
-   `page_bounds` to confirm the shape of the file.
+5. `save_file` — then `list_pages` / `page_bounds` to confirm the shape of the file. The CLI
+   never saves the open document; `-o` only writes a copy.
 
 ## Repository conventions
 
@@ -354,18 +372,24 @@ the same change as the work it learns from.**
 
 ## Learnings log
 
-- **2026-11-06** — Delta's MCP client cannot reach the localhost server; the same tools are
-  reachable over streamable HTTP at `127.0.0.1:7600/mcp` via `scripts/pencil-mcp.sh`.
-- **2026-11-06** — Sessions are capped. Each `initialize` creates one, `DELETE /mcp` with the
-  session header frees it; leaked sessions block every new session with `503 Too many active MCP
-  sessions` until the server restarts. Always terminate the session.
-- **2026-11-06** — Concurrent calls answer `503` + `retry-after` because the server serialises work.
-  Retry rather than assuming the app died; `GET /health` stays `200` throughout.
+- **2026-11-06** — ~~Delta's MCP client cannot reach the localhost server; the same tools are
+  reachable over streamable HTTP, and a curl wrapper script drove them.~~
+  **Superseded 2026-11-08** — Zed has the MCP tools wired in and is the only editing path; Delta
+  is read-only on designs. The bridge script was deleted. Never reintroduce a custom bridge or a
+  shell wrapper around the MCP server.
+- **2026-11-06** — ~~Sessions are capped: a leaked session blocked every new one until the server
+  restarted, so each run had to terminate its own session.~~ **Superseded 2026-11-08** — a client
+  that owns the session (Zed's MCP client) manages this; hand-rolled HTTP sessions were only a
+  property of the removed bridge.
+- **2026-11-06** — ~~Concurrent calls answer `503` + `retry-after` because the server serialises
+  work. Retry rather than assuming the app died; `GET /health` stays `200` throughout.~~
+  **Superseded 2026-11-08** — no hand-rolled client left; an MCP tool gap is now an App Nap
+  problem, see [Timeouts](#timeouts-and-stalls).
 - **2026-11-06** — `query_nodes` takes `selector`; passing `xpath` fails validation
   ("Expected selector"). `limit` / `page` paginate results.
 - **2026-11-06** — `viewport_zoom_to_fit` **does** exist in 0.16.0 (headless tool registry); the
-  earlier "does not exist" note was wrong — **superseded 2026-11-07** by the CLI-first section,
-  which also replaces the probe-after-timeout workaround for reads.
+  earlier "does not exist" note was wrong — **superseded 2026-11-07** by the front-end guidance
+  in this file, which also replaces the probe-after-timeout workaround for reads.
 - **2026-11-06** — Text defaults to Inter. `fontFamily` is ignored; only `font` sets the
   family, and there is no inheritance from the parent frame.
 - **2026-11-06** — A frame with no `flex` and no `h` is 100 × 100. This, not padding,
@@ -408,11 +432,11 @@ the same change as the work it learns from.**
 - **2026-11-07** — `export_svg` answers instantly for a single VECTOR node and times out at
   20 s for a FRAME or a multi-node selection; export the path, not the frame.
 - **2026-11-07** — `save_file` always accepted a `path`; the "save writes back to the opening
-  path" note only describes the default. **App mode:** `openpencil documents save --document-id
-  tab-1 --path <abs worktree path>` writes straight into the Delta worktree (verified).
-  **Headless:** `-o` on `export -f fig` / `eval` / `tool call` / `lint --fix` writes anywhere, and
-  `openpencil diff files <a> <b>` reports `✓ Documents match` on a fig round-trip, so hand
-  mirroring is no longer needed.
+  path" note only describes the default. **MCP `save_file` is the only save path that edits the
+  open document** (superseded 2026-11-08: the old `openpencil documents save` route is no longer
+  used). **Headless:** `-o` on `export -f fig` / `eval` / `tool call` / `lint --fix` writes a copy
+  anywhere, and `openpencil diff files <a> <b>` reports `✓ Documents match` on a fig round-trip,
+  so hand mirroring is not needed.
 - **2026-11-07** — the CLI's headless host has no fonts: it substitutes Roboto / Roboto Mono with
   Inter and measures text **+25 %** wide. `brew install --cask font-roboto font-roboto-mono` plus
   an app restart fixes the app side; headless text geometry stays untrustworthy.
@@ -420,11 +444,12 @@ the same change as the work it learns from.**
   garbage glyph clusters because the string contains `&`; the same string without `&` renders
   clean and `get_node` shows the characters stored correctly. A shaping bug against the variable
   Roboto face — restore the copy, never reword it.
-- **2026-11-07** — App Nap throttles the app when it is in the background: every app-mode call then
-  dies at the 20 s RPC timeout with no retry. `open -a OpenPencil` wakes it, and one wake covers a
-  batch of calls for a while, so batch app-mode work and wake once at the start instead of before
-  every call. Headless commands never need it. App mode is a unix-socket RPC with no MCP session, so
-  there is no `503` leak risk; the curl bridge stays the fallback for calls the CLI abandons at 20 s.
+- **2026-11-07** — App Nap throttles the app when it is in the background: every call then dies at
+  the 20 s RPC timeout with no retry. `open -a OpenPencil` wakes it, and one wake covers a batch of
+  calls for a while, so batch work and wake once at the start instead of before every call.
+  Headless commands never need it. *The "a bridge script stays the fallback" clause in the
+  original entry is **superseded 2026-11-08**: there is no bridge, and MCP tools are the editing
+  path.*
 - **2026-11-07** — `tree --page` renumbers ids when it skips pages, `pages` reports 0 nodes after
   the first page, headless `render` rejects `page_id`, `batch_update.operations` must be a JSON
   string, `set_font` takes `family`, `export -f pdf` is broken, and `--font-policy` is a no-op.
@@ -448,8 +473,8 @@ the same change as the work it learns from.**
   nothing applies them — `lint_fix` only knows `no-hardcoded-colors`.
 - **2026-11-08** — headless PNG export re-measures text with substitute fonts without re-solving
   auto-layout, so a HUG card can look clipped and overlap its siblings in a file that the app renders
-  perfectly. Judge screens in app mode (`scripts/pencil-mcp.sh image …`); use headless export only to
-  confirm the file round-trips.
+  perfectly. Judge screens with MCP `export_image` (inline PNG) or the running app; use headless
+  export only to confirm the file round-trips.
 - **2026-11-08** — a `render` script that dies after the RPC (a `NameError` in the trailing `print`)
   still committed the frame; re-running it produced a duplicate card. Check `node_children` before
   retrying any script that renders.
@@ -457,14 +482,38 @@ the same change as the work it learns from.**
   `node_to_component(ids=…)`, `rename_node` each to `Family/Prop=Value`, `combine_as_variants(ids=…)`.
   Replacing a specimen's rows this way keeps the page grid intact; only the specimen's own height
   changes, so keep ≥8 px of slack to the row below.
+- **2026-11-08** — MCP tool schemas and `openpencil tool call` schemas diverge: MCP takes `page_id`,
+  the CLI rejects it with `Invalid key: Expected never but received "page_id"` (it wants `page`).
+  Derive ids **and** argument shapes from the host you will mutate.
+- **2026-11-08** — a `clone_node` that reported a timeout had already created the node. `query_nodes`
+  before retrying; the duplicate is otherwise silent.
+- **2026-11-08** — `render` takes `replace_id` (swap one card in place, keeping its sibling index) and
+  `insert_index` (slot a block into a layout parent). Both are cheaper than clone-and-delete.
+- **2026-11-08** — `fetch_icons` then `<Icon name="material-symbols:timer-pause" />` works inside
+  `render`; `search_icons` resolves the name when the first guess misses.
+- **2026-11-08** — flow arrows are a `create_vector` with
+  `path="M0 4 H160 M152 0 L160 4 L152 8"` plus `stroke` / `stroke_weight`; no need to compose three
+  shapes.
+- **2026-11-08** — a dialog or menu that must float over a screen is rendered as **siblings** with
+  the scrim, then `set_layout_child(positioning="ABSOLUTE")` + `node_move(0, 0)` on each.
+- **2026-11-08** — `lint(rules=["no-hardcoded-colors"])` then a single `lint_fix` bound 83 new
+  colours introduced by a new screen in one call.
+- **2026-11-08** — Material `DropdownMenu` carries 8 dp vertical content padding and, with a 16 dp
+  panel radius, a selected row needs an 8 dp radius and `padding(horizontal = 8.dp)` to look
+  concentric with the panel (16 − 8 = 8). The `.fig` and the Compose code match on 16 / 8 / 8.
+- **2026-11-08** — a `DropdownMenu` anchored to a full-width row opens at the **left edge**; put it
+  in a `Box` that wraps only the trailing control and it opens right-aligned. Never size the menu
+  with a fixed width — let it hug the widest item.
 
 ## Related
 
 - [Devinator UI spec](../../apps/devinator/ui.md) — tokens, components and copy this skill
   was first exercised against.
-- [scripts/pencil-mcp.sh](../../../scripts/pencil-mcp.sh) — HTTP bridge used when Delta's MCP
-  client is not connected to the server.
-- Linked from [docs/context.md](../context.md) so agents load it before any `apps/*/*.fig`
-  design task. It lives here as a flat doc rather than a `.agents/skills/` folder; if it ever
-  needs Zed's automatic skill discovery, move it to
-  `.agents/skills/openpencil-skill/SKILL.md` unchanged.
+- Linked from [docs/context.md](../context.md) and [AGENTS.md](../../AGENTS.md) so agents load
+  it before any `apps/*/*.fig` design task.
+- **Editing split:** Zed (with the OpenPencil MCP tools wired in) is the only path that writes a
+  `.fig`; Delta is read-only on designs. There is no HTTP bridge script any more — do not add one
+  back.
+- It lives here as a flat doc rather than a `.agents/skills/` folder. If it ever needs Zed's
+  automatic skill discovery, move it to `.agents/skills/openpencil-skill/SKILL.md` unchanged and
+  update the two links above.
