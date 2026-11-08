@@ -46,7 +46,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -55,6 +57,7 @@ import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.commons.log
 import com.axondragonscale.devinator.R
+import com.axondragonscale.devinator.model.TimedToggleDuration
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
 import java.util.function.Consumer
 import kotlinx.coroutines.launch
@@ -64,8 +67,41 @@ import org.koin.androidx.compose.koinViewModel
 
 // Kept as strings so preview rendering never has to load the platform TileService class.
 private const val DEVELOPER_OPTIONS_TILE = "com.axondragonscale.devinator.tile.DeveloperOptionsTileService"
+private const val PAUSE_DEV_OPTIONS_TILE = "com.axondragonscale.devinator.tile.PauseDevOptionsTileService"
+private const val RESUME_DEV_OPTIONS_TILE = "com.axondragonscale.devinator.tile.ResumeDevOptionsTileService"
 private const val USB_DEBUGGING_TILE = "com.axondragonscale.devinator.tile.UsbDebuggingTileService"
 private const val WIRELESS_DEBUGGING_TILE = "com.axondragonscale.devinator.tile.WirelessDebuggingTileService"
+
+// Material Symbols timer-pause / timer-play, so the page matches the design and the tile drawables.
+private val PauseDevOptionsIcon: ImageVector by lazy {
+    ImageVector.Builder(
+        name = "TimerPause",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).addPath(
+        pathData = addPathNodes(
+            "M9 3V1h6v2zm-.488 18.288q-1.637-.713-2.862-1.938t-1.937-2.863T3 13t.713-3.488T5.65 6.65t2.863-1.937T12 4q1.55 0 2.975.5t2.675 1.45l1.4-1.4l1.4 1.4l-1.4 1.4Q20 8.6 20.5 10.025T21 13q0 1.85-.713 3.488T18.35 19.35t-2.863 1.938T12 22t-3.488-.712M9 17h2V9H9zm4 0h2V9h-2z",
+        ),
+        fill = SolidColor(Color.White),
+    ).build()
+}
+
+private val ResumeDevOptionsIcon: ImageVector by lazy {
+    ImageVector.Builder(
+        name = "TimerPlay",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f,
+    ).addPath(
+        pathData = addPathNodes(
+            "M9 3V1h6v2zm-.488 18.288q-1.637-.713-2.862-1.938t-1.937-2.863T3 13t.713-3.488T5.65 6.65t2.863-1.937T12 4q1.55 0 2.975.5t2.675 1.45l1.4-1.4l1.4 1.4l-1.4 1.4Q20 8.6 20.5 10.025T21 13q0 1.85-.713 3.488T18.35 19.35t-2.863 1.938T12 22t-3.488-.712M10 17l6-4l-6-4z",
+        ),
+        fill = SolidColor(Color.White),
+    ).build()
+}
 
 @Composable
 fun QuickSettingsTilesScreen(
@@ -101,7 +137,9 @@ private fun QuickSettingsTilesScreen(
     onEvent: (QuickSettingsTilesUiEvent) -> Unit,
 ) {
     val context = LocalContext.current
-    val specs = remember(context) { devTileSpecs(context) }
+    val specs = remember(context, uiState.timedToggleDuration) {
+        devTileSpecs(context, uiState.timedToggleDuration)
+    }
     val scope = rememberCoroutineScope()
 
     fun showError(message: String) {
@@ -287,13 +325,30 @@ private data class DevTileSpec(
     val iconRes: Int,
 )
 
-private fun devTileSpecs(context: Context): List<DevTileSpec> = listOf(
+private fun devTileSpecs(
+    context: Context,
+    timedDuration: TimedToggleDuration,
+): List<DevTileSpec> = listOf(
     DevTileSpec(
         component = ComponentName(context.packageName, DEVELOPER_OPTIONS_TILE),
         title = "Developer options",
         description = "Master switch for ADB",
         icon = Icons.Filled.DeveloperMode,
         iconRes = R.drawable.ic_tile_developer_mode,
+    ),
+    DevTileSpec(
+        component = ComponentName(context.packageName, PAUSE_DEV_OPTIONS_TILE),
+        title = "Pause Dev options",
+        description = "Off for ${timedDuration.label}, then back on.",
+        icon = PauseDevOptionsIcon,
+        iconRes = R.drawable.ic_tile_timer_pause,
+    ),
+    DevTileSpec(
+        component = ComponentName(context.packageName, RESUME_DEV_OPTIONS_TILE),
+        title = "Resume Dev options",
+        description = "On for ${timedDuration.label}, then back off.",
+        icon = ResumeDevOptionsIcon,
+        iconRes = R.drawable.ic_tile_timer_play,
     ),
     DevTileSpec(
         component = ComponentName(context.packageName, USB_DEBUGGING_TILE),

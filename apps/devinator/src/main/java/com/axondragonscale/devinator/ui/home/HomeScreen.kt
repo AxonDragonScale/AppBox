@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,10 +35,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.WifiTethering
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,6 +73,8 @@ import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.AutoOffDuration
 import com.axondragonscale.devinator.model.EndpointKind
+import com.axondragonscale.devinator.model.TimedToggleDuration
+import com.axondragonscale.devinator.model.TimedToggleSession
 import com.axondragonscale.devinator.ui.Route
 import com.axondragonscale.devinator.ui.components.DevinatorSwitch
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
@@ -82,6 +85,8 @@ import com.axondragonscale.devinator.ui.theme.MonoTextStyle
 import com.axondragonscale.devinator.ui.theme.SectionTitleTextStyle
 import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -206,6 +211,14 @@ private fun HomeScreen(
                 enabled = uiState.developerOptions,
                 onToggle = { onEvent(HomeUiEvent.SetDeveloperOptions(it)) },
             )
+            TimedToggleCard(
+                session = uiState.timedToggle,
+                duration = uiState.timedToggleDuration,
+                developerOptions = uiState.developerOptions,
+                onStart = { onEvent(HomeUiEvent.StartTimedToggle(it)) },
+                onEnd = { onEvent(HomeUiEvent.EndTimedToggle) },
+                onSelectDuration = { onEvent(HomeUiEvent.SelectTimedDuration(it)) },
+            )
             UsbDebuggingCard(
                 developerOptions = uiState.developerOptions,
                 checked = uiState.usbDebugging,
@@ -288,6 +301,213 @@ private fun DeveloperOptionsCard(
                 onCheckedChange = onToggle,
                 large = true,
                 dangerOff = true,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TimedToggleCard(
+    modifier: Modifier = Modifier,
+    session: TimedToggleSession?,
+    duration: TimedToggleDuration,
+    developerOptions: Boolean,
+    onStart: (Boolean) -> Unit,
+    onEnd: () -> Unit,
+    onSelectDuration: (TimedToggleDuration) -> Unit,
+) {
+    val remaining = rememberRemaining(session?.deadline)
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconBadge(icon = Icons.Filled.Timer)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "Timed toggle",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (session == null) {
+                        Text(
+                            text = if (developerOptions) {
+                                "Off for a few minutes, then back on."
+                            } else {
+                                "On for a few minutes, then back off."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = if (session.target) {
+                                    "Turns back off in"
+                                } else {
+                                    "Turns back on in"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = remaining ?: "0:00",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                ),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+                TimedDurationControl(
+                    duration = duration,
+                    onSelect = onSelectDuration,
+                )
+            }
+            Button(
+                onClick = {
+                    if (session != null) onEnd() else onStart(!developerOptions)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Text(
+                    text = when {
+                        session != null && session.target -> "Pause now"
+                        session != null -> "Resume now"
+                        developerOptions -> "Pause for ${duration.label}"
+                        else -> "Resume for ${duration.label}"
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimedDurationControl(
+    modifier: Modifier = Modifier,
+    duration: TimedToggleDuration,
+    onSelect: (TimedToggleDuration) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .height(40.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { expanded = true }
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = duration.label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        SmallDropdown(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            options = TimedToggleDuration.entries,
+            selected = duration,
+            label = { it.label },
+            onSelect = onSelect,
+        )
+    }
+}
+
+/**
+ * The one duration menu both controls use. It is a standard Material [DropdownMenu]; the selected
+ * row keeps the menu's own 8 dp content inset horizontally too, so the highlight is symmetric. Its
+ * 8 dp corner complements the 16 dp menu corner at that inset (16 - 8 = 8).
+ */
+@Composable
+private fun <T> SmallDropdown(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    options: List<T>,
+    selected: T,
+    label: (T) -> String,
+    onSelect: (T) -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp,
+        shadowElevation = 8.dp,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)),
+    ) {
+        options.forEach { option ->
+            val isSelected = option == selected
+            DropdownMenuItem(
+                modifier = if (isSelected) {
+                    Modifier
+                        .padding(horizontal = 8.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                } else {
+                    Modifier.padding(horizontal = 8.dp)
+                },
+                contentPadding = PaddingValues(horizontal = 10.dp),
+                text = {
+                    Text(
+                        text = label(option),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        ),
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                    )
+                },
+                trailingIcon = {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                },
+                onClick = {
+                    onDismissRequest()
+                    onSelect(option)
+                },
             )
         }
     }
@@ -658,100 +878,97 @@ private fun AutoOffBlock(
     onSelect: (AutoOffDuration) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val countdown = rememberCountdown(deadline)
+    val remaining = rememberRemaining(deadline)
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            modifier = Modifier.fillMaxWidth(),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { expanded = true },
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Timer,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "Auto-off",
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = selected.label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (selected == AutoOffDuration.OFF) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                )
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                imageVector = Icons.Filled.Timer,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Auto-off",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Box {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { expanded = true }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = selected.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (selected == AutoOffDuration.OFF) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                SmallDropdown(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    options = AutoOffDuration.entries,
+                    selected = selected,
+                    label = { it.label },
+                    onSelect = onSelect,
                 )
             }
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 0.dp,
-                shadowElevation = 8.dp,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)),
+        }
+        if (remaining == null) {
+            Text(
+                text = "Stays on until you turn it off.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Wireless debugging turns itself off when the timer ends.",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    text = "Wireless debugging turns off in",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                AutoOffDuration.entries.forEach { duration ->
-                    DropdownMenuItem(
-                        text = { Text(duration.label) },
-                        trailingIcon = {
-                            if (duration == selected) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        },
-                        onClick = {
-                            expanded = false
-                            onSelect(duration)
-                        },
-                    )
-                }
+                Text(
+                    text = remaining,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
-        Text(
-            text = countdown ?: "Stays on until you turn it off.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
+
 @Composable
-private fun rememberCountdown(deadline: Instant?): String? {
+private fun rememberRemaining(deadline: Instant?): String? {
     val target = deadline ?: return null
     var now by remember(target) { mutableStateOf(Clock.System.now()) }
 
@@ -765,7 +982,7 @@ private fun rememberCountdown(deadline: Instant?): String? {
     val remaining: Duration = target - now
     if (remaining.inWholeSeconds <= 0) return null
     val seconds = remaining.inWholeSeconds
-    return "Turns off in ${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}."
+    return "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
 }
 
 // endregion
@@ -837,6 +1054,62 @@ private fun HomeScreenPendingPreview() {
     DevinatorTheme(dynamicColor = false) {
         HomeScreen(
             uiState = HomeUiState(developerOptions = true, wirelessPending = true),
+            onEvent = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomeScreenAutoOffArmedPreview() {
+    DevinatorTheme(dynamicColor = false) {
+        HomeScreen(
+            uiState = HomeUiState(
+                developerOptions = true,
+                wirelessDebugging = true,
+                endpoint = AdbEndpoint(EndpointKind.WIFI, PREVIEW_HOST, PREVIEW_PORT),
+                autoOffDuration = AutoOffDuration.MIN_5,
+                autoOffDeadline = Clock.System.now() + 4.minutes + 32.seconds,
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomeScreenTimedPausePreview() {
+    DevinatorTheme(dynamicColor = false) {
+        HomeScreen(
+            uiState = HomeUiState(
+                developerOptions = false,
+                timedToggle = TimedToggleSession(
+                    target = false,
+                    restoreTo = true,
+                    deadline = Clock.System.now() + 4.minutes + 32.seconds,
+                ),
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomeScreenTimedResumePreview() {
+    DevinatorTheme(dynamicColor = false) {
+        HomeScreen(
+            uiState = HomeUiState(
+                developerOptions = true,
+                timedToggle = TimedToggleSession(
+                    target = true,
+                    restoreTo = false,
+                    deadline = Clock.System.now() + 4.minutes + 32.seconds,
+                ),
+            ),
             onEvent = {},
         )
     }

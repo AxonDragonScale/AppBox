@@ -90,8 +90,12 @@ Define these once and reuse by name in the trees below.
   glyph copies `adb connect <ip>:<port>`.
 - **AutoOffRow** — `fill_container`, `height 48`, `gap 12`, centred: `timer` 18 `textMuted`, label
   14/500 `fill_container`, current value 14/500, `expand_more` 20 `textMuted`. Opens the duration
-  menu; it is a control, not a readout. `Off` renders the value in `textMuted` and the caption reads
-  “Stays on until you turn it off.”; an armed timer replaces the caption with “Turns off in 12:04.”
+  menu; it is a control, not a readout. It is a standard Material `DropdownMenu`: content-width,
+  anchored to the trailing value, with a 16 dp container and the menu's 8 dp content inset applied
+  horizontally as well; the 8 dp selected row uses `primaryContainer` with a `primary` check, so
+  16 − 8 = 8 keeps the corners concentric. `Off` renders the value in `textMuted`
+  and the caption reads “Stays on until you turn it off.”; an armed timer replaces the caption with
+  “Wireless debugging turns off in 12:04.”, the time in `primary` 600.
 - **NoticeCard** — `fill_container`, `padding 12`, `cornerRadius 16`, fill `errorContainer`, row
   `gap 10` aligned top: 18 lock icon in `error`, then a column `gap 4` with a 13/600 `error` line and
   a 12 `error` line at 75% opacity. Used for the one permission explanation.
@@ -114,6 +118,12 @@ Screen 412×915 · fill bg · vertical
    │     │  ├─ "Developer options" 20/600
    │     │  └─ row · gap 8 · items centre: StatusChip "On" · "Master switch for ADB" 12 textMuted
    │     └─ HeroSwitch · 60×36
+   ├─ Card · timed toggle · gap 12
+   │  ├─ Header row · gap 12 · items centre
+   │  │  ├─ IconBadge 40 · surfaceHigh · 20 timer
+   │  │  ├─ column · grow · gap 2: "Timed toggle" 16/600 · caption 12 textMuted
+   │  │  └─ Duration control · 40 tap target: "5 min" 14/500 textMuted · expand_more 20
+   │  └─ Button · "Pause for 5 min" 52
    ├─ Card · USB debugging
    │  └─ SwitchRow  title "USB debugging"  caption "ADB over USB"  icon usb
    ├─ Card · wireless debugging · gap 12
@@ -129,6 +139,17 @@ Screen 412×915 · fill bg · vertical
       ├─ column · grow · gap 2: "Quick Settings Tiles" 16/600 · "Add tiles to Quick Settings" 12 textMuted
       └─ chevron_right 20 textMuted, 48 tap target — the whole card navigates, it is an action on the page
 ```
+
+**Timed toggle.** The card sits directly under the hero and stays enabled when Developer options is off — Resume is the way back on. Its caption and button follow the current state:
+
+| State | Caption | Button |
+|---|---|---|
+| Developer options on, no timer | "Off for a few minutes, then back on." | "Pause for 5 min" |
+| Developer options off, no timer | "On for a few minutes, then back off." | "Resume for 5 min" |
+| Pause timer active | "Turns back on in 4:32." — time in `primary` 600 | "Resume now" |
+| Resume timer active | "Turns back off in 4:32." — time in `primary` 600 | "Pause now" |
+
+The duration control opens a content-width `5 / 15 / 30 min` menu, default 5; the 16 dp container, 8 dp all-round inset and 8 dp selected row match the auto-off menu, with the selected row in `primaryContainer` and a `primary` check. The button is the primary 52-high button; the card never gets a second action.
 
 **One address and one port.** The card shows the top-ranked address only, the same thing Android's
 own wireless debugging screen does. Addresses rank Wi-Fi (the phone's active network) → Hotspot →
@@ -152,7 +173,10 @@ clipboard writes itself.
 | No network | Endpoint row shows "No network" 14 `textMuted`; pill and copy glyph hidden; command block hidden; auto-off stays |
 | Multiple networks | Only the top-ranked address is shown; the pill names its network |
 | Auto-off is `Off` | AutoOffRow value reads "Off" in `textMuted`; caption reads "Stays on until you turn it off." |
-| Auto-off armed | Value shows the choice ("5 min"…); caption becomes "Turns off in 12:04." |
+| Auto-off armed | Value shows the choice ("5 min"…); caption becomes "Wireless debugging turns off in 12:04." with the time in `primary` 600 |
+| Timed pause active | Developer options is off and USB/wireless are disabled as in the off state; the timed card caption reads "Turns back on in 4:32." and the button reads "Resume now" |
+| Timed resume active | Developer options is on; USB and wireless may be off (the restored snapshot), shown as enabled switch rows; the timed card caption reads "Turns back off in 4:32." and the button reads "Pause now" |
+| Duration menu open | Scrim 45% + a content-width `surfaceHigh` menu under the duration control (148 wide in the design frame): 5 / 15 / 30 min; 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a check |
 | Write failed | Snackbar "Couldn't change this setting."; the switch stays where the settings database says |
 
 ## Setup
@@ -251,10 +275,12 @@ Both commands are composed from `context.packageName`, so a debug install reads 
 
 ## Overlays
 
-**Auto-off menu** — bottom sheet or popup menu, opened by the AutoOffRow on Home: `5 min` · `15 min` ·
-`30 min` · `Off`, current item checkmarked, caption "Wireless debugging turns itself off when the timer
-ends." The row's trailing value always mirrors the current choice, including `Off` — the control must
-look like a control, not a readout.
+**Auto-off menu** — a content-width popup menu anchored to the AutoOffRow's trailing value: `Off` ·
+`5 min` · `15 min` · `30 min`, 16 dp container, 8 dp all-round inset, 8 dp selected row in
+`primaryContainer` with a `primary` check. The row's
+trailing value always mirrors the current choice, including `Off` — the control must look like a
+control, not a readout. The explanatory line is not in the menu; the row's caption carries it
+("Wireless debugging turns off in 12:04.") while a timer is armed.
 
 **Snackbars** — "Opened Developer options" · "Wireless debugging not confirmed" (neutral) ·
 "Couldn't change this setting." (failure). One line, `cornerRadius 12`; no Undo action here. There is
@@ -271,11 +297,17 @@ column · padding 16 · gap 12
 ├─ Card · gap 0 · no padding — rows run edge to edge
 │  ├─ TileRow · title "Developer options"  caption "Master switch for ADB"  icon developer_mode
 │  ├─ Divider · inset 16 both sides
+│  ├─ TileRow · title "Pause Dev options"  caption "Off for 5 min, then back on."  icon timer_pause
+│  ├─ Divider · inset 16 both sides
+│  ├─ TileRow · title "Resume Dev options"  caption "On for 5 min, then back off."  icon timer_play
+│  ├─ Divider · inset 16 both sides
 │  ├─ TileRow · title "USB debugging"  caption "ADB over USB"  icon usb
 │  ├─ Divider · inset 16 both sides
 │  └─ TileRow · title "Wireless debugging"  caption "ADB over Wi-Fi or hotspot"  icon wifi_tethering
 └─ "New tiles land at the end — rearrange them in the Quick Settings editor." 12 textMuted
 ```
+
+**Timed rows follow the setting.** The Pause and Resume captions use the current timed-toggle duration, so a 15-minute choice reads "Off for 15 min, then back on."
 
 **TileRow** — `fill_container`, `height 64`, `padding 4/16`, `gap 12`, items centre, no corner radius:
 full-bleed like a list item, so the press ripple reaches the card's edges, and the 4 vertical padding
@@ -295,12 +327,14 @@ The system's Add prompt is OS chrome and is not drawn.
 
 ## Quick Settings tiles in the shade
 
-Three 2×1 tiles, standard shade layout: icon 32 top-left of a 24-inset block, label at the bottom.
+Five 2×1 tiles, standard shade layout: icon 32 top-left of a 24-inset block, label at the bottom.
 Active = `primary` container, inactive = `surfaceHigh` with `textMuted` content.
 
 | Tile | Icon | Label | Secondary label |
 |---|---|---|---|
 | Developer options | `developer_mode` | "Dev options" | "On" / "Off" |
+| Pause Dev options | `timer_pause` | "Pause Dev options" | "Off for 5 min" · "Off · 4:32" while paused |
+| Resume Dev options | `timer_play` | "Resume Dev options" | "On for 5 min" · "On · 4:32" while resumed |
 | USB debugging | `usb` | "USB debugging" | "On" / "Off" |
 | Wireless debugging | `wifi_tethering` | "Wireless debugging" | "On" / "Off" (+ " · 12:04" while the timer runs) |
 
@@ -324,6 +358,11 @@ beside the line at 12 `textMuted`. Frames keep 160 between them so a label fits 
 | 03 Home · dark | 05 Settings | settings gear |
 | 03 Home · dark | 07 Quick Settings Tiles | tiles card |
 | 05 Settings | 08 Permission | `Grant or revoke` |
+| 09 Home · timed pause | 10 Home · timed resume | `Resume` tile — switches direction |
+| 10 Home · timed resume | 09 Home · timed pause | `Pause` tile — switches direction |
+| 10 Home · timed resume | 11 Home · timed duration menu | duration control |
+
+**Timed toggle strip.** 09–11 sit in a separate strip below the main flow, under the `TIMED TOGGLE` label. The strip caption names the entry points that are not drawn as cross-row arrows: 03 `Pause for 5 min` → 09, and 04 `Resume for 5 min` → 10. 09 and 10 return to 03 and 04 when the timer ends or `Resume now` / `Pause now` is tapped; those returns are named in the card copy, not drawn as cross-row arrows.
 
 `Open Developer options` leaves the app for Android's own screen, so it has no target frame.
 
@@ -338,6 +377,9 @@ One file, dark only:
 5. Settings
 6. Quick Settings Tiles — the page, one tile already added (mixed `Remove` / `Add` rows)
 7. Permission — grant and revoke commands, each with a copy control
+8. Home — timed pause active (Developer options off, countdown, `Resume now`)
+9. Home — timed resume active (Developer options on, USB/wireless off, `Pause now`)
+10. Home — duration menu open (5 / 15 / 30 min)
 
 The Quick Settings tiles themselves are specified below but have no frame: the system draws them.
 

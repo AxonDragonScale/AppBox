@@ -4,9 +4,10 @@
 
 ## Overview
 
-One screen plus three Quick Settings tiles that flip **Developer options**, **USB debugging** and
-**Wireless debugging**, show the `adb connect` endpoint while wireless debugging is on, and can
-turn wireless debugging off on a timer.
+One screen plus five Quick Settings tiles that flip **Developer options**, **USB debugging** and
+**Wireless debugging**, show the `adb connect` endpoint while wireless debugging is on, turn
+wireless debugging off on a timer, and can temporarily pause or resume **Developer options** for a
+chosen duration.
 
 - **Package**: `com.axondragonscale.devinator`
 - **Module path**: `:apps:devinator`
@@ -14,8 +15,8 @@ turn wireless debugging off on a timer.
 - **Not** the `devtools` package in [`:core:commons`](../core/commons/context.md); that is the debug
   screen embedded inside other apps. Different thing, similar name.
 
-Scope is deliberately small: three switches, tiles, endpoint display, auto-off timer. Everything
-else is deferred — see [design.md](./design.md#out-of-scope-v1).
+Scope is deliberately small: three switches, tiles, endpoint display, the timed toggle and the
+wireless auto-off timer. Everything else is deferred — see [design.md](./design.md#out-of-scope-v1).
 
 ## How these switches work
 
@@ -51,18 +52,24 @@ com.axondragonscale.devinator/
 ├── di/DevinatorModule.kt
 ├── model/
 │   ├── DevState.kt                 # the three flags, endpoints, write results
-│   └── AutoOffDuration.kt          # Off / 5 / 15 / 30 min, the persisted timer choice
+│   ├── AutoOffDuration.kt          # Off / 5 / 15 / 30 min, the persisted timer choice
+│   ├── TimedToggleDuration.kt      # 5 / 15 / 30 min for the temporary on/off actions
+│   └── TimedToggleSession.kt       # target, restoreTo, deadline
 ├── repository/
 │   ├── DevSettingsRepository.kt    # the one writer; state, endpoints, timer, writes
+│   ├── TimedToggleRepository.kt    # temporary on/off policy, duration, recovery
 │   ├── GlobalSettingsRepository.kt # the only code that touches Settings.Global
 │   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice, deadline, restore snapshot, UI mode, dynamic colour
 │   ├── QuickSettingsTileRepository.kt # reads/edits the shell's tile list
 │   └── WirelessEndpointRepository.kt # local IPv4s + mDNS port lookup
 ├── background/
-│   ├── AutoOffScheduler.kt         # AlarmManager one-shot
-│   └── WirelessAutoOffReceiver.kt  # the alarm's only listener
+│   ├── AutoOffScheduler.kt         # AlarmManager one-shot for wireless auto-off
+│   ├── WirelessAutoOffReceiver.kt  # the wireless alarm's only listener
+│   ├── TimedToggleScheduler.kt     # AlarmManager one-shot for a timed toggle
+│   ├── TimedToggleReceiver.kt      # the timed alarm's only listener
+│   └── TimedToggleBootReceiver.kt  # restores the pre-session state after a reboot
 ├── permission/SecureSettingsPermission.kt # grant check, grant command, settings deep links
-├── tile/                           # three TileServices, same repository
+├── tile/                           # five TileServices, same repositories
 ├── ui/
 │   ├── Route.kt                    # Setup, Home, Settings, Permission, QuickSettingsTiles
 │   ├── components/DevinatorTopBar.kt # the shared top bar: logo + name (+ subtitle, actions)
@@ -78,10 +85,10 @@ one implementation of each, so none of them is an interface.
 ### The one invariant
 
 **`Settings.Global` is the only source of truth.** No switch state is ever persisted or cached. The
-one exception is a **restore snapshot**: turning developer options off writes the restorable flags to
-app prefs so the next enable can put them back; the snapshot is an intent, never read as state. The
-repository exposes a `StateFlow` fed by a `ContentObserver`, so Home, the Setup gate and the tiles
-cannot disagree — including after a change made in the Settings app, or a write the system rejected.
+exceptions are **intents**: the developer-flags restore snapshot, and the timed toggle's
+`restoreTo`/`deadline`. They describe what to do next, never what the switches are. The repository
+exposes a `StateFlow` fed by a `ContentObserver`, so Home, the Setup gate and the tiles cannot
+disagree — including after a change made in the Settings app, or a write the system rejected.
 
 ```kotlin
 class DevSettingsRepository(
@@ -181,6 +188,21 @@ nullable pref — absent means no timer — persisted so the countdown survives 
 Known gap: the alarm is not restored automatically after reboot; it comes back on the next app
 start.
 
+### Timed toggle
+
+`Pause Dev options` and `Resume Dev options` are two fixed-direction tiles; the Home card exposes the
+same actions. A session stores the state before it started, writes the target through
+`DevSettingsRepository` (so USB and wireless follow the snapshot path), arms `TimedToggleScheduler`
+(`AlarmManager.setAndAllowWhileIdle`, request code 1), and restores the pre-session state at expiry.
+One session at a time: tapping the owning tile ends it early; tapping the opposite tile switches
+direction; any manual Developer options change cancels it.
+
+The duration is `TimedToggleDuration` (5 / 15 / 30 min, default `MIN_5`), persisted in
+`AppPrefsRepository` along with `timedToggleDeadline` and `timedToggleRestoreTo`. The alarm receiver
+restores through the repository, so the result arrives like every other write.
+`TimedToggleBootReceiver` restores on boot; `TimedToggleRepository.reconcile()` handles a force-stop
+(expired → restore, future → re-arm). No new permission, no foreground service, no notification.
+
 ### Setup / grant
 
 Detection is `SecureSettingsPermission.isGranted(context)` (`checkSelfPermission`), re-checked on
@@ -212,8 +234,10 @@ are out of scope for v1.
   Declaring it is not enough on its own: the connectivity module's "choose a device" picker keys off
   the **grant**, so `WirelessEndpointRepository.start()` skips discovery until it is granted rather
   than letting the platform substitute that picker.
-- Three tile services: `exported="true"`, `android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"`,
-  each with a label and icon. Auto-off receiver: `exported="false"`.
+- Five tile services: `exported="true"`, `android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"`,
+  each with a label and icon. Auto-off, timed-toggle and boot receivers: `exported="false"`.
+- `RECEIVE_BOOT_COMPLETED` is declared for the timed-toggle boot receiver; the rest of the permission
+  list is unchanged.
 - Launcher icon: `drawable/ic_launcher_foreground.xml` is the Devinator mark on the 108 dp grid —
   one path with three subpaths (accent capsule plus caret and knob wound as knockouts,
   `fillType="nonZero"`), so the same drawable doubles as the monochrome layer under a system tint.
@@ -238,6 +262,7 @@ Everything here is verified the first time the app is installed on the iQOO.
 | `adbd` keeps running after developer options is turned off | `adb devices` on the computer after switching off | always zero the debugging keys in the same write |
 | Trust dialog is skinned or behaves differently | toggle wireless debugging on | the neutral "waiting for confirmation" state, never a hard error |
 | OEM battery manager drops the timer alarm | set a 5-minute auto-off, lock the screen | move the timer to WorkManager |
+| Timed toggle alarm is late or lost after a force-stop | start a timed pause, force-stop, reopen the app | `TimedToggleRepository.reconcile()` restores an expired session or re-arms a live one; the boot receiver covers a normal reboot |
 | mDNS discovery finds nothing | check while on Wi-Fi | address without port |
 | Local-network grant is missing or revoked | launch on a device that never granted it | discovery is skipped, so no picker and no port; the caption points at Developer options |
 | `sysui_qs_tiles` is unreadable above target SDK 33, so tile state and removal vanish on AOSP | open Quick Settings Tiles on a non-OriginOS device | read OriginOS's `super_qs_tiles` where present; otherwise the page is add-only |

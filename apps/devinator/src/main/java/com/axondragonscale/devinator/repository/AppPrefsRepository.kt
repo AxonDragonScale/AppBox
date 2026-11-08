@@ -10,6 +10,7 @@ import com.axondragonscale.commons.enumPref
 import com.axondragonscale.commons.nullablePref
 import com.axondragonscale.commons.pref
 import com.axondragonscale.devinator.model.AutoOffDuration
+import com.axondragonscale.devinator.model.TimedToggleDuration
 
 /** Created by Ronak on 11/06/26 */
 
@@ -29,6 +30,9 @@ class AppPrefsRepository(
     companion object {
         /** Auto-off duration used until the user picks another one. */
         val DEFAULT_AUTO_OFF_DURATION = AutoOffDuration.OFF
+
+        /** Timed-toggle duration used until the user picks another one. */
+        val DEFAULT_TIMED_TOGGLE_DURATION = TimedToggleDuration.MIN_5
     }
 
     private val dataStore = context.appPrefs
@@ -40,6 +44,15 @@ class AppPrefsRepository(
     val dynamicColor = dataStore.pref(booleanPreferencesKey("dynamic_color"), false)
 
     val autoOffDuration = dataStore.enumPref(stringPreferencesKey("auto_off_duration"), DEFAULT_AUTO_OFF_DURATION)
+
+    val timedToggleDuration =
+        dataStore.enumPref(stringPreferencesKey("timed_toggle_duration"), DEFAULT_TIMED_TOGGLE_DURATION)
+
+    /** Stored as epoch milliseconds; null when no timed-toggle session is armed. */
+    val timedToggleDeadline = dataStore.nullablePref(longPreferencesKey("timed_toggle_deadline"))
+
+    /** The Developer options state captured when the timed session started. */
+    val timedToggleRestoreTo = dataStore.nullablePref(booleanPreferencesKey("timed_toggle_restore_to"))
 
     /** Stored as epoch milliseconds; null when no auto-off deadline is armed. */
     val autoOffDeadline = dataStore.nullablePref(longPreferencesKey("auto_off_deadline"))
