@@ -1,100 +1,77 @@
 package com.axondragonscale.devinator.ui.components
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.devinator.ui.theme.LocalDevinatorColors
 
+/** Created by Ronak on 11/06/26 */
+
 /**
- * The app's one switch. Drawn by hand rather than taken from Material so the off state can carry the
- * error palette: `dangerOff` is what the developer-options switch turns into when it is off.
+ * The app's one switch. Material 3 owns the geometry and touch target; `dangerOff` is what the
+ * developer-options switch turns into when it is off.
  */
 @Composable
 fun DevinatorSwitch(
-    modifier: Modifier = Modifier,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    large: Boolean = false,
     dangerOff: Boolean = false,
+    contentDescription: String? = null,
 ) {
-    val trackWidth = if (large) 60.dp else 52.dp
-    val trackHeight = if (large) 36.dp else 32.dp
-    val thumbSize = if (large) 28.dp else 24.dp
-    val iconSize = if (large) 16.dp else 14.dp
-    val padding = 4.dp
-
-    val trackColor = when {
-        checked -> MaterialTheme.colorScheme.primary
-        dangerOff -> LocalDevinatorColors.current.errorSurfaceHigh
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
-    val thumbColor = when {
-        checked -> MaterialTheme.colorScheme.onPrimary
-        dangerOff -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val iconTint = when {
-        checked -> MaterialTheme.colorScheme.primary
-        dangerOff -> MaterialTheme.colorScheme.errorContainer
-        else -> Color.Transparent
-    }
-    val thumbOffset by animateDpAsState(
-        targetValue = if (checked) trackWidth - thumbSize - padding * 2 else 0.dp,
-        label = "switchThumbOffset",
+    val colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+        checkedTrackColor = MaterialTheme.colorScheme.primary,
+        checkedBorderColor = Color.Transparent,
+        checkedIconColor = MaterialTheme.colorScheme.primary,
+        uncheckedThumbColor = if (dangerOff) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        uncheckedTrackColor = if (dangerOff) {
+            LocalDevinatorColors.current.errorSurfaceHigh
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        uncheckedBorderColor = Color.Transparent,
+        uncheckedIconColor = MaterialTheme.colorScheme.errorContainer,
     )
 
-    Box(
-        modifier = modifier
-            .minimumInteractiveComponentSize()
-            .size(trackWidth, trackHeight)
-            .clip(RoundedCornerShape(trackHeight / 2))
-            .background(trackColor)
-            .toggleable(
-                value = checked,
-                enabled = enabled,
-                role = Role.Switch,
-                onValueChange = onCheckedChange,
-            ),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(padding)
-                .offset(x = thumbOffset)
-                .size(thumbSize)
-                .clip(CircleShape)
-                .background(thumbColor),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (checked || dangerOff) {
-                Icon(
-                    imageVector = if (checked) Icons.Filled.Check else Icons.Filled.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSize),
-                    tint = iconTint,
-                )
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier.then(
+            if (contentDescription == null) {
+                Modifier
+            } else {
+                Modifier.semantics { this.contentDescription = contentDescription }
+            },
+        ),
+        enabled = enabled,
+        colors = colors,
+        thumbContent = when {
+            checked -> {
+                { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
             }
-        }
-    }
+
+            dangerOff -> {
+                { Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(16.dp)) }
+            }
+
+            else -> null
+        },
+    )
 }

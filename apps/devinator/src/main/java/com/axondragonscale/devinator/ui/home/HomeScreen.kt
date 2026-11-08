@@ -1,10 +1,6 @@
 package com.axondragonscale.devinator.ui.home
 
-import android.Manifest
-import android.content.ClipData
-import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -21,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -39,57 +36,57 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.devinator.model.AdbEndpoint
-import com.axondragonscale.devinator.model.AutoOffDuration
+import com.axondragonscale.devinator.model.DurationOption
 import com.axondragonscale.devinator.model.EndpointKind
-import com.axondragonscale.devinator.model.TimedToggleDuration
 import com.axondragonscale.devinator.model.TimedToggleSession
+import com.axondragonscale.devinator.model.remainingText
+import com.axondragonscale.devinator.permission.LocalNetworkAccess
 import com.axondragonscale.devinator.ui.Route
+import com.axondragonscale.devinator.ui.components.CodeBlock
+import com.axondragonscale.devinator.ui.components.DevinatorCard
+import com.axondragonscale.devinator.ui.components.DevinatorDivider
 import com.axondragonscale.devinator.ui.components.DevinatorSwitch
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
+import com.axondragonscale.devinator.ui.components.IconBadge
+import com.axondragonscale.devinator.ui.components.StatusChip
+import com.axondragonscale.devinator.ui.components.rememberCopyToClipboard
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
 import com.axondragonscale.devinator.ui.theme.LocalDevinatorColors
-import com.axondragonscale.devinator.ui.theme.MonoCommandTextStyle
 import com.axondragonscale.devinator.ui.theme.MonoTextStyle
 import com.axondragonscale.devinator.ui.theme.SectionTitleTextStyle
 import kotlin.time.Clock
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 /** Created by Ronak on 11/06/26 */
@@ -116,19 +113,10 @@ fun HomeScreen(
     }
 
     fun enableWirelessDebugging() {
-        // Below API 37 there is no local-network grant to ask for.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN) {
-            viewModel.onEvent(HomeUiEvent.SetWirelessDebugging(true))
-            return
-        }
-        val granted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_LOCAL_NETWORK,
-        ) == PackageManager.PERMISSION_GRANTED
-        if (granted) {
+        if (!LocalNetworkAccess.isRequired || LocalNetworkAccess.isGranted(context)) {
             viewModel.onEvent(HomeUiEvent.SetWirelessDebugging(true))
         } else {
-            requestLocalNetwork.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+            requestLocalNetwork.launch(LocalNetworkAccess.permission)
         }
     }
 
@@ -162,18 +150,11 @@ private fun HomeScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onEvent: (HomeUiEvent) -> Unit,
 ) {
-    val clipboard = LocalClipboard.current
-    val scope = rememberCoroutineScope()
-
-    val command = uiState.endpoint
-        ?.takeIf { it.port != null }
-        ?.let { "adb connect ${it.host}:${it.port}" }
+    val copy = rememberCopyToClipboard()
+    val command = uiState.endpoint?.command
 
     fun copyCommand() {
-        val text = command ?: return
-        scope.launch {
-            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("ADB command", text)))
-        }
+        command?.let { copy("ADB command", it) }
     }
 
     Scaffold(
@@ -218,6 +199,7 @@ private fun HomeScreen(
                 onStart = { onEvent(HomeUiEvent.StartTimedToggle(it)) },
                 onEnd = { onEvent(HomeUiEvent.EndTimedToggle) },
                 onSelectDuration = { onEvent(HomeUiEvent.SelectTimedDuration(it)) },
+                onExpired = { onEvent(HomeUiEvent.ReconcileDeadlines) },
             )
             UsbDebuggingCard(
                 developerOptions = uiState.developerOptions,
@@ -229,6 +211,7 @@ private fun HomeScreen(
                 onToggle = { onEvent(HomeUiEvent.SetWirelessDebugging(it)) },
                 onCopy = ::copyCommand,
                 onSelectAutoOff = { onEvent(HomeUiEvent.SelectAutoOff(it)) },
+                onExpired = { onEvent(HomeUiEvent.ReconcileDeadlines) },
             )
             TilesCard(onOpen = { onEvent(HomeUiEvent.OpenTiles) })
         }
@@ -244,9 +227,8 @@ private fun DeveloperOptionsCard(
     onToggle: (Boolean) -> Unit,
 ) {
     val colors = LocalDevinatorColors.current
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+    DevinatorCard(
+        modifier = modifier,
         color = if (enabled) colors.primarySurface else MaterialTheme.colorScheme.errorContainer,
         border = BorderStroke(1.dp, if (enabled) colors.primaryOutline else colors.errorOutline),
     ) {
@@ -255,26 +237,22 @@ private fun DeveloperOptionsCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        color = if (enabled) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            colors.errorSurfaceHigh
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.DeveloperMode,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                )
-            }
+            IconBadge(
+                icon = Icons.Filled.DeveloperMode,
+                size = 56.dp,
+                iconSize = 28.dp,
+                cornerRadius = 16.dp,
+                containerColor = if (enabled) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    colors.errorSurfaceHigh
+                },
+                contentColor = if (enabled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+            )
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -288,7 +266,7 @@ private fun DeveloperOptionsCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    StatusChip(on = enabled)
+                    StatusChip(label = if (enabled) "On" else "Off", on = enabled)
                     Text(
                         text = "Master switch for ADB",
                         style = MaterialTheme.typography.bodySmall,
@@ -299,7 +277,7 @@ private fun DeveloperOptionsCard(
             DevinatorSwitch(
                 checked = enabled,
                 onCheckedChange = onToggle,
-                large = true,
+                contentDescription = "Developer options",
                 dangerOff = true,
             )
         }
@@ -310,19 +288,16 @@ private fun DeveloperOptionsCard(
 private fun TimedToggleCard(
     modifier: Modifier = Modifier,
     session: TimedToggleSession?,
-    duration: TimedToggleDuration,
+    duration: DurationOption,
     developerOptions: Boolean,
     onStart: (Boolean) -> Unit,
     onEnd: () -> Unit,
-    onSelectDuration: (TimedToggleDuration) -> Unit,
+    onSelectDuration: (DurationOption) -> Unit,
+    onExpired: () -> Unit,
 ) {
-    val remaining = rememberRemaining(session?.deadline)
+    val remaining = rememberRemaining(session?.deadline, onExpired)
 
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
+    DevinatorCard(modifier = modifier) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -407,14 +382,14 @@ private fun TimedToggleCard(
 @Composable
 private fun TimedDurationControl(
     modifier: Modifier = Modifier,
-    duration: TimedToggleDuration,
-    onSelect: (TimedToggleDuration) -> Unit,
+    duration: DurationOption,
+    onSelect: (DurationOption) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
         Row(
             modifier = Modifier
-                .height(40.dp)
+                .height(48.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .clickable { expanded = true }
                 .padding(horizontal = 8.dp),
@@ -436,7 +411,7 @@ private fun TimedDurationControl(
         SmallDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            options = TimedToggleDuration.entries,
+            options = DurationOption.timed,
             selected = duration,
             label = { it.label },
             onSelect = onSelect,
@@ -520,11 +495,7 @@ private fun UsbDebuggingCard(
     checked: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
+    DevinatorCard(modifier = modifier) {
         SwitchRow(
             modifier = Modifier.padding(16.dp),
             icon = Icons.Filled.Usb,
@@ -543,17 +514,14 @@ private fun WirelessDebuggingCard(
     uiState: HomeUiState,
     onToggle: (Boolean) -> Unit,
     onCopy: () -> Unit,
-    onSelectAutoOff: (AutoOffDuration) -> Unit,
+    onSelectAutoOff: (DurationOption) -> Unit,
+    onExpired: () -> Unit,
 ) {
     val enabled = uiState.developerOptions
     val pending = uiState.wirelessPending
     val showDetails = enabled && uiState.wirelessDebugging && !pending
 
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
+    DevinatorCard(modifier = modifier) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -580,11 +548,12 @@ private fun WirelessDebuggingCard(
                     endpoint = uiState.endpoint,
                     onCopy = onCopy,
                 )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
+                DevinatorDivider(inset = false)
                 AutoOffBlock(
                     selected = uiState.autoOffDuration,
                     deadline = uiState.autoOffDeadline,
                     onSelect = onSelectAutoOff,
+                    onExpired = onExpired,
                 )
             }
         }
@@ -596,11 +565,7 @@ private fun TilesCard(
     modifier: Modifier = Modifier,
     onOpen: () -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
+    DevinatorCard(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -654,7 +619,19 @@ private fun SwitchRow(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .alpha(if (enabled) 1f else 0.38f),
+            .alpha(if (enabled) 1f else 0.38f)
+            .then(
+                if (trailing == null) {
+                    Modifier.toggleable(
+                        value = checked,
+                        enabled = enabled,
+                        role = Role.Switch,
+                        onValueChange = onCheckedChange,
+                    )
+                } else {
+                    Modifier
+                },
+            ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -679,62 +656,11 @@ private fun SwitchRow(
         } else {
             DevinatorSwitch(
                 checked = checked,
-                onCheckedChange = onCheckedChange,
-                enabled = enabled,
+                onCheckedChange = null,
+                modifier = Modifier.clearAndSetSemantics {},
+                enabled = true,
             )
         }
-    }
-}
-
-@Composable
-private fun IconBadge(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-) {
-    Box(
-        modifier = modifier
-            .size(40.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp),
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-@Composable
-private fun StatusChip(
-    modifier: Modifier = Modifier,
-    on: Boolean,
-) {
-    val colors = LocalDevinatorColors.current
-    val contentColor = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-    Row(
-        modifier = modifier
-            .height(24.dp)
-            .clip(RoundedCornerShape(999.dp))
-            .background(if (on) MaterialTheme.colorScheme.primaryContainer else colors.errorSurfaceHigh)
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .background(color = contentColor, shape = CircleShape),
-        )
-        Text(
-            text = if (on) "On" else "Off",
-            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-            color = contentColor,
-        )
     }
 }
 
@@ -765,8 +691,8 @@ private fun EndpointBlock(
         return
     }
 
+    val command = endpoint.command
     val address = endpoint.port?.let { "${endpoint.host}:$it" } ?: endpoint.host
-    val copyable = endpoint.port != null
 
     Row(
         modifier = modifier
@@ -774,7 +700,7 @@ private fun EndpointBlock(
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .then(
-                if (copyable) {
+                if (command != null) {
                     Modifier.clickable(onClickLabel = "Copy adb command", onClick = onCopy)
                 } else {
                     Modifier
@@ -805,7 +731,7 @@ private fun EndpointBlock(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        if (copyable) {
+        if (command != null) {
             Icon(
                 imageVector = Icons.Filled.ContentCopy,
                 contentDescription = null,
@@ -815,31 +741,8 @@ private fun EndpointBlock(
         }
     }
 
-    if (copyable) {
-        val command = "adb connect ${endpoint.host}:${endpoint.port}"
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClickLabel = "Copy adb command", onClick = onCopy)
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = command,
-                modifier = Modifier.weight(1f),
-                style = MonoCommandTextStyle,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Icon(
-                imageVector = Icons.Filled.ContentCopy,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+    if (command != null) {
+        CodeBlock(command = command, onCopy = onCopy)
     } else {
         Text(
             text = "Port is on the Developer options screen",
@@ -873,12 +776,13 @@ private fun NetworkPill(
 @Composable
 private fun AutoOffBlock(
     modifier: Modifier = Modifier,
-    selected: AutoOffDuration,
+    selected: DurationOption,
     deadline: Instant?,
-    onSelect: (AutoOffDuration) -> Unit,
+    onSelect: (DurationOption) -> Unit,
+    onExpired: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val remaining = rememberRemaining(deadline)
+    val remaining = rememberRemaining(deadline, onExpired)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -909,7 +813,6 @@ private fun AutoOffBlock(
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { expanded = true }
                         .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -917,7 +820,7 @@ private fun AutoOffBlock(
                     Text(
                         text = selected.label,
                         style = MaterialTheme.typography.labelLarge,
-                        color = if (selected == AutoOffDuration.OFF) {
+                        color = if (selected == DurationOption.OFF) {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         } else {
                             MaterialTheme.colorScheme.onSurface
@@ -933,7 +836,7 @@ private fun AutoOffBlock(
                 SmallDropdown(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
-                    options = AutoOffDuration.entries,
+                    options = DurationOption.entries,
                     selected = selected,
                     label = { it.label },
                     onSelect = onSelect,
@@ -968,32 +871,27 @@ private fun AutoOffBlock(
 
 
 @Composable
-private fun rememberRemaining(deadline: Instant?): String? {
+private fun rememberRemaining(deadline: Instant?, onExpired: () -> Unit): String? {
     val target = deadline ?: return null
     var now by remember(target) { mutableStateOf(Clock.System.now()) }
+    val expired = rememberUpdatedState(onExpired)
 
     LaunchedEffect(target) {
-        while (now < target) {
+        while (true) {
+            val current = Clock.System.now()
+            now = current
+            if (current >= target) {
+                expired.value()
+                break
+            }
             delay(1_000)
-            now = Clock.System.now()
         }
     }
 
-    val remaining: Duration = target - now
-    if (remaining.inWholeSeconds <= 0) return null
-    val seconds = remaining.inWholeSeconds
-    return "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
+    return target.remainingText(now)
 }
 
 // endregion
-
-private val AutoOffDuration.label: String
-    get() = when (this) {
-        AutoOffDuration.OFF -> "Off"
-        AutoOffDuration.MIN_5 -> "5 min"
-        AutoOffDuration.MIN_15 -> "15 min"
-        AutoOffDuration.MIN_30 -> "30 min"
-    }
 
 private fun EndpointKind.label(): String = when (this) {
     EndpointKind.WIFI -> "Wi-Fi"
@@ -1069,7 +967,7 @@ private fun HomeScreenAutoOffArmedPreview() {
                 developerOptions = true,
                 wirelessDebugging = true,
                 endpoint = AdbEndpoint(EndpointKind.WIFI, PREVIEW_HOST, PREVIEW_PORT),
-                autoOffDuration = AutoOffDuration.MIN_5,
+                autoOffDuration = DurationOption.MIN_5,
                 autoOffDeadline = Clock.System.now() + 4.minutes + 32.seconds,
             ),
             onEvent = {},

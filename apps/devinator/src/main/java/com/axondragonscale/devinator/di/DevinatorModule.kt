@@ -1,7 +1,7 @@
 package com.axondragonscale.devinator.di
 
-import com.axondragonscale.devinator.background.AutoOffScheduler
-import com.axondragonscale.devinator.background.TimedToggleScheduler
+import com.axondragonscale.devinator.background.DevAlarms
+import com.axondragonscale.devinator.permission.GrantRepository
 import com.axondragonscale.devinator.repository.AppPrefsRepository
 import com.axondragonscale.devinator.repository.DevSettingsRepository
 import com.axondragonscale.devinator.repository.GlobalSettingsRepository
@@ -21,10 +21,10 @@ val DevinatorModule = module {
     singleOf(::AppPrefsRepository)
     singleOf(::GlobalSettingsRepository)
     singleOf(::WirelessEndpointRepository)
+    singleOf(::GrantRepository)
     singleOf(::QuickSettingsTileRepository)
-    singleOf(::AutoOffScheduler)
+    singleOf(::DevAlarms)
     singleOf(::DevSettingsRepository)
-    singleOf(::TimedToggleScheduler)
     singleOf(::TimedToggleRepository)
 
     viewModelOf(::SetupVM)

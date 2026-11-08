@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Devinator</string>
     <string name="tile_dev_options">Dev options</string>
+    <string name="tile_developer_options">Developer options</string>
     <string name="tile_pause_dev_options">Pause Dev options</string>
     <string name="tile_resume_dev_options">Resume Dev options</string>
     <string name="tile_usb_debugging">USB debugging</string>

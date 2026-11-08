@@ -59,17 +59,6 @@ class QuickSettingsTileRepository(context: Context) {
         ?.mapNotNullTo(mutableSetOf()) { it.className }
         .orEmpty()
 
-    /** Only for platforms without `StatusBarManager.requestAddTileService`; the JSON store needs
-the system to insert, since its grid cannot be appended to as text. */
-    fun add(component: ComponentName): Boolean {
-        if (activeStore() != COMMA_STORE) return false
-        val raw = rawValue(COMMA_STORE) ?: return false
-        val tokens = raw.split(',').map(String::trim).filter(String::isNotEmpty)
-        if (tokens.any { it.component() == component }) return true
-        val entry = "custom(${component.flattenToShortString()})"
-        return writeValue(COMMA_STORE, (tokens + entry).joinToString(","))
-    }
-
     /** False when the store is unreadable, since a blind write would drop the user's other tiles. */
     fun remove(component: ComponentName): Boolean {
         val store = activeStore() ?: return false
@@ -99,7 +88,6 @@ the system to insert, since its grid cannot be appended to as text. */
 
     private fun writeValue(key: String, raw: String): Boolean = try {
         Settings.Secure.putString(resolver, key, raw)
-        true
     } catch (e: Exception) {
         this.log { e }
         false

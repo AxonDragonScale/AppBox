@@ -9,9 +9,11 @@ keys and permissions live in [context.md](./context.md). Copy below is literal.
 
 - Phone frame **412 × 915**, 4-pt grid, screen side padding **16**.
 - Everything below is dp at 1×.
-- **Dark only** for now: every frame is drawn in the dark palette, which is the shipped theme.
-  A light pass comes later.
-- Corner radii: card `20`, inner item `12`, button `16`, pill `999`.
+- **Both palettes ship.** Every frame is drawn in the dark palette; the light palette is the same
+  layout with the token values in the next table. Settings can opt into dynamic colour, but the
+  fallback palette is the reviewed look.
+- Corner radii: card `20`, inner item `12`, button `16`, pill `999`. Switch `52×32`; segmented
+  control `36` high with `32` segments; the timed duration control is a `48` tap target.
 
 ## Tokens
 
@@ -32,9 +34,9 @@ keys and permissions live in [context.md](./context.md). Copy below is literal.
 | `errorSurfaceHigh` (off-state badge, chip, switch track) | `#4E2323` | `#F6CFCB` |
 | `errorOutline` (off-state card border) | `#774A49` | `#E5A5A1` |
 
-The app ships this palette and only this palette: dynamic colour (Material You) is off by default, so
-the fallback is what every device renders. A settings toggle may opt in later; until then, verify
-contrast against the values above.
+The app ships this palette by default. Dynamic colour (Material You) is off until Settings turns it
+on; the fallback above is what every device without a wallpaper theme renders. Verify contrast
+against the values above.
 
 | Type role | Size / weight | Use |
 |---|---|---|
@@ -64,23 +66,26 @@ Define these once and reuse by name in the trees below.
   settings button (48 tap target) beside the instance.
 - **Card** — vertical frame, `fill_container`, `padding 16`, `gap 8`, `cornerRadius 20`, fill `surface`.
 - **SwitchRow** — horizontal, `fill_container`, `height 56`, `gap 12`, `justifyContent space_between`,
-  `alignItems center`. Children: 40-wide icon slot (24 icon), text column (title + caption, gap 2),
-  M3 switch 52×32. Off track `surfaceHigh`, on track `primary`.
+  `alignItems center`. The whole row is the toggle; the switch is a non-interactive Material 3
+  `Switch` `52×32` with a 48 dp touch target. Children: 40-wide icon slot (24 icon), text column
+  (title + caption, gap 2), switch. Off track `surfaceHigh`, on track `primary`.
 - **HeroCard** — the master-switch card: `fill_container`, `padding 16`, `cornerRadius 20`, fill
   `primarySurface` with a 1 px `primaryOutline` stroke. One row `gap 12` centred: 56 IconBadge, a
   text column `gap 4` (hero title 20/600, then a row `gap 8` with StatusChip and the 12 `textMuted`
-  caption), and a 60×36 HeroSwitch. Off state: fill `errorContainer`, stroke `errorOutline`.
-- **HeroSwitch** — 60×36, `cornerRadius 18`, `padding 4`, 28 thumb, 16 glyph. On: `primary` track,
+  caption), and a 52×32 HeroSwitch. Off state: fill `errorContainer`, stroke `errorOutline`.
+- **HeroSwitch** — 52×32, `cornerRadius 16`, 4 padding, 24 thumb, 14 glyph. On: `primary` track,
   `onPrimary` thumb, `primary` check. Off: `errorSurfaceHigh` track, `error` thumb, `errorContainer`
   close glyph.
 - **IconBadge** — `surfaceHigh`, centred icon. Hero size 56×56, `cornerRadius 16`, 28 icon, fill
   `primaryContainer` with a `primary` icon (off state: `errorSurfaceHigh` with an `error` icon);
   row size 40×40, `cornerRadius 12`, 20 icon.
 - **StepRow** — row, `gap 12`: 24 marker circle (`surfaceHigh`, 12/600 `primary` digit), text column
-  `gap 6` holding title 16/600, caption 12 muted and the optional text action 13/600 `primary`.
+  `gap 6` holding title 16/600, caption 12 muted and the optional 48-high text action
+  (13/600 `primary`, text top-aligned so the visual position matches the drawing).
 - **CodeBlock** — horizontal, `fill_container`, `padding 12`, `cornerRadius 12`, `surfaceHigh`,
-  mono command text at 12 `fill_container`, then a 16 copy glyph in `textMuted`.
-- **StatusChip** — pill, `height 24`, `padding 8`, `cornerRadius 999`, 6 dot + `Chip` label at 12
+  mono command text at 12 `fill_container`, then a 16 copy glyph in `textMuted`. The whole block is
+  the copy target; the glyph marks the action.
+- **StatusChip** — pill, `height 24`, `padding 8`, `cornerRadius 999`, 6 dot + `Chip` label at 12/500
   (default fill `surfaceHigh`, `on` dot for a live state, `textMuted` for neutral). On the hero card
   the fill is `primaryContainer` with dot and label both `primary`; the off state is
   `errorSurfaceHigh` with both `error`.
@@ -117,12 +122,12 @@ Screen 412×915 · fill bg · vertical
    │     ├─ column · grow · gap 4
    │     │  ├─ "Developer options" 20/600
    │     │  └─ row · gap 8 · items centre: StatusChip "On" · "Master switch for ADB" 12 textMuted
-   │     └─ HeroSwitch · 60×36
+   │     └─ HeroSwitch · 52×32
    ├─ Card · timed toggle · gap 12
    │  ├─ Header row · gap 12 · items centre
    │  │  ├─ IconBadge 40 · surfaceHigh · 20 timer
    │  │  ├─ column · grow · gap 2: "Timed toggle" 16/600 · caption 12 textMuted
-   │  │  └─ Duration control · 40 tap target: "5 min" 14/500 textMuted · expand_more 20
+   │  │  └─ Duration control · 48 tap target: "5 min" 14/500 textMuted · expand_more 20
    │  └─ Button · "Pause for 5 min" 52
    ├─ Card · USB debugging
    │  └─ SwitchRow  title "USB debugging"  caption "ADB over USB"  icon usb
@@ -159,8 +164,8 @@ behind the pill, not on the card.
 
 Both copy glyphs are icon-only. The one on the endpoint copies `adb connect <ip>:<port>`; the one on
 the command block copies the command. Visible and copied text differ on purpose: the address is for
-reading, the command for the terminal. The app adds no “Copied” feedback: the platform confirms
-clipboard writes itself.
+reading, the command for the terminal. Android 13+ draws its own clipboard confirmation; Android
+12/12L get a toast.
 
 ## Home states (deltas only)
 
@@ -176,7 +181,7 @@ clipboard writes itself.
 | Auto-off armed | Value shows the choice ("5 min"…); caption becomes "Wireless debugging turns off in 12:04." with the time in `primary` 600 |
 | Timed pause active | Developer options is off and USB/wireless are disabled as in the off state; the timed card caption reads "Turns back on in 4:32." and the button reads "Resume now" |
 | Timed resume active | Developer options is on; USB and wireless may be off (the restored snapshot), shown as enabled switch rows; the timed card caption reads "Turns back off in 4:32." and the button reads "Pause now" |
-| Duration menu open | Scrim 45% + a content-width `surfaceHigh` menu under the duration control (148 wide in the design frame): 5 / 15 / 30 min; 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a check |
+| Duration menu open | A standard content-width `surfaceHigh` DropdownMenu under the duration control (148 wide in the design frame): 5 / 15 / 30 min; 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a check |
 | Write failed | Snackbar "Couldn't change this setting."; the switch stays where the settings database says |
 
 ## Setup
@@ -197,7 +202,7 @@ Screen 412×915 · fill bg · vertical
    │  ├─ Step 1 · row gap 12
    │  │  ├─ step marker "1" 12/600 primary, 24 circle surfaceHigh
    │  │  └─ column gap 6: "Enable USB debugging" 16/600 · "Settings → System → Developer options →
-   │  │     USB debugging" 12 textMuted · [text action "Open Developer options" 13/600 primary]
+   │  │     USB debugging" 12 textMuted · [text action "Open Developer options" 48 high, 13/600 primary]
    │  ├─ Divider
    │  ├─ Step 2 · row gap 12
    │  │  └─ column gap 6: "Run this command" 16/600 · CodeBlock mono
@@ -225,7 +230,8 @@ shape of the line, not the exact package, is what matters.
 TopBar h64: arrow_back + "Settings"
 column · padding 16 · gap 12
 ├─ Card
-│  ├─ row h56 space_between: "Appearance" 16/600 · segmented System / Light / Dark
+│  ├─ row h56 space_between: "Appearance" 16/600 · segmented System / Light / Dark (36 high,
+│  │  32 segments, selected `primaryContainer` with `primary` text)
 │  ├─ Divider · inset 16 both sides
 │  └─ row h56 space_between: "Dynamic colour" 16/600 · M3 switch 52×32 (default off)
 ├─ Card
@@ -320,7 +326,7 @@ control.
 |---|---|
 | Tile not added | Label reads `Add` in `primary`; tapping asks the system to add it |
 | Tile added | Label reads `Remove` in `error`; tapping removes it immediately. Tiles added from the system's own editor land here too, since the page reads the shell's list |
-| Add refused or already present | Snackbar "Couldn't add this tile." / "Already in Quick Settings."; the row only flips once the shell reports the tile |
+| Add refused or already present | Snackbar "Couldn't add this tile." / "Already in Quick Settings."; the row only flips once the shell reports the tile. On API < 33 there is no public add API, so the snackbar points at the Quick Settings editor |
 | Remove failed | Snackbar "Couldn't remove this tile." |
 
 The system's Add prompt is OS chrome and is not drawn.
@@ -339,7 +345,8 @@ Active = `primary` container, inactive = `surfaceHigh` with `textMuted` content.
 | Wireless debugging | `wifi_tethering` | "Wireless debugging" | "On" / "Off" (+ " · 12:04" while the timer runs) |
 
 The platform's Add prompt is one per tile and is OS chrome, so it is not drawn; tiles are added one
-at a time from the Quick Settings Tiles page.
+at a time from the Quick Settings Tiles page. With Developer options off, the USB and Wireless tiles
+are unavailable and read "Dev options off".
 
 ## Screens page layout
 
@@ -368,7 +375,7 @@ beside the line at 12 `textMuted`. Frames keep 160 between them so a label fits 
 
 ## Frames
 
-One file, dark only:
+One file, dark frames (the light palette is the same layout and ships in code):
 
 1. Setup — default
 2. Setup — permission still missing (the error card above the button)
@@ -386,8 +393,9 @@ The Quick Settings tiles themselves are specified below but have no frame: the s
 The OS trust and Add-tile prompts are not drawn, and neither is the write-failure state: the system
 owns the prompts, and a failed write is a snackbar.
 
-A light-theme pass was dropped for now; when it returns, add a `Style=Light` variant to the `TopBar`
-and `Card` components rather than redrawing every screen.
+A light-theme pass is no longer pending: the app ships the light palette and Settings offers
+Light/Dark. When a screen adds a `Style=Light` variant, copy the dark frame and swap the tokens
+rather than redrawing the layout.
 
 ## Related Context
 

@@ -13,26 +13,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -50,9 +42,12 @@ import androidx.navigation.NavController
 import com.axondragonscale.commons.UIMode
 import com.axondragonscale.devinator.permission.SecureSettingsPermission
 import com.axondragonscale.devinator.ui.Route
+import com.axondragonscale.devinator.ui.components.BackTopBar
+import com.axondragonscale.devinator.ui.components.DevinatorCard
+import com.axondragonscale.devinator.ui.components.DevinatorDivider
 import com.axondragonscale.devinator.ui.components.DevinatorSwitch
+import com.axondragonscale.devinator.ui.components.StatusChip
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
-import com.axondragonscale.devinator.ui.theme.LocalDevinatorColors
 import org.koin.androidx.compose.koinViewModel
 
 /** Created by Ronak on 11/06/26 */
@@ -60,12 +55,8 @@ import org.koin.androidx.compose.koinViewModel
 /** The segmented control reads System / Light / Dark, which is what Android itself calls Auto. */
 private val SEGMENT_ORDER = listOf(UIMode.AUTO, UIMode.LIGHT, UIMode.DARK)
 
-private val UIMode.label: String
-    get() = when (this) {
-        UIMode.AUTO -> "System"
-        UIMode.LIGHT -> "Light"
-        UIMode.DARK -> "Dark"
-    }
+private val UIMode.settingsLabel: String
+    get() = if (this == UIMode.AUTO) "System" else displayName
 
 @Composable
 fun SettingsScreen(
@@ -93,7 +84,6 @@ fun SettingsScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsScreen(
     modifier: Modifier = Modifier,
@@ -105,23 +95,7 @@ private fun SettingsScreen(
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = "Settings", style = MaterialTheme.typography.titleLarge)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            )
-        },
+        topBar = { BackTopBar(title = "Settings", onBack = onBack) },
     ) { contentPadding ->
         Column(
             modifier = Modifier
@@ -131,7 +105,7 @@ private fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SettingsCard {
+            DevinatorCard {
                 SettingsRow(
                     title = "Appearance",
                     trailing = {
@@ -141,7 +115,7 @@ private fun SettingsScreen(
                         )
                     },
                 )
-                SettingsDivider()
+                DevinatorDivider()
                 SettingsRow(
                     title = "Dynamic colour",
                     trailing = {
@@ -150,17 +124,23 @@ private fun SettingsScreen(
                             onCheckedChange = { enabled ->
                                 onEvent(SettingsUiEvent.SetDynamicColor(enabled))
                             },
+                            contentDescription = "Dynamic colour",
                         )
                     },
                 )
             }
 
-            SettingsCard {
+            DevinatorCard {
                 SettingsRow(
                     title = "Write secure settings",
-                    trailing = { GrantChip(granted = uiState.permissionGranted) },
+                    trailing = {
+                        StatusChip(
+                            label = if (uiState.permissionGranted) "Granted" else "Missing",
+                            on = uiState.permissionGranted,
+                        )
+                    },
                 )
-                SettingsDivider()
+                DevinatorDivider()
                 SettingsRow(
                     title = "Grant or revoke",
                     onClick = onOpenPermission,
@@ -170,7 +150,7 @@ private fun SettingsScreen(
                 )
             }
 
-            SettingsCard {
+            DevinatorCard {
                 SettingsRow(
                     title = "Open Developer options",
                     onClick = onOpenDeveloperOptions,
@@ -180,7 +160,7 @@ private fun SettingsScreen(
                 )
             }
 
-            SettingsCard {
+            DevinatorCard {
                 SettingsRow(
                     title = "Devinator",
                     trailing = {
@@ -193,20 +173,6 @@ private fun SettingsScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun SettingsCard(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(content = { content() })
     }
 }
 
@@ -238,14 +204,6 @@ private fun SettingsRow(
 }
 
 @Composable
-private fun SettingsDivider(modifier: Modifier = Modifier) {
-    HorizontalDivider(
-        modifier = modifier.padding(horizontal = 16.dp),
-        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-    )
-}
-
-@Composable
 private fun TrailingIcon(modifier: Modifier = Modifier, imageVector: ImageVector) {
     Icon(
         imageVector = imageVector,
@@ -266,7 +224,8 @@ private fun UiModeSegmentedControl(
             .height(36.dp)
             .clip(RoundedCornerShape(999.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(2.dp),
+            .padding(2.dp)
+            .selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -278,20 +237,24 @@ private fun UiModeSegmentedControl(
                     .clip(RoundedCornerShape(999.dp))
                     .background(
                         if (isSelected) {
-                            MaterialTheme.colorScheme.outline
+                            MaterialTheme.colorScheme.primaryContainer
                         } else {
                             Color.Transparent
                         },
                     )
-                    .clickable(role = Role.RadioButton) { onSelect(mode) }
+                    .selectable(
+                        selected = isSelected,
+                        role = Role.RadioButton,
+                        onClick = { onSelect(mode) },
+                    )
                     .padding(horizontal = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = mode.label,
+                    text = mode.settingsLabel,
                     style = MaterialTheme.typography.labelMedium,
                     color = if (isSelected) {
-                        MaterialTheme.colorScheme.onSurface
+                        MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
@@ -301,48 +264,12 @@ private fun UiModeSegmentedControl(
     }
 }
 
-/** A status, not a control: the chip is what keeps this row from reading as tappable. */
-@Composable
-private fun GrantChip(modifier: Modifier = Modifier, granted: Boolean) {
-    val contentColor = if (granted) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.error
-    }
-    Row(
-        modifier = modifier
-            .height(24.dp)
-            .clip(RoundedCornerShape(999.dp))
-            .background(
-                if (granted) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    LocalDevinatorColors.current.errorSurfaceHigh
-                },
-            )
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .background(color = contentColor, shape = CircleShape),
-        )
-        Text(
-            text = if (granted) "Granted" else "Missing",
-            style = MaterialTheme.typography.labelMedium,
-            color = contentColor,
-        )
-    }
-}
-
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun SettingsScreenPreview() {
     DevinatorTheme(dynamicColor = false) {
         SettingsScreen(
-            uiState = SettingsUiState(versionName = "1.0.0"),
+            uiState = SettingsUiState(versionName = "1.0.0", permissionGranted = true),
             onBack = {},
             onOpenPermission = {},
             onOpenDeveloperOptions = {},
@@ -356,7 +283,7 @@ private fun SettingsScreenPreview() {
 private fun SettingsScreenLightPreview() {
     DevinatorTheme(darkTheme = false, dynamicColor = false) {
         SettingsScreen(
-            uiState = SettingsUiState(versionName = "1.0.0"),
+            uiState = SettingsUiState(versionName = "1.0.0", permissionGranted = true),
             onBack = {},
             onOpenPermission = {},
             onOpenDeveloperOptions = {},

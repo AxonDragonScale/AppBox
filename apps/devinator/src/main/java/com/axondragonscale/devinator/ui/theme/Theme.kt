@@ -1,7 +1,6 @@
 package com.axondragonscale.devinator.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -92,7 +91,7 @@ fun DevinatorTheme(
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColor -> {
             val context = LocalContext.current
             val scheme = if (darkTheme) {
                 dynamicDarkColorScheme(context)
@@ -115,9 +114,7 @@ fun DevinatorTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                window.isNavigationBarContrastEnforced = false
-            }
+            window.isNavigationBarContrastEnforced = false
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = !darkTheme
                 isAppearanceLightNavigationBars = !darkTheme

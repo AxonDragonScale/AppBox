@@ -9,8 +9,7 @@ import com.axondragonscale.commons.UIMode
 import com.axondragonscale.commons.enumPref
 import com.axondragonscale.commons.nullablePref
 import com.axondragonscale.commons.pref
-import com.axondragonscale.devinator.model.AutoOffDuration
-import com.axondragonscale.devinator.model.TimedToggleDuration
+import com.axondragonscale.devinator.model.DurationOption
 
 /** Created by Ronak on 11/06/26 */
 
@@ -29,10 +28,10 @@ class AppPrefsRepository(
 
     companion object {
         /** Auto-off duration used until the user picks another one. */
-        val DEFAULT_AUTO_OFF_DURATION = AutoOffDuration.OFF
+        val DEFAULT_AUTO_OFF_DURATION = DurationOption.OFF
 
         /** Timed-toggle duration used until the user picks another one. */
-        val DEFAULT_TIMED_TOGGLE_DURATION = TimedToggleDuration.MIN_5
+        val DEFAULT_TIMED_TOGGLE_DURATION = DurationOption.MIN_5
     }
 
     private val dataStore = context.appPrefs

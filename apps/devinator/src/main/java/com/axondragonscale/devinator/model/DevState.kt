@@ -18,7 +18,9 @@ data class AdbEndpoint(
     val kind: EndpointKind,
     val host: String,
     val port: Int?,
-)
+) {
+    val command: String? get() = port?.let { "adb connect $host:$it" }
+}
 
 sealed interface WriteResult {
     data object Ok : WriteResult
@@ -26,5 +28,7 @@ sealed interface WriteResult {
     /** The write landed but the system trust dialog is up, or it was declined. */
     data object AwaitingConsent : WriteResult
 
-    data class Failed(val reason: String) : WriteResult
+    data object Failed : WriteResult
 }
+
+const val WRITE_FAILED_MESSAGE = "Couldn't change this setting."

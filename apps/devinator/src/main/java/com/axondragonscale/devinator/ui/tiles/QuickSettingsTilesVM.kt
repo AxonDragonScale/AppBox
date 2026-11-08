@@ -3,7 +3,7 @@ package com.axondragonscale.devinator.ui.tiles
 import android.content.ComponentName
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.axondragonscale.devinator.model.TimedToggleDuration
+import com.axondragonscale.devinator.model.DurationOption
 import com.axondragonscale.devinator.repository.QuickSettingsTileRepository
 import com.axondragonscale.devinator.repository.TimedToggleRepository
 import kotlinx.coroutines.Dispatchers
@@ -43,14 +43,7 @@ class QuickSettingsTilesVM(
     val effect = effectChannel.receiveAsFlow().flowOn(Dispatchers.Main.immediate)
 
     fun onEvent(event: QuickSettingsTilesUiEvent): Any = when (event) {
-        is QuickSettingsTilesUiEvent.Add -> add(event.component)
         is QuickSettingsTilesUiEvent.Remove -> remove(event.component)
-    }
-
-    private fun add(component: ComponentName) = viewModelScope.launch {
-        if (!repository.add(component)) {
-            effectChannel.send(QuickSettingsTilesUiEffect.ShowSnackbar("Couldn't add this tile."))
-        }
     }
 
     private fun remove(component: ComponentName) = viewModelScope.launch {
@@ -62,12 +55,10 @@ class QuickSettingsTilesVM(
 
 data class QuickSettingsTilesUiState(
     val addedClassNames: Set<String> = emptySet(),
-    val timedToggleDuration: TimedToggleDuration = TimedToggleDuration.MIN_5,
+    val timedToggleDuration: DurationOption = DurationOption.MIN_5,
 )
 
 sealed interface QuickSettingsTilesUiEvent {
-    data class Add(val component: ComponentName) : QuickSettingsTilesUiEvent
-
     data class Remove(val component: ComponentName) : QuickSettingsTilesUiEvent
 }
 

@@ -1,6 +1,5 @@
 package com.axondragonscale.devinator.ui.setup
 
-import android.content.ClipData
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,14 +19,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -35,13 +31,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,18 +46,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.devinator.permission.SecureSettingsPermission
 import com.axondragonscale.devinator.ui.Route
+import com.axondragonscale.devinator.ui.components.CodeBlock
+import com.axondragonscale.devinator.ui.components.DevinatorCard
+import com.axondragonscale.devinator.ui.components.DevinatorDivider
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
+import com.axondragonscale.devinator.ui.components.IconBadge
+import com.axondragonscale.devinator.ui.components.rememberCopyToClipboard
 import com.axondragonscale.devinator.ui.theme.ActionTextStyle
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
-import com.axondragonscale.devinator.ui.theme.MonoCommandTextStyle
 import com.axondragonscale.devinator.ui.theme.SectionTitleTextStyle
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 /** Created by Ronak on 11/06/26 */
 
-private const val PREVIEW_GRANT_COMMAND =
-    "adb shell pm grant com.axondragonscale.devinator android.permission.WRITE_SECURE_SETTINGS"
+private const val PREVIEW_PACKAGE = "com.axondragonscale.devinator"
 
 @Composable
 fun SetupScreen(
@@ -98,8 +94,7 @@ private fun SetupScreen(
     onEvent: (SetupUiEvent) -> Unit,
 ) {
     val context = LocalContext.current
-    val clipboard = LocalClipboard.current
-    val scope = rememberCoroutineScope()
+    val copy = rememberCopyToClipboard()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -124,12 +119,7 @@ private fun SetupScreen(
                     onOpenDeveloperOptions = {
                         context.startActivity(SecureSettingsPermission.developmentSettingsIntent())
                     },
-                    onCopyCommand = {
-                        val command = uiState.grantCommand
-                        scope.launch {
-                            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Setup command", command)))
-                        }
-                    },
+                    onCopyCommand = { copy("Setup command", uiState.grantCommand) },
                 )
             }
 
@@ -167,22 +157,10 @@ private fun SetupHeader(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(12.dp),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Key,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+        IconBadge(
+            icon = Icons.Filled.Key,
+            contentColor = MaterialTheme.colorScheme.primary,
+        )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = "One-time setup",
@@ -272,32 +250,34 @@ private fun SetupSteps(
     onOpenDeveloperOptions: () -> Unit,
     onCopyCommand: () -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
+    DevinatorCard(modifier = modifier) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             SetupStep(number = 1, title = "Enable USB debugging") {
                 StepCaption(text = "Settings → System → Developer options → USB debugging")
-                Text(
-                    text = "Open Developer options",
+                Box(
                     modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable(onClick = onOpenDeveloperOptions),
-                    style = ActionTextStyle,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                        .clickable(role = Role.Button, onClick = onOpenDeveloperOptions),
+                    contentAlignment = Alignment.TopStart,
+                ) {
+                    Text(
+                        text = "Open Developer options",
+                        style = ActionTextStyle,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
-            StepDivider()
+            DevinatorDivider(inset = false)
             SetupStep(number = 2, title = "Run this command") {
                 CodeBlock(command = grantCommand, onCopy = onCopyCommand)
                 StepCaption(text = "Paste it in a terminal on the computer that has adb installed.")
             }
-            StepDivider()
+            DevinatorDivider(inset = false)
             SetupStep(number = 3, title = "Come back here") {
                 StepCaption(text = "Devinator checks automatically when you return.")
             }
@@ -355,51 +335,12 @@ private fun StepCaption(
     )
 }
 
-@Composable
-private fun StepDivider() =
-    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
-
-@Composable
-private fun CodeBlock(
-    modifier: Modifier = Modifier,
-    command: String,
-    onCopy: () -> Unit,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp),
-            )
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        // The block grows downwards, so the copy button stays at its top-right corner.
-        verticalAlignment = Alignment.Top,
-    ) {
-        Text(
-            text = command,
-            modifier = Modifier.weight(1f),
-            style = MonoCommandTextStyle,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
-            Icon(
-                imageVector = Icons.Filled.ContentCopy,
-                contentDescription = "Copy command",
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun SetupScreenPreview() {
     DevinatorTheme(dynamicColor = false) {
-        SetupScreen(uiState = SetupUiState(grantCommand = PREVIEW_GRANT_COMMAND), onEvent = {})
+        SetupScreen(uiState = SetupUiState(grantCommand = SecureSettingsPermission.grantCommand(PREVIEW_PACKAGE)), onEvent = {})
     }
 }
 
@@ -409,7 +350,10 @@ private fun SetupScreenPreview() {
 private fun SetupScreenCheckFailedPreview() {
     DevinatorTheme(dynamicColor = false) {
         SetupScreen(
-            uiState = SetupUiState(grantCommand = PREVIEW_GRANT_COMMAND, checkFailed = true),
+            uiState = SetupUiState(
+                grantCommand = SecureSettingsPermission.grantCommand(PREVIEW_PACKAGE),
+                checkFailed = true,
+            ),
             onEvent = {},
         )
     }

@@ -1,107 +1,51 @@
 package com.axondragonscale.devinator.ui.tiles
 
 import android.app.StatusBarManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.drawable.Icon as AndroidIcon
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DeveloperMode
-import androidx.compose.material.icons.filled.Usb
-import androidx.compose.material.icons.filled.WifiTethering
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.commons.log
-import com.axondragonscale.devinator.R
-import com.axondragonscale.devinator.model.TimedToggleDuration
+import com.axondragonscale.devinator.tile.DevTile
+import com.axondragonscale.devinator.ui.components.BackTopBar
+import com.axondragonscale.devinator.ui.components.DevinatorCard
+import com.axondragonscale.devinator.ui.components.DevinatorDivider
+import com.axondragonscale.devinator.ui.components.IconBadge
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
 import java.util.function.Consumer
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 /** Created by Ronak on 11/06/26 */
-
-// Kept as strings so preview rendering never has to load the platform TileService class.
-private const val DEVELOPER_OPTIONS_TILE = "com.axondragonscale.devinator.tile.DeveloperOptionsTileService"
-private const val PAUSE_DEV_OPTIONS_TILE = "com.axondragonscale.devinator.tile.PauseDevOptionsTileService"
-private const val RESUME_DEV_OPTIONS_TILE = "com.axondragonscale.devinator.tile.ResumeDevOptionsTileService"
-private const val USB_DEBUGGING_TILE = "com.axondragonscale.devinator.tile.UsbDebuggingTileService"
-private const val WIRELESS_DEBUGGING_TILE = "com.axondragonscale.devinator.tile.WirelessDebuggingTileService"
-
-// Material Symbols timer-pause / timer-play, so the page matches the design and the tile drawables.
-private val PauseDevOptionsIcon: ImageVector by lazy {
-    ImageVector.Builder(
-        name = "TimerPause",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f,
-    ).addPath(
-        pathData = addPathNodes(
-            "M9 3V1h6v2zm-.488 18.288q-1.637-.713-2.862-1.938t-1.937-2.863T3 13t.713-3.488T5.65 6.65t2.863-1.937T12 4q1.55 0 2.975.5t2.675 1.45l1.4-1.4l1.4 1.4l-1.4 1.4Q20 8.6 20.5 10.025T21 13q0 1.85-.713 3.488T18.35 19.35t-2.863 1.938T12 22t-3.488-.712M9 17h2V9H9zm4 0h2V9h-2z",
-        ),
-        fill = SolidColor(Color.White),
-    ).build()
-}
-
-private val ResumeDevOptionsIcon: ImageVector by lazy {
-    ImageVector.Builder(
-        name = "TimerPlay",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f,
-    ).addPath(
-        pathData = addPathNodes(
-            "M9 3V1h6v2zm-.488 18.288q-1.637-.713-2.862-1.938t-1.937-2.863T3 13t.713-3.488T5.65 6.65t2.863-1.937T12 4q1.55 0 2.975.5t2.675 1.45l1.4-1.4l1.4 1.4l-1.4 1.4Q20 8.6 20.5 10.025T21 13q0 1.85-.713 3.488T18.35 19.35t-2.863 1.938T12 22t-3.488-.712M10 17l6-4l-6-4z",
-        ),
-        fill = SolidColor(Color.White),
-    ).build()
-}
 
 @Composable
 fun QuickSettingsTilesScreen(
@@ -127,7 +71,6 @@ fun QuickSettingsTilesScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuickSettingsTilesScreen(
     modifier: Modifier = Modifier,
@@ -137,44 +80,25 @@ private fun QuickSettingsTilesScreen(
     onEvent: (QuickSettingsTilesUiEvent) -> Unit,
 ) {
     val context = LocalContext.current
-    val specs = remember(context, uiState.timedToggleDuration) {
-        devTileSpecs(context, uiState.timedToggleDuration)
-    }
     val scope = rememberCoroutineScope()
 
     fun showError(message: String) {
         scope.launch { snackbarHostState.showSnackbar(message) }
     }
 
-    fun add(spec: DevTileSpec) {
-        // The platform's own prompt places the tile where the system wants it.
+    fun add(tile: DevTile) {
+        // Before API 33 there is no public add API; the system editor is the only path.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            onEvent(QuickSettingsTilesUiEvent.Add(spec.component))
+            showError("Add this tile from the Quick Settings editor.")
         } else {
-            requestAddTile(context, spec, ::showError)
+            requestAddTile(context, tile, ::showError)
         }
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = "Quick Settings Tiles", style = MaterialTheme.typography.titleLarge)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            )
-        },
+        topBar = { BackTopBar(title = "Quick Settings Tiles", onBack = onBack) },
     ) { contentPadding ->
         Column(
             modifier = Modifier
@@ -189,31 +113,21 @@ private fun QuickSettingsTilesScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface,
-            ) {
-                Column {
-                    specs.forEachIndexed { index, spec ->
-                        if (index > 0) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                            )
-                        }
-                        TileRow(
-                            spec = spec,
-                            added = spec.component.className in uiState.addedClassNames,
-                            onClick = {
-                                if (spec.component.className in uiState.addedClassNames) {
-                                    onEvent(QuickSettingsTilesUiEvent.Remove(spec.component))
-                                } else {
-                                    add(spec)
-                                }
-                            },
-                        )
-                    }
+            DevinatorCard {
+                DevTile.entries.forEachIndexed { index, tile ->
+                    if (index > 0) DevinatorDivider()
+                    TileRow(
+                        tile = tile,
+                        description = tile.description(uiState.timedToggleDuration),
+                        added = tile.className in uiState.addedClassNames,
+                        onClick = {
+                            if (tile.className in uiState.addedClassNames) {
+                                onEvent(QuickSettingsTilesUiEvent.Remove(tile.component(context)))
+                            } else {
+                                add(tile)
+                            }
+                        },
+                    )
                 }
             }
             Text(
@@ -228,7 +142,7 @@ private fun QuickSettingsTilesScreen(
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 private fun requestAddTile(
     context: Context,
-    spec: DevTileSpec,
+    tile: DevTile,
     onError: (String) -> Unit,
 ) {
     val manager = context.getSystemService(StatusBarManager::class.java)
@@ -238,16 +152,13 @@ private fun requestAddTile(
     }
     try {
         manager.requestAddTileService(
-            spec.component,
-            spec.title,
-            AndroidIcon.createWithResource(context, spec.iconRes),
+            tile.component(context),
+            tile.title(context),
+            AndroidIcon.createWithResource(context, tile.iconRes),
             context.mainExecutor,
             Consumer { result ->
                 when (result) {
-                    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED,
-                    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED,
-                    -> Unit
-                    // Some builds report this while the tile list stays unreadable to us.
+                    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> Unit
                     StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED ->
                         onError("Already in Quick Settings.")
 
@@ -264,10 +175,12 @@ private fun requestAddTile(
 @Composable
 private fun TileRow(
     modifier: Modifier = Modifier,
-    spec: DevTileSpec,
+    tile: DevTile,
+    description: String,
     added: Boolean,
     onClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -278,33 +191,18 @@ private fun TileRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(12.dp),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = spec.icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
+        IconBadge(painter = painterResource(tile.iconRes))
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = spec.title,
+                text = tile.title(context),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = spec.description,
+                text = description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -316,55 +214,6 @@ private fun TileRow(
         )
     }
 }
-
-private data class DevTileSpec(
-    val component: ComponentName,
-    val title: String,
-    val description: String,
-    val icon: ImageVector,
-    val iconRes: Int,
-)
-
-private fun devTileSpecs(
-    context: Context,
-    timedDuration: TimedToggleDuration,
-): List<DevTileSpec> = listOf(
-    DevTileSpec(
-        component = ComponentName(context.packageName, DEVELOPER_OPTIONS_TILE),
-        title = "Developer options",
-        description = "Master switch for ADB",
-        icon = Icons.Filled.DeveloperMode,
-        iconRes = R.drawable.ic_tile_developer_mode,
-    ),
-    DevTileSpec(
-        component = ComponentName(context.packageName, PAUSE_DEV_OPTIONS_TILE),
-        title = "Pause Dev options",
-        description = "Off for ${timedDuration.label}, then back on.",
-        icon = PauseDevOptionsIcon,
-        iconRes = R.drawable.ic_tile_timer_pause,
-    ),
-    DevTileSpec(
-        component = ComponentName(context.packageName, RESUME_DEV_OPTIONS_TILE),
-        title = "Resume Dev options",
-        description = "On for ${timedDuration.label}, then back off.",
-        icon = ResumeDevOptionsIcon,
-        iconRes = R.drawable.ic_tile_timer_play,
-    ),
-    DevTileSpec(
-        component = ComponentName(context.packageName, USB_DEBUGGING_TILE),
-        title = "USB debugging",
-        description = "ADB over USB",
-        icon = Icons.Filled.Usb,
-        iconRes = R.drawable.ic_tile_usb,
-    ),
-    DevTileSpec(
-        component = ComponentName(context.packageName, WIRELESS_DEBUGGING_TILE),
-        title = "Wireless debugging",
-        description = "ADB over Wi-Fi or hotspot",
-        icon = Icons.Filled.WifiTethering,
-        iconRes = R.drawable.ic_tile_wireless,
-    ),
-)
 
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -386,7 +235,7 @@ private fun QuickSettingsTilesScreenAddedPreview() {
     DevinatorTheme(dynamicColor = false) {
         QuickSettingsTilesScreen(
             uiState = QuickSettingsTilesUiState(
-                addedClassNames = setOf(DEVELOPER_OPTIONS_TILE),
+                addedClassNames = setOf(DevTile.DEVELOPER_OPTIONS.className),
             ),
             onBack = {},
             onEvent = {},

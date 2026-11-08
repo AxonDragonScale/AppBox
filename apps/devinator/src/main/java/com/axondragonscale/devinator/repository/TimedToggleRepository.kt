@@ -1,12 +1,13 @@
 package com.axondragonscale.devinator.repository
 
-import com.axondragonscale.devinator.background.TimedToggleScheduler
+import com.axondragonscale.devinator.background.DevAlarms
 import com.axondragonscale.devinator.model.DevState
-import com.axondragonscale.devinator.model.TimedToggleDuration
+import com.axondragonscale.devinator.model.DurationOption
 import com.axondragonscale.devinator.model.TimedToggleSession
 import com.axondragonscale.devinator.model.WriteResult
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,7 +31,7 @@ import kotlinx.coroutines.sync.withLock
 class TimedToggleRepository(
     private val settings: DevSettingsRepository,
     private val prefs: AppPrefsRepository,
-    private val scheduler: TimedToggleScheduler,
+    private val alarms: DevAlarms,
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -40,7 +41,7 @@ class TimedToggleRepository(
     val session: StateFlow<TimedToggleSession?> = _session.asStateFlow()
 
     private val _duration = MutableStateFlow(AppPrefsRepository.DEFAULT_TIMED_TOGGLE_DURATION)
-    val duration: StateFlow<TimedToggleDuration> = _duration.asStateFlow()
+    val duration: StateFlow<DurationOption> = _duration.asStateFlow()
 
     /**
      * Set while our own write is travelling to `Settings.Global`; the observer ignores a
@@ -51,7 +52,6 @@ class TimedToggleRepository(
     init {
         scope.launch {
             _duration.value = prefs.timedToggleDuration.get()
-            scheduler.restoreDeadline()
             reconcile()
             settings.state.collect(::onDeveloperOptionsChanged)
         }
@@ -66,7 +66,8 @@ class TimedToggleRepository(
      * Null means "already in that state, nothing to do".
      */
     suspend fun toggle(target: Boolean): WriteResult? = mutex.withLock {
-        val current = settings.state.value.developerOptions
+        val minutes = _duration.value.minutes ?: return@withLock null
+        val current = settings.isDeveloperOptionsOn()
         val active = _session.value
 
         if (active != null) {
@@ -80,14 +81,15 @@ class TimedToggleRepository(
         val restoreTo = current
         pendingTarget = target
         val result = settings.setDeveloperOptions(target)
-        if (result is WriteResult.Failed) {
+        if (result == WriteResult.Failed) {
             pendingTarget = null
             return@withLock result
         }
 
-        val deadline = Clock.System.now() + _duration.value.minutes.minutes
+        val deadline = Clock.System.now() + minutes.minutes
         prefs.timedToggleRestoreTo.set(restoreTo)
-        scheduler.armAt(deadline)
+        prefs.timedToggleDeadline.set(deadline.toEpochMilliseconds())
+        alarms.timedToggle.armAt(deadline)
         _session.value = TimedToggleSession(target, restoreTo, deadline)
         result
     }
@@ -96,13 +98,15 @@ class TimedToggleRepository(
     suspend fun endSession(): WriteResult? = mutex.withLock { endSessionLocked() }
 
     /** Persists the duration and restarts the countdown when a session is live. */
-    suspend fun setDuration(duration: TimedToggleDuration) {
+    suspend fun setDuration(duration: DurationOption) {
         mutex.withLock {
+            val minutes = duration.minutes ?: return@withLock
             _duration.value = duration
             prefs.timedToggleDuration.set(duration)
             val session = _session.value ?: return@withLock
-            val deadline = Clock.System.now() + duration.minutes.minutes
-            scheduler.armAt(deadline)
+            val deadline = Clock.System.now() + minutes.minutes
+            prefs.timedToggleDeadline.set(deadline.toEpochMilliseconds())
+            alarms.timedToggle.armAt(deadline)
             _session.value = session.copy(deadline = deadline)
         }
     }
@@ -113,17 +117,14 @@ class TimedToggleRepository(
 
     /**
      * Called at process start: an expired session is restored immediately, a live one gets its
-     * alarm back (a force-stop drops alarms while leaving the deadline pref behind).
+     * alarm back (a force-stop drops alarms while leaving the pref behind).
      */
     private suspend fun reconcile() = mutex.withLock {
         val restoreTo = prefs.timedToggleRestoreTo.get()
-        val deadline = scheduler.deadline.value
+        val deadline = prefs.timedToggleDeadline.get()?.let(Instant::fromEpochMilliseconds)
 
         if (restoreTo == null || deadline == null) {
-            if (restoreTo != null || deadline != null) {
-                prefs.timedToggleRestoreTo.set(null)
-                scheduler.cancel()
-            }
+            if (restoreTo != null || deadline != null) clearSessionLocked()
             return@withLock
         }
 
@@ -136,7 +137,7 @@ class TimedToggleRepository(
         if (deadline <= Clock.System.now()) {
             endSessionLocked()
         } else {
-            scheduler.armAt(deadline)
+            alarms.timedToggle.armAt(deadline)
         }
     }
 
@@ -147,6 +148,12 @@ class TimedToggleRepository(
             clearSessionLocked()
             if (restoreTo != null) settings.setDeveloperOptions(restoreTo)
         }
+    }
+
+    /** The UI saw a deadline pass; the alarm may have been dropped, so act on it now. */
+    suspend fun reconcileDeadline() = mutex.withLock {
+        val session = _session.value ?: return@withLock
+        if (session.deadline <= Clock.System.now()) endSessionLocked()
     }
 
     // endregion
@@ -162,8 +169,9 @@ class TimedToggleRepository(
     }
 
     private suspend fun clearSessionLocked() {
-        scheduler.cancel()
+        alarms.timedToggle.cancel()
         prefs.timedToggleRestoreTo.set(null)
+        prefs.timedToggleDeadline.set(null)
         _session.value = null
         pendingTarget = null
     }
@@ -172,8 +180,12 @@ class TimedToggleRepository(
         val session = _session.value ?: return@withLock
         val pending = pendingTarget
         if (pending != null) {
-            if (state.developerOptions == pending) pendingTarget = null
-            return@withLock
+            if (state.developerOptions == pending) {
+                pendingTarget = null
+                return@withLock
+            }
+            // A different value overtook the write: the user changed it, so the session must not survive.
+            pendingTarget = null
         }
         if (state.developerOptions != session.target) {
             clearSessionLocked()

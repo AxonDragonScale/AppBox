@@ -1,9 +1,9 @@
 package com.axondragonscale.devinator.repository
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.net.ConnectivityManager
+import android.net.LinkProperties
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
@@ -12,8 +12,10 @@ import androidx.annotation.RequiresApi
 import com.axondragonscale.commons.log
 import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.EndpointKind
+import com.axondragonscale.devinator.permission.LocalNetworkAccess
 import java.net.Inet4Address
 import java.net.NetworkInterface
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,39 +72,78 @@ class WirelessEndpointRepository(context: Context) {
     private val _endpoints = MutableStateFlow<List<AdbEndpoint>>(emptyList())
     val endpoints: StateFlow<List<AdbEndpoint>> = _endpoints.asStateFlow()
 
-    private var port: Int? = null
-    private var running = false
-    private var discoveryListener: NsdManager.DiscoveryListener? = null
-    private val serviceInfoCallbacks = mutableListOf<NsdManager.ServiceInfoCallback>()
+    @Volatile private var port: Int? = null
+    @Volatile private var running = false
+    @Volatile private var discoveryListener: NsdManager.DiscoveryListener? = null
+    private val serviceInfoCallbacks = CopyOnWriteArrayList<NsdManager.ServiceInfoCallback>()
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     /** Re-reads the addresses and starts discovery. Idempotent; returns without waiting for mDNS. */
     fun start() {
-        if (running) return
-        if (!canReachLocalNetwork()) {
-            // Without the grant the platform answers discovery with its own "choose a device"
-            // picker, so publish the addresses alone and wait to be asked again.
-            _endpoints.value = classifyEndpoints(readAddresses(), vpnInterfaces(), null)
+        if (running) {
+            // A grant obtained after the first start still deserves a discovery attempt.
+            if (discoveryListener == null && LocalNetworkAccess.isGranted(context)) startDiscovery()
             return
         }
         running = true
+        registerNetworkCallback()
         publish(port)
-        val listener = DiscoveryListener()
-        try {
-            nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener)
-            discoveryListener = listener
-        } catch (e: Exception) {
-            // A missing local-network grant lands here. Leaving `running` set would block every
-            // later attempt, so the next settings change gets to try again.
-            running = false
-            this.log { e }
-        }
+        if (LocalNetworkAccess.isGranted(context)) startDiscovery()
     }
 
     fun stop() {
         running = false
         stopDiscovery()
+        unregisterNetworkCallback()
         port = null
         _endpoints.value = emptyList()
+    }
+
+    private fun startDiscovery() {
+        val nsd = nsdManager ?: return
+        val listener = DiscoveryListener()
+        try {
+            nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener)
+            discoveryListener = listener
+        } catch (e: Exception) {
+            this.log { e }
+        }
+    }
+
+    /** Addresses change with the network, not with mDNS, so the card must follow connectivity too. */
+    private fun registerNetworkCallback() {
+        val manager = connectivityManager ?: return
+        if (networkCallback != null) return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) = publish(port)
+
+            override fun onLost(network: Network) = publish(port)
+
+            override fun onCapabilitiesChanged(
+                network: Network,
+                networkCapabilities: NetworkCapabilities,
+            ) = publish(port)
+
+            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) =
+                publish(port)
+        }
+        try {
+            manager.registerDefaultNetworkCallback(callback)
+            networkCallback = callback
+        } catch (e: Exception) {
+            this.log { e }
+        }
+    }
+
+    private fun unregisterNetworkCallback() {
+        val manager = connectivityManager ?: return
+        val callback = networkCallback ?: return
+        networkCallback = null
+        try {
+            manager.unregisterNetworkCallback(callback)
+        } catch (e: Exception) {
+            this.log { e }
+        }
     }
 
     /** A port change means a new session, so the addresses are re-read with it. */
@@ -124,8 +165,8 @@ class WirelessEndpointRepository(context: Context) {
         override fun onDiscoveryStopped(serviceType: String) = Unit
 
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
-            // Most often refused local-network access; allow a later start() to retry.
-            running = false
+            // Most often refused local-network access; allow a later start() to retry discovery.
+            discoveryListener = null
         }
 
         override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
@@ -184,7 +225,7 @@ class WirelessEndpointRepository(context: Context) {
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun unregisterCallbacks() {
         val nsd = nsdManager ?: return
-        serviceInfoCallbacks.forEach { callback ->
+        serviceInfoCallbacks.toList().forEach { callback ->
             try {
                 nsd.unregisterServiceInfoCallback(callback)
             } catch (e: Exception) {
@@ -192,12 +233,6 @@ class WirelessEndpointRepository(context: Context) {
             }
         }
     }
-
-    /** mDNS is local-network traffic; before API 37 the platform does not ask for a grant. */
-    private fun canReachLocalNetwork(): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
-            context.checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) ==
-            PackageManager.PERMISSION_GRANTED
 
     private fun readAddresses(): List<InterfaceAddress> = try {
         NetworkInterface.getNetworkInterfaces().toList()

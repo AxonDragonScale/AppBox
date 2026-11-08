@@ -1,8 +1,7 @@
 package com.axondragonscale.devinator.ui.setup
 
-import android.annotation.SuppressLint
-import android.content.Context
 import androidx.lifecycle.ViewModel
+import com.axondragonscale.devinator.permission.GrantRepository
 import com.axondragonscale.devinator.permission.SecureSettingsPermission
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,15 +14,11 @@ import kotlinx.coroutines.flow.update
  * state is a fresh read on every resume instead of anything stored.
  */
 class SetupVM(
-    context: Context,
+    private val grant: GrantRepository,
 ) : ViewModel() {
 
-    // Application context, not an activity: holding it cannot leak a screen.
-    @SuppressLint("StaticFieldLeak")
-    private val context: Context = context.applicationContext
-
     private val _uiState = MutableStateFlow(
-        SetupUiState(grantCommand = SecureSettingsPermission.grantCommand(context.packageName)),
+        SetupUiState(grantCommand = SecureSettingsPermission.grantCommand(grant.packageName)),
     )
     val uiState = _uiState.asStateFlow()
 
@@ -39,7 +34,7 @@ class SetupVM(
      * by an explicit check — an automatic one has to stay silent.
      */
     private fun check(explicit: Boolean) {
-        val granted = SecureSettingsPermission.isGranted(context)
+        val granted = grant.isGranted()
         _uiState.update {
             it.copy(permissionGranted = granted, checkFailed = explicit && !granted)
         }

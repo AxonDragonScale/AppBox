@@ -47,40 +47,46 @@ for app preferences only. No Room, no `INTERNET` permission.
 
 ```
 com.axondragonscale.devinator/
-├── DevinatorActivity.kt            # edge-to-edge; re-checks the grant on resume
+├── DevinatorActivity.kt            # edge-to-edge; host for DevinatorApp and theme prefs
 ├── DevinatorApplication.kt         # Koin start (CommonsModule + DevinatorModule)
 ├── di/DevinatorModule.kt
 ├── model/
 │   ├── DevState.kt                 # the three flags, endpoints, write results
-│   ├── AutoOffDuration.kt          # Off / 5 / 15 / 30 min, the persisted timer choice
-│   ├── TimedToggleDuration.kt      # 5 / 15 / 30 min for the temporary on/off actions
+│   ├── DurationOption.kt           # Off / 5 / 15 / 30 min for both timers
+│   ├── Countdown.kt                # one `m:ss` formatter and expiry check
 │   └── TimedToggleSession.kt       # target, restoreTo, deadline
 ├── repository/
 │   ├── DevSettingsRepository.kt    # the one writer; state, endpoints, timer, writes
 │   ├── TimedToggleRepository.kt    # temporary on/off policy, duration, recovery
 │   ├── GlobalSettingsRepository.kt # the only code that touches Settings.Global
 │   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice, deadline, restore snapshot, UI mode, dynamic colour
-│   ├── QuickSettingsTileRepository.kt # reads/edits the shell's tile list
-│   └── WirelessEndpointRepository.kt # local IPv4s + mDNS port lookup
+│   ├── QuickSettingsTileRepository.kt # reads and removes entries from the shell's tile list
+│   └── WirelessEndpointRepository.kt # local IPv4s + mDNS port lookup + connectivity refresh
 ├── background/
-│   ├── AutoOffScheduler.kt         # AlarmManager one-shot for wireless auto-off
+│   ├── DeadlineAlarm.kt            # one one-shot AlarmManager alarm
+│   ├── DevAlarms.kt                # the auto-off and timed-toggle alarms
+│   ├── KoinReceiver.kt             # the goAsync window every receiver shares
 │   ├── WirelessAutoOffReceiver.kt  # the wireless alarm's only listener
-│   ├── TimedToggleScheduler.kt     # AlarmManager one-shot for a timed toggle
 │   ├── TimedToggleReceiver.kt      # the timed alarm's only listener
-│   └── TimedToggleBootReceiver.kt  # restores the pre-session state after a reboot
-├── permission/SecureSettingsPermission.kt # grant check, grant command, settings deep links
-├── tile/                           # five TileServices, same repositories
+│   └── DevBootReceiver.kt          # reconciles both timers after a reboot
+├── permission/
+│   ├── SecureSettingsPermission.kt # grant check, grant/revoke commands, settings deep link
+│   ├── GrantRepository.kt          # the app's one grant source (application context)
+│   └── LocalNetworkAccess.kt       # the API-37 local-network gate, shared by Home and discovery
+├── tile/
+│   ├── DevTile.kt                  # one catalogue: component, label, icon, description
+│   ├── ListeningTileService.kt     # shared tile lifecycle
+│   ├── DevTileServices.kt          # developer options, USB, wireless
+│   └── TimedDevOptionsTileServices.kt # pause and resume
 ├── ui/
 │   ├── Route.kt                    # Setup, Home, Settings, Permission, QuickSettingsTiles
-│   ├── components/DevinatorTopBar.kt # the shared top bar: logo + name (+ subtitle, actions)
-│   ├── components/DevinatorSwitch.kt # the one switch; `dangerOff` is the developer-options red
-│   ├── theme/  setup/  home/  settings/  tiles/  tiles/
-└── util/
+│   ├── components/                 # card, divider, top bars, badge, chip, code block, switch, clipboard
+│   ├── theme/  setup/  home/  settings/  tiles/
 ```
 
 The suffixes carry one meaning each: `*Repository` owns a source of state (system settings, app
-preferences, network), `*Scheduler` owns time, `*Permission` owns a permission. There is exactly
-one implementation of each, so none of them is an interface.
+preferences, network), `*Alarm` owns a one-shot alarm, `*Permission` owns a permission. There is
+exactly one implementation of each, so none of them is an interface.
 
 ### The one invariant
 
@@ -94,24 +100,23 @@ disagree — including after a change made in the Settings app, or a write the s
 class DevSettingsRepository(
     settings: GlobalSettingsRepository,
     endpoints: WirelessEndpointRepository,
-    autoOff: AutoOffScheduler,
+    alarms: DevAlarms,
     prefs: AppPrefsRepository,
 ) {
     val state: StateFlow<DevState>
     val endpoints: StateFlow<List<AdbEndpoint>>    // ranked Wi-Fi, hotspot, VPN, other — first is primary
     val autoOffDeadline: StateFlow<Instant?>       // null = no timer armed
-    val autoOffDuration: StateFlow<AutoOffDuration> // the configured timer choice
+    val autoOffDuration: StateFlow<DurationOption> // the configured timer choice
     suspend fun setDeveloperOptions(enabled: Boolean): WriteResult
     suspend fun setUsbDebugging(enabled: Boolean): WriteResult
     suspend fun setWirelessDebugging(enabled: Boolean): WriteResult
-    suspend fun setAutoOffDuration(duration: AutoOffDuration)
-    fun autoOffDuration(): AutoOffDuration
+    suspend fun setAutoOffDuration(duration: DurationOption)
 }
 
 sealed interface WriteResult {
     data object Ok : WriteResult
     data object AwaitingConsent : WriteResult      // trust dialog is up, or was declined
-    data class Failed(val reason: String) : WriteResult
+    data object Failed : WriteResult
 }
 ```
 
@@ -125,18 +130,27 @@ fun readFlag(key: String): Boolean =
 
 ### Write path
 
-`setWirelessDebugging(true)`: write `1`, then poll the key 10× at 250 ms. Reads `1` → `Ok`. Still
-`0` → `AwaitingConsent`; the observer pushes the real value whenever the user accepts or walks away.
-Disabling is silent and immediate. Turning developer options off first serializes every key in
-`RESTORABLE_FLAG_KEYS` (currently USB and wireless) into the prefs snapshot, then writes `0` and zeroes
-those keys. Turning it back on writes `1`; the observer sees the off→on transition and replays the
-snapshot, so an enable from Android Settings restores too. A new developer toggle joins both sides by
-appending its `Settings.Global` key to that list.
+`setWirelessDebugging(true)`: write `1`, then wait up to 3 s for the observer to report the key as
+`1`. Reads `1` → `Ok`. Still `0` → `AwaitingConsent`; the observer pushes the real value whenever
+the user accepts or walks away.
+Every ordinary write is read back, because a provider can accept the call and ignore it (the OriginOS
+risk); a value that did not land is a `Failed`, not a silent success. A wireless enable is the one
+exception: its key legitimately stays `0` until consent, so the `putInt` Boolean is checked and only
+an accepted write enters the consent wait. Restoring a snapshot writes wireless through the same
+unverified path; USB and every disable are verified. Disabling is silent and
+immediate. Turning developer options off first serializes every key in `RESTORABLE_FLAG_KEYS`
+(currently USB and wireless) into the prefs snapshot, then writes `0` and zeroes
+those keys. The live key makes a duplicate off idempotent, so a second tap cannot overwrite the first
+snapshot. Turning it back on writes `1` and restores the snapshot directly; the observer path stays
+for enables made in Android Settings.
 
 ### Endpoint discovery (best effort)
 
 - **Addresses**: IPv4 per interface via `ConnectivityManager` / `NetworkInterface`, labelled
   Wi-Fi / VPN / Hotspot. No permission.
+- **Refresh**: a `ConnectivityManager.NetworkCallback` re-reads the addresses on every network
+  change, so airplane mode empties the card without waiting for mDNS. The local-network grant only
+  gates discovery; the addresses still track the network without it.
 - **Ranking**: the list is rank-ordered, not transport-ordered — Wi-Fi first, then hotspot, then VPN
   (a VPN address rarely routes from another machine and mDNS does not cross the tunnel). The UI draws
   only `endpoints.first()`; the network pill names that network. Rationale and the copy live in
@@ -176,41 +190,51 @@ The repository takes the first store it can read, extracts `custom(…)` entries
 formats spell tiles the same way), and only ever rewrites the value it just read — so a failed read
 means no write, never a list that drops the user's other tiles. A `ContentObserver` on both keys feeds
 the same `Flow` the page collects, so a tile added from the system editor shows up too. Where no store
-is readable, the page can only add, and the row cannot offer `Remove`.
+is readable, removal cannot be offered. On API < 33 there is no public add API either, so the page
+points at the Quick Settings editor instead of pretending to write the shell's list. The USB and
+Wireless tiles render `STATE_UNAVAILABLE` with "Dev options off" while the master switch is off,
+and the tile tick calls `reconcileDeadline()` so a dropped alarm heals while the shade is open. The
+repository also rejects an enable of USB or wireless while developer options is off; the tile state is
+only the visible half of that rule.
 
 ### Auto-off timer
 
-`AlarmManager.setAndAllowWhileIdle` (inexact, no permission) → `WirelessAutoOffReceiver` writes
-`adb_wifi_enabled = 0`. Cancelled when wireless debugging is switched off manually, re-armed on each
-enable. The choice is an `AutoOffDuration` (`OFF`, 5, 15, 30 min, default `OFF`): "off" is a decision
-the user makes, not a missing value, so it is an enum rather than a nullable count. The deadline is a
-nullable pref — absent means no timer — persisted so the countdown survives process death.
-Known gap: the alarm is not restored automatically after reboot; it comes back on the next app
-start.
+`DevAlarms.autoOff` arms `AlarmManager.setAndAllowWhileIdle` (inexact, no permission) →
+`WirelessAutoOffReceiver` writes `adb_wifi_enabled = 0`. The repository owns the persisted deadline; the
+alarm only knows when to fire. Cancelled when wireless debugging is switched off manually, re-armed
+on each enable. The choice is a `DurationOption` (`OFF`, 5, 15, 30 min, default `OFF`): "off" is a
+decision the user makes, not a missing value, so it is an enum rather than a nullable count. The
+deadline is a nullable pref — absent means no timer — persisted so the countdown survives process
+death. An expired deadline is acted on, not replaced with a fresh duration: the next observation, the
+visible countdown reaching zero, or `DevBootReceiver` turns wireless debugging off. A reboot therefore
+no longer leaves the timer lost. If the deadline pref is missing when the app first observes wireless
+on, it arms one fresh duration from that moment; a real off→on transition always arms one.
 
 ### Timed toggle
 
 `Pause Dev options` and `Resume Dev options` are two fixed-direction tiles; the Home card exposes the
 same actions. A session stores the state before it started, writes the target through
-`DevSettingsRepository` (so USB and wireless follow the snapshot path), arms `TimedToggleScheduler`
+`DevSettingsRepository` (so USB and wireless follow the snapshot path), arms `DevAlarms.timedToggle`
 (`AlarmManager.setAndAllowWhileIdle`, request code 1), and restores the pre-session state at expiry.
 One session at a time: tapping the owning tile ends it early; tapping the opposite tile switches
-direction; any manual Developer options change cancels it.
+direction; any manual Developer options change cancels it, including a change that races the session
+write. The repository owns the deadline; the alarm is a pure trigger. The visible countdown also
+reconciles when it reaches zero, so a dropped alarm does not leave the session stuck on screen.
 
-The duration is `TimedToggleDuration` (5 / 15 / 30 min, default `MIN_5`), persisted in
+The duration is a `DurationOption` (5 / 15 / 30 min, default `MIN_5`), persisted in
 `AppPrefsRepository` along with `timedToggleDeadline` and `timedToggleRestoreTo`. The alarm receiver
 restores through the repository, so the result arrives like every other write.
-`TimedToggleBootReceiver` restores on boot; `TimedToggleRepository.reconcile()` handles a force-stop
+`DevBootReceiver` restores on boot; `TimedToggleRepository.reconcile()` handles a force-stop
 (expired → restore, future → re-arm). No new permission, no foreground service, no notification.
 
 ### Setup / grant
 
 Detection is `SecureSettingsPermission.isGranted(context)` (`checkSelfPermission`), re-checked on
-`ON_RESUME` and by a deliberate "Check again". Nothing about setup is persisted: the permission is
-itself the source of truth, so a revoked grant shows Setup again. Setup is the NavHost's start
-destination; once the grant is read, `SetupScreen` navigates to Home with
-`popUpTo<Route.Setup> { inclusive = true }`, which keeps Home the only reachable destination and off
-the back stack. The command shown on screen is built from
+`ON_RESUME` at the NavHost level, so every screen returns to Setup when the grant disappears. Nothing
+about setup is persisted: the permission is itself the source of truth, so a revoked grant shows
+Setup again. Setup is the NavHost's start destination; once the grant is read, `SetupScreen`
+navigates to Home with `popUpTo<Route.Setup> { inclusive = true }`, which keeps Home the only
+reachable destination and off the back stack. The command shown on screen is built from
 `context.packageName`, never hardcoded: the convention plugin suffixes debug builds, so a debug
 install is `com.axondragonscale.devinator.debug` and a hardcoded grant would target a package that
 is not installed.
@@ -228,16 +252,18 @@ are out of scope for v1.
   and bundle, Koin bundle, `navigation.compose`, coroutines, `kotlinx.serialization.json`.
 - `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
   tools:ignore="ProtectedPermissions" />`
-- `<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />` — Android 16's
-  local-network protection, needed only for the mDNS port lookup. It is `dangerous`, so Home requests
-  it when wireless debugging is switched on and a refusal costs the port, never the toggle.
+- `<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />` — the platform's
+  local-network protection (API 37+), needed only for the mDNS port lookup. It is `dangerous`, so Home
+  requests it when wireless debugging is switched on and a refusal costs the port, never the toggle.
   Declaring it is not enough on its own: the connectivity module's "choose a device" picker keys off
   the **grant**, so `WirelessEndpointRepository.start()` skips discovery until it is granted rather
-  than letting the platform substitute that picker.
+  than letting the platform substitute that picker. `LocalNetworkAccess` is the single gate used by
+  both Home and discovery.
 - Five tile services: `exported="true"`, `android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"`,
-  each with a label and icon. Auto-off, timed-toggle and boot receivers: `exported="false"`.
-- `RECEIVE_BOOT_COMPLETED` is declared for the timed-toggle boot receiver; the rest of the permission
-  list is unchanged.
+  each with a label and icon. Auto-off, timed-toggle and boot receivers: `exported="false"`. The
+  page's catalogue (`tile/DevTile.kt`) is the single source for each tile's component, label and icon.
+- `RECEIVE_BOOT_COMPLETED` is declared for `DevBootReceiver`; the rest of the permission list is
+  unchanged.
 - Launcher icon: `drawable/ic_launcher_foreground.xml` is the Devinator mark on the 108 dp grid —
   one path with three subpaths (accent capsule plus caret and knob wound as knockouts,
   `fillType="nonZero"`), so the same drawable doubles as the monochrome layer under a system tint.
@@ -262,10 +288,11 @@ Everything here is verified the first time the app is installed on the iQOO.
 | `adbd` keeps running after developer options is turned off | `adb devices` on the computer after switching off | always zero the debugging keys in the same write |
 | Trust dialog is skinned or behaves differently | toggle wireless debugging on | the neutral "waiting for confirmation" state, never a hard error |
 | OEM battery manager drops the timer alarm | set a 5-minute auto-off, lock the screen | move the timer to WorkManager |
-| Timed toggle alarm is late or lost after a force-stop | start a timed pause, force-stop, reopen the app | `TimedToggleRepository.reconcile()` restores an expired session or re-arms a live one; the boot receiver covers a normal reboot |
+| Timed toggle alarm is late or lost after a force-stop | start a timed pause, force-stop, reopen the app | `TimedToggleRepository.reconcile()` restores an expired session or re-arms a live one; `DevBootReceiver` covers a normal reboot |
+| Wireless auto-off alarm is lost after a reboot or force-stop | set a 5-minute auto-off, reboot, check the card and `adb devices` | `DevBootReceiver` and the next app start both act on an expired deadline; a future deadline is re-armed |
 | mDNS discovery finds nothing | check while on Wi-Fi | address without port |
 | Local-network grant is missing or revoked | launch on a device that never granted it | discovery is skipped, so no picker and no port; the caption points at Developer options |
-| `sysui_qs_tiles` is unreadable above target SDK 33, so tile state and removal vanish on AOSP | open Quick Settings Tiles on a non-OriginOS device | read OriginOS's `super_qs_tiles` where present; otherwise the page is add-only |
+| `sysui_qs_tiles` is unreadable above target SDK 33, so tile state and removal vanish on AOSP | open Quick Settings Tiles on a non-OriginOS device | read OriginOS's `super_qs_tiles` where present; otherwise the page is read-only and points at the Quick Settings editor |
 | Several networks at once (Wi-Fi + VPN + hotspot) | connect with a VPN up | rank Wi-Fi → hotspot → VPN and show the top one only |
 
 ## Related Context

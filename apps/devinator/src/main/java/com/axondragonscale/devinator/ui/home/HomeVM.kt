@@ -3,10 +3,9 @@ package com.axondragonscale.devinator.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.devinator.model.AdbEndpoint
-import com.axondragonscale.devinator.model.AutoOffDuration
-import com.axondragonscale.devinator.model.DevState
-import com.axondragonscale.devinator.model.TimedToggleDuration
+import com.axondragonscale.devinator.model.DurationOption
 import com.axondragonscale.devinator.model.TimedToggleSession
+import com.axondragonscale.devinator.model.WRITE_FAILED_MESSAGE
 import com.axondragonscale.devinator.model.WriteResult
 import com.axondragonscale.devinator.repository.DevSettingsRepository
 import com.axondragonscale.devinator.repository.TimedToggleRepository
@@ -30,51 +29,34 @@ class HomeVM(
 
     private val pendingWireless = MutableStateFlow(false)
 
-    private val devUi = combine(
+    private val devState = combine(
         repository.state,
         repository.endpoints,
         repository.autoOffDuration,
         repository.autoOffDeadline,
         pendingWireless,
     ) { dev, endpoints, autoOff, deadline, pending ->
-        DevUi(
-            state = dev,
-            endpoints = endpoints,
+        HomeUiState(
+            developerOptions = dev.developerOptions,
+            usbDebugging = dev.usbDebugging,
+            wirelessDebugging = dev.wirelessDebugging,
+            wirelessPending = pending,
+            endpoint = endpoints.firstOrNull(),
             autoOffDuration = autoOff,
             autoOffDeadline = deadline,
-            pendingWireless = pending,
         )
     }
 
     val uiState: StateFlow<HomeUiState> = combine(
-        devUi,
+        devState,
         timedToggle.session,
         timedToggle.duration,
-    ) { dev, timedSession, timedDuration ->
-        HomeUiState(
-            developerOptions = dev.state.developerOptions,
-            usbDebugging = dev.state.usbDebugging,
-            wirelessDebugging = dev.state.wirelessDebugging,
-            wirelessPending = dev.pendingWireless,
-            endpoint = dev.endpoints.firstOrNull(),
-            autoOffDuration = dev.autoOffDuration,
-            autoOffDeadline = dev.autoOffDeadline,
-            timedToggle = timedSession,
-            timedToggleDuration = timedDuration,
-        )
+    ) { state, session, duration ->
+        state.copy(timedToggle = session, timedToggleDuration = duration)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = HomeUiState(
-            developerOptions = repository.state.value.developerOptions,
-            usbDebugging = repository.state.value.usbDebugging,
-            wirelessDebugging = repository.state.value.wirelessDebugging,
-            endpoint = repository.endpoints.value.firstOrNull(),
-            autoOffDuration = repository.autoOffDuration.value,
-            autoOffDeadline = repository.autoOffDeadline.value,
-            timedToggle = timedToggle.session.value,
-            timedToggleDuration = timedToggle.duration.value,
-        ),
+        initialValue = initialState(),
     )
 
     private val uiEffectChannel = Channel<HomeUiEffect>()
@@ -88,6 +70,7 @@ class HomeVM(
         is HomeUiEvent.StartTimedToggle -> startTimedToggle(event.target)
         HomeUiEvent.EndTimedToggle -> endTimedToggle()
         is HomeUiEvent.SelectTimedDuration -> selectTimedDuration(event.duration)
+        HomeUiEvent.ReconcileDeadlines -> reconcileDeadlines()
         HomeUiEvent.OpenSettings -> Unit
         HomeUiEvent.OpenTiles -> Unit
     }
@@ -108,7 +91,7 @@ class HomeVM(
         pendingWireless.value = true
         try {
             when (val result = repository.setWirelessDebugging(true)) {
-                is WriteResult.Failed -> reportFailure(result)
+                WriteResult.Failed -> reportFailure(result)
                 WriteResult.AwaitingConsent ->
                     uiEffectChannel.send(HomeUiEffect.ShowSnackbar("Wireless debugging not confirmed"))
                 WriteResult.Ok -> Unit
@@ -118,7 +101,7 @@ class HomeVM(
         }
     }
 
-    private fun selectAutoOff(duration: AutoOffDuration) = viewModelScope.launch {
+    private fun selectAutoOff(duration: DurationOption) = viewModelScope.launch {
         repository.setAutoOffDuration(duration)
     }
 
@@ -130,15 +113,31 @@ class HomeVM(
         reportFailure(timedToggle.endSession())
     }
 
-    private fun selectTimedDuration(duration: TimedToggleDuration) = viewModelScope.launch {
+    private fun selectTimedDuration(duration: DurationOption) = viewModelScope.launch {
         timedToggle.setDuration(duration)
     }
 
+    private fun reconcileDeadlines() = viewModelScope.launch {
+        repository.reconcileDeadline()
+        timedToggle.reconcileDeadline()
+    }
+
     private suspend fun reportFailure(result: WriteResult?) {
-        if (result is WriteResult.Failed) {
-            uiEffectChannel.send(HomeUiEffect.ShowSnackbar("Couldn't change this setting."))
+        if (result == WriteResult.Failed) {
+            uiEffectChannel.send(HomeUiEffect.ShowSnackbar(WRITE_FAILED_MESSAGE))
         }
     }
+
+    private fun initialState() = HomeUiState(
+        developerOptions = repository.state.value.developerOptions,
+        usbDebugging = repository.state.value.usbDebugging,
+        wirelessDebugging = repository.state.value.wirelessDebugging,
+        endpoint = repository.endpoints.value.firstOrNull(),
+        autoOffDuration = repository.autoOffDuration.value,
+        autoOffDeadline = repository.autoOffDeadline.value,
+        timedToggle = timedToggle.session.value,
+        timedToggleDuration = timedToggle.duration.value,
+    )
 }
 
 data class HomeUiState(
@@ -147,28 +146,21 @@ data class HomeUiState(
     val wirelessDebugging: Boolean = false,
     val wirelessPending: Boolean = false,
     val endpoint: AdbEndpoint? = null,
-    val autoOffDuration: AutoOffDuration = AutoOffDuration.OFF,
+    val autoOffDuration: DurationOption = DurationOption.OFF,
     val autoOffDeadline: Instant? = null,
     val timedToggle: TimedToggleSession? = null,
-    val timedToggleDuration: TimedToggleDuration = TimedToggleDuration.MIN_5,
-)
-
-private data class DevUi(
-    val state: DevState,
-    val endpoints: List<AdbEndpoint>,
-    val autoOffDuration: AutoOffDuration,
-    val autoOffDeadline: Instant?,
-    val pendingWireless: Boolean,
+    val timedToggleDuration: DurationOption = DurationOption.MIN_5,
 )
 
 sealed interface HomeUiEvent {
     data class SetDeveloperOptions(val enabled: Boolean) : HomeUiEvent
     data class SetUsbDebugging(val enabled: Boolean) : HomeUiEvent
     data class SetWirelessDebugging(val enabled: Boolean) : HomeUiEvent
-    data class SelectAutoOff(val duration: AutoOffDuration) : HomeUiEvent
+    data class SelectAutoOff(val duration: DurationOption) : HomeUiEvent
     data class StartTimedToggle(val target: Boolean) : HomeUiEvent
     data object EndTimedToggle : HomeUiEvent
-    data class SelectTimedDuration(val duration: TimedToggleDuration) : HomeUiEvent
+    data class SelectTimedDuration(val duration: DurationOption) : HomeUiEvent
+    data object ReconcileDeadlines : HomeUiEvent
     data object OpenSettings : HomeUiEvent
     data object OpenTiles : HomeUiEvent
 }

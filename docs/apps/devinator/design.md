@@ -53,10 +53,10 @@ visible but disabled with the reason attached, because `adbd` cannot run without
 | Tap Developer options switch | Writes the key immediately |
 | Turn Developer options **off** | Writes `0`, snapshots USB and wireless debugging, then zeroes them; no dialog |
 | Turn Developer options **on** | Writes `1` and restores the values captured when it was turned off |
-| Tap USB / Wireless switch | Writes the key immediately; no dialog of our own |
+| Tap USB / Wireless switch | Writes the key immediately; no dialog of our own. The repository rejects an enable while Developer options is off |
 | Turn Wireless debugging on | Our write raises the system trust dialog; UI shows `Pending` until the key changes. The first time, Android also asks for local-network access — that grant only covers the mDNS port lookup, so declining still turns wireless debugging on and just leaves the port unknown |
 | Turn Wireless debugging off | Silent, immediate; also cancels the auto-off timer |
-| Tap the copy control on the endpoint | Copies `adb connect <ip>:<port>` for the address shown |
+| Tap the endpoint row or the command block | Copies `adb connect <ip>:<port>` for the address shown. Android 13+ shows the system's own clipboard confirmation; 12/12L get a toast |
 | Tap the Auto-off row | Menu: Off / 5 / 15 / 30 min. Default Off. The selected item is highlighted; the row's trailing value shows the current choice |
 | Tap **Pause for 5 min** (card or tile) | Developer options is on: writes off, arms the timed session, restores the pre-session state at expiry |
 | Tap **Resume for 5 min** (card or tile) | Developer options is off: writes on (replaying the last ADB snapshot), arms the session, turns off at expiry |
@@ -64,13 +64,13 @@ visible but disabled with the reason attached, because `adbd` cannot run without
 | Tap the opposite timed tile while a session is active | Switches direction: cancels the old timer, starts a fresh one from the current state |
 | Tap the timed card's duration control | Menu: 5 / 15 / 30 min, default 5. Changing it during a session restarts the countdown |
 | Tap the tiles card on Home | Opens the Quick Settings Tiles page — a navigation, not an action |
-| Tap a row on the Quick Settings Tiles page | Adds the tile via `StatusBarManager.requestAddTileService` (API 33+) if absent, removes it from the shell's list if present. The whole row is the target; there is no per-row button |
+| Tap a row on the Quick Settings Tiles page | Adds the tile via `StatusBarManager.requestAddTileService` (API 33+) if absent; on API < 33 it points at the Quick Settings editor. Removes it from the shell's list if present. The whole row is the target; there is no per-row button |
 | Add a tile | The system shows its own "Add … to Control center" prompt; the row flips to `Remove` only once the shell's list contains it, so an add made from the system editor reads the same way |
 | Remove a tile | Immediate, no dialog: the shell's list is rewritten without that entry |
 | Tap "Grant or revoke" | Opens the Permission page: both `pm grant` and `pm revoke` commands, each with a copy control |
 | Change Appearance | System / Light / Dark, plus a Dynamic colour switch. Both persist and repaint the app immediately; dynamic colour defaults off |
 | Tap "Open Developer options" | Leaves for Android's own Developer options screen |
-| Tap a tile | Same write as the corresponding switch; never opens the app |
+| Tap a tile | Same write as the corresponding switch; never opens the app. USB and Wireless are unavailable while Developer options is off |
 | Long-press a tile | System behaviour (opens Settings tile placement) — do not override |
 
 ### Which address is primary
@@ -101,9 +101,11 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
 - Countdown is visible in the wireless card as "Wireless debugging turns off in 12:04.", with the
   time in `primary` — a timer nobody sees is a surprise, and a surprise port is a lost session.
 - The explanatory sentence lives in that caption, not in the menu; the menu is just the four choices.
-- Manual off cancels it; manual on re-arms it; process death or reboot loses it (accepted).
+- Manual off cancels it; manual on re-arms it; process death or reboot loses the alarm but not the deadline, so the next observation, the countdown reaching zero, or `DevBootReceiver` re-arms a live one and executes an expired one.
 - Default `Off`: a timer is opt-in, so the port cannot change under a session unless the user asked
   for it.
+- An expired deadline is never replaced with a fresh full duration: the repository turns wireless
+  debugging off instead. The countdown is a deadline, not a promise of exactness.
 
 ### Timed toggle rules
 
@@ -116,7 +118,8 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
 - **Same tile ends, opposite tile switches.** Tapping the tile that owns the active session ends it
   and restores; tapping the other timed tile starts the opposite session from the current state.
 - **Manual changes win.** Any Developer options write from the app, the permanent tile or Android
-  Settings cancels the session. The timer never fights the user at expiry.
+  Settings cancels the session, including a change that lands while the session's own write is in
+  flight. The timer never fights the user at expiry.
 - **Duration is shared.** 5 / 15 / 30 min, default 5. Changing it during a session re-arms from now,
   matching the wireless auto-off rule.
 - **Reboot restores.** A reboot ends the bank session, so the pre-session state comes back on boot.
@@ -131,19 +134,23 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
 |---|---|
 | System dialog declined | No error state. Toggle returns to off; `Pending` fades; neutral snackbar "Wireless debugging not confirmed" |
 | Write throws (OEM restriction) | Snackbar "Couldn't change this setting."; the switch stays where the database says |
-| Permission revoked while running | Next write fails → route to `Setup` on the next resume |
+| Permission revoked while running | Every resume re-checks the grant; Setup replaces the current screen and the back stack |
+| Permission revoked while the app is dead | The next launch starts on Setup; Home is never shown without the grant |
 | Port discovery finds nothing | Endpoint shows address only, plus "port is on the Developer options screen" |
 | No network | The wireless card's endpoint row shows "No network" and the command block is hidden; the toggle still works (hotspot and VPN count as networks) |
 | Multiple addresses | Show the top-ranked one only: Wi-Fi first, then Hotspot, VPN last; never two ports |
 | Developer options re-enabled | USB and wireless return to their pre-off values; wireless may raise the trust dialog again because adbd restarts |
 | User changes settings in the Settings app | Values update live via the observer; no manual refresh |
+| User changes a restorable flag after Developer options was turned off | The stale restore snapshot is discarded instead of overwriting the newer choice |
+| Network changes while the card is visible | A connectivity callback re-reads the addresses; airplane mode empties the endpoint |
 | Airplane mode mid-session | Key stays `1`, endpoint empties, card states why |
 | Timed session active, Developer options changed manually | Cancel the session; keep the user's state |
 | Same timed tile tapped while active | End early and restore the pre-session state |
 | Opposite timed tile tapped while active | Switch direction and start a fresh countdown |
 | Reboot during a timed session | Restore the pre-session state on boot |
 | Force-stop during a timed session | On next app start: expired → restore, future → re-arm |
-| Timed alarm lost or late | Reconcile from the persisted deadline on app start; the countdown is a deadline, not a promise of exactness |
+| Timed alarm lost or late | Reconcile from the persisted deadline on app start or when the visible countdown reaches zero; the countdown is a deadline, not a promise of exactness |
+| Wireless auto-off deadline expired while the process was dead | Turn wireless debugging off on the next observation or boot; never start a new full duration |
 | Wireless auto-off armed | Pausing cancels it; restoring re-arms it from now |
 | Timed write fails | Snackbar / tile toast; no timer is armed, and the state stays where the settings database says |
 | Both timed tiles added | Same-tile and opposite-tile rules above; there is never more than one session |

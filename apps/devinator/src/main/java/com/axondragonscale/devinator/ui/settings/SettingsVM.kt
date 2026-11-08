@@ -1,12 +1,10 @@
 package com.axondragonscale.devinator.ui.settings
 
-import android.annotation.SuppressLint
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.commons.AppInfo
 import com.axondragonscale.commons.UIMode
-import com.axondragonscale.devinator.permission.SecureSettingsPermission
+import com.axondragonscale.devinator.permission.GrantRepository
 import com.axondragonscale.devinator.repository.AppPrefsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,16 +20,12 @@ import kotlinx.coroutines.launch
  */
 class SettingsVM(
     private val prefs: AppPrefsRepository,
-    context: Context,
+    private val grant: GrantRepository,
 ) : ViewModel() {
-
-    // Application context, not an activity: holding it cannot leak a screen.
-    @SuppressLint("StaticFieldLeak")
-    private val context: Context = context.applicationContext
 
     private val _uiState = MutableStateFlow(
         SettingsUiState(
-            permissionGranted = SecureSettingsPermission.isGranted(context),
+            permissionGranted = grant.isGranted(),
             versionName = AppInfo.versionName,
         ),
     )
@@ -56,7 +50,7 @@ class SettingsVM(
     }
 
     private fun refreshGrant() {
-        val granted = SecureSettingsPermission.isGranted(context)
+        val granted = grant.isGranted()
         _uiState.update { it.copy(permissionGranted = granted) }
     }
 }
@@ -64,7 +58,7 @@ class SettingsVM(
 data class SettingsUiState(
     val uiMode: UIMode = UIMode.DEFAULT,
     val dynamicColor: Boolean = false,
-    val permissionGranted: Boolean = true,
+    val permissionGranted: Boolean = false,
     val versionName: String = "",
 )
 

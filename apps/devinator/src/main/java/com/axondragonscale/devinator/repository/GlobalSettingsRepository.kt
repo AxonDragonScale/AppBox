@@ -49,10 +49,9 @@ class GlobalSettingsRepository(context: Context) {
     fun readFlag(key: String): Boolean =
         parseFlag(Settings.Global.getString(resolver, key))
 
-    /** Throws [SecurityException] when `WRITE_SECURE_SETTINGS` is missing. */
-    fun writeFlag(key: String, enabled: Boolean) {
+    /** Returns false when the provider rejected the write. Throws [SecurityException] without the grant. */
+    fun writeFlag(key: String, enabled: Boolean): Boolean =
         Settings.Global.putInt(resolver, key, if (enabled) 1 else 0)
-    }
 
     /**
      * The current flags, then again after any of the three keys changes. One observer covers all
