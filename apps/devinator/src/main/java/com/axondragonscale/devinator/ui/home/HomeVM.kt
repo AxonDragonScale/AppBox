@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.DurationOption
 import com.axondragonscale.devinator.model.TimedToggleSession
-import com.axondragonscale.devinator.model.WRITE_FAILED_MESSAGE
 import com.axondragonscale.devinator.model.WriteResult
+import com.axondragonscale.devinator.model.writeFailedMessage
 import com.axondragonscale.devinator.repository.DevSettingsRepository
 import com.axondragonscale.devinator.repository.TimedToggleRepository
 import kotlin.time.Instant
@@ -77,24 +77,27 @@ class HomeVM(
     }
 
     private fun setDeveloperOptions(enabled: Boolean) = viewModelScope.launch {
-        reportFailure(repository.setDeveloperOptions(enabled))
+        reportFailure(repository.setDeveloperOptions(enabled), "Developer options")
     }
 
     private fun setUsbDebugging(enabled: Boolean) = viewModelScope.launch {
-        reportFailure(repository.setUsbDebugging(enabled))
+        reportFailure(repository.setUsbDebugging(enabled), "USB debugging")
     }
 
     private fun setWirelessDebugging(enabled: Boolean) = viewModelScope.launch {
         if (!enabled) {
-            reportFailure(repository.setWirelessDebugging(false))
+            reportFailure(repository.setWirelessDebugging(false), "Wireless debugging")
             return@launch
         }
         pendingWireless.value = true
         try {
             when (val result = repository.setWirelessDebugging(true)) {
-                WriteResult.Failed -> reportFailure(result)
+                WriteResult.Failed -> reportFailure(result, "Wireless debugging")
                 WriteResult.AwaitingConsent ->
-                    uiEffectChannel.send(HomeUiEffect.ShowSnackbar("Wireless debugging not confirmed"))
+                    uiEffectChannel.send(
+                        HomeUiEffect.ShowSnackbar("Wireless debugging not confirmed. It's still off."),
+                    )
+
                 WriteResult.Ok -> Unit
             }
         } finally {
@@ -107,11 +110,11 @@ class HomeVM(
     }
 
     private fun startTimedToggle(target: Boolean) = viewModelScope.launch {
-        reportFailure(timedToggle.toggle(target))
+        reportFailure(timedToggle.toggle(target), "Developer options")
     }
 
     private fun endTimedToggle() = viewModelScope.launch {
-        reportFailure(timedToggle.endSession())
+        reportFailure(timedToggle.endSession(), "Developer options")
     }
 
     private fun selectTimedDuration(duration: DurationOption) = viewModelScope.launch {
@@ -123,9 +126,9 @@ class HomeVM(
         timedToggle.reconcileDeadline()
     }
 
-    private suspend fun reportFailure(result: WriteResult?) {
+    private suspend fun reportFailure(result: WriteResult?, setting: String) {
         if (result == WriteResult.Failed) {
-            uiEffectChannel.send(HomeUiEffect.ShowSnackbar(WRITE_FAILED_MESSAGE))
+            uiEffectChannel.send(HomeUiEffect.ShowSnackbar(writeFailedMessage(setting)))
         }
     }
 

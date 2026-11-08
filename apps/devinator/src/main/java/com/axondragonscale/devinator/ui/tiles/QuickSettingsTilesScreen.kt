@@ -12,13 +12,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +39,7 @@ import com.axondragonscale.devinator.tile.DevTile
 import com.axondragonscale.devinator.ui.components.BackTopBar
 import com.axondragonscale.devinator.ui.components.DevinatorCard
 import com.axondragonscale.devinator.ui.components.DevinatorDivider
+import com.axondragonscale.devinator.ui.components.DevinatorSnackbarHost
 import com.axondragonscale.devinator.ui.components.IconBadge
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
 import java.util.function.Consumer
@@ -89,7 +90,7 @@ private fun QuickSettingsTilesScreen(
     fun add(tile: DevTile) {
         // Before API 33 there is no public add API; the system editor is the only path.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            showError("Add this tile from the Quick Settings editor.")
+            showError("Open Quick Settings and add the tile from the edit screen.")
         } else {
             requestAddTile(context, tile, ::showError)
         }
@@ -97,7 +98,7 @@ private fun QuickSettingsTilesScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { DevinatorSnackbarHost(snackbarHostState) },
         topBar = { BackTopBar(title = "Quick Settings Tiles", onBack = onBack) },
     ) { contentPadding ->
         Column(
@@ -131,7 +132,7 @@ private fun QuickSettingsTilesScreen(
                 }
             }
             Text(
-                text = "New tiles land at the end — rearrange them in the Quick Settings editor.",
+                text = "New tiles land at the end. Drag them where you want in Quick Settings.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -184,9 +185,13 @@ private fun TileRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
+            .heightIn(min = 64.dp)
             // Tap and ripple own the whole row, padding included; the insets only place the content.
-            .clickable(onClick = onClick)
+            .clickable(
+                role = Role.Button,
+                onClickLabel = if (added) "Remove tile" else "Add tile",
+                onClick = onClick,
+            )
             .padding(vertical = 4.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

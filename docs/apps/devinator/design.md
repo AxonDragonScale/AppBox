@@ -40,7 +40,7 @@ stateDiagram-v2
 | `Home` | Developer options hero, USB and wireless cards, live values |
 | `Pending` | Wireless card header shows a spinner and "Confirm the system dialog" for up to ~3 s, then settles to whatever the key says |
 | `Connected` | The wireless card shows the top-ranked address, the `adb connect` command and auto-off |
-| Failure | Snackbar "Couldn't change this setting."; the switch stays wherever the settings database says |
+| Failure | Snackbar naming the switch that failed, e.g. "Couldn't change USB debugging."; the switch stays wherever the settings database says |
 
 **Developer options off** is not an error state even though the hero card turns red: red is the off
 signal (green = on), a state marker rather than a failed write. The USB and wireless cards stay
@@ -60,7 +60,7 @@ visible but disabled with the reason attached, because `adbd` cannot run without
 | Tap the Auto-off row | Menu: Off / 5 / 15 / 30 min. Default Off. The selected item is highlighted; the row's trailing value shows the current choice |
 | Tap **Pause for 5 min** (card or tile) | Developer options is on: writes off, arms the timed session, restores the pre-session state at expiry |
 | Tap **Resume for 5 min** (card or tile) | Developer options is off: writes on (replaying the last ADB snapshot), arms the session, turns off at expiry |
-| Tap **Resume now** / **Pause now** (card) or the active timed tile | Ends the session early and restores the pre-session state |
+| Tap **Turn on now** / **Turn off now** (card) or the active timed tile | Ends the session early and restores the pre-session state |
 | Tap the opposite timed tile while a session is active | Switches direction: cancels the old timer, starts a fresh one from the current state |
 | Tap the timed card's duration control | Menu: 5 / 15 / 30 min, default 5. Changing it during a session restarts the countdown |
 | Tap the tiles card on Home | Opens the Quick Settings Tiles page — a navigation, not an action |
@@ -132,12 +132,12 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
 
 | Case | Behaviour |
 |---|---|
-| System dialog declined | No error state. Toggle returns to off; `Pending` fades; neutral snackbar "Wireless debugging not confirmed" |
-| Write throws (OEM restriction) | Snackbar "Couldn't change this setting."; the switch stays where the database says |
+| System dialog declined | No error state. Toggle returns to off; `Pending` fades; neutral snackbar "Wireless debugging not confirmed. It's still off." |
+| Write throws (OEM restriction) | Snackbar naming the switch, e.g. "Couldn't change USB debugging."; the switch stays where the database says |
 | Permission revoked while running | Every resume re-checks the grant; Setup replaces the current screen and the back stack |
 | Permission revoked while the app is dead | The next launch starts on Setup; Home is never shown without the grant |
-| Port discovery finds nothing | Endpoint shows address only, plus "port is on the Developer options screen" |
-| No network | The wireless card's endpoint row shows "No network" and the command block is hidden; the toggle still works (hotspot and VPN count as networks) |
+| Port discovery finds nothing | Endpoint shows address only, plus "Port not found. It's on Developer options › Wireless debugging." |
+| No network | The wireless card's endpoint row shows "No network, so there's no address to show." and the command block is hidden; the toggle still works (hotspot and VPN count as networks) |
 | Multiple addresses | Show the top-ranked one only: Wi-Fi first, then Hotspot, VPN last; never two ports |
 | Developer options re-enabled | USB and wireless return to their pre-off values; wireless may raise the trust dialog again because adbd restarts |
 | User changes settings in the Settings app | Values update live via the observer; no manual refresh |
@@ -160,8 +160,13 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
 - Toggle captions name the transport, not the API: "ADB over USB", "ADB over Wi-Fi or hotspot".
   Developer options gets the dependency instead, because that is what the row is for: "Master switch
   for ADB".
-- An endpoint line names the network the **computer** must be on, not the phone's interface: a reader
+- An endpoint line names the network the **computer** must be on, relative to this device: the pill
+  names the network, the caption says it must be the same one the phone is on. A reader
   who types the hotspot address from a laptop on the home Wi-Fi gets a timeout, not a hint.
+- A failed write names the row it belongs to. Four identical switches and seven tweak rows cannot be
+  told apart by "this setting", and the message is the user's only cue about what to retry.
+- A setup step that cannot work without the phone being plugged in says so, and a command that is
+  silent on success says that too.
 - The permission is explained once, on setup: one line for what it is for, one for why granting it
   is safe — no scare wording, no legalese.
 - Never surface a raw exception, a stack trace, or an internal key name in the UI. Key names belong

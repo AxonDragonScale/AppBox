@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.devinator.model.Tweak
 import com.axondragonscale.devinator.model.WriteResult
-import com.axondragonscale.devinator.model.WRITE_FAILED_MESSAGE
+import com.axondragonscale.devinator.model.writeFailedMessage
 import com.axondragonscale.devinator.repository.DevTweaksRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -40,17 +40,34 @@ class TweaksVM(
     fun onEvent(event: TweaksUiEvent) {
         viewModelScope.launch {
             when (event) {
-                is TweaksUiEvent.SetToggle -> report(repository.setToggle(event.tweak, event.enabled))
-                is TweaksUiEvent.Select -> report(repository.select(event.tweak, event.value))
-                TweaksUiEvent.Reset -> report(repository.reset())
+                is TweaksUiEvent.SetToggle ->
+                    report(repository.setToggle(event.tweak, event.enabled), event.tweak.title)
+
+                is TweaksUiEvent.Select ->
+                    report(repository.select(event.tweak, event.value), event.tweak.title)
+
+                TweaksUiEvent.Reset -> reportReset(repository.reset())
             }
         }
     }
 
-    private suspend fun report(result: WriteResult) {
+    private suspend fun report(result: WriteResult, setting: String) {
         if (result is WriteResult.Failed) {
-            uiEffectChannel.send(TweaksUiEffect.ShowSnackbar(WRITE_FAILED_MESSAGE))
+            uiEffectChannel.send(TweaksUiEffect.ShowSnackbar(writeFailedMessage(setting)))
         }
+    }
+
+    /** Reset writes every row, so success is the only outcome worth a word and failure may be partial. */
+    private suspend fun reportReset(result: WriteResult) {
+        uiEffectChannel.send(
+            TweaksUiEffect.ShowSnackbar(
+                if (result is WriteResult.Failed) {
+                    "Couldn't reset every tweak."
+                } else {
+                    "All tweaks reset to their defaults."
+                },
+            ),
+        )
     }
 }
 

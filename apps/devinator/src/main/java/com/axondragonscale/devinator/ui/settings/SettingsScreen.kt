@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -135,7 +136,7 @@ private fun SettingsScreen(
                     title = "Write secure settings",
                     trailing = {
                         StatusChip(
-                            label = if (uiState.permissionGranted) "Granted" else "Missing",
+                            label = if (uiState.permissionGranted) "Granted" else "Not granted",
                             on = uiState.permissionGranted,
                         )
                     },
@@ -187,7 +188,7 @@ private fun SettingsRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .heightIn(min = 56.dp)
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

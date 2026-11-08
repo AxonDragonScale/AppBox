@@ -235,7 +235,7 @@ private fun NotGrantedCard(modifier: Modifier = Modifier) {
                 tint = MaterialTheme.colorScheme.onErrorContainer,
             )
             Text(
-                text = "Permission not granted yet.",
+                text = "Permission not granted yet. Re-run the command above.",
                 style = ActionTextStyle,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
@@ -256,6 +256,7 @@ private fun SetupSteps(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             SetupStep(number = 1, title = "Enable USB debugging") {
+                StepCaption(text = "Plug the phone in and tap Allow on the prompt.")
                 StepCaption(text = "Settings → System → Developer options → USB debugging")
                 Box(
                     modifier = Modifier
@@ -275,7 +276,7 @@ private fun SetupSteps(
             DevinatorDivider(inset = false)
             SetupStep(number = 2, title = "Run this command") {
                 CodeBlock(command = grantCommand, onCopy = onCopyCommand)
-                StepCaption(text = "Paste it in a terminal on the computer that has adb installed.")
+                StepCaption(text = "Paste it in a terminal on the computer that has adb installed. It prints nothing when it works.")
             }
             DevinatorDivider(inset = false)
             SetupStep(number = 3, title = "Come back here") {

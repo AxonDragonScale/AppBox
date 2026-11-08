@@ -18,6 +18,12 @@ import androidx.compose.ui.unit.dp
 
 /** Created by Ronak on 08/11/26 */
 
+/**
+ * A rounded container for a leading icon. The default tint is `onSurfaceVariant`: the badge is
+ * illustration for the label beside it, so it must never compete with the row's title. Call sites
+ * that carry meaning in colour (the hero card's state) pass their own.
+ */
+
 @Composable
 fun IconBadge(
     modifier: Modifier = Modifier,
@@ -60,7 +66,7 @@ fun IconBadge(
             painter = painter,
             contentDescription = null,
             modifier = Modifier.size(iconSize),
-            tint = contentColor ?: MaterialTheme.colorScheme.onSurface,
+            tint = contentColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

@@ -29,22 +29,22 @@ val TweakCatalog: List<Tweak> = listOf(
     Tweak.Scale(
         key = Settings.Global.WINDOW_ANIMATION_SCALE,
         group = TweakGroup.ANIMATION,
-        title = "Window animation",
+        title = "Window animation scale",
         caption = "Windows opening and closing",
         icon = TweakIcon.ANIMATION,
     ),
     Tweak.Scale(
         key = Settings.Global.TRANSITION_ANIMATION_SCALE,
         group = TweakGroup.ANIMATION,
-        title = "Transition animation",
-        caption = "Moving between activities",
+        title = "Transition animation scale",
+        caption = "Moving between screens",
         icon = TweakIcon.ANIMATION,
     ),
     Tweak.Scale(
         key = Settings.Global.ANIMATOR_DURATION_SCALE,
         group = TweakGroup.ANIMATION,
-        title = "Animator animation",
-        caption = "Animation inside app screens",
+        title = "Animator duration scale",
+        caption = "Animation speed inside apps",
         icon = TweakIcon.ANIMATION,
     ),
     Tweak.Toggle(
@@ -58,7 +58,7 @@ val TweakCatalog: List<Tweak> = listOf(
         key = KEY_BACKGROUND_PROCESS_LIMIT,
         group = TweakGroup.BEHAVIOUR,
         title = "Background processes",
-        caption = "How many apps may stay alive",
+        caption = "How many apps can stay running",
         icon = TweakIcon.PROCESSES,
     ),
     Tweak.Toggle(

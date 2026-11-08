@@ -58,7 +58,7 @@ private fun PermissionScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { BackTopBar(title = "Permission", onBack = onBack) },
+        topBar = { BackTopBar(title = "Grant or revoke", onBack = onBack) },
     ) { contentPadding ->
         Column(
             modifier = Modifier
@@ -77,7 +77,7 @@ private fun PermissionScreen(
 
             SectionTitle(text = "Grant")
             Text(
-                text = "Run this on a computer that has adb installed:",
+                text = "Plug the phone in, then run this on the computer that has adb installed:",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -93,7 +93,7 @@ private fun PermissionScreen(
 
             SectionTitle(text = "Revoke")
             Text(
-                text = "To take the permission back — before uninstalling, for example:",
+                text = "With the phone plugged in, run this to take the permission back:",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

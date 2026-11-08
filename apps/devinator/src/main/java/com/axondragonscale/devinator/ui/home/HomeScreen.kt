@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -35,7 +36,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,6 +69,7 @@ import com.axondragonscale.devinator.ui.Route
 import com.axondragonscale.devinator.ui.components.CodeBlock
 import com.axondragonscale.devinator.ui.components.DevinatorCard
 import com.axondragonscale.devinator.ui.components.DevinatorDivider
+import com.axondragonscale.devinator.ui.components.DevinatorSnackbarHost
 import com.axondragonscale.devinator.ui.components.DevinatorSwitch
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
 import com.axondragonscale.devinator.ui.components.DurationChip
@@ -91,6 +92,9 @@ import org.koin.androidx.compose.koinViewModel
 
 private const val PREVIEW_HOST = "192.168.1.42"
 private const val PREVIEW_PORT = 37129
+
+/** The AutoOffRow's 18 dp icon plus its 12 dp gap: the caption lines up with the row's label. */
+private val AUTO_OFF_CAPTION_INSET = 30.dp
 
 @Composable
 fun HomeScreen(
@@ -151,14 +155,23 @@ private fun HomeScreen(
 ) {
     val copy = rememberCopyToClipboard()
     val command = uiState.endpoint?.command
+    val address = uiState.endpoint?.let { endpoint ->
+        endpoint.port?.let { "${endpoint.host}:$it" } ?: endpoint.host
+    }
 
     fun copyCommand() {
         command?.let { copy("ADB command", it) }
     }
 
+    // The row shows an address, so that is what its copy glyph copies; the command block below
+    // copies the command it prints.
+    fun copyAddress() {
+        address?.let { copy("ADB address", it) }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { DevinatorSnackbarHost(snackbarHostState) },
         topBar = {
             DevinatorTopBar(
                 actions = {
@@ -208,7 +221,8 @@ private fun HomeScreen(
             WirelessDebuggingCard(
                 uiState = uiState,
                 onToggle = { onEvent(HomeUiEvent.SetWirelessDebugging(it)) },
-                onCopy = ::copyCommand,
+                onCopyAddress = ::copyAddress,
+                onCopyCommand = ::copyCommand,
                 onSelectAutoOff = { onEvent(HomeUiEvent.SelectAutoOff(it)) },
                 onExpired = { onEvent(HomeUiEvent.ReconcileDeadlines) },
             )
@@ -322,9 +336,9 @@ private fun TimedToggleCard(
                     if (session == null) {
                         Text(
                             text = if (developerOptions) {
-                                "Off for a few minutes, then back on."
+                                "Off for ${duration.label}, then back on."
                             } else {
-                                "On for a few minutes, then back off."
+                                "On for ${duration.label}, then back off."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -369,8 +383,8 @@ private fun TimedToggleCard(
             ) {
                 Text(
                     text = when {
-                        session != null && session.target -> "Pause now"
-                        session != null -> "Resume now"
+                        session != null && session.target -> "Turn off now"
+                        session != null -> "Turn on now"
                         developerOptions -> "Pause for ${duration.label}"
                         else -> "Resume for ${duration.label}"
                     },
@@ -393,7 +407,7 @@ private fun TimedDurationControl(
             modifier = Modifier
                 .height(48.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable { expanded = true },
+                .clickable(role = Role.DropdownList) { expanded = true },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DurationChip(label = duration.label)
@@ -434,7 +448,8 @@ private fun WirelessDebuggingCard(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
     onToggle: (Boolean) -> Unit,
-    onCopy: () -> Unit,
+    onCopyAddress: () -> Unit,
+    onCopyCommand: () -> Unit,
     onSelectAutoOff: (DurationOption) -> Unit,
     onExpired: () -> Unit,
 ) {
@@ -467,7 +482,8 @@ private fun WirelessDebuggingCard(
             if (showDetails) {
                 EndpointBlock(
                     endpoint = uiState.endpoint,
-                    onCopy = onCopy,
+                    onCopyAddress = onCopyAddress,
+                    onCopyCommand = onCopyCommand,
                 )
                 DevinatorDivider(inset = false)
                 AutoOffBlock(
@@ -502,7 +518,7 @@ private fun PagesCard(
         PageRow(
             icon = Icons.Filled.GridView,
             title = "Quick Settings Tiles",
-            caption = "Add tiles to Quick Settings",
+            caption = "Choose which tiles appear in the shade.",
             onClick = onOpenTiles,
         )
     }
@@ -519,8 +535,8 @@ private fun PageRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .clickable(onClick = onClick)
+            .heightIn(min = 64.dp)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -568,7 +584,7 @@ private fun SwitchRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .heightIn(min = 56.dp)
             .alpha(if (enabled) 1f else 0.38f)
             .then(
                 if (trailing == null) {
@@ -622,7 +638,8 @@ private fun SwitchRow(
 private fun EndpointBlock(
     modifier: Modifier = Modifier,
     endpoint: AdbEndpoint?,
-    onCopy: () -> Unit,
+    onCopyAddress: () -> Unit,
+    onCopyCommand: () -> Unit,
 ) {
     if (endpoint == null || endpoint.host.isBlank()) {
         Row(
@@ -633,7 +650,7 @@ private fun EndpointBlock(
                 .padding(12.dp),
         ) {
             Text(
-                text = "No network",
+                text = "No network, so there's no address to show.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -651,7 +668,7 @@ private fun EndpointBlock(
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .then(
                 if (command != null) {
-                    Modifier.clickable(onClickLabel = "Copy adb command", onClick = onCopy)
+                    Modifier.clickable(onClickLabel = "Copy address", onClick = onCopyAddress)
                 } else {
                     Modifier
                 },
@@ -670,7 +687,7 @@ private fun EndpointBlock(
             ) {
                 NetworkPill(label = endpoint.kind.label())
                 Text(
-                    text = "Must be on this network",
+                    text = "Must be on the same network as this device",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -692,10 +709,10 @@ private fun EndpointBlock(
     }
 
     if (command != null) {
-        CodeBlock(command = command, onCopy = onCopy)
+        CodeBlock(command = command, onCopy = onCopyCommand)
     } else {
         Text(
-            text = "Port is on the Developer options screen",
+            text = "Port not found. It's on Developer options › Wireless debugging.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -709,7 +726,7 @@ private fun NetworkPill(
 ) {
     Row(
         modifier = modifier
-            .height(20.dp)
+            .heightIn(min = 20.dp)
             .clip(RoundedCornerShape(999.dp))
             .background(MaterialTheme.colorScheme.outline)
             .padding(horizontal = 8.dp),
@@ -743,7 +760,11 @@ private fun AutoOffBlock(
                 .fillMaxWidth()
                 .height(48.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable { expanded = true },
+                .clickable(
+                    role = Role.DropdownList,
+                    onClickLabel = "Auto-off duration",
+                    onClick = { expanded = true },
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -774,14 +795,17 @@ private fun AutoOffBlock(
                 )
             }
         }
+        // The caption belongs to the label, not to the row's icon: it lines up with "Auto-off".
         if (remaining == null) {
             Text(
-                text = "Stays on until you turn it off.",
+                text = "Wireless debugging stays on until you turn it off.",
+                modifier = Modifier.padding(start = AUTO_OFF_CAPTION_INSET),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
             Row(
+                modifier = Modifier.padding(start = AUTO_OFF_CAPTION_INSET),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

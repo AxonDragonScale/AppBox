@@ -42,7 +42,7 @@ abstract class TimedDevOptionsTileService : ListeningTileService() {
             when (result) {
                 WriteResult.Failed -> toast(WRITE_FAILED_MESSAGE)
                 null -> toast(
-                    if (target) "Developer options is already on." else "Developer options is already off.",
+                    if (target) "Already on, no timer started." else "Already off, no timer started.",
                 )
 
                 else -> Unit

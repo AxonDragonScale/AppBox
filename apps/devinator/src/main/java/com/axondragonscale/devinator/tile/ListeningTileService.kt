@@ -12,7 +12,7 @@ import org.koin.core.component.KoinComponent
 
 /** Created by Ronak on 08/11/26 */
 
-internal const val GRANT_ACCESS_LABEL = "Grant access"
+internal const val GRANT_ACCESS_LABEL = "Needs permission"
 internal const val DEV_OPTIONS_OFF_LABEL = "Dev options off"
 
 /** The lifecycle every tile shares: render once a second while the shade holds it. */

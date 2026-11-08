@@ -22,7 +22,7 @@ keys and permissions live in [context.md](./context.md). Copy below is literal.
 | `bg` | `#0E1013` | `#F7F9FB` |
 | `surface` (card) | `#171A1F` | `#FFFFFF` |
 | `surfaceHigh` (inset rows, code) | `#20242B` | `#EEF1F5` |
-| `outline` (dividers, muted icons) | `#313740` | `#D3D9E1` |
+| `outline` (dividers, chip borders, network pill) | `#313740` | `#D3D9E1` |
 | `text` | `#E6E9EE` | `#131720` |
 | `textMuted` | `#98A0AC` | `#5A6472` |
 | `primary` / `onPrimary` | `#5FD3A6` / `#05231A` | `#0E6E52` / `#FFFFFF` |
@@ -82,7 +82,9 @@ Define these once and reuse by name in the trees below.
   close glyph.
 - **IconBadge** — `surfaceHigh`, centred icon. Hero size 56×56, `cornerRadius 16`, 28 icon, fill
   `primaryContainer` with a `primary` icon (off state: `errorSurfaceHigh` with an `error` icon);
-  row size 40×40, `cornerRadius 12`, 20 icon.
+  row size 40×40, `cornerRadius 12`, 20 icon in `textMuted`. The badge is illustration for the label
+  beside it, so a row icon never takes `text` or a colour: the title stays the loudest thing in the
+  row, and only the hero badge carries state.
 - **StepRow** — row, `gap 12`: 24 marker circle (`surfaceHigh`, 12/600 `primary` digit), text column
   `gap 6` holding title 16/600, caption 12 muted and the optional 48-high text action
   (13/600 `primary`, text top-aligned so the visual position matches the drawing).
@@ -96,16 +98,18 @@ Define these once and reuse by name in the trees below.
   the fill is `primaryContainer` with dot and label both `primary`; the off state is
   `errorSurfaceHigh` with both `error`.
 - **EndpointRow** — `fill_container`, `padding 12`, `cornerRadius 12`, `surfaceHigh`, row `gap 12`
-  centred: info column `gap 4` (meta row `gap 6`: network pill + “Must be on this network” 12
+  centred: info column `gap 4` (meta row `gap 6`: network pill + “Must be on the same network as this
+  device” 12
   `textMuted`; then the mono 18 address), plus a 16 copy glyph in `textMuted`. One row only; the
   glyph copies `adb connect <ip>:<port>`.
 - **AutoOffRow** — `fill_container`, `height 48`, `gap 12`, centred: `timer` 18 `textMuted`, label
   14/500 `fill_container`, then a trailing **DurationChip** (36) centred in the row. Opens the duration
-  menu; it is a control, not a readout. It is a standard Material `DropdownMenu`: content-width,
+  menu; it is a control, not a readout. Its caption is inset 30 (the row's 18 icon + 12 gap) so it
+  sits under the label, not under the icon. It is a standard Material `DropdownMenu`: content-width,
   anchored to the trailing control, with a 16 dp container and the menu's 8 dp content inset applied
   horizontally as well; the 8 dp selected row uses `primaryContainer` with a `primary` check, so
   16 − 8 = 8 keeps the corners concentric. `Off` turns the chip's value and caret `error`
-  and the caption reads “Stays on until you turn it off.”; an armed timer replaces the caption with
+  and the caption reads “Wireless debugging stays on until you turn it off.”; an armed timer replaces the caption with
   “Wireless debugging turns off in 12:04.”, the time in `primary` 600.
 - **DurationChip** — the collapsed duration picker, used twice: at the timed-toggle header and as the
   AutoOffRow's trailing control. `height 36`, `padding horizontal 12`, `gap 6`, `cornerRadius 12`,
@@ -144,16 +148,16 @@ Screen 412×915 · fill bg · vertical
    │  └─ SwitchRow  title "USB debugging"  caption "ADB over USB"  icon usb
    ├─ Card · wireless debugging · gap 12
    │  ├─ SwitchRow  title "Wireless debugging"  caption "ADB over Wi-Fi or hotspot"  icon wifi_tethering
-   │  ├─ EndpointRow   pill "Wi-Fi" · "Must be on this network" · "192.168.1.42:37129" mono 18 · copy 16
+   │  ├─ EndpointRow   pill "Wi-Fi" · "Must be on the same network as this device" · "192.168.1.42:37129" mono 18 · copy 16
    │  ├─ CodeBlock   "adb connect 192.168.1.42:37129" · copy 16
    │  ├─ Divider
    │  └─ column · gap 4
    │     ├─ AutoOffRow   timer 18 · “Auto-off” 14/500 · DurationChip “Off”
-   │     └─ "Stays on until you turn it off." 12 textMuted
+   │     └─ "Wireless debugging stays on until you turn it off." 12 textMuted
    └─ Card · pages   (normal flow — never pinned to the bottom)
       ├─ PageRow   h 64 · IconBadge tune · "Tweaks" 16/600 · "Animation and app behaviour" 12 textMuted · chevron_right 20
       ├─ Divider
-      └─ PageRow   h 64 · IconBadge grid_view · "Quick Settings Tiles" 16/600 · "Add tiles to Quick Settings" 12 textMuted · chevron_right 20
+      └─ PageRow   h 64 · IconBadge grid_view · "Quick Settings Tiles" 16/600 · "Choose which tiles appear in the shade." 12 textMuted · chevron_right 20
 ```
 
 **Pages card.** The two pages Home can reach share one card of 64 dp rows. A sixth 80 dp card does not fit: the last card ends at `y=763` of `851`, and one more card plus its gap needs 92. The rows use the Tiles page's row anatomy rather than Home's card anatomy, and the whole row is the target.
@@ -162,10 +166,10 @@ Screen 412×915 · fill bg · vertical
 
 | State | Caption | Button |
 |---|---|---|
-| Developer options on, no timer | "Off for a few minutes, then back on." | "Pause for 5 min" |
-| Developer options off, no timer | "On for a few minutes, then back off." | "Resume for 5 min" |
-| Pause timer active | "Turns back on in 4:32." — time in `primary` 600 | "Resume now" |
-| Resume timer active | "Turns back off in 4:32." — time in `primary` 600 | "Pause now" |
+| Developer options on, no timer | "Off for 5 min, then back on." | "Pause for 5 min" |
+| Developer options off, no timer | "On for 5 min, then back off." | "Resume for 5 min" |
+| Pause timer active | "Turns back on in 4:32." — time in `primary` 600 | "Turn on now" |
+| Resume timer active | "Turns back off in 4:32." — time in `primary` 600 | "Turn off now" |
 
 The duration control opens a content-width `5 / 15 / 30 min` menu, default 5; the 16 dp container, 8 dp all-round inset and 8 dp selected row match the auto-off menu, with the selected row in `primaryContainer` and a `primary` check. The button is the primary 52-high button; the card never gets a second action.
 
@@ -193,15 +197,15 @@ reading, the command for the terminal. Android 13+ draws its own clipboard confi
 | Developer options off | HeroCard becomes `errorContainer` with a 1 px `errorOutline` border; the badge, status chip and switch track become `errorSurfaceHigh`; the badge icon, dot, label and switch thumb become `error` (the thumb's close glyph is `errorContainer`). The title stays `text` and the caption stays `textMuted`. USB and Wireless cards collapse to one 38%-opacity row each, captions "Turn on Developer options first"; the endpoint, command and auto-off are hidden. This is the only place red appears — a state signal, not a failed write. Turning it back on restores the USB and wireless values captured when it went off |
 | Wireless off | The wireless card is a single switch row; endpoint, command, divider and auto-off are hidden |
 | Wireless pending consent | Wireless header switch replaced by a 20 spinner; caption "Confirm the system dialog"; endpoint, command and auto-off hidden |
-| Wireless on, port unknown | Endpoint address shown without a port; the note becomes "Port is on the Developer options screen" |
-| No network | Endpoint row shows "No network" 14 `textMuted`; pill and copy glyph hidden; command block hidden; auto-off stays |
+| Wireless on, port unknown | Endpoint address shown without a port; the note becomes "Port not found. It's on Developer options › Wireless debugging." |
+| No network | Endpoint row shows "No network, so there's no address to show." 14 `textMuted`; pill and copy glyph hidden; command block hidden; auto-off stays |
 | Multiple networks | Only the top-ranked address is shown; the pill names its network |
-| Auto-off is `Off` | AutoOffRow value reads "Off" in `textMuted`; caption reads "Stays on until you turn it off." |
+| Auto-off is `Off` | AutoOffRow value reads "Off" in `textMuted`; caption reads "Wireless debugging stays on until you turn it off." |
 | Auto-off armed | Value shows the choice ("5 min"…); caption becomes "Wireless debugging turns off in 12:04." with the time in `primary` 600 |
-| Timed pause active | Developer options is off and USB/wireless are disabled as in the off state; the timed card caption reads "Turns back on in 4:32." and the button reads "Resume now" |
-| Timed resume active | Developer options is on; USB and wireless may be off (the restored snapshot), shown as enabled switch rows; the timed card caption reads "Turns back off in 4:32." and the button reads "Pause now" |
+| Timed pause active | Developer options is off and USB/wireless are disabled as in the off state; the timed card caption reads "Turns back on in 4:32." and the button reads "Turn on now" |
+| Timed resume active | Developer options is on; USB and wireless may be off (the restored snapshot), shown as enabled switch rows; the timed card caption reads "Turns back off in 4:32." and the button reads "Turn off now" |
 | Duration menu open | A standard content-width `surfaceHigh` DropdownMenu under the duration control (148 wide in the design frame): 5 / 15 / 30 min; 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a check |
-| Write failed | Snackbar "Couldn't change this setting."; the switch stays where the settings database says |
+| Write failed | Snackbar naming the switch, e.g. "Couldn't change USB debugging."; the switch stays where the settings database says |
 
 The pages card is identical in every Home state: it is a navigation, not a control, so the
 Developer-options-off and timed screens show it unchanged.
@@ -217,7 +221,7 @@ column · padding 16
 ├─ GroupLabel "Animation"   13/600 text · 1 px outline rule filling the rest of the 380 row
 ├─ gap 8
 ├─ Card · gap 0, rows 60 high, Divider between them
-│  ├─ TweakRow  badge 40 animation · "Window animation" 15/600 · "Windows opening and closing" 12 textMuted · chip "1×"
+│  ├─ TweakRow  badge 40 animation · "Window animation scale" 15/600 · "Windows opening and closing" 12 textMuted · chip "1×"
 │  ├─ Divider
 │  ├─ TweakRow  … · chip "0.5×"
 │  ├─ Divider
@@ -240,7 +244,7 @@ turns both `error`; the process limit prints `Standard` for `-1`.
 
 | Group | Rows | Control |
 |---|---|---|
-| Animation | Window / Transition / Animator animation | chip: Off, 0.5×, 1×, 1.5×, 2×, 5×, 10×; stock 1× |
+| Animation | Window animation scale / Transition animation scale / Animator duration scale | chip: Off, 0.5×, 1×, 1.5×, 2×, 5×, 10×; stock 1× |
 | Behaviour | Don't keep activities, Background processes, Show all ANRs, Stay awake while charging | switch, chip (`Standard`, 0–4), switch, switch |
 
 **Nothing here needs the input overlays.** Show taps, Pointer location and Layout bounds are not on
@@ -263,7 +267,7 @@ off, so zeroing them would be a surprise.
 | State | Change to the tree above |
 |---|---|
 | Value menu open | A standard content-width `surfaceHigh` DropdownMenu under the chip: 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a `primary` check |
-| Write failed | Snackbar "Couldn't change this setting."; the row keeps the database value |
+| Write failed | Snackbar naming the row, e.g. "Couldn't change Window animation scale."; the row keeps the database value |
 | A key the OEM ignores | The row shows what the database reports. There is no optimistic flip to unwind |
 
 ## Setup
@@ -283,13 +287,15 @@ Screen 412×915 · fill bg · vertical
    ├─ Card · gap 16
    │  ├─ Step 1 · row gap 12
    │  │  ├─ step marker "1" 12/600 primary, 24 circle surfaceHigh
-   │  │  └─ column gap 6: "Enable USB debugging" 16/600 · "Settings → System → Developer options →
-   │  │     USB debugging" 12 textMuted · [text action "Open Developer options" 48 high, 13/600 primary]
+   │  │  └─ column gap 6: "Enable USB debugging" 16/600 · "Plug the phone in and tap Allow on the
+   │  │     prompt." 12 textMuted · "Settings → System → Developer options → USB debugging" 12 textMuted
+   │  │     · [text action "Open Developer options" 48 high, 13/600 primary]
    │  ├─ Divider
    │  ├─ Step 2 · row gap 12
    │  │  └─ column gap 6: "Run this command" 16/600 · CodeBlock mono
    │  │     "adb shell pm grant com.axondragonscale.devinator android.permission.WRITE_SECURE_SETTINGS"
-   │  │     · "Paste it in a terminal on the computer that has adb installed." 12 textMuted
+   │  │     · "Paste it in a terminal on the computer that has adb installed. It prints nothing when it
+   │  │        works." 12 textMuted
    │  ├─ Divider
    │  └─ Step 3 · row gap 12
    │     └─ column gap 6: "Come back here" 16/600 · "Devinator checks automatically when you return."
@@ -300,7 +306,7 @@ Screen 412×915 · fill bg · vertical
 ```
 
 Setup states: after a failed check, show an ErrorCard above the button reading "Permission not
- granted yet." No spinner state — the check is instant.
+ granted yet. Re-run the command above." No spinner state — the check is instant.
 
 The command text is composed from `context.packageName` at runtime, so a debug install reads
 `adb shell pm grant com.axondragonscale.devinator.debug …`. Design against the release name; the
@@ -344,15 +350,15 @@ command can run from inside the app: this page is reference, which is why it is 
 sheet. Each block copies its own command.
 
 ```
-TopBar h64: arrow_back + "Permission"
+TopBar h64: arrow_back + "Grant or revoke"
 column · padding 16 · gap 12
 ├─ "Devinator needs the Write Secure Settings permission to change Developer options." 14 text
 ├─ "Grant" 16/600
-├─ "Run this on a computer that has adb installed:" 12 textMuted
+├─ "Plug the phone in, then run this on the computer that has adb installed:" 12 textMuted
 ├─ CodeBlock · mono 12 · copy 16
 ├─ Divider · full content width, 60% outline
 ├─ "Revoke" 16/600
-├─ "To take the permission back — before uninstalling, for example:" 12 textMuted
+├─ "With the phone plugged in, run this to take the permission back:" 12 textMuted
 ├─ CodeBlock · mono 12 · copy 16
 └─ "The grant survives reboots and app updates. Revoking it leaves Devinator unable to change
    anything until it is granted again." 12 textMuted
@@ -370,8 +376,8 @@ trailing value always mirrors the current choice, including `Off` — the contro
 control, not a readout. The explanatory line is not in the menu; the row's caption carries it
 ("Wireless debugging turns off in 12:04.") while a timer is armed.
 
-**Snackbars** — "Opened Developer options" · "Wireless debugging not confirmed" (neutral) ·
-"Couldn't change this setting." (failure). One line, `cornerRadius 12`; no Undo action here. There is
+**Snackbars** — "Wireless debugging not confirmed. It's still off." (neutral) ·
+"Couldn't change <setting>." (failure, naming the row). One line, `cornerRadius 12`; no Undo action here. There is
 no confirmation dialog for any toggle.
 
 ## Quick Settings Tiles
@@ -383,7 +389,7 @@ TopBar h64: arrow_back + "Quick Settings Tiles"
 column · padding 16 · gap 12
 ├─ "Choose which Devinator tiles appear in the shade." 12 textMuted
 ├─ Card · gap 0 · no padding — rows run edge to edge
-│  ├─ TileRow · title "Developer options"  caption "Master switch for ADB"  icon developer_mode
+│  ├─ TileRow · title "Dev options"  caption "Master switch for ADB"  icon developer_mode
 │  ├─ Divider · inset 16 both sides
 │  ├─ TileRow · title "Pause Dev options"  caption "Off for 5 min, then back on."  icon timer_pause
 │  ├─ Divider · inset 16 both sides
@@ -392,7 +398,7 @@ column · padding 16 · gap 12
 │  ├─ TileRow · title "USB debugging"  caption "ADB over USB"  icon usb
 │  ├─ Divider · inset 16 both sides
 │  └─ TileRow · title "Wireless debugging"  caption "ADB over Wi-Fi or hotspot"  icon wifi_tethering
-└─ "New tiles land at the end — rearrange them in the Quick Settings editor." 12 textMuted
+└─ "New tiles land at the end. Drag them where you want in Quick Settings." 12 textMuted
 ```
 
 **Timed rows follow the setting.** The Pause and Resume captions use the current timed-toggle duration, so a 15-minute choice reads "Off for 15 min, then back on."
@@ -451,7 +457,7 @@ beside the line at 12 `textMuted`. Frames keep 160 between them so a label fits 
 | 10 Home · timed resume | 09 Home · timed pause | `Pause` tile — switches direction |
 | 10 Home · timed resume | 11 Home · timed duration menu | duration control |
 
-**Timed toggle strip.** 09–11 sit in a separate strip below the main flow, under the `TIMED TOGGLE` label. The strip caption names the entry points that are not drawn as cross-row arrows: 03 `Pause for 5 min` → 09, and 04 `Resume for 5 min` → 10. 09 and 10 return to 03 and 04 when the timer ends or `Resume now` / `Pause now` is tapped; those returns are named in the card copy, not drawn as cross-row arrows.
+**Timed toggle strip.** 09–11 sit in a separate strip below the main flow, under the `TIMED TOGGLE` label. The strip caption names the entry points that are not drawn as cross-row arrows: 03 `Pause for 5 min` → 09, and 04 `Resume for 5 min` → 10. 09 and 10 return to 03 and 04 when the timer ends or `Turn on now` / `Turn off now` is tapped; those returns are named in the card copy, not drawn as cross-row arrows.
 
 `Open Developer options` leaves the app for Android's own screen, so it has no target frame.
 
@@ -466,8 +472,8 @@ One file, dark frames (the light palette is the same layout and ships in code):
 5. Settings
 6. Quick Settings Tiles — the page, one tile already added (mixed `Remove` / `Add` rows)
 7. Permission — grant and revoke commands, each with a copy control
-8. Home — timed pause active (Developer options off, countdown, `Resume now`)
-9. Home — timed resume active (Developer options on, USB/wireless off, `Pause now`)
+8. Home — timed pause active (Developer options off, countdown, `Turn on now`)
+9. Home — timed resume active (Developer options on, USB/wireless off, `Turn off now`)
 10. Home — duration menu open (5 / 15 / 30 min)
 
 The Quick Settings tiles themselves are specified below but have no frame: the system draws them.

@@ -32,3 +32,9 @@ sealed interface WriteResult {
 }
 
 const val WRITE_FAILED_MESSAGE = "Couldn't change this setting."
+
+/**
+ * A failure that names the row it belongs to. A screen with four identical switches, or a list of
+ * seven tweaks, cannot say only "a setting" and leave the user guessing which one to retry.
+ */
+fun writeFailedMessage(setting: String) = "Couldn't change $setting."

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -25,7 +26,6 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,6 +52,7 @@ import com.axondragonscale.devinator.repository.TweakCatalog
 import com.axondragonscale.devinator.ui.components.BackTopBar
 import com.axondragonscale.devinator.ui.components.DevinatorCard
 import com.axondragonscale.devinator.ui.components.DevinatorDivider
+import com.axondragonscale.devinator.ui.components.DevinatorSnackbarHost
 import com.axondragonscale.devinator.ui.components.DevinatorSwitch
 import com.axondragonscale.devinator.ui.components.DurationChip
 import com.axondragonscale.devinator.ui.components.IconBadge
@@ -92,7 +93,7 @@ private fun TweaksContent(
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { DevinatorSnackbarHost(snackbarHostState) },
         topBar = { BackTopBar(title = "Tweaks", onBack = onBack) },
     ) { contentPadding ->
         Column(
@@ -175,7 +176,7 @@ private fun TweakRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp)
+            .heightIn(min = 60.dp)
             .then(
                 if (tweak is Tweak.Toggle) {
                     Modifier.toggleable(
