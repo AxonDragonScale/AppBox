@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Usb
@@ -75,6 +74,7 @@ import com.axondragonscale.devinator.ui.components.DevinatorCard
 import com.axondragonscale.devinator.ui.components.DevinatorDivider
 import com.axondragonscale.devinator.ui.components.DevinatorSwitch
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
+import com.axondragonscale.devinator.ui.components.DurationChip
 import com.axondragonscale.devinator.ui.components.IconBadge
 import com.axondragonscale.devinator.ui.components.StatusChip
 import com.axondragonscale.devinator.ui.components.rememberCopyToClipboard
@@ -390,23 +390,11 @@ private fun TimedDurationControl(
         Row(
             modifier = Modifier
                 .height(48.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable { expanded = true }
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { expanded = true },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = duration.label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            DurationChip(label = duration.label)
         }
         SmallDropdown(
             expanded = expanded,
@@ -792,7 +780,7 @@ private fun AutoOffBlock(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .clickable { expanded = true },
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -810,29 +798,10 @@ private fun AutoOffBlock(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Box {
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = selected.label,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (selected == DurationOption.OFF) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                DurationChip(
+                    label = selected.label,
+                    off = selected == DurationOption.OFF,
+                )
                 SmallDropdown(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },

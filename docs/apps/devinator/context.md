@@ -80,7 +80,7 @@ com.axondragonscale.devinator/
 │   └── TimedDevOptionsTileServices.kt # pause and resume
 ├── ui/
 │   ├── Route.kt                    # Setup, Home, Settings, Permission, QuickSettingsTiles
-│   ├── components/                 # card, divider, top bars, badge, chip, code block, switch, clipboard
+│   ├── components/                 # card, divider, top bars, badge, chip, duration chip, code block, switch, clipboard
 │   ├── theme/  setup/  home/  settings/  tiles/
 ```
 

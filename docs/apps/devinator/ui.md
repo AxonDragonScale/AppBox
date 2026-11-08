@@ -13,7 +13,7 @@ keys and permissions live in [context.md](./context.md). Copy below is literal.
   layout with the token values in the next table. Settings can opt into dynamic colour, but the
   fallback palette is the reviewed look.
 - Corner radii: card `20`, inner item `12`, button `16`, pill `999`. Switch `52×32`; segmented
-  control `36` high with `32` segments; the timed duration control is a `48` tap target.
+  control `36` high with `32` segments; the duration chip is `36` inside a `48` tap target.
 
 ## Tokens
 
@@ -94,13 +94,18 @@ Define these once and reuse by name in the trees below.
   `textMuted`; then the mono 18 address), plus a 16 copy glyph in `textMuted`. One row only; the
   glyph copies `adb connect <ip>:<port>`.
 - **AutoOffRow** — `fill_container`, `height 48`, `gap 12`, centred: `timer` 18 `textMuted`, label
-  14/500 `fill_container`, current value 14/500, `expand_more` 20 `textMuted`. Opens the duration
+  14/500 `fill_container`, then a trailing **DurationChip** (36) centred in the row. Opens the duration
   menu; it is a control, not a readout. It is a standard Material `DropdownMenu`: content-width,
-  anchored to the trailing value, with a 16 dp container and the menu's 8 dp content inset applied
+  anchored to the trailing control, with a 16 dp container and the menu's 8 dp content inset applied
   horizontally as well; the 8 dp selected row uses `primaryContainer` with a `primary` check, so
-  16 − 8 = 8 keeps the corners concentric. `Off` renders the value in `textMuted`
+  16 − 8 = 8 keeps the corners concentric. `Off` turns the chip's value and caret `error`
   and the caption reads “Stays on until you turn it off.”; an armed timer replaces the caption with
   “Wireless debugging turns off in 12:04.”, the time in `primary` 600.
+- **DurationChip** — the collapsed duration picker, used twice: at the timed-toggle header and as the
+  AutoOffRow's trailing control. `height 36`, `padding horizontal 12`, `gap 6`, `cornerRadius 12`,
+  fill `surfaceHigh`, 1 px `outline` stroke; value 14/600 and `expand_more` 18 both in `primary`, or
+  both in `error` when the value is `Off`. The chip is centred in a 48 dp tap target and opens the
+  shared `DropdownMenu`.
 - **NoticeCard** — `fill_container`, `padding 12`, `cornerRadius 16`, fill `errorContainer`, row
   `gap 10` aligned top: 18 lock icon in `error`, then a column `gap 4` with a 13/600 `error` line and
   a 12 `error` line at 75% opacity. Used for the one permission explanation.
@@ -127,7 +132,7 @@ Screen 412×915 · fill bg · vertical
    │  ├─ Header row · gap 12 · items centre
    │  │  ├─ IconBadge 40 · surfaceHigh · 20 timer
    │  │  ├─ column · grow · gap 2: "Timed toggle" 16/600 · caption 12 textMuted
-   │  │  └─ Duration control · 48 tap target: "5 min" 14/500 textMuted · expand_more 20
+   │  │  └─ Duration control · 48 tap target ▸ DurationChip “5 min”
    │  └─ Button · "Pause for 5 min" 52
    ├─ Card · USB debugging
    │  └─ SwitchRow  title "USB debugging"  caption "ADB over USB"  icon usb
@@ -137,7 +142,7 @@ Screen 412×915 · fill bg · vertical
    │  ├─ CodeBlock   "adb connect 192.168.1.42:37129" · copy 16
    │  ├─ Divider
    │  └─ column · gap 4
-   │     ├─ AutoOffRow   timer 18 · "Auto-off" 14/500 · "Off" 14/500 textMuted · expand_more 20
+   │     ├─ AutoOffRow   timer 18 · “Auto-off” 14/500 · DurationChip “Off”
    │     └─ "Stays on until you turn it off." 12 textMuted
    └─ Card · tiles   (normal flow — never pinned to the bottom)
       ├─ IconBadge grid_view
@@ -155,6 +160,12 @@ Screen 412×915 · fill bg · vertical
 | Resume timer active | "Turns back off in 4:32." — time in `primary` 600 | "Pause now" |
 
 The duration control opens a content-width `5 / 15 / 30 min` menu, default 5; the 16 dp container, 8 dp all-round inset and 8 dp selected row match the auto-off menu, with the selected row in `primaryContainer` and a `primary` check. The button is the primary 52-high button; the card never gets a second action.
+
+**Duration chip.** Both duration controls use the same `DurationChip` component: a 36-high outlined
+field (radius 12, `surfaceHigh`, 1 px `outline`) with the value 14/600 and `expand_more` 18 in
+`primary`, centred in the 48 dp tap target. Auto-off's `Off` value switches the value and caret to
+`error` while the container stays neutral; the timed toggle has no `Off` option, so it is always
+primary. The chip opens the content-width menu described above.
 
 **One address and one port.** The card shows the top-ranked address only, the same thing Android's
 own wireless debugging screen does. Addresses rank Wi-Fi (the phone's active network) → Hotspot →

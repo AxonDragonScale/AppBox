@@ -504,6 +504,19 @@ the same change as the work it learns from.**
 - **2026-11-08** — a `DropdownMenu` anchored to a full-width row opens at the **left edge**; put it
   in a `Box` that wraps only the trailing control and it opens right-aligned. Never size the menu
   with a fixed width — let it hug the widest item.
+- **2026-11-08** — `lint_fix(rules=["no-hardcoded-colors"])` binds **fills only**. Frame strokes
+  (`strokes/0/color`) stay hardcoded while `lint` reports zero remaining — check with
+  `node_bindings` on a bordered frame and bind them one by one.
+- **2026-11-08** — an alternates/comparison board should be its own padded `surface` sheet with
+  `rounded={32}` and the option panels inset as `bg` frames. A transparent top-level frame keeps
+  the canvas honest but exports its light text on **white**, so the header disappears in a PNG.
+- **2026-11-08** — a 1 px vertical line in a text node's own colour, running far past the line height
+  in both MCP and headless exports, is a stale editor **caret** — there is no `LINE` node, no thin
+  frame, and nothing in the tree at that x. Replacing the text with a fresh
+  `render(replace_id=…)` clears it.
+- **2026-11-08** — `render(parent_id=…)` and `set_layout_child` work **inside** a component variant,
+  so a component can be repaired in place instead of rebuilt. `replace_id` keeps the old node's
+  position, so a wider replacement needs a follow-up `node_move` to keep its right edge aligned.
 
 ## Related
 
