@@ -41,7 +41,7 @@ private val CONFIRM_TIMEOUT = 3.seconds
  * restore snapshot to prefs; that is an intent, not cached state.
  */
 class DevSettingsRepository(
-    private val settings: GlobalSettingsRepository,
+    private val settings: SettingsRepository,
     private val endpointsRepository: WirelessEndpointRepository,
     private val alarms: DevAlarms,
     private val prefs: AppPrefsRepository,

@@ -42,7 +42,9 @@ against the values above.
 |---|---|---|
 | Screen title | 22 / 600 + logo | top bar |
 | Hero title | 20 / 600 | Developer options card |
-| Card title | 16 / 600 | switch titles, card headers |
+| Card title | 16 / 600 | switch titles, card headers, page rows |
+| Tweak row title | 15 / 600 | Tweaks rows — the same role as `Button` |
+| Group label | 13 / 600 | list headings, beside a hairline rule |
 | Row label | 14 / 500 | secondary rows |
 | Caption | 12 / 400 `textMuted` | explanations, hints |
 | Mono (endpoint) | 18 / 400 mono, letterSpacing 0 | `ip:port` in the wireless card |
@@ -68,7 +70,9 @@ Define these once and reuse by name in the trees below.
 - **SwitchRow** — horizontal, `fill_container`, `height 56`, `gap 12`, `justifyContent space_between`,
   `alignItems center`. The whole row is the toggle; the switch is a non-interactive Material 3
   `Switch` `52×32` with a 48 dp touch target. Children: 40-wide icon slot (24 icon), text column
-  (title + caption, gap 2), switch. Off track `surfaceHigh`, on track `primary`.
+  (title + caption, gap 2), switch. Off track `surfaceHigh`, on track `primary`. The thumb carries a
+  14 glyph in the track's colour either way — `check` in `primary` when on, `close` in `surfaceHigh`
+  when off — so no switch renders as an empty circle.
 - **HeroCard** — the master-switch card: `fill_container`, `padding 16`, `cornerRadius 20`, fill
   `primarySurface` with a 1 px `primaryOutline` stroke. One row `gap 12` centred: 56 IconBadge, a
   text column `gap 4` (hero title 20/600, then a row `gap 8` with StatusChip and the 12 `textMuted`
@@ -84,7 +88,9 @@ Define these once and reuse by name in the trees below.
   (13/600 `primary`, text top-aligned so the visual position matches the drawing).
 - **CodeBlock** — horizontal, `fill_container`, `padding 12`, `cornerRadius 12`, `surfaceHigh`,
   mono command text at 12 `fill_container`, then a 16 copy glyph in `textMuted`. The whole block is
-  the copy target; the glyph marks the action.
+  the copy target; the glyph marks the action. A one-line endpoint is centred in the 48 dp block; a
+  command that wraps keeps its text and glyph at the top, so the glyph never floats beside a middle
+  line. The component decides from the rendered line count.
 - **StatusChip** — pill, `height 24`, `padding 8`, `cornerRadius 999`, 6 dot + `Chip` label at 12/500
   (default fill `surfaceHigh`, `on` dot for a live state, `textMuted` for neutral). On the hero card
   the fill is `primaryContainer` with dot and label both `primary`; the off state is
@@ -144,11 +150,13 @@ Screen 412×915 · fill bg · vertical
    │  └─ column · gap 4
    │     ├─ AutoOffRow   timer 18 · “Auto-off” 14/500 · DurationChip “Off”
    │     └─ "Stays on until you turn it off." 12 textMuted
-   └─ Card · tiles   (normal flow — never pinned to the bottom)
-      ├─ IconBadge grid_view
-      ├─ column · grow · gap 2: "Quick Settings Tiles" 16/600 · "Add tiles to Quick Settings" 12 textMuted
-      └─ chevron_right 20 textMuted, 48 tap target — the whole card navigates, it is an action on the page
+   └─ Card · pages   (normal flow — never pinned to the bottom)
+      ├─ PageRow   h 64 · IconBadge tune · "Tweaks" 16/600 · "Animation and app behaviour" 12 textMuted · chevron_right 20
+      ├─ Divider
+      └─ PageRow   h 64 · IconBadge grid_view · "Quick Settings Tiles" 16/600 · "Add tiles to Quick Settings" 12 textMuted · chevron_right 20
 ```
+
+**Pages card.** The two pages Home can reach share one card of 64 dp rows. A sixth 80 dp card does not fit: the last card ends at `y=763` of `851`, and one more card plus its gap needs 92. The rows use the Tiles page's row anatomy rather than Home's card anatomy, and the whole row is the target.
 
 **Timed toggle.** The card sits directly under the hero and stays enabled when Developer options is off — Resume is the way back on. Its caption and button follow the current state:
 
@@ -194,6 +202,69 @@ reading, the command for the terminal. Android 13+ draws its own clipboard confi
 | Timed resume active | Developer options is on; USB and wireless may be off (the restored snapshot), shown as enabled switch rows; the timed card caption reads "Turns back off in 4:32." and the button reads "Pause now" |
 | Duration menu open | A standard content-width `surfaceHigh` DropdownMenu under the duration control (148 wide in the design frame): 5 / 15 / 30 min; 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a check |
 | Write failed | Snackbar "Couldn't change this setting."; the switch stays where the settings database says |
+
+The pages card is identical in every Home state: it is a navigation, not a control, so the
+Developer-options-off and timed screens show it unchanged.
+
+## Tweaks
+
+Reached from the pages card. One scrolling page of grouped rows; every row is a write, so there is
+no Save button and no confirmation.
+
+```
+TopBar h64 · back arrow + "Tweaks"
+column · padding 16
+├─ GroupLabel "Animation"   13/600 text · 1 px outline rule filling the rest of the 380 row
+├─ gap 8
+├─ Card · gap 0, rows 60 high, Divider between them
+│  ├─ TweakRow  badge 40 animation · "Window animation" 15/600 · "Windows opening and closing" 12 textMuted · chip "1×"
+│  ├─ Divider
+│  ├─ TweakRow  … · chip "0.5×"
+│  ├─ Divider
+│  └─ TweakRow  … · chip "Off"  — value and caret in error
+├─ gap 24 · GroupLabel "Behaviour" · gap 8 · Card (4 rows, one of them a chip)
+├─ gap 20
+├─ ResetRow   h 48 · cornerRadius 16 · surface · "Reset to defaults" 15/600 primary, centred
+├─ gap 12
+└─ "Reset restores the stock value for every tweak." 12 textMuted
+```
+
+**Row.** `height 60`, `padding horizontal 16`, `gap 12`, items centred: 40 IconBadge, a column
+`weight 1` with `gap 4` (title 15/600, caption 12 at 16 line-height), then either the switch or the
+chip. A toggle row is `toggleable` as a whole with `role = Switch`, and the switch itself is
+non-interactive — the row is the target, the switch is a readout.
+
+**Chip.** Choice rows reuse `DurationChip`, centred in a 48 dp tap target, and open the shared
+content-width menu. Value 14/600 and `expand_more` 18 in `primary`; an animation scale set to `Off`
+turns both `error`; the process limit prints `Standard` for `-1`.
+
+| Group | Rows | Control |
+|---|---|---|
+| Animation | Window / Transition / Animator animation | chip: Off, 0.5×, 1×, 1.5×, 2×, 5×, 10×; stock 1× |
+| Behaviour | Don't keep activities, Background processes, Show all ANRs, Stay awake while charging | switch, chip (`Standard`, 0–4), switch, switch |
+
+**Nothing here needs the input overlays.** Show taps, Pointer location and Layout bounds are not on
+this page, and cannot be: the first two are `Settings.System` *private* keys the platform only lets
+root/shell/system write (an app with `WRITE_SECURE_SETTINGS` gets `IllegalArgumentException: You
+cannot change private secure settings`), and Layout bounds is the `debug.layout` **system property**,
+which an app UID cannot set. All three work through Android's own Developer options, which runs as
+system. See [context.md](./context.md#tweaks-page).
+
+**Reset.** One tap writes the stock value for every row on the page — the switches off, the scales
+1×, the limit `Standard`, stay-awake off. It reports a failure as a snackbar and changes nothing if
+the grant is gone. A row that fails does not stop the rest.
+
+**Honesty.** Values are read back from the settings provider after every write and observed live, so
+a change made in Android's own Developer options screen lands on this page without a refresh, and a
+rejected write leaves the row showing what the database says. Nothing here is persisted, and none of
+these keys join the developer-flags snapshot: stock Android keeps them when Developer options goes
+off, so zeroing them would be a surprise.
+
+| State | Change to the tree above |
+|---|---|
+| Value menu open | A standard content-width `surfaceHigh` DropdownMenu under the chip: 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a `primary` check |
+| Write failed | Snackbar "Couldn't change this setting."; the row keeps the database value |
+| A key the OEM ignores | The row shows what the database reports. There is no optimistic flip to unwind |
 
 ## Setup
 

@@ -98,3 +98,14 @@ val ActionTextStyle = TextStyle(
     fontSize = 13.sp,
     lineHeight = 18.sp,
 )
+
+/**
+ * A group heading on a list page: sentence case at 13/600 beside a hairline rule. Smaller than
+ * [SectionTitleTextStyle] because it labels a group of rows, not a card.
+ */
+val SectionLabelTextStyle = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 13.sp,
+    lineHeight = 18.sp,
+)

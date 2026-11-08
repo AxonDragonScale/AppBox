@@ -47,7 +47,12 @@ fun DevinatorSwitch(
             MaterialTheme.colorScheme.surfaceVariant
         },
         uncheckedBorderColor = Color.Transparent,
-        uncheckedIconColor = MaterialTheme.colorScheme.errorContainer,
+        // The glyph is the track's colour showing through the thumb, so it reads as a knockout.
+        uncheckedIconColor = if (dangerOff) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
     )
 
     Switch(
@@ -62,16 +67,14 @@ fun DevinatorSwitch(
         ),
         enabled = enabled,
         colors = colors,
-        thumbContent = when {
-            checked -> {
-                { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-            }
-
-            dangerOff -> {
-                { Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(16.dp)) }
-            }
-
-            else -> null
+        // Both states carry a glyph, so a switch is never a blank circle: check when on, close
+        // when off. The 14 dp glyph matches the design's 24 dp thumb.
+        thumbContent = {
+            Icon(
+                imageVector = if (checked) Icons.Filled.Check else Icons.Filled.Close,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+            )
         },
     )
 }

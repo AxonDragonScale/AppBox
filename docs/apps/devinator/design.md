@@ -171,10 +171,11 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
 ## Out of scope (v1)
 
 Zero-permission shelf (special-access deep links, package/activity inspector, device info), Shizuku
-and root grants, logcat viewer, density/size overrides, widgets, dynamic shortcuts, extra
-`Settings.Global` toggles (animation scales, show taps, pointer location). The architecture leaves
-room: any new tool is another entry in the same repository pattern, and the tiles are the model for
-adding an entry point.
+and root grants, logcat viewer, density/size overrides, widgets, dynamic shortcuts. The Tweaks page
+ships the extra `Settings.Global` toggles; the three that stay out of reach — Show taps, Pointer
+location, Layout bounds — need the system UID or a shell-UID bridge rather than another key, so
+Shizuku is what would unlock them. The architecture leaves room: any new tool is another entry in
+the same repository pattern, and the tiles are the model for adding an entry point.
 
 ## Related Context
 

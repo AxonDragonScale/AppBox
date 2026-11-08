@@ -15,6 +15,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +35,10 @@ fun CodeBlock(
     command: String,
     onCopy: () -> Unit,
 ) {
+    // A one-line endpoint is centred in its 48 dp block; the grant command wraps to three lines,
+    // where a centred glyph would float beside the middle line, so it stays at the top instead.
+    var lines by remember { mutableIntStateOf(1) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -44,13 +52,14 @@ fun CodeBlock(
             )
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = if (lines > 1) Alignment.Top else Alignment.CenterVertically,
     ) {
         Text(
             text = command,
             modifier = Modifier.weight(1f),
             style = MonoCommandTextStyle,
             color = MaterialTheme.colorScheme.onSurface,
+            onTextLayout = { lines = it.lineCount },
         )
         Icon(
             imageVector = Icons.Filled.ContentCopy,

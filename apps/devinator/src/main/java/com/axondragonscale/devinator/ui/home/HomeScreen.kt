@@ -9,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,18 +22,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.WifiTethering
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -76,6 +73,7 @@ import com.axondragonscale.devinator.ui.components.DevinatorSwitch
 import com.axondragonscale.devinator.ui.components.DevinatorTopBar
 import com.axondragonscale.devinator.ui.components.DurationChip
 import com.axondragonscale.devinator.ui.components.IconBadge
+import com.axondragonscale.devinator.ui.components.SmallDropdown
 import com.axondragonscale.devinator.ui.components.StatusChip
 import com.axondragonscale.devinator.ui.components.rememberCopyToClipboard
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
@@ -133,6 +131,7 @@ fun HomeScreen(
         onEvent = { event ->
             when (event) {
                 HomeUiEvent.OpenSettings -> navController.navigate(Route.Settings)
+                HomeUiEvent.OpenTweaks -> navController.navigate(Route.Tweaks)
                 HomeUiEvent.OpenTiles -> navController.navigate(Route.QuickSettingsTiles)
                 is HomeUiEvent.SetWirelessDebugging ->
                     if (event.enabled) enableWirelessDebugging() else viewModel.onEvent(event)
@@ -213,7 +212,10 @@ private fun HomeScreen(
                 onSelectAutoOff = { onEvent(HomeUiEvent.SelectAutoOff(it)) },
                 onExpired = { onEvent(HomeUiEvent.ReconcileDeadlines) },
             )
-            TilesCard(onOpen = { onEvent(HomeUiEvent.OpenTiles) })
+            PagesCard(
+                onOpenTweaks = { onEvent(HomeUiEvent.OpenTweaks) },
+                onOpenTiles = { onEvent(HomeUiEvent.OpenTiles) },
+            )
         }
     }
 }
@@ -407,75 +409,6 @@ private fun TimedDurationControl(
     }
 }
 
-/**
- * The one duration menu both controls use. It is a standard Material [DropdownMenu]; the selected
- * row keeps the menu's own 8 dp content inset horizontally too, so the highlight is symmetric. Its
- * 8 dp corner complements the 16 dp menu corner at that inset (16 - 8 = 8).
- */
-@Composable
-private fun <T> SmallDropdown(
-    expanded: Boolean,
-    onDismissRequest: () -> Unit,
-    options: List<T>,
-    selected: T,
-    label: (T) -> String,
-    onSelect: (T) -> Unit,
-) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismissRequest,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 0.dp,
-        shadowElevation = 8.dp,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)),
-    ) {
-        options.forEach { option ->
-            val isSelected = option == selected
-            DropdownMenuItem(
-                modifier = if (isSelected) {
-                    Modifier
-                        .padding(horizontal = 8.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp),
-                        )
-                } else {
-                    Modifier.padding(horizontal = 8.dp)
-                },
-                contentPadding = PaddingValues(horizontal = 10.dp),
-                text = {
-                    Text(
-                        text = label(option),
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                        ),
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                },
-                trailingIcon = {
-                    if (isSelected) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                },
-                onClick = {
-                    onDismissRequest()
-                    onSelect(option)
-                },
-            )
-        }
-    }
-}
-
 @Composable
 private fun UsbDebuggingCard(
     modifier: Modifier = Modifier,
@@ -548,43 +481,72 @@ private fun WirelessDebuggingCard(
     }
 }
 
+/**
+ * The two pages reachable from Home, in one card: they are both navigations, so they stack rather
+ * than take a card each. Rows are the Tiles page's 64 dp row, not Home's 80 dp card.
+ */
 @Composable
-private fun TilesCard(
+private fun PagesCard(
     modifier: Modifier = Modifier,
-    onOpen: () -> Unit,
+    onOpenTweaks: () -> Unit,
+    onOpenTiles: () -> Unit,
 ) {
     DevinatorCard(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpen)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        PageRow(
+            icon = Icons.Filled.Tune,
+            title = "Tweaks",
+            caption = "Animation and app behaviour",
+            onClick = onOpenTweaks,
+        )
+        DevinatorDivider()
+        PageRow(
+            icon = Icons.Filled.GridView,
+            title = "Quick Settings Tiles",
+            caption = "Add tiles to Quick Settings",
+            onClick = onOpenTiles,
+        )
+    }
+}
+
+@Composable
+private fun PageRow(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    title: String,
+    caption: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconBadge(icon = icon)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            IconBadge(icon = Icons.Filled.GridView)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = "Quick Settings Tiles",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "Add tiles to Quick Settings",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

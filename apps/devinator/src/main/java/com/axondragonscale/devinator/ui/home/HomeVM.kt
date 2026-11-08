@@ -72,6 +72,7 @@ class HomeVM(
         is HomeUiEvent.SelectTimedDuration -> selectTimedDuration(event.duration)
         HomeUiEvent.ReconcileDeadlines -> reconcileDeadlines()
         HomeUiEvent.OpenSettings -> Unit
+        HomeUiEvent.OpenTweaks -> Unit
         HomeUiEvent.OpenTiles -> Unit
     }
 
@@ -162,6 +163,7 @@ sealed interface HomeUiEvent {
     data class SelectTimedDuration(val duration: DurationOption) : HomeUiEvent
     data object ReconcileDeadlines : HomeUiEvent
     data object OpenSettings : HomeUiEvent
+    data object OpenTweaks : HomeUiEvent
     data object OpenTiles : HomeUiEvent
 }
 

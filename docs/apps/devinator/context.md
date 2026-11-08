@@ -4,10 +4,12 @@
 
 ## Overview
 
-One screen plus five Quick Settings tiles that flip **Developer options**, **USB debugging** and
-**Wireless debugging**, show the `adb connect` endpoint while wireless debugging is on, turn
+Two screens plus five Quick Settings tiles. Home flips **Developer options**, **USB debugging** and
+**Wireless debugging**, shows the `adb connect` endpoint while wireless debugging is on, turns
 wireless debugging off on a timer, and can temporarily pause or resume **Developer options** for a
-chosen duration.
+chosen duration. **Tweaks** is a second page of stock `Settings.Global` switches — the three
+animation scales, don't keep activities, process limit, background ANRs, stay awake — reached from
+Home's pages card.
 
 - **Package**: `com.axondragonscale.devinator`
 - **Module path**: `:apps:devinator`
@@ -15,8 +17,9 @@ chosen duration.
 - **Not** the `devtools` package in [`:core:commons`](../core/commons/context.md); that is the debug
   screen embedded inside other apps. Different thing, similar name.
 
-Scope is deliberately small: three switches, tiles, endpoint display, the timed toggle and the
-wireless auto-off timer. Everything else is deferred — see [design.md](./design.md#out-of-scope-v1).
+Scope is deliberately small: three switches, tiles, endpoint display, the timed toggle, the
+wireless auto-off timer, and the Tweaks page. Everything else is deferred — see
+[design.md](./design.md#out-of-scope-v1).
 
 ## How these switches work
 
@@ -52,13 +55,16 @@ com.axondragonscale.devinator/
 ├── di/DevinatorModule.kt
 ├── model/
 │   ├── DevState.kt                 # the three flags, endpoints, write results
+│   ├── Tweak.kt                    # one Tweaks row: Toggle / Scale / Limit, group, copy, icon
 │   ├── DurationOption.kt           # Off / 5 / 15 / 30 min for both timers
 │   ├── Countdown.kt                # one `m:ss` formatter and expiry check
 │   └── TimedToggleSession.kt       # target, restoreTo, deadline
 ├── repository/
 │   ├── DevSettingsRepository.kt    # the one writer; state, endpoints, timer, writes
+│   ├── DevTweaksRepository.kt      # Tweaks page: typed writes, live map, reset to stock
+│   ├── TweakCatalog.kt             # the Tweaks page in draw order; the only key list
 │   ├── TimedToggleRepository.kt    # temporary on/off policy, duration, recovery
-│   ├── GlobalSettingsRepository.kt # the only code that touches Settings.Global
+│   ├── SettingsRepository.kt       # the only code that touches the settings provider (Global and System)
 │   ├── AppPrefsRepository.kt       # the only DataStore; auto-off choice, deadline, restore snapshot, UI mode, dynamic colour
 │   ├── QuickSettingsTileRepository.kt # reads and removes entries from the shell's tile list
 │   └── WirelessEndpointRepository.kt # local IPv4s + mDNS port lookup + connectivity refresh
@@ -79,9 +85,9 @@ com.axondragonscale.devinator/
 │   ├── DevTileServices.kt          # developer options, USB, wireless
 │   └── TimedDevOptionsTileServices.kt # pause and resume
 ├── ui/
-│   ├── Route.kt                    # Setup, Home, Settings, Permission, QuickSettingsTiles
-│   ├── components/                 # card, divider, top bars, badge, chip, duration chip, code block, switch, clipboard
-│   ├── theme/  setup/  home/  settings/  tiles/
+│   ├── Route.kt                    # Setup, Home, Settings, Tweaks, Permission, QuickSettingsTiles
+│   ├── components/                 # card, divider, top bars, badge, chip, duration chip, code block, switch, menu, clipboard
+│   ├── theme/  setup/  home/  settings/  tiles/  tweaks/
 ```
 
 The suffixes carry one meaning each: `*Repository` owns a source of state (system settings, app
@@ -98,7 +104,7 @@ disagree — including after a change made in the Settings app, or a write the s
 
 ```kotlin
 class DevSettingsRepository(
-    settings: GlobalSettingsRepository,
+    settings: SettingsRepository,
     endpoints: WirelessEndpointRepository,
     alarms: DevAlarms,
     prefs: AppPrefsRepository,
@@ -143,6 +149,45 @@ immediate. Turning developer options off first serializes every key in `RESTORAB
 those keys. The live key makes a duplicate off idempotent, so a second tap cannot overwrite the first
 snapshot. Turning it back on writes `1` and restores the snapshot directly; the observer path stays
 for enables made in Android Settings.
+
+### Tweaks page
+
+Home's pages card opens a second page of stock developer options that need no new permission: the
+three animation scales, don't keep activities, the background process limit, show all ANRs, and stay
+awake while charging.
+
+- **One catalogue.** `TweakCatalog` lists every row: key, group, copy, and control type — `Toggle`,
+  `Scale` (Off / 0.5× / 1× / 1.5× / 2× / 5× / 10×) or `Limit` (Standard, 0–4). Adding a row is one
+  entry there plus a vector in the UI's `TweakIcon.vector()`.
+- **One value shape.** Every key is a number, so the page holds a `Map<String, Float>`.
+  `readNumber` parses `getString` for the same reason `parseFlag` does — `adb shell settings put`
+  stores text and `getFloat` throws on it. Floats are written with `putFloat`, everything else with
+  `putInt`; `stay_on_while_plugged_in` stores a plug bitmask as its on-value.
+- **One store.** All seven keys are `Settings.Global`. `SettingsStore` still names the table per row,
+  because the page first shipped writing the wrong one: a key written to a table nothing reads is a
+  silent no-op, and that is exactly how two of these rows were broken on the first device run.
+- **Same invariant.** Nothing is cached: `DevTweaksRepository` observes all keys through one
+  `ContentObserver` and writes through `SettingsRepository`, so a change made in Android's own
+  Developer options screen lands on the page and a rejected write leaves the database value showing.
+- **Reset** writes each row's stock value and keeps going when one row fails, so a single OEM quirk
+  cannot leave the page half-reset.
+- **Not snapshot keys.** None of these join `RESTORABLE_FLAG_KEYS`: stock Android keeps them when
+  Developer options goes off, so zeroing them behind the user's back would contradict the platform.
+- **Two keys are `@hide`** — `background_process_limit` and `anr_show_background` — so the literal is
+  the only handle on them, exactly as `KEY_WIRELESS_DEBUGGING` does for `adb_wifi_enabled`.
+- **The input overlays are out of reach, and deliberately absent.** Show taps, Pointer location and
+  Layout bounds cannot be app-driven on any modern Android:
+  - `show_touches` and `pointer_location` are `Settings.System` **private** keys. The platform lets
+    only root/shell/system write them, so `Settings.System.putInt` throws
+    `IllegalArgumentException: You cannot change private secure settings` even with
+    `WRITE_SECURE_SETTINGS`. Trying it from `Settings.Global` instead is silently ignored.
+  - Layout bounds is not a settings key at all: it sets the `debug.layout` **system property**, and
+    `setprop debug.layout` is denied to an app UID.
+
+  All three work through Android's own Developer options screen, which runs as system. Reaching them
+  from this app would need a shell-UID bridge (Shizuku) — out of scope for v1. Verified on the iQOO
+  13 by toggling each in the ROM's own Developer options and diffing `Settings.Global`,
+  `Settings.Secure`, `Settings.System` and `getprop`.
 
 ### Endpoint discovery (best effort)
 

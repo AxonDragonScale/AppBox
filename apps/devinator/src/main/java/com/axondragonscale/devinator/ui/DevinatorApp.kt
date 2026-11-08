@@ -15,6 +15,7 @@ import com.axondragonscale.devinator.ui.settings.PermissionScreen
 import com.axondragonscale.devinator.ui.settings.SettingsScreen
 import com.axondragonscale.devinator.ui.setup.SetupScreen
 import com.axondragonscale.devinator.ui.tiles.QuickSettingsTilesScreen
+import com.axondragonscale.devinator.ui.tweaks.TweaksScreen
 import org.koin.compose.koinInject
 
 /** Created by Ronak on 11/06/26 */
@@ -49,6 +50,9 @@ fun DevinatorApp(
         }
         composable<Route.Settings> {
             SettingsScreen(navController = navController)
+        }
+        composable<Route.Tweaks> {
+            TweaksScreen(navController = navController)
         }
         composable<Route.Permission> {
             PermissionScreen(navController = navController)

@@ -274,7 +274,7 @@ XPath via `query_nodes` beats scanning trees:
 | Symptom | Cause | Fix |
 |---|---|---|
 | Text renders in Inter | `fontFamily` was used, or no `font` at all | add `font="Roboto"` to the node |
-| Text squeezes into a 100 px column | row hugged instead of filling | add `w="fill"` to the row |
+| Text squeezes into a 100 px column | row hugged instead of filling | add `w="fill"` to the row — but only inside an **auto-layout** parent; a row inside a plain frame needs an explicit `w={380}` |
 | Big empty space inside a card | wrapper frame had no height → 100 × 100 default | `flex="col"` or explicit `h` |
 | `justify`/`items` ignored, children stack oddly | frame is not auto-layout | add `flex="row"` / `flex="col"` |
 | Dialog looks washed out | scrim is the dialog's parent | split into sibling layers |
@@ -514,6 +514,38 @@ the same change as the work it learns from.**
   in both MCP and headless exports, is a stale editor **caret** — there is no `LINE` node, no thin
   frame, and nothing in the tree at that x. Replacing the text with a fresh
   `render(replace_id=…)` clears it.
+- **2026-11-08** — `w="fill"` on a row inside a **plain** frame (a card with no `flex`) does not stretch it:
+  the row hugs its content (measured 282–292 px instead of 380) and every trailing switch or value
+  drifts left of the card edge, which reads as "the design has a gap" rather than a bug. Fix with
+  `update_node(width=…)` on each row; `batch_update` has no width and `sizing_horizontal` alone does
+  not set it.
+- **2026-11-08** — `batch_update` silently drops props outside its documented list: an `{"y": 787}`
+  operation came back with no entry in `results` and changed nothing, so **`results` can be shorter
+  than `operations`**. Move nodes with `node_move` and resize them with `update_node`.
+- **2026-11-08** — one `render` call may contain several root nodes; each lands at its own `x`/`y`
+  inside `parent_id`. Rendering three screens' worth of rows as separate roots is cheaper than
+  wrapping them in a temp frame — and a temp wrapper leaves children positioned relative to it, so
+  they overflow the wrapper and need `reparent_node` afterwards.
+- **2026-11-09** — to place a screen in the flow, read every top-level node's coordinates without
+  exporting: `openpencil eval <file> -c 'figma.root.children.find(p=>p.name==="Screens").children.map(n=>n.name+" | "+Math.round(n.x)+","+Math.round(n.y))'`.
+  Headless ids differ from app ids, but the names and coordinates are exact, and it avoids the
+  `tree --page` renumbering trap entirely.
+- **2026-11-09** — `open -g -a OpenPencil` keeps focus where it is but does **not** wake an
+  App-Napped app: every RPC keeps timing out at 20 s and `openpencil documents list` fails the same
+  way. Only foreground activation (or the user clicking the window) recovers it, so a host that must
+  not steal focus has to ask the user for one click. Confirm the process is alive with `pgrep -fl
+  OpenPencil` before assuming the server died — an idle `S` process with 0 % CPU that answers no RPC
+  is the App Nap signature.
+- **2026-11-08** — adding the close glyph to an existing off switch is one `render` with no layout
+  surgery: `<Icon name="material-symbols:close" size={14} color="#20242B" x={5} y={5} />` into the
+  24 × 24 thumb (a 14 px icon inset 5 px on each side). The thumb stays a plain frame; do not convert
+  it to auto-layout just to centre one icon.
+- **2026-11-08** — `replace_id` re-slotting across a flex row is the cheap way to swap a trailing
+  control: replacing a bare `Value` frame (text + chevron) with the 36 dp `DurationChip` kept the
+  row's layout and the 48 dp tap-target spacing without touching the parent.
+- **2026-11-08** — a comparison board made of headings and labels needs its own `bg` sheet even when
+  the screens around it are opaque: exporting a multi-root selection fills the gaps between roots and
+  renders the board's light text on white. Same cause as the alternates-board entry above.
 - **2026-11-08** — `render(parent_id=…)` and `set_layout_child` work **inside** a component variant,
   so a component can be repaired in place instead of rebuilt. `replace_id` keeps the old node's
   position, so a wider replacement needs a follow-up `node_move` to keep its right edge aligned.

@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import com.axondragonscale.devinator.model.DevState
+import com.axondragonscale.devinator.model.SettingsStore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -35,8 +36,14 @@ private val FLAG_KEYS = listOf(KEY_DEVELOPER_OPTIONS) + RESTORABLE_FLAG_KEYS
  */
 fun parseFlag(raw: String?): Boolean = (raw?.toIntOrNull() ?: 0) != 0
 
-/** The only code that touches `Settings.Global`; the repository above it owns what the values mean. */
-class GlobalSettingsRepository(context: Context) {
+/**
+ * The only code that touches the settings provider.
+ *
+ * The three flags live in `Settings.Global`. A Tweaks row names its own table: most are `Global`,
+ * but `show_touches` and `pointer_location` are `Settings.System` keys — that is where both AOSP's
+ * `InputManagerService` and this ROM read them, and writing `Global` for them does nothing.
+ */
+class SettingsRepository(context: Context) {
 
     private val resolver: ContentResolver = context.contentResolver
 
@@ -54,6 +61,28 @@ class GlobalSettingsRepository(context: Context) {
         Settings.Global.putInt(resolver, key, if (enabled) 1 else 0)
 
     /**
+     * The raw stored value from [store], or null when the key was never set. Numeric reads go
+     * through the string form for the same reason [parseFlag] does: `adb shell settings put` stores
+     * text and `getFloat` throws on it.
+     */
+    fun read(store: SettingsStore, key: String): String? = when (store) {
+        SettingsStore.GLOBAL -> Settings.Global.getString(resolver, key)
+        SettingsStore.SYSTEM -> Settings.System.getString(resolver, key)
+    }
+
+    /** Stores an int: a 0/1 flag, or a fixed choice such as a process limit. */
+    fun writeInt(store: SettingsStore, key: String, value: Int): Boolean = when (store) {
+        SettingsStore.GLOBAL -> Settings.Global.putInt(resolver, key, value)
+        SettingsStore.SYSTEM -> Settings.System.putInt(resolver, key, value)
+    }
+
+    /** Stores a float; an animation scale is the only shape that needs one. */
+    fun writeFloat(store: SettingsStore, key: String, value: Float): Boolean = when (store) {
+        SettingsStore.GLOBAL -> Settings.Global.putFloat(resolver, key, value)
+        SettingsStore.SYSTEM -> Settings.System.putFloat(resolver, key, value)
+    }
+
+    /**
      * The current flags, then again after any of the three keys changes. One observer covers all
      * of them, so a cascade that writes several keys just re-reads them.
      */
@@ -69,4 +98,25 @@ class GlobalSettingsRepository(context: Context) {
         trySend(readState())
         awaitClose { resolver.unregisterContentObserver(observer) }
     }.distinctUntilChanged()
+
+    /**
+     * Emits once, then again after any key in [keys] changes in its own table. The caller re-reads,
+     * so a write made anywhere — `adb`, Android Settings, another screen — lands without a refresh.
+     */
+    fun observeKeys(keys: Map<String, SettingsStore>): Flow<Unit> = callbackFlow {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                trySend(Unit)
+            }
+        }
+        keys.forEach { (key, store) ->
+            val uri = when (store) {
+                SettingsStore.GLOBAL -> Settings.Global.getUriFor(key)
+                SettingsStore.SYSTEM -> Settings.System.getUriFor(key)
+            }
+            resolver.registerContentObserver(uri, false, observer)
+        }
+        trySend(Unit)
+        awaitClose { resolver.unregisterContentObserver(observer) }
+    }
 }
