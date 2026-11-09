@@ -74,6 +74,7 @@ class HomeVM(
         HomeUiEvent.OpenSettings -> Unit
         HomeUiEvent.OpenTweaks -> Unit
         HomeUiEvent.OpenTiles -> Unit
+        HomeUiEvent.OpenLogcat -> Unit
     }
 
     private fun setDeveloperOptions(enabled: Boolean) = viewModelScope.launch {
@@ -168,6 +169,7 @@ sealed interface HomeUiEvent {
     data object OpenSettings : HomeUiEvent
     data object OpenTweaks : HomeUiEvent
     data object OpenTiles : HomeUiEvent
+    data object OpenLogcat : HomeUiEvent
 }
 
 sealed interface HomeUiEffect {

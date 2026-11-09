@@ -5,8 +5,8 @@ import com.axondragonscale.devinator.permission.GrantRepository
 import com.axondragonscale.devinator.repository.AppPrefsRepository
 import com.axondragonscale.devinator.repository.DevSettingsRepository
 import com.axondragonscale.devinator.repository.DevTweaksRepository
-import com.axondragonscale.devinator.repository.SettingsRepository
 import com.axondragonscale.devinator.repository.QuickSettingsTileRepository
+import com.axondragonscale.devinator.repository.SettingsRepository
 import com.axondragonscale.devinator.repository.TimedToggleRepository
 import com.axondragonscale.devinator.repository.WirelessEndpointRepository
 import com.axondragonscale.devinator.ui.home.HomeVM

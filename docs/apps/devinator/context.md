@@ -9,7 +9,8 @@ A small set of screens plus five Quick Settings tiles. Home flips **Developer op
 wireless debugging off on a timer, and can temporarily pause or resume **Developer options** for a
 chosen duration. **Tweaks** is a second page of developer switches — the three animation scales, don't keep
 activities, process limit, background ANRs, stay awake — plus **Font size**, an ordinary
-`Settings.System` display setting. Both are reached from Home's pages card.
+`Settings.System` display setting. Both are reached from Home's pages card. **Logcat** streams this
+app's log from the terminal button in Home's top bar; it needs no permission.
 
 - **Package**: `com.axondragonscale.devinator`
 - **Module path**: `:apps:devinator`
@@ -86,9 +87,10 @@ com.axondragonscale.devinator/
 │   ├── DevTileServices.kt          # developer options, USB, wireless
 │   └── TimedDevOptionsTileServices.kt # pause and resume
 ├── ui/
-│   ├── Route.kt                    # Setup, Home, Settings, Tweaks, Permission, QuickSettingsTiles
+│   ├── Route.kt                    # Setup, Home, Settings, Tweaks, Permission, QuickSettingsTiles, Logcat
 │   ├── components/                 # card, divider, top bars, badge, chip, duration chip, code block, switch, menu, clipboard
 │   ├── theme/  setup/  home/  settings/  tiles/  tweaks/
+│   └── logcat/LogcatRoute.kt       # adapter over :libraries:logcat-viewer
 ```
 
 The suffixes carry one meaning each: `*Repository` owns a source of state (system settings, app
@@ -202,6 +204,43 @@ Home's pages card opens a second page of three groups: **Display**, **Animation*
   13 by toggling each in the ROM's own Developer options and diffing `Settings.Global`,
   `Settings.Secure`, `Settings.System` and `getprop`.
 
+### Logcat viewer
+
+The screen is `ui/logcat/LogcatRoute.kt`, a thin adapter over the shared `:libraries:logcat-viewer`
+(see [its context](../../libraries/logcat-viewer/context.md)). The app keeps only the navigation
+callbacks; the viewer owns its saved views in its own DataStore.
+
+The reader is a screen-scoped `logcat -v threadtime` process inside the library's `LogcatStreamer` —
+no `-T` count and no `-b` by default, so it seeds from logcat's default buffers and then follows the
+live tail.
+It runs as this app's UID, which needs no permission: the platform has returned a process's own
+records to it since API 16, and `READ_LOGS` does not widen that on Android 13+ (Android 17 documents
+that third-party apps cannot read device logs). Verified on the iQOO with the grant revoked:
+`run-as <pkg> logcat` still returns this app's lines and only those. Devinator therefore declares no
+log permission, shows no gate and has no setup step for it.
+
+A host that holds another identity (root, a shell bridge, a remote device) implements `ILogcatSource`
+and passes it in; the viewer itself never assumes more than the UID it runs as.
+
+The reader follows the screen: the app stops it on `ON_STOP` because the platform stops delivering
+records to a backgrounded app's `logcat` child, and starts it again on `ON_START`, resuming after
+the newest shown record. `start` returns a session token and `stop(token)` ignores a stale owner, so
+a cleared ViewModel cannot kill a newer stream. Standard error is drained on its own coroutine, and
+a reader that ends after producing lines is restarted up to three times. The reader parses
+`MM-DD HH:MM:SS.mmm  PID  TID L TAG: message`, merges continuation lines and
+`AndroidRuntime`/stack-frame records into the entry above (same pid, tid and tag), and publishes a
+snapshot every 120 ms — up to 5,000 entries, 16k characters per message. Pause moves new entries into
+a pending queue; resume appends them. Clear empties the view, never the system buffer. Switching
+buffer is a new view and starts empty.
+
+The ViewModel filters the snapshot with the level set, exact tag includes/excludes, package
+includes/excludes and the content query (contains, or regex), all ANDed. Package filters resolve
+through `PackageManager` + `ActivityManager.getRunningAppProcesses` every 3 s; the app's own package
+always resolves, while a package the platform hides resolves to no PIDs and honestly shows no matches.
+The entry sheet resolves `packageForPid` from the same source, falling back to `/proc/<pid>/cmdline`,
+and shows the full package name. Saved views store levels, tags, packages and the query — not the
+buffer or the scroll position — as JSON in the viewer's own `logcat_viewer` DataStore.
+
 ### Endpoint discovery (best effort)
 
 - **Addresses**: IPv4 per interface via `ConnectivityManager` / `NetworkInterface`, labelled
@@ -312,8 +351,9 @@ are out of scope for v1.
 
 ### Build & manifest
 
-- `libs.plugins.android.app.convention` + `kotlin.serialization`; deps: `:core:commons`, Compose BOM
-  and bundle, Koin bundle, `navigation.compose`, coroutines, `kotlinx.serialization.json`.
+- `libs.plugins.android.app.convention` + `kotlin.serialization`; deps: `:core:commons`,
+  `:libraries:logcat-viewer`, Compose BOM and bundle, Koin bundle, `navigation.compose`, coroutines,
+  `kotlinx.serialization.json`.
 - `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
   tools:ignore="ProtectedPermissions" />`
 - `<uses-permission android:name="android.permission.WRITE_SETTINGS"
@@ -361,10 +401,13 @@ Everything here is verified the first time the app is installed on the iQOO.
 | Local-network grant is missing or revoked | launch on a device that never granted it | discovery is skipped, so no picker and no port; the caption points at Developer options |
 | `sysui_qs_tiles` is unreadable above target SDK 33, so tile state and removal vanish on AOSP | open Quick Settings Tiles on a non-OriginOS device | read OriginOS's `super_qs_tiles` where present; otherwise the page is read-only and points at the Quick Settings editor |
 | Several networks at once (Wi-Fi + VPN + hotspot) | connect with a VPN up | rank Wi-Fi → hotspot → VPN and show the top one only |
+| `logcat` shows only this app's records | compare the viewer with `adb shell logcat` | the platform narrows the buffer to the calling UID; a host with a shell identity passes its own `ILogcatSource`, the viewer needs no change |
+| The platform hides other processes from `getRunningAppProcesses` | filter by another package | that package shows no matches; the app's own package still filters |
 
 ## Related Context
 
 - [Design & behaviour](./design.md) — state machine, interaction and edge-case rules
 - [UI spec](./ui.md) — screens, components, copy, tokens for Pencil
+- [Logcat viewer library](../../libraries/logcat-viewer/context.md) — the shared viewer behind the Logcat screen
 - [Coding conventions](../../coding-conventions.md)
 - [Build system](../../build-system.md)

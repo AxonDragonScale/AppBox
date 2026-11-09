@@ -176,10 +176,59 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
   in [context.md](./context.md).
 - Empty and pending states say what is happening, not "Loading…".
 
+## Logcat viewer
+
+Reached from the terminal button in Home's top bar. A screen-scoped reader, not a service: leaving
+the page stops the `logcat` process; the next visit reseeds from the whole buffer and follows live.
+The screen itself comes from the shared `:libraries:logcat-viewer`.
+
+| Interaction | Result |
+|---|---|
+| Open | Starts `logcat -v threadtime` as this app's UID (no count, all buffers); no permission, so it opens straight into the stream |
+| Pause | The reader keeps draining into a pending queue; the list freezes and a banner counts new lines (`3 new lines while paused`) |
+| Resume (banner, play icon) | Pending lines merge into the list; autoscroll resumes if it is on |
+| Jump to bottom | Scrolls to the newest line; the glyph turns primary while paused lines are waiting |
+| Clear | Empties the view; the system buffer is untouched |
+| Level menu | Multi-select; deselecting everything is an honest empty state |
+| Search | Content filter over the message text, case-insensitive; the `.*` chip turns it into a pattern, and is the same control as in the filter sheet |
+| Tag include/exclude | Exact tag equality; `Include` / `Exclude` on a row, or Include/Exclude in the filter sheet |
+| Package include/exclude | Resolves the package to its live PIDs and follows restarts; a hidden package yields no matches |
+| All-app logs | Not available: the platform returns only this app's records to an app UID. A host with a shell identity can pass its own `ILogcatSource` |
+| Buffer | all / main / system / crash / events; switching restarts the reader and clears the view. Default is all |
+| Row tap | Entry sheet: copy, Include, Exclude, share; PID, TID and the full package name live here, never on the row |
+| Multi-line record | Stack frames and `AndroidRuntime` blocks merge into the entry above, one row per exception |
+| Saved view | A named snapshot of levels, tags, packages and the content text — not the buffer or scroll position |
+| Export visible | Shares the filtered lines as text, capped at 2,000 |
+
+Rules:
+
+- Filters combine with AND; removing a chip drops that filter, an exclusion subtracts. Content never
+  appears as a chip because the search field is its control.
+- The reader runs as this app's UID. That is the whole stream: no permission, no banner, no setup,
+  and a host that needs more passes a different source rather than changing the viewer.
+- The viewer stops the reader when the screen leaves the foreground and starts it again on return.
+  The platform stops delivering records to an app's `logcat` child once the app is backgrounded, so
+  the child is closed rather than left starved; starting the same buffer again resumes after the
+  newest shown record, so nothing repeats and the lines from while it was away are filled in from
+  the buffer. Switching buffers is a new view and starts empty.
+- A reader that exits while following is restarted up to three times; a reader that produced no
+  lines is left stopped. A stale screen's stop never kills a newer screen's stream.
+- Pausing never drops lines. A message is capped at 16k characters and the view at 5,000 lines.
+- Saved views are local to the viewer's own DataStore. Tapping one replays it; the kebab renames or
+  deletes it, and delete is the one action with a confirm dialog.
+
+| Case | Behaviour |
+|---|---|
+| Package hidden by process visibility | The filter resolves no PIDs and the stream says no lines match; the app's own package always resolves |
+| Invalid regex | No lines match; clearing the filter recovers |
+| Reader process exits | The last lines stay on screen; reopening or resuming restarts the reader |
+| Long stack trace | The row shows the first line with the trace inline; the sheet shows the whole message |
+| Buffer with no output | The empty state says no lines match, or that no log lines exist yet |
+
 ## Out of scope (v1)
 
 Zero-permission shelf (special-access deep links, package/activity inspector, device info), Shizuku
-and root grants, logcat viewer, **display size**, widgets, dynamic shortcuts. Display size is
+and root grants, **display size**, widgets, dynamic shortcuts. Display size is
 deliberately deferred: `display_density_forced` is only read by WindowManagerService at boot, so a
 direct write applies after a restart, and applying it live needs the hidden
 `IWindowManager.setForcedDisplayDensityForUser` or a shell bridge. The Tweaks page ships the

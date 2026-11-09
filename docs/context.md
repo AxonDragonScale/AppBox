@@ -37,6 +37,7 @@ This project uses a **context graph** — a set of interlinked markdown files th
 | `:apps:devinator` |  Developer options / USB / wireless debugging toggles, QS tiles, and a Tweaks page | [context](./apps/devinator/context.md) ∙ [design](./apps/devinator/design.md) ∙ [ui](./apps/devinator/ui.md) |
 | `:core:commons`   |  Shared utilities, networking, DI, DevTools              | [context](./core/commons/context.md)                                                       |
 | `:libraries:tlv`  |  BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md)                                                                                        |
+| `:libraries:logcat-viewer` |  Compose log viewer for an app's own records (no permission, host-supplied source) | [context](./libraries/logcat-viewer/context.md) |
 
 ## Agent Efficiency Guidelines
 
@@ -102,8 +103,9 @@ AppBox/
 ├── docs/                        # Context graph (you are here)
 ├── gradle/                      # Version catalog (libs.versions.toml)
 ├── keystore/                    # Signing configuration
-└── libraries/                   # Standalone publishable libraries
-    └── tlv/                    # BER-TLV encoding/decoding (Kotlin Multiplatform)
+└── libraries/                   # Standalone libraries
+    ├── tlv/                    # BER-TLV encoding/decoding (Kotlin Multiplatform)
+    └── logcat-viewer/          # Compose log viewer for an app's own logs
 ```
 
 ## Building

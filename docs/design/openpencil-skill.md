@@ -564,6 +564,58 @@ the same change as the work it learns from.**
   `width`, `height` and `text` in one call, which is how a fixed-layout screen is re-stacked after
   inserting a group. Set a chip text to `WIDTH_AND_HEIGHT` with `set_text_resize` or the cloned
   text node keeps the old fixed width and the longer label clips.
+- **2026-11-09** — app-mode `tool call` uses the **CLI** schemas, not MCP ones: `render` takes
+  `parent_id` (there is no `page_id`), `query_nodes` takes `page`, `get_node` takes a single `id`,
+  and `analyze_overlaps` has no `ids` at all (scope with `page`). `lint` does take `ids`; the `openpencil
+  lint` command still requires a FILE even with `--document-id`.
+- **2026-11-09** — `save_file` is **not** in the automation tool registry: persist the open document
+  with `openpencil documents save --document-id tab-1`. `export_image` through the CLI returns only a
+  byte count, so inspect with `openpencil export -o <file> --node <id> -s 1` and open the PNG.
+- **2026-11-09** — long JSX trees: write the tree to a `.jsx` file and build the args JSON
+  (`{"jsx": …, "parent_id": …}`) for `--args-file` instead of escaping a screenful into `--args`.
+  This is argument marshalling for the official CLI, not another bridge.
+- **2026-11-09** — a plain wrapper frame inside an auto-layout row defaults to **100 high** and
+  stretches the row to match (a notes row measured 100 until its 84-wide label wrapper was given an
+  `h`). Wrap the label in `flex="col"` or set the height. `node_children` returns no sizes; use
+  `openpencil node --id …` for measured geometry.
+- **2026-11-09** — `lint_fix(rules=["min-text-size"], suggestions=true)` raised 116 eleven-pixel
+  nodes to 12 in one call, and a follow-up `lint_fix(rules=["no-hardcoded-colors"])` bound 309
+  fills. Colours with no matching variable (a new log-level ramp) correctly stay hardcoded.
+  Re-check fixed-width mono columns after the bump: an 82 px timestamp column wraps once its text
+  becomes 12 px.
+- **2026-11-09** — `render(parent_id=…)` appends, and a wrong parent id is silent: log rows aimed
+  at a 1 px rule near the footer nested inside it and left the stream empty. The response lists
+  `siblings`, but call `node_children` on the intended parent when a subtree contains more than one
+  frame of the same name.
+- **2026-11-09** — `clipsContent = true` (and JSX `overflow="hidden"`) is **not honoured by the
+  rasteriser**: a child that overflows an auto-layout frame keeps painting past it and over the next
+  sibling, hiding a trailing icon. Do not fake a horizontal scroller by letting chips run under a
+  fixed button; fit the row or shorten the labels. A screen-level overlay *does* paint above the
+  content, so scrims work.
+- **2026-11-09** — building a state board from one screen: render the base into a cell, then
+  `clone_node(id)` (the copy lands in the source parent) → `rename_node` → `reparent_node` into the
+  next cell; an auto-layout cell appends it after its label. Five states from one screen is five
+  clones, not five re-renders. `set_opacity` takes `value`, not `opacity`.
+- **2026-11-09** — `render(parent_id=…)` into a **TEXT** node is accepted here: the batch appears as
+  children of the text and the intended stream stays empty. When a subtree has several same-named
+  frames, resolve the parent id first (`node_children`) instead of guessing from the previous render.
+- **2026-11-09** — moving rendered rows with `appendChild` / `reparent_node` keeps their **fixed**
+  heights (51 px instead of a hugged 44), so an expanded trace row overlaps the rows after it and the
+  stream still reports a plausible total. After any move, set `layoutSizingHorizontal = "FILL"` and
+  `layoutSizingVertical = "HUG"` on the auto-layout children, then re-check the sum against the frame.
+- **2026-11-09** — swapping a text action for an icon in place: `render(replace_id=<text id>, jsx='<Icon …/>')`
+  puts the icon inside the button frame and lets its auto-layout centre it; then `resize` the slot
+  (48 → 44) so it matches the icon buttons beside it. No need to delete and re-parent.
+- **2026-11-09** — app-mode `tool call` is the quickest copy pass: `set_text`, `set_font`
+  (`family`), `rename_node`, `node_resize` (both dimensions) and `node_move` (`x`/`y`) each answer in
+  under a second, so 15 label fixes are a `&&` chain. `query_nodes` filters text with `@text`, not
+  `@characters`. If calls start timing out, the app is napping: `open -a OpenPencil`, wait a few
+  seconds, then retry the same read.
+- **2026-11-09** — wrap is not in `set_layout` or `update_node`. For a chip row that must wrap, use
+  app-mode `eval` with `layoutWrap = "WRAP"`, `counterAxisSpacing`, `layoutSizingHorizontal = "FILL"`
+  and `layoutSizingVertical = "HUG"`. Then re-anchor the sheet: the row grows (24 → 54), so give the
+  bottom sheet an explicit new height and `y` (e.g. 336/579 → 348/567) rather than letting the body
+  paint past its rounded bottom.
 
 ## Related
 

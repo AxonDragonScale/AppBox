@@ -10,4 +10,5 @@ object Route {
     @Serializable data object Tweaks
     @Serializable data object Permission
     @Serializable data object QuickSettingsTiles
+    @Serializable data object Logcat
 }

@@ -15,6 +15,7 @@ android {
 
 dependencies {
     implementation(projects.core.commons)
+    implementation(projects.libraries.logcatViewer)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

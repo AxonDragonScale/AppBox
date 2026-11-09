@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Usb
@@ -137,6 +138,7 @@ fun HomeScreen(
                 HomeUiEvent.OpenSettings -> navController.navigate(Route.Settings)
                 HomeUiEvent.OpenTweaks -> navController.navigate(Route.Tweaks)
                 HomeUiEvent.OpenTiles -> navController.navigate(Route.QuickSettingsTiles)
+                HomeUiEvent.OpenLogcat -> navController.navigate(Route.Logcat)
                 is HomeUiEvent.SetWirelessDebugging ->
                     if (event.enabled) enableWirelessDebugging() else viewModel.onEvent(event)
 
@@ -175,6 +177,19 @@ private fun HomeScreen(
         topBar = {
             DevinatorTopBar(
                 actions = {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button, onClick = { onEvent(HomeUiEvent.OpenLogcat) }),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Terminal,
+                            contentDescription = "Logcat",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .size(48.dp)
