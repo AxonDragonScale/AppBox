@@ -1,3 +1,10 @@
+---
+title: "Topty — security architecture"
+status: current
+summary: "Password-based encryption model built on PBKDF2 key derivation, AES-256-GCM token encryption, EncryptedSharedPreferences and biometric auth."
+read_when: "Touching encryption, key storage, password changes, or re-encryption."
+---
+
 > Context: [Main](../../context.md) > [Topty](./context.md) > Security
 
 # Topty — Security Architecture
@@ -213,5 +220,5 @@ Stored in `ToptyPrefsRepository`:
 
 - [Topty Context](./context.md) — Module overview, architecture, all features
 - [Topty Backup & Restore](./backup-restore.md) — Backup formats, encryption options, cross-device restore flow
-- [Commons Module](../../core/commons/context.md) — Shared utilities
+- [Core Modules](../../core/context.md) — Shared utilities
 - [Main Context](../../context.md) — Project overview, tech stack

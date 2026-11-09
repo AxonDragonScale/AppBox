@@ -1,3 +1,10 @@
+---
+title: "Kotp — OTP library plan"
+status: in-progress
+summary: "Plan to extract HOTP/TOTP generation, URI parsing and token models out of Topty into a standalone KMP library."
+read_when: "Building the kotp library or changing Topty's OTP core."
+---
+
 # kotp — KMP OTP Library Plan
 
 ## Overview

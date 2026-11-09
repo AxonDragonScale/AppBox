@@ -1,3 +1,10 @@
+---
+title: "NPinner — notification system"
+status: current
+summary: "Deep dive on notification lifecycle, scheduling, broadcast receivers, WorkManager workers and soft deletes."
+read_when: "Debugging notification persistence, reboot recovery, or scheduled work."
+---
+
 > Context: [Main](../../context.md) > [NPinner](./context.md) > Notification System
 
 # NPinner — Notification System
@@ -196,7 +203,7 @@ WorkManager is initialized via Koin's `workManagerFactory()` in `NPinnerApplicat
 ```kotlin
 startKoin {
     workManagerFactory()  // Registers KoinWorkerFactory
-    modules(CommonsModule, NPinnerModule)
+    modules(NPinnerModule)
 }
 ```
 
@@ -265,5 +272,5 @@ Uses `kotlin.time.Clock` and `kotlin.time.Instant` (not the deprecated kotlinx-d
 ## Related Context
 
 - [NPinner Context](./context.md) — Module overview, architecture, data model, UI patterns
-- [Commons Module](../../core/commons/context.md) — Shared utilities, DI module
+- [Core Modules](../../core/context.md) — Shared utilities, DI module
 - [Main Context](../../context.md) — Project overview, tech stack

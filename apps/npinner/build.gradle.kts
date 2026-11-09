@@ -15,7 +15,11 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.commons)
+    implementation(projects.core.android)
+    implementation(projects.core.common)
+    implementation(projects.core.ui)
+    implementation(projects.core.datastore)
+    implementation(projects.core.room)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

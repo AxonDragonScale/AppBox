@@ -1,3 +1,10 @@
+---
+title: "QRQanvas — QR generator and scanner"
+status: current
+summary: "Stylized QR generation with custom colors, shapes, eyes and logos, plus CameraX and ML Kit scanning and a Room-backed library."
+read_when: "Changing QR rendering, the creator flow, scanning, templates, or history."
+---
+
 > Context: [Main](../../context.md) > QRQanvas
 
 # QRQanvas - QR Code Generator & Scanner
@@ -8,7 +15,7 @@ QRQanvas is a customizable QR code generator and scanner app within the AppBox m
 
 **Package**: `com.axondragonscale.qrqanvas`
 **Module path**: `:apps:qrqanvas`
-**Current state**: Scaffolded — only has a default template Activity and theme. All features need to be built.
+**Current state**: Built — Home, Creator, Detail and Settings screens, stylized rendering, Room-backed saved codes/templates/scan history, export and CameraX + ML Kit scanning.
 
 ## Tech Stack (Already Declared in build.gradle.kts)
 
@@ -26,88 +33,58 @@ QRQanvas is a customizable QR code generator and scanner app within the AppBox m
 | Async | Coroutines + Flow (`libs.bundles.coroutines`) | |
 | UI | Jetpack Compose + Material 3 (`libs.bundles.compose`) | Via Compose BOM — never specify individual Compose versions |
 
-## Planned Architecture
-
-Follow the same patterns as wallmatic/topty/jest:
+## Architecture
 
 ```
 com.axondragonscale.qrqanvas/
-├── QRQanvasActivity.kt          # Single Activity, installs splash screen
-├── QRQanvasApplication.kt       # Initializes Koin with CommonsModule + QRQanvasModule
-├── di/
-│   └── QRQanvasModule.kt        # Koin module: database, repos, managers, viewModels
+├── QRQanvasActivity.kt          # Splash, edge-to-edge, theme from prefs
+├── QRQanvasApplication.kt       # Koin init
+├── di/QRQanvasModule.kt         # Database, DAOs, repositories, managers, view models
 ├── database/
-│   ├── QRQanvasDatabase.kt      # Room database with companion create()
-│   ├── dao/                     # Room DAOs
-│   ├── entity/                  # Room entities
-│   └── converter/               # TypeConverters if needed
-├── model/                       # Domain/UI models, enums
-├── repository/                  # Data repositories
-├── core/                        # Business logic managers
+│   ├── QRQanvasDatabase.kt
+│   ├── dao/                     # QRCodeDao, ScanHistoryDao, TemplateDao
+│   ├── entity/                  # QRCodeEntity, ScanHistoryEntity, TemplateEntity
+│   └── converter/QRConverters.kt
+├── model/                       # QRContent, QRStyle, ColorData, DotStyle, EyeStyle,
+│                                # Corner, LogoData, LogoShape, ExportFormat, ContentType,
+│                                # QRErrorCorrection, WifiEncryption, Template, PredefinedTemplates
+├── core/                        # QRGenerator, QRRenderer, QRExporter, QRContentCodec,
+│                                # ThumbnailGenerator
+├── repository/                  # QRCodeRepository, TemplateRepository,
+│                                # ScanHistoryRepository, AppPrefsRepository
 ├── ui/
-│   ├── Route.kt                 # @Serializable route objects
-│   ├── QRQanvasApp.kt           # NavHost composable
-│   ├── theme/                   # Already exists: Color.kt, Theme.kt, Type.kt
-│   ├── common/                  # Shared UI components
-│   ├── home/                    # Home screen (list of saved QR codes)
-│   ├── creator/                 # QR creation/customization screen
-│   ├── scanner/                 # QR scanner screen
-│   ├── detail/                  # QR detail/view screen
-│   ├── settings/                # Settings screen
-│   └── devtools/                # DevTools screen wrapper
-└── util/                        # Extension functions, helpers
+│   ├── QRQanvasApp.kt, Route.kt
+│   ├── common/                  # ColorPicker, QRPreview
+│   ├── home/ creator/ scanner/ detail/ history/ templates/ settings/
+│   ├── devtools/                # QRQanvasDevTools + TestData
+│   └── theme/
+└── util/                        # QRContentExt, StringExt
 ```
 
-## Navigation Routes (Planned)
+## Navigation Routes
 
 ```kotlin
 object Route {
     @Serializable data object Home
-    @Serializable data object Creator
+    @Serializable data class Creator(val qrCodeId: Long? = null)   // null = new, id = edit
     @Serializable data class Detail(val qrCodeId: Long)
     @Serializable data object Scanner
+    @Serializable data object History
+    @Serializable data object Templates
     @Serializable data object Settings
     @Serializable data object DevTools
 }
 ```
 
-## Koin DI Setup (Planned)
+## Wiring
 
-```kotlin
-// QRQanvasApplication.kt
-class QRQanvasApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        startKoin {
-            androidLogger()
-            androidContext(this@QRQanvasApplication)
-            modules(CommonsModule, QRQanvasModule)
-        }
-    }
-}
+`QRQanvasApplication` starts Koin with `QRQanvasModule`, which registers the database, its three
+DAOs, `QRExporter`, the Coil `ImageLoader`, the four repositories and every view model
+(`singleOf` / `viewModelOf`).
 
-// QRQanvasModule.kt — register with singleOf, viewModelOf
-val QRQanvasModule = module {
-    single { QRQanvasDatabase.create(androidContext()) }
-    singleOf(::SomeRepository)
-    viewModelOf(::SomeVM)
-}
-```
-
-## Activity Setup (Planned)
-
-```kotlin
-class QRQanvasActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()  // BEFORE super.onCreate()
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            QRQanvasTheme { QRQanvasApp() }
-        }
-    }
-}
-```
+`QRQanvasActivity` installs the splash screen before `super.onCreate()`, calls `enableEdgeToEdge()`,
+reads `uiMode` and `dynamicTheme` from `AppPrefsRepository` synchronously, then collects them and
+wraps `QRQanvasApp()` in `QRQanvasTheme(darkTheme = uiMode.isDarkTheme(), dynamicColor = ...)`.
 
 ## Room Database Pattern
 
@@ -174,6 +151,6 @@ Everything else — Application class, Koin module, database, Room entities, DAO
 ## Related Context
 
 - [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
-- [Commons Module](../../core/commons/context.md) — Shared utilities available to all apps (Logger, Result, DevToolsScreen, etc.)
+- [Core Modules](../../core/context.md) — Shared utilities available to all apps (Logger, Result, DevToolsScreen, etc.)
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming conventions
 - [Build System](../../build-system.md) — Convention plugins, version catalog, build commands

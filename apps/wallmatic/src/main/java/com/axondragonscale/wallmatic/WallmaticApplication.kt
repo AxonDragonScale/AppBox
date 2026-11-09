@@ -1,7 +1,6 @@
 package com.axondragonscale.wallmatic
 
 import android.app.Application
-import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.wallmatic.di.WallmaticModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -23,7 +22,7 @@ class WallmaticApplication : Application() {
             androidLogger()
             androidContext(this@WallmaticApplication)
             workManagerFactory()
-            modules(CommonsModule, WallmaticModule,)
+            modules(WallmaticModule)
         }
     }
 }

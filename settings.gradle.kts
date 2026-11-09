@@ -30,7 +30,13 @@ dependencyResolutionManagement {
 rootProject.name = "AppBox"
 
 // Core modules (libraries)
-include(":core:commons")
+include(":core:android")
+include(":core:common")
+include(":core:ui")
+include(":core:devtools")
+include(":core:datastore")
+include(":core:room")
+include(":core:network")
 
 // App modules (applications)
 include(":apps:jest:jestComposeApp")
@@ -47,4 +53,5 @@ include(":apps:limitless:limitlessAndroid")
 include(":libraries:tlv")
 include(":libraries:bitops")
 include(":libraries:logcat-viewer")
+include(":libraries:qr")
 include(":apps:cardy")

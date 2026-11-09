@@ -1,3 +1,10 @@
+---
+title: "NPinner — notification pinner"
+status: current
+summary: "Pins persistent notifications to the panel with one-time and recurring schedules that survive reboots and app updates."
+read_when: "Changing pinning, scheduling, or the notification UI."
+---
+
 > Context: [Main](../../context.md) > NPinner
 
 # NPinner - Notification Pinner App
@@ -14,7 +21,7 @@ NPinner is a notification pinning app within AppBox that lets users create persi
 
 - **UI**: Jetpack Compose + Material3 (Monospace typography throughout)
 - **Navigation**: Navigation Compose with string routes and deep links (`npinner://` scheme)
-- **DI**: Koin (`NPinnerApplication` initializes `CommonsModule` + `NPinnerModule`)
+- **DI**: Koin (`NPinnerApplication` initializes `NPinnerModule`)
 - **Database**: Room (single table, soft deletes via `deletedAt`)
 - **Date/Time**: `kotlin.time.Clock` + `kotlin.time.Instant` for clock/instant; `kotlinx.datetime` for `LocalDate`, `LocalTime`, `LocalDateTime`, `TimeZone`, `DateTimeUnit`
 - **Preferences**: DataStore Preferences (dark mode only)
@@ -194,7 +201,7 @@ Key properties:
 
 ## Dependencies
 
-- **Local Modules**: `projects.core.commons`
+- **Local Modules**: `:core:android`, `:core:common`, `:core:ui`, `:core:datastore`, `:core:room`
 - **AndroidX**: Compose BOM, Navigation, Room (KSP), DataStore Preferences, Splash Screen, WorkManager
 - **Koin**: BOM + full bundle (includes workmanager, compose, navigation)
 - **Accompanist**: Permissions
@@ -211,7 +218,7 @@ Key properties:
 ## Related Context
 
 - [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
-- [Commons Module](../../core/commons/context.md) — Shared utilities, networking, DI module
+- [Core Modules](../../core/context.md) — Shared utilities, networking, DI module
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming
 - [Build System](../../build-system.md) — Convention plugins, version catalog
 - **Sub-contexts:**

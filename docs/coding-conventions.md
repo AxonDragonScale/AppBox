@@ -1,6 +1,32 @@
+---
+title: "Coding conventions"
+status: current
+summary: "Rules every app follows: architecture, Compose screen pattern, ViewModel/state/event/effect, Kotlin idioms, comments, testing policy."
+read_when: "Before writing or reviewing any code."
+---
+
 > Context: [Main](./context.md) > Coding Conventions
 
 # Coding Conventions
+
+---
+
+## Architecture
+
+Every app in the monorepo uses the same shape:
+
+- **UI**: Jetpack Compose + Material 3
+- **State**: `ViewModel` (`*VM` suffix) holding `MutableStateFlow<UiState>`
+- **Events**: sealed interface `UiEvent` → `fun onEvent(event): Any`
+- **One-shot effects**: `Channel<UiEffect>` → `receiveAsFlow().flowOn(Dispatchers.Main.immediate)`
+- **DI**: Koin — `singleOf`, `viewModelOf`, `factoryOf`
+- **Navigation**: Navigation Compose with `@Serializable` type-safe routes
+- **Async**: Coroutines + Flow
+
+Module rules: each app is self-contained with its own `Application` class. Pure Kotlin goes in
+`:core:common`, Compose helpers in `:core:ui`, infrastructure in its capability module
+(`:core:android`, `:core:datastore`, `:core:room`, `:core:network`, `:core:devtools`). Apps depend on
+core modules, never on each other.
 
 ---
 
@@ -175,9 +201,11 @@ class MyVM : ViewModel() {
 
 ### Shared Utilities and Failure Handling
 
-- **Extend `:core:commons` instead of writing a one-off.** If a shared helper is missing a case — a
-  `Throwable` overload, a nullable pref, a formatter — add it to the shared helper. A private
-  variant of a commons function sitting next to its call site is a review failure.
+- **Extend the core modules instead of writing a one-off.** Pure Kotlin helpers (logging, `Result`, JSON,
+  date/time, generic flow utilities) belong in `:core:common`; Compose helpers in `:core:ui`; DataStore,
+  Room, Android and network helpers in their capability modules. If a shared helper is missing a case — a
+  `Throwable` overload, a nullable pref, a formatter — add it to the shared helper. A private variant of
+  a core function sitting next to its call site is a review failure.
 - **Handle recoverable failure inside the function that can fail.** Callers get a safe value or a
   result type; `runCatching` chains and `try`/`catch` sprinkled at call sites are not. Resource-bound
   code (DataStore, alarms, network) absorbs and logs its own exceptions.
@@ -213,4 +241,5 @@ A comment must state what the code cannot. Otherwise delete it.
 
 - [Main Context](./context.md) — Project overview, tech stack, module index, agent guidelines
 - [Build System](./build-system.md) — Convention plugins, version catalog, module setup
-- [Commons Module](./core/commons/context.md) — Shared utilities, DI module, DevToolsScreen
+- [Core Modules Overview](./core/context.md) — Android, UI, DevTools, DataStore, Room, Network, QR
+- [Core Common Module](./core/common/context.md) — Pure Kotlin utilities (Logger, Result, Json, DateTime, Flow)

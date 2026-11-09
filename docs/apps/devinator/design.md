@@ -1,3 +1,10 @@
+---
+title: "Devinator — design and behaviour"
+status: current
+summary: "Behaviour rules: one tap per switch, never lie about state, keep Android's security gates visible, plus edge cases."
+read_when: "Changing what a Devinator switch does, or resolving a state or UX question."
+---
+
 > Context: [Main](../../context.md) > [Devinator](./context.md) > Design
 
 # Devinator — Design & Behaviour
@@ -17,8 +24,9 @@ lives in [context.md](./context.md).
    remembers their values; turning it back on restores them. A failed write is a snackbar, never a
    modal.
 5. **Local only.** No telemetry, no analytics, no outbound requests, no data collected. `INTERNET`
-   arrives transitively with `:core:commons` (see [context.md](./context.md#build--manifest)); it is
-   never used to reach a server, so the app's promise is about behaviour, not the permission list.
+   and `ACCESS_NETWORK_STATE` are declared explicitly for local mDNS discovery (see
+   [context.md](./context.md#build--manifest)); they are never used to reach a server, so the app's
+   promise is about behaviour, not the permission list.
 
 ## States
 

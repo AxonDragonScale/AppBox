@@ -1,3 +1,10 @@
+---
+title: "Limitless — habit tracker"
+status: current
+summary: "KMP habit tracker with completions, goals, reminders and statistics, targeting Android, Desktop and iOS."
+read_when: "Changing Limitless features, schema, or its KMP target setup."
+---
+
 > Context: [Main](../../context.md) > Limitless
 
 # Limitless — Habit Tracking App
@@ -20,7 +27,7 @@ Limitless is a fully-featured habit tracking app built as a **Kotlin Multiplatfo
 - **Preferences**: DataStore Preferences via `createPreferencesDataStore()` from commons (no `Context`)
 - **Reminders**: `expect`/`actual` `ReminderScheduler` — Android uses `AlarmManager`; Desktop/iOS are no-op stubs
 - **Theme**: MaterialKolor (`rememberDynamicColorScheme`) with optional Material You override on Android 12+
-- **Dev Tools**: `DevToolsScreen` from `:core:commons` with app-specific tools and `SampleDataSeeder`
+- **Dev Tools**: `DevToolsScreen` from `:core:devtools` with app-specific tools and `SampleDataSeeder`
 
 ## Source Set Layout
 
@@ -132,7 +139,6 @@ fun initKoin(platformModule: Module? = null, config: KoinAppDeclaration? = null)
     startKoin {
         config?.invoke(this)
         modules(buildList {
-            add(CommonsModule)
             add(LimitlessModule)
             if (platformModule != null) add(platformModule)
         })
@@ -366,7 +372,7 @@ Creates 7 sample habits with varied colors, views, goals, and historical records
 ## Related Context
 
 - [Main Context](../../context.md) — Project overview, tech stack, module index
-- [Commons Module](../../core/commons/context.md) — `createDatabase`, `createPreferencesDataStore`, `AppInfo`, `DevToolsScreen`
+- [Core Modules](../../core/context.md) — `createDatabase`, `createPreferencesDataStore`, `AppInfo`, `DevToolsScreen`
 - [Jest Context](../jest/context.md) — Reference KMP implementation (same patterns)
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming
 - [Build System](../../build-system.md) — Convention plugins, version catalog

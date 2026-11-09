@@ -1,7 +1,6 @@
 package com.axondragonscale.topty
 
 import android.app.Application
-import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.topty.di.ToptyModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -22,7 +21,6 @@ class ToptyApplication : Application() {
             androidLogger()
             androidContext(this@ToptyApplication)
             modules(
-                CommonsModule,
                 ToptyModule,
             )
         }

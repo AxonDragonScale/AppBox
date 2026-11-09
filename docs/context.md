@@ -1,145 +1,142 @@
-# AppBox - Project Context
-
-> **This is the entry point of the AppBox context graph.**
-> If you are an AI agent or LLM, read the [Agent Context Guidelines](#agent-context-guidelines) section first.
-
-## Agent Context Guidelines
-
-### How to Use This Context System
-
-This project uses a **context graph** — a set of interlinked markdown files that provide project knowledge. Each file covers a specific scope. You navigate by following links as needed, loading only the context relevant to your current task.
-
-1. **Always start here** — this file is your entry point. It gives you the project overview, tech stack, architecture patterns, and links to everything else.
-2. **Load the module context when working on a module** — follow the link in the [Module Index](#module-index) below.
-3. **Always load [commons context](./core/commons/context.md)** — every app module depends on `:core:commons`. Know what reusable utilities are available before writing new code.
-4. **Follow sub-context links only when needed** — some modules have sub-context files for deep subsystems (e.g., topty's security or backup systems). Only read these when your task touches that subsystem.
-5. **Load [coding-conventions.md](./coding-conventions.md) before writing code** — it defines Compose patterns, Kotlin idioms, naming conventions, and state management patterns you must follow.
-6. **Load [build-system.md](./build-system.md) only for build/config tasks** — convention plugins, version catalog, signing, and build commands. Not needed for typical feature work.
-7. **Keep context files up to date as you make changes** — when you add a feature, introduce a pattern, or change something architecturally significant, update the relevant context file(s) to reflect it. The context graph is the source of truth for future agents.
-
-### Navigation Conventions
-
-- Every context file has a **breadcrumb** at the top showing its position in the graph.
-- Every context file has a **Related Context** section at the bottom with links to relevant docs.
-- Sub-context files always link back to their parent module context.
-- When you encounter a section that says *"See [link] for details"*, follow that link only if your task requires those details.
-
-### Module Index
-
-| Module            |  Purpose                                                    | Context                                                                                                                      |
-|-------------------|-------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `:apps:jest:jestComposeApp`      |  Daily jokes/humor with home screen widget                  | [context](./apps/jest/context.md)                                                                                            |
-| `:apps:limitless:limitlessComposeApp` |  Habit tracking with statistics                             | [context](./apps/limitless/context.md)                                                                                       |
-| `:apps:npinner`   |  Persistent notification pinning with scheduling            | [context](./apps/npinner/context.md) ∙ [notification-system](./apps/npinner/notification-system.md)                          |
-| `:apps:qrqanvas`  |  Customizable QR code generator & scanner                   | [context](./apps/qrqanvas/context.md)                                                                                        |
-| `:apps:topty`     |  TOTP-based 2FA code manager                                | [context](./apps/topty/context.md) ∙ [security](./apps/topty/security.md) ∙ [backup-restore](./apps/topty/backup-restore.md) |
-| `:apps:wallmatic` |  Auto-change wallpapers on schedule                         | [context](./apps/wallmatic/context.md) ∙ [background-services](./apps/wallmatic/background-services.md)                      |
-| `:apps:devinator` |  Developer options / USB / wireless debugging toggles, QS tiles, and a Tweaks page | [context](./apps/devinator/context.md) ∙ [design](./apps/devinator/design.md) ∙ [ui](./apps/devinator/ui.md) |
-| `:core:commons`   |  Shared utilities, networking, DI, DevTools              | [context](./core/commons/context.md)                                                       |
-| `:libraries:tlv`  |  BER-TLV encoding/decoding (KMP, independently publishable) | [context](./libraries/tlv/context.md)                                                                                        |
-| `:libraries:logcat-viewer` |  Compose log viewer for an app's own records (no permission, host-supplied source) | [context](./libraries/logcat-viewer/context.md) |
-
-## Agent Efficiency Guidelines
-
-- Don't re-read files you just wrote or edited — you already know the contents.
-- When making changes to an existing file, edit only the lines required. Don't replace the whole file. **Never use overwrite mode** — always use edit mode targeting the specific lines that need to change.
-- Don't re-run commands to "verify" unless the outcome was genuinely uncertain (e.g., a complex build, a flaky test).
-- Don't echo back large blocks of code or file contents unless asked.
-- Batch related edits into single operations. Don't make 5 edits when 1 handles it.
-- If a task needs 1 tool call, don't use 3. Plan before acting.
-- Don't provide verbose summaries of what you just did. A one-line confirmation is fine; a paragraph recap is not. Skip the summary entirely if the result is obvious.
-- Parallelize independent tool calls — when multiple reads, searches, or edits don't depend on each other, make them all in one round.
-- Scope searches using known project structure — once you know which module you're in, narrow searches to that subtree instead of searching the entire project.
-- Prefer moving files and editing them instead of rewriting them.
-
+---
+title: "AppBox — agent entry point"
+status: current
+summary: "Map of the AppBox monorepo: stack invariants, the documentation graph, and how to work in the repo."
+read_when: "At the start of every session, before opening any other doc."
 ---
 
-## Overview
+# AppBox — Agent Entry Point
 
-AppBox is a monorepo containing multiple standalone Android applications that share common utilities and build configuration. Each app is independently installable and publishable while benefiting from shared code and consistent architecture.
+Monorepo of independent Android apps (`apps/`), shared capability modules (`core/`), standalone
+publishable libraries (`libraries/`), and convention-plugin build logic (`build-logic/`).
+Kotlin 21 · Compose · Koin · Ktor · Room + KSP.
 
-## Tech Stack
+This file is the map, not the territory. Read it, then open only what your task points to.
 
-| Category | Technology |
-|----------|------------|
-| Language | Kotlin (JVM 21) |
-| Min SDK | 31 (Android 12) |
-| Target SDK | 36 |
-| UI Framework | Jetpack Compose |
-| DI Framework | Koin |
-| Networking | Ktor + Kotlinx Serialization |
-| Database | Room |
-| DataStore | Preferences + Proto DataStore |
-| Image Loading | Coil 3 |
-| Widgets | Jetpack Glance |
-| Build System | Gradle (Kotlin DSL) with Version Catalogs + Convention Plugins |
+Every doc opens with the same four-field header — `title`, `status`, `summary`, `read_when`. Reading
+those six lines tells you what the doc covers, whether to trust it, and whether it is your task. If
+it isn't, stop there.
 
-## Key Technology Decisions
+## Ground rules
 
-These are **non-negotiable** choices across the entire project:
+### The stack is fixed
 
-1. **Koin** for dependency injection — never Hilt or Dagger
-2. **Ktor** for networking — never Retrofit
-3. **kotlinx.serialization** for JSON — never Gson or Moshi
-4. **Room with KSP** — never KAPT
-5. **JVM 21** — modern Kotlin features are available
-6. **Compose BOM** — never specify individual Compose versions
-7. **Proto DataStore** for complex/typed settings, Preferences DataStore for simple key-value
+- **Koin**, never Hilt or Dagger. **Ktor**, never Retrofit. **kotlinx.serialization**, never
+  Gson or Moshi.
+- **Room with KSP**, never KAPT. **JVM 21**. **Compose BOM only** — never pin individual Compose
+  versions.
+- **Proto DataStore** for typed settings, **Preferences DataStore** for simple keys.
+- `:core:common` stays free of Compose, Koin, Ktor, Room and DataStore.
+- Apps never depend on each other.
+- No tests in app modules. Only publishable libraries (`libraries/tlv`, `libraries/bitops`) keep
+  `commonTest` suites.
 
-## Project Structure
+### Before you write anything
 
-```
-AppBox/
-├── apps/                        # Standalone Android applications
-│   ├── jest/                   # Jokes/humor app with widget support
-│   ├── limitless/              # Habit tracking app
-│   ├── npinner/                # Notification pinner app
-│   ├── qrqanvas/               # QR code generator/scanner app
-│   ├── topty/                  # 2FA authenticator app
-│   └── wallmatic/              # Wallpaper auto-changer app
-├── core/                        # Shared library modules
-│   └── commons/                # Shared utilities, network, DI setup
-├── build-logic/                 # Convention plugins for build configuration
-├── docs/                        # Context graph (you are here)
-├── gradle/                      # Version catalog (libs.versions.toml)
-├── keystore/                    # Signing configuration
-└── libraries/                   # Standalone libraries
-    ├── tlv/                    # BER-TLV encoding/decoding (Kotlin Multiplatform)
-    └── logcat-viewer/          # Compose log viewer for an app's own logs
-```
+- [Coding conventions](./coding-conventions.md) — Compose screen pattern, ViewModel/state/event,
+  naming, comments. **Always read before writing or reviewing code.**
+- The owning module's `context.md` in the [doc map](#documentation-map) — package, module path,
+  architecture, data model, on-device risks.
+- [Build system](./build-system.md) — only when touching Gradle, dependencies, or signing.
 
-## Building
+### Working style
 
-Apps can be built using `./gradlew :apps:<module>:assembleDebug`. Example -
+- Don't re-read a file you just wrote or edited.
+- Edit the lines that need changing; don't rewrite whole files.
+- Don't re-run a build or command to "verify" unless the outcome was genuinely uncertain.
+- Batch related edits; parallelize independent reads.
+- Scope searches to the module you're in.
+- Keep replies short. A one-line confirmation beats a paragraph recap.
+
+## Documentation map
+
+Every durable doc in the graph. If it isn't here, it doesn't exist.
+
+Paths in these tables are relative to `docs/`, not the repository root — `libraries/tlv/context`
+means `docs/libraries/tlv/context.md`.
+
+### Foundations
+
+Read both before any non-trivial change; they apply to every module.
+
+| Doc | What's inside |
+|---|---|
+| [coding-conventions](./coding-conventions.md) | Architecture rules, Compose screen pattern, VM/state/event/effect, Kotlin idioms, comment style, testing policy |
+| [build-system](./build-system.md) | Convention plugins, version catalog, signing, build commands |
+
+### Apps
+
+Read the app's `context.md` before changing it. Open a sub-doc only when the task touches that
+subsystem.
+
+| Doc | What's inside |
+|---|---|
+| [apps/cardy/context](./apps/cardy/context.md) | `:apps:cardy` — NFC EMV card reader, encrypted vault, known limitations |
+| [apps/devinator/context](./apps/devinator/context.md) | `:apps:devinator` — developer-option / USB / wireless-debugging toggles, QS tiles, Tweaks, Logcat |
+| [apps/devinator/design](./apps/devinator/design.md) | Devinator behaviour rules, state machine, edge cases |
+| [apps/devinator/ui](./apps/devinator/ui.md) | Devinator visual spec, tokens, literal copy |
+| [apps/jest/context](./apps/jest/context.md) | `:apps:jest` — jokes app, the reference KMP layout (Android/JVM/iOS), Glance widget |
+| [apps/limitless/context](./apps/limitless/context.md) | `:apps:limitless` — habit tracking, statistics, KMP |
+| [apps/npinner/context](./apps/npinner/context.md) | `:apps:npinner` — persistent notification pinning, scheduling |
+| [apps/npinner/notification-system](./apps/npinner/notification-system.md) | Notification lifecycle, receivers, workers, reboot survival |
+| [apps/qrqanvas/context](./apps/qrqanvas/context.md) | `:apps:qrqanvas` — stylized QR generator, CameraX + ML Kit scanner |
+| [apps/topty/context](./apps/topty/context.md) | `:apps:topty` — TOTP/HOTP 2FA authenticator |
+| [apps/topty/security](./apps/topty/security.md) | PBKDF2, AES-256-GCM, biometrics, key storage, re-encryption |
+| [apps/topty/backup-restore](./apps/topty/backup-restore.md) | Backup formats (Topty/Aegis/URI), import/export flows |
+| [apps/wallmatic/context](./apps/wallmatic/context.md) | `:apps:wallmatic` — scheduled wallpaper rotation, albums |
+| [apps/wallmatic/background-services](./apps/wallmatic/background-services.md) | Update cycle, Doze/reboot survival, tiles, receivers |
+
+### Core modules
+
+Check here before writing a helper — the shared one usually exists.
+
+| Doc | What's inside |
+|---|---|
+| [core/context](./core/context.md) | `:core:android`, `:core:ui`, `:core:devtools`, `:core:datastore`, `:core:room`, `:core:network`, `:libraries:qr` — contents and dependency direction |
+| [core/common/context](./core/common/context.md) | `:core:common` — Logger, `Result`, `CommonJson`, `DateTimeExt`, Flow helpers, `AppInfo` |
+
+### Libraries
+
+| Doc | What's inside |
+|---|---|
+| [libraries/tlv/context](./libraries/tlv/context.md) | `:libraries:tlv` — BER-TLV codec, KMP, independently published |
+| [libraries/logcat-viewer/context](./libraries/logcat-viewer/context.md) | `:libraries:logcat-viewer` — in-app log viewer with a host-supplied source |
+
+### Design and reference
+
+| Doc | What's inside |
+|---|---|
+| [design/openpencil-skill](./design/openpencil-skill.md) | Driving OpenPencil MCP: JSX rendering, tokens, variants, verification. **Read before editing any `.fig`** |
+| [reference/emv-nfc-library-technical-reference](./reference/emv-nfc-library-technical-reference.md) | devnied/EMV-NFC-Paycard-Enrollment internals — APDU, TLV, provider seam |
+
+## Open work
+
+Plans and migrations exist only while the work is open. **When the work lands, delete the doc**,
+fold anything durable into the matching doc above, and remove the row.
+
+| Doc | Work in flight |
+|---|---|
+| [apps/jest/ui-revamp-plan](./apps/jest/ui-revamp-plan.md) | Responsive redesign, three layout tiers |
+| [libraries/bitops/plan](./libraries/bitops/plan.md) | `KmpBitSet` API — module exists but is not implemented |
+| [libraries/kotp/plan](./libraries/kotp/plan.md) | Extracting OTP generation out of Topty — module not created |
+| [migration/kmp-single-app-migration-playbook](./migration/kmp-single-app-migration-playbook.md) | Repeatable Android → KMP playbook, live until every app is migrated |
+
+## Documentation policy
+
+- **Every doc opens with the fixed header**: `title`, `status` (`current` | `in-progress` |
+  `reference`), `summary`, `read_when`. Nothing else goes above it.
+- **Durable docs describe the code as it is.** Change them in the same commit as the code.
+- **Open-work docs describe intent.** They are deleted on completion — never left to rot.
+- **Adding a doc means adding a row** to the map or the open-work table, in the same change, and
+  keeping that row and the header saying the same thing.
+- **A doc nobody can reach is a bug.** Every file in `docs/` is linked from this page.
+- **Check it before committing**: `./scripts/check-docs.sh` verifies every link, index entry, and
+  backticked repo path. Enable the local pre-commit hook once per clone with
+  `git config core.hooksPath .githooks`.
+
+## Commands
+
 ```bash
-./gradlew :apps:topty:assembleDebug
+./gradlew :apps:<module>:assembleDebug          # e.g. :apps:topty:assembleDebug
+./gradlew :apps:jest:jestAndroid:assembleDebug  # KMP apps build through the Android shell
 ```
-
-## Architecture Patterns
-
-All apps follow these patterns consistently:
-
-- **UI Layer**: Jetpack Compose with Material 3
-- **State Management**: ViewModel (`*VM` suffix) + `MutableStateFlow<UiState>`
-- **Events**: Sealed interface `UiEvent` → `fun onEvent(event): Any`
-- **One-shot Effects**: `Channel<UiEffect>` → `receiveAsFlow().flowOn(Dispatchers.Main.immediate)`
-- **Dependency Injection**: Koin — `singleOf`, `viewModelOf`, `factoryOf`
-- **Navigation**: Navigation Compose with `@Serializable` type-safe routes
-- **Async**: Kotlin Coroutines + Flow
-- **Networking**: Ktor Client with Kotlinx Serialization JSON
-
-### Module Dependency Rules
-
-- Each app is fully self-contained with its own `Application` class
-- Shared code goes in `:core:commons`
-- App modules depend on `:core:commons`, never on each other
-
-See [coding-conventions.md](./coding-conventions.md) for detailed code patterns.
-See [build-system.md](./build-system.md) for convention plugins and build configuration.
-
-## Related Context
-
-- [Coding Conventions](./coding-conventions.md) — Compose patterns, Kotlin idioms, naming, state management
-- [Build System](./build-system.md) — Convention plugins, version catalog, build commands
-- [Commons Module](./core/commons/context.md) — Shared utilities available to all apps
-- [OpenPencil MCP skill](./design/openpencil-skill.md) — building `apps/*/*.fig` designs; read before any design task (Zed edits via MCP, other hosts read-only)

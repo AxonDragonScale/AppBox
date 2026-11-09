@@ -1,3 +1,10 @@
+---
+title: "Logcat viewer library"
+status: current
+summary: "Compose log viewer an app can embed to read its own records, with a host-supplied ILogcatSource and no permission gate."
+read_when: "Changing the viewer UI, the log source contract, or adding a host."
+---
+
 > Context: [Main](../../context.md) > Logcat Viewer Library
 
 # Logcat Viewer — `:libraries:logcat-viewer`

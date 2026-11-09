@@ -1,7 +1,6 @@
 package com.axondragonscale.qrqanvas
 
 import android.app.Application
-import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.qrqanvas.di.QRQanvasModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -22,7 +21,6 @@ class QRQanvasApplication : Application() {
             androidLogger()
             androidContext(this@QRQanvasApplication)
             modules(
-                CommonsModule,
                 QRQanvasModule,
             )
         }

@@ -24,6 +24,8 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            implementation(projects.core.android)
+
             implementation(libs.androidx.splashscreen)
 
             implementation(libs.compose.ui.tooling.preview)
@@ -41,7 +43,11 @@ kotlin {
         }
 
         commonMain.dependencies {
-            implementation(projects.core.commons)
+            implementation(projects.core.common)
+            implementation(projects.core.ui)
+            implementation(projects.core.devtools)
+            implementation(projects.core.datastore)
+            implementation(projects.core.room)
 
             // DataStore
             implementation(libs.datastore.prefs)

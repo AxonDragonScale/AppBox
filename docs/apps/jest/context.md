@@ -1,3 +1,10 @@
+---
+title: "Jest — jokes app"
+status: current
+summary: "Jokes app on Compose Multiplatform (Android, JVM, iOS) with Room caching, a Ktor client, and an Android-only Glance widget. The reference KMP layout."
+read_when: "Changing Jest, or copying its KMP structure and expect/actual patterns into another app."
+---
+
 > Context: [Main](../../context.md) > Jest
 
 # Jest — Jokes App
@@ -17,7 +24,7 @@ Jest is a joke/humor app within AppBox that fetches and displays jokes from an e
 
 - **UI Framework**: Compose Multiplatform with Material3
 - **Navigation**: `NavHost` with manual `when` block — `JestApp` hosts a `NavHost`; `MainScreen` is the adaptive dashboard destination rendering content via `when (activeDestination)` (no HorizontalPager)
-- **Dependency Injection**: Koin — each platform entry point starts Koin with `CommonsModule + JestModule`
+- **Dependency Injection**: Koin — each platform entry point starts Koin with `NetworkModule + JestModule` (jest is the only app that needs HTTP)
 - **State Management**: ViewModel + StateFlow (`collectAsStateWithLifecycle`)
 - **Persistence**: Room (KMP) + DataStore Preferences (via commons `createPreferencesDataStore`)
 - **Networking**: Ktor client with kotlinx.serialization
@@ -200,7 +207,8 @@ Replaces the old separate `Favorites` and `History` tabs. `LibraryVM` exposes a 
 | Share text | `expect fun shareText(text: String)` | Intent chooser | Clipboard copy | UIActivityViewController |
 | Room DB creation | `expect fun createJestDatabase(): JestDatabase` | `Room.databaseBuilder(context)` | `Room.databaseBuilder(path)` + BundledSQLiteDriver | `Room.databaseBuilder(NSHomeDirectory)` |
 
-Platform actuals for `AppInfo`, `DataStore`, and `DevToolsBuiltInContent` live in `:core:commons`.
+Platform actuals for `AppInfo`, `DataStore`, and `DevToolsBuiltInContent` live in `:core:common`
+(`AppInfo`), `:core:datastore` (DataStore) and `:core:devtools` (DevTools built-ins).
 
 ### Joke Model
 
@@ -305,7 +313,7 @@ Database version: `1`. Schema exported to `jestComposeApp/schemas/`.
 The module applies `alias(libs.plugins.kmp.app.convention)`, which supplies the KMP/Compose plugins and target configuration. Dependencies are declared in this build file.
 
 **`commonMain` dependencies** (highlights):
-- `projects.core.commons`
+- `:core:common`, `:core:ui`, `:core:devtools`, `:core:datastore`, `:core:room`, `:core:network`
 - Room runtime + SQLite bundled
 - Ktor core + content negotiation + kotlinx.json serialization
 - Compose Multiplatform (runtime, foundation, material3, ui, resources, tooling-preview)
@@ -335,7 +343,6 @@ The module applies `alias(libs.plugins.kmp.app.convention)`, which supplies the 
 ## Related Context
 
 - [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
-- [Commons Module](../../core/commons/context.md) — Shared utilities, AppInfo, DataStore factory, DevTools, networking, DI
+- [Core Modules](../../core/context.md) — Shared utilities, AppInfo, DataStore factory, DevTools, networking, DI
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming
 - [Build System](../../build-system.md) — Convention plugins, version catalog
-- [KMP Migration Plan](./kmp-migration-plan.md) — Completed migration reference

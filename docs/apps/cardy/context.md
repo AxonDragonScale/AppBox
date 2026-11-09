@@ -1,3 +1,10 @@
+---
+title: "Cardy — NFC card reader"
+status: current
+summary: "NFC EMV reader that parses contactless card data with libraries:tlv and stores cards in a biometric-gated, AES-256-GCM vault."
+read_when: "Changing NFC reads, APDU/EMV parsing, the vault, or Cardy's screens."
+---
+
 > Context: [Main](../../context.md) > Cardy
 
 # Cardy - NFC Card Reader & Vault
@@ -64,70 +71,58 @@ Cardy is an NFC-based smart card reader and secure vault within AppBox. Users ta
 - Saved cards shown as visual card tiles with full PAN visible (post biometric auth)
 - No Material You / dynamic theme — uses a custom dark palette with network-derived accents
 
-## Planned Architecture
+## Architecture
 
 ```
 com.axondragonscale.cardy/
-├── CardyActivity.kt              # Entry point, NFC foreground dispatch
+├── CardyActivity.kt              # FragmentActivity: splash, edge-to-edge, NFC reader mode
 ├── CardyApplication.kt           # Koin initialization
-├── di/
-│   └── CardyModule.kt            # Koin module
+├── di/CardyModule.kt             # Koin module
 ├── nfc/
-│   ├── NfcManager.kt             # NFC availability, foreground dispatch lifecycle
-│   ├── CardReader.kt             # IsoDep communication, APDU command sequencing
-│   ├── EmvCommands.kt            # APDU command builders (SELECT, READ RECORD, GPO)
-│   └── ApduResponse.kt           # Response parsing, SW1/SW2 status handling
+│   ├── NfcManager.kt             # NFC availability, enableReaderMode lifecycle
+│   ├── CardReader.kt             # IsoDep communication, APDU sequencing
+│   ├── EmvCommands.kt            # APDU builders (SELECT PPSE, SELECT AID, GPO, READ RECORD)
+│   └── ApduResponse.kt           # SW1/SW2 parsing
 ├── emv/
-│   ├── EmvTags.kt                # Known EMV tag registry (tag → name + description)
-│   ├── EmvDataExtractor.kt       # Extract structured data from parsed TLV (uses libraries:tlv)
-│   └── CardType.kt               # Card network detection from AID
-├── model/
-│   ├── CardInfo.kt               # Parsed card summary (PAN, expiry, name, type)
-│   ├── EmvData.kt                # Full structured EMV data
-│   ├── CardNetwork.kt            # Enum: Visa, Mastercard, Rupay, Amex, etc.
-│   └── SavedCard.kt              # UI model for vault display
+│   ├── EmvTag.kt                 # Known EMV tag registry (tag → name + description)
+│   ├── EmvDataExtractor.kt       # Structured data from parsed TLV (uses libraries:tlv)
+│   ├── CardNetwork.kt            # Network detection from AID prefix
+│   ├── Track2EquivalentData.kt   # Track 2 (tag 57) decoding
+│   └── interpreter/              # Per-tag value interpretation
+├── model/                        # CardReadResult, EmvApplication, ParsedTlvNode
 ├── database/
-│   ├── CardyDatabase.kt          # Room database
-│   ├── dao/
-│   │   └── CardDao.kt            # Card CRUD
-│   └── entity/
-│       └── CardEntity.kt         # Encrypted card entity
+│   ├── CardyDatabase.kt
+│   ├── dao/CardDao.kt
+│   └── entity/CardEntity.kt      # Encrypted card entity
 ├── security/
-│   ├── CardEncryption.kt         # AES-256-GCM encrypt/decrypt using Keystore-backed key
 │   ├── KeystoreManager.kt        # Android Keystore key generation & retrieval
+│   ├── CardEncryption.kt         # AES-256-GCM encrypt/decrypt
 │   └── BiometricAuthManager.kt   # BiometricPrompt wrapper
-├── repository/
-│   └── CardRepository.kt         # Card persistence, encrypt-on-save, decrypt-on-read
+├── repository/CardRepository.kt  # Encrypt-on-save, decrypt-on-read
 ├── ui/
-│   ├── Route.kt                  # @Serializable routes
-│   ├── CardyApp.kt               # NavHost
-│   ├── theme/                    # Color, Shape, Theme, Type
-│   ├── common/                   # Shared composables (CardTile, NetworkLogo, etc.)
-│   ├── home/                     # Tap prompt + recent reads
-│   ├── reader/                   # Live read results + EMV data viewer
+│   ├── Route.kt, CardyApp.kt     # Routes + NavHost
+│   ├── common/PaymentCard.kt     # Shared card visual
+│   ├── home/                     # Tap prompt, live read result, recent reads
+│   ├── detail/                   # Full card detail + raw TLV tree
 │   ├── vault/                    # Saved cards grid (biometric-gated)
-│   ├── detail/                   # Full card detail + raw TLV explorer
-│   └── settings/                 # NFC settings, security preferences
-└── util/
-    ├── HexExt.kt                 # ByteArray ↔ hex string extensions
-    └── PanUtils.kt               # PAN formatting, Luhn validation, label generation
+│   ├── settings/
+│   └── theme/
+└── util/HexExt.kt                # ByteArray ↔ hex
 ```
 
-## Navigation Routes (Planned)
+## Navigation Routes
 
 ```kotlin
 object Route {
-    @Serializable data object Home           // NFC tap prompt + recent reads
-    @Serializable data class Reader(         // Live EMV data from current tap
-        val sessionId: String                // Identifies the current read session
-    )
-    @Serializable data object Vault          // Saved cards (biometric-gated)
-    @Serializable data class Detail(         // Full card detail + TLV tree
-        val cardId: Long
-    )
-    @Serializable data object Settings       // App preferences
+    @Serializable data object Home                       // Tap prompt + live read + recent reads
+    @Serializable data class CardDetail(val cardId: Long = -1L)
+    @Serializable data object Vault                      // Saved cards (biometric-gated)
+    @Serializable data object Settings
 }
 ```
+
+There is no separate reader destination: `CardyApp` keeps the Home entry alive and gates NFC reader
+mode on the current route, handing tags to `HomeVM::readTag`.
 
 ## NFC Read Flow
 
@@ -191,39 +186,33 @@ object Route {
 
 ## UI Screens
 
+UI sources live under `apps/cardy/src/main/java/com/axondragonscale/cardy/ui/`.
+
 ### Home
 
-- Full-screen animated NFC tap prompt (centered card icon with pulsing rings)
-- Bottom section: horizontally scrollable recent reads (last 5, not saved — ephemeral)
-- FAB or bottom nav to access Vault
-- Status indicator: NFC enabled/disabled with prompt to enable
-- Graceful "NFC not available" state on devices without NFC hardware
+- Full-screen animated NFC tap prompt (pulsing rings) with `Tap your card` → `Reading card...` status text
+- Bottom bar: Vault and Settings
+- Read failures surface as a snackbar
+- NFC disabled / not supported state with a button to open system NFC settings
 
-### Reader (Post-Tap)
+### Detail (`ui/detail/DetailScreen.kt`)
 
-- **Card Summary Header**: Visual card representation with detected network logo, full PAN, expiry
-- **Application Tabs/Selector**: If multiple AIDs found, user can switch between them
-- **Collapsible Sections** (per application):
-  - Basic Info (PAN, expiry, cardholder name, card type)
-  - Application Data (AID, label, priority, AIP decoded)
-  - Verification Methods (CVM List decoded into human-readable list)
-  - Risk Management (CDOL1/CDOL2 decoded)
-  - Raw TLV Tree (expandable tag-value pairs with tag descriptions)
-- **Actions**: Save to Vault, Re-read
+One screen serves both a fresh tap and a saved card; `DetailMode` picks which. There is no separate
+Reader destination.
 
-### Vault
+- **Card header**: `PaymentCard` with network, PAN or last four digits, expiry
+- **Application selector**: filter chips, one per AID found
+- **Basic Info**: PAN, expiry, network
+- **Application Data**: AID, label, priority, CVM list, AIP, effective and expiry dates, each rendered through `InterpretableHexRow`
+- **Raw TLV**: tree and flat views, covering every tag including unknown ones
+- **Top-bar actions**: Save to Vault on a fresh read; rename and delete on a saved card
 
-- Grid of saved card tiles (2 columns)
-- Each tile: network logo, full PAN, expiry, auto-generated label
-- Biometric gate on entry (every launch)
-- Long-press → delete option
-- Empty state with prompt to tap first card
+### Vault (`ui/vault/VaultScreen.kt`)
 
-### Detail
-
-- Full saved card data viewer (same layout as Reader but from stored data)
-- Edit auto-generated label
-- Delete card option
+- Grid of `PaymentCard` tiles built from the unencrypted columns only (network, last four digits, expiry, label) — nothing is decrypted until Detail
+- Biometric gate on entry, tracked by `isSessionAuthenticated`
+- Long-press → delete with confirmation
+- Empty state prompting the first tap
 
 ### Settings
 
@@ -294,9 +283,32 @@ object Route {
 | Theme | Custom dark palette + network accents | Premium wallet feel, not generic Material You |
 | Biometric config | Always locks on launch, no toggle/timeout | Simplicity, always-secure |
 
+## Behaviour and limits
+
+What the reader already does — check here before "fixing" something that is not broken:
+
+- **APDU status handling**: `CardReader.transceive()` recovers from `SW_6C` (re-sends with the
+  corrected `Le`) and `SW_61` (issues `GET RESPONSE`).
+- **AID discovery**: PPSE first, then probes the known AIDs in `CardNetwork` when PPSE is absent or empty.
+- **PDOL**: minimal read-only terminal data — TTQ `26000000`, amount `000000000001`, today's date,
+  transaction type `00`, random UN; unrequested tags are zero-filled.
+- **PAN / expiry**: tags `5A` / `5F24` with a Track 2 (`57`) fallback.
+- **Per-application isolation**: an application that fails to read is skipped and the rest of the
+  read still returns — no fail-fast.
+
+Not implemented, and each needs protocol work rather than a new tag:
+
+- **GENERATE AC** (`80 AE`). `EmvCommands` has only SELECT PPSE, SELECT AID, GPO and READ RECORD, so
+  cards never produce `9F26` / `9F27` / `9F36` / `9F10`. Adding a cryptogram means adding the
+  command and its CDOL1 data, not just registering a tag.
+- **Offline data authentication** (SDA / DDA / CDA).
+- **Cardholder verification** (PIN entry) and **issuer script processing**.
+- **IIN-based network detection**: the seven networks (Visa, Mastercard, Rupay, Amex, Discover, JCB,
+  UnionPay) are matched by AID prefix, so a co-branded card reports the first prefix match.
+
 ## Related Context
 
 - [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming
 - [Build System](../../build-system.md) — Convention plugins, version catalog
-- [TLV Library](../../libraries/tlv/) — BER-TLV parsing library used by Cardy for EMV data decoding
+- [TLV Library](../../libraries/tlv/context.md) — BER-TLV parsing library used by Cardy for EMV data decoding

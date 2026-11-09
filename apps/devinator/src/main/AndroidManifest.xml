@@ -11,6 +11,13 @@
         picker instead of a normal permission prompt.
     -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!--
+        mDNS discovery (NsdManager) and ConnectivityManager callbacks. These used to arrive
+        transitively through :core:commons' Ktor/OkHttp manifest; devinator no longer depends on
+        the network module, so declare them here.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Timed toggles restore on boot; force-stopped alarms are reconciled on the next app start. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 

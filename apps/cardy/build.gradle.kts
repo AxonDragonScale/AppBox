@@ -15,7 +15,8 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.commons)
+    implementation(projects.core.common)
+    implementation(projects.core.ui)
     implementation(projects.libraries.tlv)
 
     implementation(libs.androidx.core.ktx)

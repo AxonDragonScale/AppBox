@@ -1,3 +1,10 @@
+---
+title: "Bitops — KmpBitSet plan"
+status: in-progress
+summary: "API plan for KmpBitSet: 64-bit word storage, dynamic growth, and the public bit operations."
+read_when: "Implementing the bitops library."
+---
+
 # `class KmpBitSet`
 
 **Constructor**

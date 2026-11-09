@@ -1,3 +1,10 @@
+---
+title: "Wallmatic — wallpaper auto-changer"
+status: current
+summary: "Cycles user-created wallpaper albums on a schedule, with separate home and lock configurations and quick settings tiles."
+read_when: "Changing albums, config, scheduling, or the wallpaper apply path."
+---
+
 > Context: [Main](../../context.md) > Wallmatic
 
 # Wallmatic - Wallpaper Auto-Changer App
@@ -14,7 +21,7 @@ Wallmatic automatically cycles through user-created albums of wallpapers on a sc
 
 - **UI**: Jetpack Compose with Material3
 - **Navigation**: Jetpack Navigation Compose (type-safe routes with `@Serializable`)
-- **DI**: Koin (`WallmaticApplication` initializes `CommonsModule` + `WallmaticModule`)
+- **DI**: Koin (`WallmaticApplication` initializes `WallmaticModule`)
 - **State Management**: ViewModel + StateFlow
 - **Persistence**: Room database + Proto DataStore
 - **Background Work**: `AlarmManager` tick + `TickReceiver` → `UpdateCoordinator`, with `WorkManager` for sync and a fallback net — see [Background Services sub-context](./background-services.md) for details
@@ -190,7 +197,7 @@ For full details on scheduling, workers, tiles, and the update lifecycle, see [B
 
 ## Dependencies
 
-- **Local Modules**: `projects.core.commons`
+- **Local Modules**: `:core:common`, `:core:ui`, `:core:devtools`, `:core:room`
 - **AndroidX**: Compose BOM + Material3, Navigation Compose, Room, Proto DataStore, DocumentFile, WorkManager
 - **Koin**: DI (with `koin-androidx-workmanager` for worker injection)
 - **Coil**: Image loading
@@ -206,7 +213,7 @@ For full details on scheduling, workers, tiles, and the update lifecycle, see [B
 ## Related Context
 
 - [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
-- [Commons Module](../../core/commons/context.md) — Shared utilities, networking, DI module
+- [Core Modules](../../core/context.md) — Shared utilities, networking, DI module
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming
 - [Build System](../../build-system.md) — Convention plugins, version catalog
 - **Sub-context:**

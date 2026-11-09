@@ -2,7 +2,6 @@ package com.axondragonscale.devinator
 
 import android.app.Application
 import com.axondragonscale.commons.AppInfo
-import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.devinator.di.DevinatorModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -16,7 +15,7 @@ class DevinatorApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@DevinatorApplication)
-            modules(CommonsModule, DevinatorModule)
+            modules(DevinatorModule)
         }
     }
 }

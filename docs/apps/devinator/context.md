@@ -1,3 +1,10 @@
+---
+title: "Devinator — developer settings toggles"
+status: current
+summary: "Developer-options, USB and wireless-debugging toggles, five QS tiles, a Tweaks page, and an in-app Logcat."
+read_when: "Changing a toggle, its write path, QS tiles, or the Logcat screen."
+---
+
 > Context: [Main](../../context.md) > Devinator
 
 # Devinator — Developer Settings Toggle
@@ -15,7 +22,7 @@ app's log from the terminal button in Home's top bar; it needs no permission.
 - **Package**: `com.axondragonscale.devinator`
 - **Module path**: `:apps:devinator`
 - **Target device**: iQOO 13, OriginOS — OEM quirks are a first-class concern, see [Risks](#risks--verification)
-- **Not** the `devtools` package in [`:core:commons`](../core/commons/context.md); that is the debug
+- **Not** the `devtools` package in [`core:devtools`](../../core/context.md#devtools--coredevtools); that is the debug
   screen embedded inside other apps. Different thing, similar name.
 
 Scope is deliberately small: three switches, tiles, endpoint display, the timed toggle, the
@@ -52,7 +59,7 @@ for app preferences only. No Room, no `INTERNET` permission.
 ```
 com.axondragonscale.devinator/
 ├── DevinatorActivity.kt            # edge-to-edge; host for DevinatorApp and theme prefs
-├── DevinatorApplication.kt         # Koin start (CommonsModule + DevinatorModule)
+├── DevinatorApplication.kt         # Koin start (DevinatorModule)
 ├── di/DevinatorModule.kt
 ├── model/
 │   ├── DevState.kt                 # the three flags, endpoints, write results
@@ -351,9 +358,9 @@ are out of scope for v1.
 
 ### Build & manifest
 
-- `libs.plugins.android.app.convention` + `kotlin.serialization`; deps: `:core:commons`,
-  `:libraries:logcat-viewer`, Compose BOM and bundle, Koin bundle, `navigation.compose`, coroutines,
-  `kotlinx.serialization.json`.
+- `libs.plugins.android.app.convention` + `kotlin.serialization`; deps: `:core:common`,
+  `:core:ui`, `:core:android`, `:core:datastore`, `:libraries:logcat-viewer`, Compose BOM and bundle,
+  Koin bundle, `navigation.compose`, coroutines, `kotlinx.serialization.json`.
 - `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
   tools:ignore="ProtectedPermissions" />`
 - `<uses-permission android:name="android.permission.WRITE_SETTINGS"
@@ -378,12 +385,10 @@ are out of scope for v1.
   `apps/devinator/devinator.fig` → Foundations › `05 · App icon`. Do not split the glyph into
   stacked shapes; the knockouts are what keep the themed layer working. `drawable/ic_devinator_logo.xml`
   is the same path at 28×16 for the Setup top bar, tinted `primary` at the call site.
-- `INTERNET` is **not** declared in this module, but the merged manifest requests it: `:core:commons`
-  brings `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE_LOCK`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`
-  and `FOREGROUND_SERVICE` (HttpClient + Chucker in debug). Confirmed with
-  `aapt2 dump permissions` on the debug APK. The app makes no outbound requests; the permission is
-  there for local mDNS discovery. Stripping it with `tools:node="remove"` would break commons'
-  client, so the claim in the UI is "no data collected", not "no network permission".
+- `INTERNET` and `ACCESS_NETWORK_STATE` are declared in this module for mDNS (`NsdManager`) and
+  `ConnectivityManager` callbacks. They used to arrive transitively through `:core:commons`; now that
+  devinator depends only on `:core:common`, `:core:ui`, `:core:android` and `:core:datastore`, they
+  are explicit. The app makes no outbound requests; the permission exists for local discovery.
 
 ## Risks & verification
 

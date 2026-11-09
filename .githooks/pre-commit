@@ -1,0 +1,13 @@
+#!/bin/sh
+# Local pre-commit hook: keeps docs/ pointing at real files.
+# Installed via: git config core.hooksPath .githooks
+set -e
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+if git diff --cached --quiet -- docs scripts; then
+  exit 0
+fi
+
+exec ./scripts/check-docs.sh

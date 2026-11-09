@@ -1,3 +1,10 @@
+---
+title: "Wallmatic — background services"
+status: current
+summary: "The nextUpdate = lastUpdated + interval rule, and how Doze, reboots, alarms and workers keep exactly one wake-up armed."
+read_when: "Debugging missed updates, Doze or reboot behaviour, or alarm and worker wiring."
+---
+
 > Context: [Main](../../context.md) > [Wallmatic](./context.md) > Background Services
 
 # Wallmatic — Background Services
@@ -61,7 +68,7 @@ Plain one-shot `CoroutineWorker` (unique work name, `KEEP`) that runs `SyncManag
 
 It is deliberately off the timed path: `syncAlbums()` scans SAF folders and can take seconds, while a tick runs inside the ~10-second window a doze-exempt alarm grants a receiver. Applying a wallpaper only needs Room, so the tick stays IO-bound.
 
-## WallpaperUpdater (`core/WallpaperUpdater.kt`)
+## WallpaperUpdater (`apps/wallmatic/src/main/java/com/axondragonscale/wallmatic/core/WallpaperUpdater.kt`)
 
 Core logic for selecting and applying wallpapers.
 
@@ -136,5 +143,5 @@ No `SCHEDULE_EXACT_ALARM`: the tick uses an inexact doze-exempt alarm on purpose
 ## Related Context
 
 - [Wallmatic Context](./context.md) — Module overview, database schema, config schema
-- [Commons Module](../../core/commons/context.md) — Shared utilities
+- [Core Modules](../../core/context.md) — Shared utilities
 - [Main Context](../../context.md) — Project overview, tech stack

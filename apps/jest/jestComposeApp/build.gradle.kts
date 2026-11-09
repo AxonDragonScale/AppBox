@@ -47,7 +47,12 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
         }
         commonMain.dependencies {
-            implementation(projects.core.commons)
+            implementation(projects.core.common)
+            implementation(projects.core.ui)
+            implementation(projects.core.devtools)
+            implementation(projects.core.datastore)
+            implementation(projects.core.room)
+            implementation(projects.core.network)
 
             // DataStore
             implementation(libs.datastore.prefs)

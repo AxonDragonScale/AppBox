@@ -1,3 +1,10 @@
+---
+title: "TLV library"
+status: current
+summary: "BER-TLV encoder and decoder for KMP, used by Cardy for EMV parsing and independently publishable to Maven Central."
+read_when: "Changing TLV parsing or encoding, or publishing the library."
+---
+
 > Context: [Main](../../context.md) > TLV Library
 
 # TLV Library — `:libraries:tlv`
@@ -103,37 +110,30 @@ Raw bytes. If the Tag's form is Constructed, the value contains nested TLV eleme
 - `Long.toByteArray()` — to 8-byte array
 - `Long.toMinimalByteArray()` — to minimal-size byte array (strips leading zeros)
 
-## Known Bugs (as of current state)
+## Parser behaviour and limits
 
-### Critical
+Verified against source — do not "fix" these:
 
-1. **`TLV.from(tlvBytes)` — Length field parsing is broken**
-   - Short-form: computes an empty slice for the length field → crash
-   - Long-form: off-by-one, doesn't include the leading length byte
-   - Value start index has an extra `+1` that compounds the error
-   - **Root cause**: `lengthEndIndex` calculation is wrong for both code paths
+- **Length parsing** handles both forms: short form ends the length at its start byte, long form
+  takes the low 7 bits of the first byte as the byte count.
+- **Value bounds**: starts at `lengthEndIndex + 1` and spans `lengthAsInt` bytes.
+- **`TLVList.from(ByteArray)`** skips `0x00` / `0xFF` padding and advances by `tlv.size`.
+- **`Length.from(Long)`** accepts `0`.
 
-2. **`TLVList.from(ByteArray)` — Infinite loop**
-   - Always calls `TLV.from(tlvList)` from index 0, never advances through the byte array
-   - Produces the same TLV repeatedly until `remainingSize` underflows
+Still open (design, not bugs):
 
-3. **`Length.from(length: Long)` — Rejects zero-length values**
-   - Uses `check(length > 0)` but zero-length values are valid in BER-TLV
+- **No package declaration** — every type is in the default package, so consumers write `import TLV`.
+- **`Tag` equality is referential** — it wraps a `ByteArray` in a value class, so two tags with
+  identical bytes are not equal, and `TLV` / `TLVList` inherit that. Avoid `Set` / `Map` keyed on tags.
+- **`TLVList.tlvList` is an exposed `MutableList`** — callers can modify the internal list.
+- **Utility extensions are public** — `Byte.asInt()`, `Long.toMinimalByteArray()` and friends land in
+  consumer autocomplete.
 
-4. **`Length.isValid(ByteArray)` — Crashes on empty input**
-   - Calls `.first()` on empty array instead of returning `false`
+### Serialization contract
 
-### Design
-
-5. **No package declaration** — All types and extension functions are in the default package, polluting consumer namespaces
-
-6. **Value class + ByteArray = broken equality** — `ByteArray.equals()` is referential; two Tags with identical bytes are not equal. Also breaks `data class TLV` equality and Set/Map usage
-
-7. **Mutable state exposed** — `tagBytes`, `lengthBytes`, `valueBytes` are public and mutable; callers can corrupt internal state
-
-8. **`TLVList` exposes `MutableList`** — External code can modify the internal list
-
-9. **Utility extensions are public** — `asInt()`, `toMinimalByteArray()`, etc. leak into consumer autocomplete
+`TLV` is `@Serializable(with = TLVSerializer::class)`. This is what lets Cardy persist `rawTlvs` as
+JSON inside its encrypted blob, so any change to `TLV`'s shape has to keep `TLVSerializer` and
+`TLVSerializerTest` in step.
 
 ## Building
 

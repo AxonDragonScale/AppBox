@@ -1,6 +1,10 @@
 ---
 name: openpencil-skill
 description: Build and edit .fig design files with the OpenPencil MCP tools in Zed — JSX rendering, design tokens and variables, components and variants, multi-page files, screens, overlays, bulk colour binding, and verification. Use whenever a task involves creating, changing, or inspecting an app design in apps/*/*.fig through OpenPencil. Zed is the only host that writes; other hosts are read-only.
+title: "OpenPencil MCP skill"
+status: reference
+summary: "How to drive the OpenPencil MCP tools without rediscovering the traps: JSX rendering, tokens, variants, pages, verification."
+read_when: "Before creating, changing or inspecting any .fig design."
 ---
 
 # OpenPencil MCP — working skill
@@ -619,7 +623,7 @@ the same change as the work it learns from.**
 
 ## Related
 
-- [Devinator UI spec](../../apps/devinator/ui.md) — tokens, components and copy this skill
+- [Devinator UI spec](../apps/devinator/ui.md) — tokens, components and copy this skill
   was first exercised against.
 - Linked from [docs/context.md](../context.md) and [AGENTS.md](../../AGENTS.md) so agents load
   it before any `apps/*/*.fig` design task.

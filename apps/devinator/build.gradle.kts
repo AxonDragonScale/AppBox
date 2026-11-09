@@ -14,7 +14,9 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.commons)
+    implementation(projects.core.common)
+    implementation(projects.core.ui)
+    implementation(projects.core.datastore)
     implementation(projects.libraries.logcatViewer)
 
     implementation(libs.androidx.core.ktx)

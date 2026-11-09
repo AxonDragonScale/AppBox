@@ -1,3 +1,10 @@
+---
+title: "Devinator — UI spec"
+status: current
+summary: "Visual spec for the screens: frames, 4-pt grid, light and dark palettes, component geometry, and literal copy."
+read_when: "Building or restyling any Devinator screen or component."
+---
+
 > Context: [Main](../../context.md) > [Devinator](./context.md) > UI
 
 # Devinator — UI Spec

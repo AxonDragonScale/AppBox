@@ -1,3 +1,10 @@
+---
+title: "Jest UI revamp"
+status: in-progress
+summary: "Responsive redesign with mobile, tablet and desktop tiers; replaces the pager and floating tab bar with adaptive navigation."
+read_when: "Touching Jest navigation, layout breakpoints, or theme."
+---
+
 > Context: [Main](../../context.md) > [Jest](./context.md) > UI Revamp Plan
 
 # Jest UI Revamp — Responsive Redesign Plan
@@ -382,5 +389,5 @@ All blockers resolved. Build passes on JVM and Android targets.
 
 - [Jest Context](./context.md) — Current architecture and module structure
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns to follow
-- [Commons Module](../../core/commons/context.md) — Shared utilities
+- [Core Modules](../../core/context.md) — Shared utilities
 - [Build System](../../build-system.md) — Convention plugins, version catalog

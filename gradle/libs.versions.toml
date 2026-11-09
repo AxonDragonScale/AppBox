@@ -171,6 +171,7 @@ android-app-convention = { id = "android-app-convention" }
 android-library-convention = { id = "android-library-convention" }
 kmp-app-convention = { id = "kmp-app-convention" }
 kmp-library-convention = { id = "kmp-library-convention" }
+kmp-plain-library-convention = { id = "kmp-plain-library-convention" }
 compiler-args-convention = { id = "compiler-args-convention" }
 
 android-application = { id = "com.android.application", version.ref = "agp" }

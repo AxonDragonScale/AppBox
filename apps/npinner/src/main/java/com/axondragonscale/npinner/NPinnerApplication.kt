@@ -1,7 +1,6 @@
 package com.axondragonscale.npinner
 
 import android.app.Application
-import com.axondragonscale.commons.di.CommonsModule
 import com.axondragonscale.npinner.di.NPinnerModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -24,7 +23,6 @@ class NPinnerApplication : Application() {
             androidContext(this@NPinnerApplication)
             workManagerFactory()
             modules(
-                CommonsModule,
                 NPinnerModule,
             )
         }

@@ -1,3 +1,10 @@
+---
+title: "Topty — 2FA authenticator"
+status: current
+summary: "TOTP/HOTP authenticator with QR scanning, password-based encryption, biometric lock, onboarding and multi-format backup."
+read_when: "Changing token generation, storage, onboarding, or app-level flows."
+---
+
 > Context: [Main](../../context.md) > Topty
 
 # Topty - 2FA Authenticator App
@@ -14,7 +21,7 @@ Topty is a secure 2FA authenticator within AppBox that generates TOTP/HOTP one-t
 
 - **UI**: Jetpack Compose + Material3
 - **Navigation**: Type-safe Navigation Compose with `@Serializable` routes
-- **DI**: Koin (`ToptyApplication` initializes `CommonsModule` + `ToptyModule`)
+- **DI**: Koin (`ToptyApplication` initializes `ToptyModule`)
 - **Database**: Room with encrypted secrets
 - **Security**: Password-derived AES-256-GCM encryption, BiometricPrompt API — see [Security sub-context](./security.md) for details
 - **Camera**: CameraX + ML Kit Barcode Scanner
@@ -25,7 +32,7 @@ Topty is a secure 2FA authenticator within AppBox that generates TOTP/HOTP one-t
 ```
 com.axondragonscale.topty/
 ├── ToptyActivity.kt              # Entry point with biometric lock integration
-├── ToptyApplication.kt           # Koin initialization (CommonsModule + ToptyModule)
+├── ToptyApplication.kt           # Koin initialization (ToptyModule)
 ├── ToptyConstants.kt             # URI schemes and parameters
 ├── auth/
 │   ├── BiometricAuthManager.kt   # Authentication prompts (requires FragmentActivity)
@@ -223,7 +230,7 @@ For backup/restore flows, see [backup-restore.md](./backup-restore.md).
 
 ## Dependencies
 
-- **Local Modules**: `projects.core.commons`
+- **Local Modules**: `:core:common`, `:core:ui`, `:core:devtools`, `:core:datastore`, `:libraries:qr`
 - **AndroidX**: Compose BOM, Navigation, Room, DataStore, Biometric, CameraX, Splash Screen, Security Crypto
 - **ML Kit**: Barcode Scanner
 - **Koin**: DI
@@ -248,7 +255,7 @@ For backup/restore flows, see [backup-restore.md](./backup-restore.md).
 ## Related Context
 
 - [Main Context](../../context.md) — Project overview, tech stack, architecture patterns
-- [Commons Module](../../core/commons/context.md) — Shared utilities, networking, DI module
+- [Core Modules](../../core/context.md) — Shared utilities, networking, DI module
 - [Coding Conventions](../../coding-conventions.md) — Compose patterns, Kotlin idioms, naming
 - [Build System](../../build-system.md) — Convention plugins, version catalog
 - **Sub-contexts:**

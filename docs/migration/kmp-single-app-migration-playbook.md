@@ -1,3 +1,10 @@
+---
+title: "KMP single-app migration playbook"
+status: in-progress
+summary: "Repeatable, execution-ready plan to migrate one Android app to KMP, with parity matrix, phases, rules and done criteria."
+read_when: "Starting or continuing an app's KMP migration."
+---
+
 # KMP Single-App Migration Playbook (Reusable)
 
 > Context: [Main](../context.md) > Migration > KMP Single-App Playbook
@@ -855,14 +862,30 @@ Track these risks **per app** throughout migration. Each risk must have an owner
 
 ## 20) Practical Notes for AppBox
 
-1. **Start with Jest** — lowest risk, validates the entire pipeline, fast feedback
-2. **Migrate `:core:commons` to KMP first** (or in parallel with Jest) — every app depends on it
+1. **Jest is the reference migration** — it is complete, and its layout, `expect`/`actual` naming and
+   source-set split are what every later migration copies. Read
+   [Jest context](../apps/jest/context.md) before starting another app.
+2. **The commons split is already done** — `:core:commons` no longer exists; `:core:common`,
+   `:core:ui`, `:core:devtools`, `:core:datastore`, `:core:room` and `:core:network` are all KMP
+   already. See [Core Modules](../core/context.md). Nothing to migrate there.
 3. **Leverage `:libraries:tlv` as a reference** — it's already a working KMP module in the repo with `commonMain`/`commonTest`, multiple targets, and a `build.gradle.kts` you can reference for KMP configuration patterns
 4. **Reuse this playbook unchanged** for each app — only swap the app-specific parity matrix and checklist
 5. **Keep existing convention plugins** for non-migrated apps — they continue using `android-app-convention` until migrated
 6. **Don't migrate all apps at once** — complete one, learn, then start the next
 7. **Web (wasmJs) is the lowest priority target** — it has the most limitations. Wire it during bootstrap but defer feature implementation until Android, iOS, and Desktop are stable
 8. **Harden module boundaries** when warning signs appear (see [Section 15](#15-module-splitting-triggers))
+
+### Renaming the wizard scaffold
+
+The KMP wizard emits `composeApp` and `iosApp`; AppBox names them per app. After generating:
+
+- `composeApp` → `<app>ComposeApp`; fix `build.gradle.kts`, the resources package name and its usages
+- `iosApp` → `<app>IosApp`; rename every file/folder/string, and `iosApp.swift` → `<App>IosApp.swift`
+- In the Xcode build phase, update `import ComposeApp` to `import <App>ComposeApp` and point the Gradle
+  task at the real path, run from the repo root:
+  `./gradlew :apps:<app>:<app>ComposeApp:embedAndSignAppleFrameworkForXcode`
+- **Multiple KMP modules in one Xcode project are not supported.** `.idea/xcode.xml` holds one project
+  at a time; comment out the others while working on this app.
 
 ---
 
@@ -901,5 +924,5 @@ Approvals:
 - [Main Context](../context.md) — Project overview, tech stack, architecture patterns, module index
 - [Build System](../build-system.md) — Convention plugins, version catalog, module setup
 - [Coding Conventions](../coding-conventions.md) — Compose patterns, Kotlin idioms, naming conventions
-- [Commons Module](../core/commons/context.md) — Shared utilities that must be KMP-migrated
+- [Core Modules](../core/context.md) — Shared utilities that must be KMP-migrated
 - [TLV Library](../libraries/tlv/context.md) — Existing KMP module in the repo (reference for build config)

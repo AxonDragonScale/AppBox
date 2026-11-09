@@ -1,3 +1,10 @@
+---
+title: "Topty — backup and restore"
+status: current
+summary: "Export and import in Topty, Aegis and otpauth-URI formats, including encryption options and cross-device restore."
+read_when: "Changing a backup format, an import/export flow, or bulk token operations."
+---
+
 > Context: [Main](../../context.md) > [Topty](./context.md) > Backup & Restore
 
 # Topty - Backup & Restore System
@@ -264,5 +271,5 @@ Accessed from Settings screen → Data section → "Backup & Restore"
 
 - [Topty Context](./context.md) — Module overview, architecture, all features
 - [Topty Security](./security.md) — PBKDF2, AES-256-GCM, PasswordManager, TokenEncryption
-- [Commons Module](../../core/commons/context.md) — Shared utilities, serialization setup
+- [Core Modules](../../core/context.md) — Shared utilities, serialization setup
 - [Main Context](../../context.md) — Project overview, tech stack

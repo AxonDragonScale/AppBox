@@ -1,3 +1,10 @@
+---
+title: "Build system"
+status: current
+summary: "Convention plugins in build-logic, the version catalog, signing, and the build commands for each module type."
+read_when: "Changing Gradle files, adding a dependency, or configuring signing and plugins."
+---
+
 > Context: [Main](./context.md) > Build System
 
 # AppBox - Build System
@@ -25,7 +32,7 @@ Applied to Android-only library modules via `alias(libs.plugins.android.library.
 - Android Library plugin (built-in Kotlin)
 - Common SDK versions and compile options (same as `android-app-convention`)
 
-It is Android-only (not KMP) and is currently unused — `:core:commons` uses `kmp-library-convention` instead.
+It is Android-only (not KMP). Used by `:core:android`, `:libraries:qr` and `:libraries:logcat-viewer`.
 
 ### `kmp-library-convention.gradle.kts`
 
@@ -38,7 +45,18 @@ Applied to Kotlin Multiplatform library modules via `alias(libs.plugins.kmp.libr
 - Android SDK versions, Android resources, and published consumer keep rules
 - Single-variant Android target: no build types or product flavors
 
-Currently used by: `:core:commons`
+Currently used by: `:core:ui`, `:core:devtools`, `:apps:jest:jestComposeApp`, `:apps:limitless:limitlessComposeApp`
+
+### `kmp-plain-library-convention.gradle.kts`
+
+Applied to KMP library modules that must **not** pull in Compose, via `alias(libs.plugins.kmp.plain.library.convention)`:
+
+- Kotlin Multiplatform plugin + `com.android.kotlin.multiplatform.library`
+- `kotlin { android { … } }` target with JVM 21, Android SDK/keep-rule config
+- Targets: `jvm`, `iosArm64`, `iosSimulatorArm64`
+- No Compose Multiplatform or Compose compiler plugin
+
+Currently used by: `:core:common`, `:core:datastore`, `:core:room`, `:core:network`
 
 ### `kmp-app-convention.gradle.kts`
 
@@ -74,7 +92,7 @@ Key patterns:
 
 ## Dependency Injection Setup
 
-Each app has its own `Application` class that initializes Koin with `CommonsModule` + its own module:
+Each app has its own `Application` class that initializes Koin with only the core modules it needs:
 
 ```kotlin
 class MyApplication : Application() {
@@ -84,13 +102,16 @@ class MyApplication : Application() {
             androidLogger()
             androidContext(this@MyApplication)
             modules(
-                CommonsModule,  // From :core:commons — always include
+                NetworkModule,  // Only if the app makes HTTP calls
                 MyAppModule,    // App-specific module
             )
         }
     }
 }
 ```
+
+There is no central `CommonsModule`. DataStore and Room Android actuals still resolve `Context`
+through Koin, which `androidContext(...)` already provides.
 
 Koin DSL conventions:
 - `singleOf(::MyRepository)` for singletons
@@ -119,7 +140,8 @@ Koin DSL conventions:
    }
 
    dependencies {
-       implementation(projects.core.commons)
+       implementation(projects.core.common)
+       implementation(projects.core.ui)
        // App-specific dependencies using version catalog
    }
    ```
@@ -175,23 +197,81 @@ AGP 9 does not allow `com.android.application` in a Kotlin Multiplatform module,
    ```
 5. Activities, receivers, and services live in the Compose module's `androidMain`; the shell manifest references them by fully qualified name.
 
-### Adding a New Library Module
+### Choosing a Convention Plugin
 
-1. Create directory under `core/`
-2. Create `build.gradle.kts`:
-   - Use `alias(libs.plugins.android.library.convention)` for Android-only library modules
-   - Use `alias(libs.plugins.kmp.library.convention)` for Kotlin Multiplatform library modules
-3. Register in `settings.gradle.kts`
+| The module is… | Plugin | Copy this module |
+|---|---|---|
+| an Android app, or the thin shell of a Compose Multiplatform app | `alias(libs.plugins.android.app.convention)` | `:apps:npinner` |
+| a Compose Multiplatform app shell | `alias(libs.plugins.kmp.app.convention)` | `:apps:jest:jestComposeApp` |
+| a KMP library that has Compose UI | `alias(libs.plugins.kmp.library.convention)` | `:core:ui` |
+| a KMP library with no Compose (coroutines, Ktor, Room, DataStore) | `alias(libs.plugins.kmp.plain.library.convention)` | `:core:network` |
+| an Android-only library | `alias(libs.plugins.android.library.convention)` | `:core:android` |
+
+Wrong choice is obvious in the build file: if you reach for `kmp.library.convention` on a module with
+no UI, you have pulled Compose Multiplatform and the Compose compiler into it for nothing.
+
+Never apply `compiler-args-convention` in a module — the root build applies it to every KMP subproject.
+
+### Adding a New Module
+
+1. Create the directory under `core/` (or `libraries/` if it is independently publishable).
+2. Create `build.gradle.kts` with the plugin from the table above.
+3. Register in `settings.gradle.kts` — `include(":core:media")`. Typesafe accessors are on, so
+   consumers write `implementation(projects.core.media)`.
+4. Declare the Android `namespace` and the Kotlin `package` (they differ by design, see below).
+5. Copy `consumer-rules.pro` / `proguard-rules.pro` stubs when the plugin references them.
+6. Same change, docs: `docs/core/<module>/context.md`, a row in the Core modules table of
+   `docs/context.md`, a line in `docs/core/context.md`, and an entry in that plugin's
+   "Currently used by" list.
+
+**Namespace vs package.** Both are convention, matched from the neighbouring modules:
+
+- Android `namespace` — `com.axondragonscale.core.<module>`
+- Kotlin `package` — `com.axondragonscale.commons.<module>` (plain `com.axondragonscale.commons` for `:core:common`)
+
+**Signing.** Only apps are signed, by `android-app-convention`. Library modules need no signing config.
+
+### Adding a Dependency
+
+1. `gradle/libs.versions.toml` → `[versions]`: add a camelCase key.
+2. Same file → `[libraries]`: add a kebab-case alias with `version.ref`, or omit the version when a
+   BOM or bundle supplies it.
+3. Same file → `[bundles]`: only when several modules take the same set.
+4. Consuming `build.gradle.kts`: `implementation(libs.alias.here)`.
+5. KMP modules: put it in the right source set — `commonMain` if the artifact ships iOS klibs,
+   `androidMain` if it is Android-only.
+6. Annotation processors: `ksp(...)`, never `kapt(...)`.
+7. A Gradle plugin goes in `[plugins]`, applied with `alias(libs.plugins.x)`.
+
+Never write a raw `"group:artifact:version"` in a module build file.
+
+`libs.bundles.ktor` and `libs.bundles.coroutines` both include Android-only artifacts, so they are
+wrong for `commonMain` — declare the individual `-core` artifacts there instead.
+
+### Compose Versions
+
+Two stacks. Do not mix them.
+
+- **Android modules** (`androidx.compose.*`) take versions from `composeBom` in the catalog. No
+  convention plugin applies the BOM — each Android module declares
+  `implementation(platform(libs.androidx.compose.bom))` itself. Add that line before using a
+  versionless `androidx-compose-*` alias, or the build fails with "Could not find … required version".
+- **Compose Multiplatform modules** (`:apps:jest`, `:apps:limitless`) take versions from the
+  `compose-multiplatform` plugin and `libs.bundles.compose.mp`, and never use the AndroidX BOM.
+
+Bump the BOM to move the whole Compose set at once. Artifacts outside it — `material3-adaptive`,
+`material-icons-extended`, `navigation-compose` — are pinned individually in the catalog.
 
 ### Project Accessors
 
 Use typesafe project accessors for inter-module dependencies:
 ```kotlin
 // Preferred
-implementation(projects.core.commons)
+implementation(projects.core.common)
+implementation(projects.core.ui)
 
 // Avoid
-implementation(project(":core:commons"))
+implementation(project(":core:ui"))
 ```
 
 ## Room with KSP
@@ -243,4 +323,5 @@ All apps share a common keystore located in `keystore/`. The signing configurati
 
 - [Main Context](./context.md) — Project overview, tech stack, architecture patterns
 - [Coding Conventions](./coding-conventions.md) — Code patterns and style guidelines
-- [Commons Module](./core/commons/context.md) — Shared utilities and DI module
+- [Core Modules Overview](./core/context.md) — Android, UI, DevTools, DataStore, Room, Network, QR
+- [Core Common Module](./core/common/context.md) — Pure Kotlin utilities
