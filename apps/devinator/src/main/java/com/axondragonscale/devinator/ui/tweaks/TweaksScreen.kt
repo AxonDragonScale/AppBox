@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Speed
@@ -38,16 +39,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
 import com.axondragonscale.devinator.model.Tweak
 import com.axondragonscale.devinator.model.TweakGroup
 import com.axondragonscale.devinator.model.TweakIcon
+import com.axondragonscale.devinator.permission.WriteSettingsPermission
 import com.axondragonscale.devinator.repository.TweakCatalog
 import com.axondragonscale.devinator.ui.components.BackTopBar
 import com.axondragonscale.devinator.ui.components.DevinatorCard
@@ -59,16 +64,23 @@ import com.axondragonscale.devinator.ui.components.IconBadge
 import com.axondragonscale.devinator.ui.components.SmallDropdown
 import com.axondragonscale.devinator.ui.theme.DevinatorTheme
 import com.axondragonscale.devinator.ui.theme.SectionLabelTextStyle
+import kotlin.math.roundToInt
 import org.koin.androidx.compose.koinViewModel
 
 /** Created by Ronak on 09/11/26 */
 
-/** Design source: `12 · Dev options · A grouped cards` in `apps/devinator/devinator.fig`. */
+/** Design source: `12 · Tweaks` in `apps/devinator/devinator.fig`. */
 @Composable
 fun TweaksScreen(navController: NavController) {
     val viewModel: TweaksVM = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    var canWriteSettings by remember { mutableStateOf(WriteSettingsPermission.isGranted(context)) }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        canWriteSettings = WriteSettingsPermission.isGranted(context)
+    }
 
     viewModel.uiEffect.collectWithLifecycle { effect ->
         when (effect) {
@@ -79,7 +91,11 @@ fun TweaksScreen(navController: NavController) {
     TweaksContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
+        canWriteSettings = canWriteSettings,
         onEvent = viewModel::onEvent,
+        onAllowWriteSettings = {
+            context.startActivity(WriteSettingsPermission.settingsIntent(context.packageName))
+        },
         onBack = { navController.popBackStack() },
     )
 }
@@ -88,7 +104,9 @@ fun TweaksScreen(navController: NavController) {
 private fun TweaksContent(
     uiState: TweaksUiState,
     snackbarHostState: SnackbarHostState,
+    canWriteSettings: Boolean,
     onEvent: (TweaksUiEvent) -> Unit,
+    onAllowWriteSettings: () -> Unit,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -112,6 +130,10 @@ private fun TweaksContent(
                     values = uiState.values,
                     onEvent = onEvent,
                 )
+                if (group == TweakGroup.DISPLAY && !canWriteSettings) {
+                    Spacer(Modifier.height(12.dp))
+                    WriteSettingsHint(onAllow = onAllowWriteSettings)
+                }
             }
             Spacer(Modifier.height(20.dp))
             ResetRow(onReset = { onEvent(TweaksUiEvent.Reset) })
@@ -216,7 +238,8 @@ private fun TweakRow(
             )
 
             is Tweak.Scale,
-            is Tweak.Limit -> ChoiceControl(tweak = tweak, value = value, onEvent = onEvent)
+            is Tweak.Limit,
+            is Tweak.FontScale -> ChoiceControl(tweak = tweak, value = value, onEvent = onEvent)
         }
     }
 }
@@ -279,11 +302,48 @@ private fun ResetRow(onReset: () -> Unit) {
     }
 }
 
+/**
+ * Shown only when the app-op behind `WRITE_SETTINGS` is missing: the row would otherwise fail with
+ * the generic write error. The system toggle is the fix, so the action leaves the app instead of
+ * pointing at the adb page.
+ */
+@Composable
+private fun WriteSettingsHint(onAllow: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Font size needs Write Settings.",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "Allow",
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = "Open Write Settings permission",
+                    onClick = onAllow,
+                )
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
 /** What the chip and the menu print: "Off" is red, every other value is a set value. */
 private fun Tweak.label(value: Float): String = when (this) {
     is Tweak.Scale -> if (value <= 0f) "Off" else "${scale(value)}×"
     is Tweak.Limit -> if (value < 0f) "Standard" else value.toInt().toString()
     is Tweak.Toggle -> if (value != 0f) "On" else "Off"
+    is Tweak.FontScale -> "${(value * 100).roundToInt()}%"
 }
 
 /** 0.5 stays "0.5"; 1.0 becomes "1" so the chip does not read "1.0×". */
@@ -291,6 +351,7 @@ private fun scale(value: Float): String =
     if (value % 1f == 0f) value.toInt().toString() else value.toString()
 
 private fun TweakIcon.vector(): ImageVector = when (this) {
+    TweakIcon.FONT_SIZE -> Icons.Filled.FormatSize
     TweakIcon.ANIMATION -> Icons.Filled.Animation
     TweakIcon.LIFECYCLE -> Icons.Filled.RestartAlt
     TweakIcon.PROCESSES -> Icons.Filled.Speed
@@ -306,7 +367,9 @@ private fun TweaksScreenPreview() {
         TweaksContent(
             uiState = TweaksUiState(TweakCatalog.associate { it.key to it.stock }),
             snackbarHostState = remember { SnackbarHostState() },
+            canWriteSettings = true,
             onEvent = {},
+            onAllowWriteSettings = {},
             onBack = {},
         )
     }
@@ -317,15 +380,16 @@ private fun TweaksScreenPreview() {
 @Composable
 private fun TweaksScreenChangedPreview() {
     val values = TweakCatalog.associate { it.key to it.stock } +
-        (TweakCatalog[0].key to 0.5f) +
-        (TweakCatalog[1].key to 0f) +
-        (TweakCatalog[3].key to 1f) +
-        (TweakCatalog[4].key to 1f)
+        (TweakCatalog[0].key to 1.3f) +
+        (TweakCatalog[1].key to 0.5f) +
+        (TweakCatalog[2].key to 0f)
     DevinatorTheme(dynamicColor = false) {
         TweaksContent(
             uiState = TweaksUiState(values),
             snackbarHostState = remember { SnackbarHostState() },
+            canWriteSettings = true,
             onEvent = {},
+            onAllowWriteSettings = {},
             onBack = {},
         )
     }

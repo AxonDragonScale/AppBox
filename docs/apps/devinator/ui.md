@@ -218,14 +218,12 @@ no Save button and no confirmation.
 ```
 TopBar h64 · back arrow + "Tweaks"
 column · padding 16
-├─ GroupLabel "Animation"   13/600 text · 1 px outline rule filling the rest of the 380 row
+├─ GroupLabel "Display"   13/600 text · 1 px outline rule filling the rest of the 380 row
 ├─ gap 8
-├─ Card · gap 0, rows 60 high, Divider between them
-│  ├─ TweakRow  badge 40 animation · "Window animation scale" 15/600 · "Windows opening and closing" 12 textMuted · chip "1×"
-│  ├─ Divider
-│  ├─ TweakRow  … · chip "0.5×"
-│  ├─ Divider
-│  └─ TweakRow  … · chip "Off"  — value and caret in error
+├─ Card · gap 0, rows 60 high
+│  └─ TweakRow  badge 40 type · "Font size" 15/600 · "Text scale for every app" 12 textMuted · chip "100%"
+├─ gap 24 · GroupLabel "Animation" · gap 8 · Card (3 rows, each a chip)
+│  └─ TweakRow  badge 40 animation · "Window animation scale" 15/600 · "Windows opening and closing" 12 textMuted · chip "1×"
 ├─ gap 24 · GroupLabel "Behaviour" · gap 8 · Card (4 rows, one of them a chip)
 ├─ gap 20
 ├─ ResetRow   h 48 · cornerRadius 16 · surface · "Reset to defaults" 15/600 primary, centred
@@ -240,12 +238,19 @@ non-interactive — the row is the target, the switch is a readout.
 
 **Chip.** Choice rows reuse `DurationChip`, centred in a 48 dp tap target, and open the shared
 content-width menu. Value 14/600 and `expand_more` 18 in `primary`; an animation scale set to `Off`
-turns both `error`; the process limit prints `Standard` for `-1`.
+turns both `error`; the process limit prints `Standard` for `-1`; Font size prints a percentage
+(`85%` … `200%`).
 
 | Group | Rows | Control |
 |---|---|---|
+| Display | Font size | chip: 85 %, 100 %, 115 %, 130 %, 150 %, 200 %; stock 100 % |
 | Animation | Window animation scale / Transition animation scale / Animator duration scale | chip: Off, 0.5×, 1×, 1.5×, 2×, 5×, 10×; stock 1× |
 | Behaviour | Don't keep activities, Background processes, Show all ANRs, Stay awake while charging | switch, chip (`Standard`, 0–4), switch, switch |
+
+**Display size is not on this page.** Android only applies a density override at boot, so a direct
+`display_density_forced` write would look inert until a restart; doing it live needs a shell bridge
+or a hidden-API call. Font size is the one ordinary display setting that reacts immediately, so it is
+the one that ships. See [context.md](./context.md#tweaks-page).
 
 **Nothing here needs the input overlays.** Show taps, Pointer location and Layout bounds are not on
 this page, and cannot be: the first two are `Settings.System` *private* keys the platform only lets
@@ -255,8 +260,8 @@ which an app UID cannot set. All three work through Android's own Developer opti
 system. See [context.md](./context.md#tweaks-page).
 
 **Reset.** One tap writes the stock value for every row on the page — the switches off, the scales
-1×, the limit `Standard`, stay-awake off. It reports a failure as a snackbar and changes nothing if
-the grant is gone. A row that fails does not stop the rest.
+1×, the limit `Standard`, Font size 100 %, stay-awake off. It reports a failure as a snackbar and
+changes nothing if the grant is gone. A row that fails does not stop the rest.
 
 **Honesty.** Values are read back from the settings provider after every write and observed live, so
 a change made in Android's own Developer options screen lands on this page without a refresh, and a
@@ -267,6 +272,7 @@ off, so zeroing them would be a surprise.
 | State | Change to the tree above |
 |---|---|
 | Value menu open | A standard content-width `surfaceHigh` DropdownMenu under the chip: 16 dp container, 8 dp all-round inset, 8 dp selected row in `primaryContainer` with a `primary` check |
+| Write Settings not granted | A hint under the Display card: `"Font size needs Write Settings."` 12 textMuted on the left, **Allow** 14/500 primary on the right; the action opens the system's Modify system settings toggle. The row keeps the database value |
 | Write failed | Snackbar naming the row, e.g. "Couldn't change Window animation scale."; the row keeps the database value |
 | A key the OEM ignores | The row shows what the database reports. There is no optimistic flip to unwind |
 
@@ -345,9 +351,9 @@ external-link glyph leaves it. Never use one for the other.
 
 ## Permission
 
-Reached from Settings › Grant or revoke. Both directions of the one permission, because neither
-command can run from inside the app: this page is reference, which is why it is a page and not a
-sheet. Each block copies its own command.
+Reached from Settings › Grant or revoke. Both directions of the one permission that can only be
+granted over adb, because neither command can run from inside the app: this page is reference,
+which is why it is a page and not a sheet. Each block copies its own command.
 
 ```
 TopBar h64: arrow_back + "Grant or revoke"
@@ -453,6 +459,7 @@ beside the line at 12 `textMuted`. Frames keep 160 between them so a label fits 
 | 03 Home · dark | 05 Settings | settings gear |
 | 03 Home · dark | 07 Quick Settings Tiles | tiles card |
 | 05 Settings | 08 Permission | `Grant or revoke` |
+| 03 Home · dark | 12 Tweaks | the Tweaks row on the pages card |
 | 09 Home · timed pause | 10 Home · timed resume | `Resume` tile — switches direction |
 | 10 Home · timed resume | 09 Home · timed pause | `Pause` tile — switches direction |
 | 10 Home · timed resume | 11 Home · timed duration menu | duration control |
@@ -465,16 +472,17 @@ beside the line at 12 `textMuted`. Frames keep 160 between them so a label fits 
 
 One file, dark frames (the light palette is the same layout and ships in code):
 
-1. Setup — default
-2. Setup — permission still missing (the error card above the button)
-3. Home — all on (hero developer options, USB card, wireless card with endpoint, command and auto-off)
-4. Home — developer options off (red hero, disabled USB and wireless)
-5. Settings
-6. Quick Settings Tiles — the page, one tile already added (mixed `Remove` / `Add` rows)
-7. Permission — grant and revoke commands, each with a copy control
-8. Home — timed pause active (Developer options off, countdown, `Turn on now`)
-9. Home — timed resume active (Developer options on, USB/wireless off, `Turn off now`)
-10. Home — duration menu open (5 / 15 / 30 min)
+1. `01 · Setup` — default
+2. `02 · Setup · not granted` — the error card above the button
+3. `03 · Home · dark` — all on (hero developer options, USB card, wireless card with endpoint, command and auto-off)
+4. `04 · Home · developer options off` — red hero, disabled USB and wireless
+5. `05 · Settings`
+6. `07 · Quick Settings Tiles` — the page, one tile already added (mixed `Remove` / `Add` rows)
+7. `08 · Permission` — grant and revoke commands, each with a copy control
+8. `09 · Home · timed pause` — Developer options off, countdown, `Turn on now`
+9. `10 · Home · timed resume` — Developer options on, USB/wireless off, `Turn off now`
+10. `11 · Home · timed duration menu` — 5 / 15 / 30 min
+11. `12 · Tweaks` — Display (Font size), Animation and Behaviour, then Reset
 
 The Quick Settings tiles themselves are specified below but have no frame: the system draws them.
 

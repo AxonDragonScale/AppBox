@@ -18,6 +18,9 @@ private val PLUGGED_IN = BatteryManager.BATTERY_PLUGGED_AC or
 private const val KEY_BACKGROUND_PROCESS_LIMIT = "background_process_limit"
 private const val KEY_ANR_SHOW_BACKGROUND = "anr_show_background"
 
+/** The system font scale; the one row here that is not a developer option. */
+private const val KEY_FONT_SCALE = "font_scale"
+
 /**
  * The Tweaks page in draw order. Adding a row is one entry here plus a vector in the UI's
  * `TweakIcon.vector()`; no other file knows these keys.
@@ -26,6 +29,13 @@ private const val KEY_ANR_SHOW_BACKGROUND = "anr_show_background"
  * goes off, so zeroing them behind the user's back would be a surprise the platform does not set.
  */
 val TweakCatalog: List<Tweak> = listOf(
+    Tweak.FontScale(
+        key = KEY_FONT_SCALE,
+        group = TweakGroup.DISPLAY,
+        title = "Font size",
+        caption = "Text scale for every app",
+        icon = TweakIcon.FONT_SIZE,
+    ),
     Tweak.Scale(
         key = Settings.Global.WINDOW_ANIMATION_SCALE,
         group = TweakGroup.ANIMATION,

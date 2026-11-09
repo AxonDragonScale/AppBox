@@ -40,8 +40,9 @@ fun parseFlag(raw: String?): Boolean = (raw?.toIntOrNull() ?: 0) != 0
  * The only code that touches the settings provider.
  *
  * The three flags live in `Settings.Global`. A Tweaks row names its own table: most are `Global`,
- * but `show_touches` and `pointer_location` are `Settings.System` keys — that is where both AOSP's
- * `InputManagerService` and this ROM read them, and writing `Global` for them does nothing.
+ * but the font scale and the two input overlays are `Settings.System` keys — that is where AOSP's
+ * `AccessibilityManagerService`/`InputManagerService` and this ROM read them, and writing `Global`
+ * for them does nothing.
  */
 class SettingsRepository(context: Context) {
 
@@ -76,7 +77,7 @@ class SettingsRepository(context: Context) {
         SettingsStore.SYSTEM -> Settings.System.putInt(resolver, key, value)
     }
 
-    /** Stores a float; an animation scale is the only shape that needs one. */
+    /** Stores a float; an animation or font scale is the only shape that needs one. */
     fun writeFloat(store: SettingsStore, key: String, value: Float): Boolean = when (store) {
         SettingsStore.GLOBAL -> Settings.Global.putFloat(resolver, key, value)
         SettingsStore.SYSTEM -> Settings.System.putFloat(resolver, key, value)

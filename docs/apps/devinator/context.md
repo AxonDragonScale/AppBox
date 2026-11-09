@@ -4,12 +4,12 @@
 
 ## Overview
 
-Two screens plus five Quick Settings tiles. Home flips **Developer options**, **USB debugging** and
+A small set of screens plus five Quick Settings tiles. Home flips **Developer options**, **USB debugging** and
 **Wireless debugging**, shows the `adb connect` endpoint while wireless debugging is on, turns
 wireless debugging off on a timer, and can temporarily pause or resume **Developer options** for a
-chosen duration. **Tweaks** is a second page of stock `Settings.Global` switches — the three
-animation scales, don't keep activities, process limit, background ANRs, stay awake — reached from
-Home's pages card.
+chosen duration. **Tweaks** is a second page of developer switches — the three animation scales, don't keep
+activities, process limit, background ANRs, stay awake — plus **Font size**, an ordinary
+`Settings.System` display setting. Both are reached from Home's pages card.
 
 - **Package**: `com.axondragonscale.devinator`
 - **Module path**: `:apps:devinator`
@@ -55,7 +55,7 @@ com.axondragonscale.devinator/
 ├── di/DevinatorModule.kt
 ├── model/
 │   ├── DevState.kt                 # the three flags, endpoints, write results
-│   ├── Tweak.kt                    # one Tweaks row: Toggle / Scale / Limit, group, copy, icon
+│   ├── Tweak.kt                    # one Tweaks row: Toggle / Scale / Limit / FontScale, group, copy, icon
 │   ├── DurationOption.kt           # Off / 5 / 15 / 30 min for both timers
 │   ├── Countdown.kt                # one `m:ss` formatter and expiry check
 │   └── TimedToggleSession.kt       # target, restoreTo, deadline
@@ -77,6 +77,7 @@ com.axondragonscale.devinator/
 │   └── DevBootReceiver.kt          # reconciles both timers after a reboot
 ├── permission/
 │   ├── SecureSettingsPermission.kt # grant check, grant/revoke commands, settings deep link
+│   ├── WriteSettingsPermission.kt  # WRITE_SETTINGS: grant check and system toggle
 │   ├── GrantRepository.kt          # the app's one grant source (application context)
 │   └── LocalNetworkAccess.kt       # the API-37 local-network gate, shared by Home and discovery
 ├── tile/
@@ -96,11 +97,12 @@ exactly one implementation of each, so none of them is an interface.
 
 ### The one invariant
 
-**`Settings.Global` is the only source of truth.** No switch state is ever persisted or cached. The
-exceptions are **intents**: the developer-flags restore snapshot, and the timed toggle's
-`restoreTo`/`deadline`. They describe what to do next, never what the switches are. The repository
-exposes a `StateFlow` fed by a `ContentObserver`, so Home, the Setup gate and the tiles cannot
-disagree — including after a change made in the Settings app, or a write the system rejected.
+**The settings database is the only source of truth.** No switch state is ever persisted or cached.
+Most keys are `Settings.Global`; Font size is `Settings.System`. The exceptions are **intents**: the
+developer-flags restore snapshot, and the timed toggle's `restoreTo`/`deadline`. They describe what
+to do next, never what the switches are. The repository exposes a `StateFlow` fed by a
+`ContentObserver`, so Home, the Setup gate and the tiles cannot disagree — including after a change
+made in the Settings app, or a write the system rejected.
 
 ```kotlin
 class DevSettingsRepository(
@@ -152,20 +154,31 @@ for enables made in Android Settings.
 
 ### Tweaks page
 
-Home's pages card opens a second page of stock developer options that need no new permission: the
-three animation scales, don't keep activities, the background process limit, show all ANRs, and stay
-awake while charging.
+Home's pages card opens a second page of three groups: **Display**, **Animation** and **Behaviour**.
 
+- **Font size is the one row that is not a developer option.** It writes `Settings.System.font_scale`
+  (85 %–200 %, stock 100 %) and needs `WRITE_SETTINGS`, not `WRITE_SECURE_SETTINGS`. AMS observes
+  the key and pushes a new configuration, so the change is live in every app. The grant needs no
+  computer: the page shows a hint under the Display card when it is missing, and its **Allow**
+  action opens `Settings.ACTION_MANAGE_WRITE_SETTINGS`. Android 16+ refuses `pm grant` for this
+  permission ("managed by role"); the adb equivalent is
+  `adb shell appops set <package> android:write_settings allow`. `canWrite` is re-read on
+  `ON_RESUME`.
+- **Display size is deliberately absent.** `Settings.Secure.display_density_forced` is only read by
+  WindowManagerService at boot, so a direct write applies after a restart. Applying it live needs the
+  hidden `IWindowManager.setForcedDisplayDensityForUser` or a shell bridge (Shizuku); neither is in
+  this app yet.
 - **One catalogue.** `TweakCatalog` lists every row: key, group, copy, and control type — `Toggle`,
-  `Scale` (Off / 0.5× / 1× / 1.5× / 2× / 5× / 10×) or `Limit` (Standard, 0–4). Adding a row is one
-  entry there plus a vector in the UI's `TweakIcon.vector()`.
+  `Scale` (Off / 0.5× / 1× / 1.5× / 2× / 5× / 10×), `Limit` (Standard, 0–4) or `FontScale`
+  (85 %–200 %). Adding a row is one entry there plus a vector in the UI's `TweakIcon.vector()`.
 - **One value shape.** Every key is a number, so the page holds a `Map<String, Float>`.
-  `readNumber` parses `getString` for the same reason `parseFlag` does — `adb shell settings put`
+  `readAll` parses `getString` for the same reason `parseFlag` does — `adb shell settings put`
   stores text and `getFloat` throws on it. Floats are written with `putFloat`, everything else with
   `putInt`; `stay_on_while_plugged_in` stores a plug bitmask as its on-value.
-- **One store.** All seven keys are `Settings.Global`. `SettingsStore` still names the table per row,
-  because the page first shipped writing the wrong one: a key written to a table nothing reads is a
-  silent no-op, and that is exactly how two of these rows were broken on the first device run.
+- **One store.** The developer rows are `Settings.Global`; Font size is `Settings.System`.
+  `SettingsStore` still names the table per row, because the page first shipped writing the wrong
+  one: a key written to a table nothing reads is a silent no-op, and that is exactly how two of
+  these rows were broken on the first device run.
 - **Same invariant.** Nothing is cached: `DevTweaksRepository` observes all keys through one
   `ContentObserver` and writes through `SettingsRepository`, so a change made in Android's own
   Developer options screen lands on the page and a rejected write leaves the database value showing.
@@ -288,6 +301,12 @@ is not installed.
 adb shell pm grant <context.packageName> android.permission.WRITE_SECURE_SETTINGS
 ```
 
+Font size needs a second, independent grant: `WRITE_SETTINGS` (special app access). It needs no adb
+step — the Tweaks hint's **Allow** action opens `Settings.ACTION_MANAGE_WRITE_SETTINGS`. Android 16+
+refuses `pm grant` for it ("managed by role"); the adb equivalent is
+`adb shell appops set <context.packageName> android:write_settings allow`. Setup does not gate on
+it: the developer features work without it.
+
 Deep link for step 1: `Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS`. Shizuku and root grants
 are out of scope for v1.
 
@@ -297,6 +316,9 @@ are out of scope for v1.
   and bundle, Koin bundle, `navigation.compose`, coroutines, `kotlinx.serialization.json`.
 - `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
   tools:ignore="ProtectedPermissions" />`
+- `<uses-permission android:name="android.permission.WRITE_SETTINGS"
+  tools:ignore="ProtectedPermissions" />` — Font size only; granted through the `write_settings`
+  app-op, not `pm grant` (see [Setup / grant](#setup--grant)).
 - `<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />` — the platform's
   local-network protection (API 37+), needed only for the mDNS port lookup. It is `dangerous`, so Home
   requests it when wireless debugging is switched on and a refusal costs the port, never the toggle.

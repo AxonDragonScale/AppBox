@@ -80,6 +80,7 @@ class DevTweaksRepository(
 
         is Tweak.Limit -> settings.writeInt(tweak.store, tweak.key, value.toInt())
         is Tweak.Scale -> settings.writeFloat(tweak.store, tweak.key, value)
+        is Tweak.FontScale -> settings.writeFloat(tweak.store, tweak.key, value)
     }
 
     /** A rejected write is a result, not a crash; the observer decides what the page shows. */

@@ -2,14 +2,16 @@ package com.axondragonscale.devinator.model
 
 /** Created by Ronak on 09/11/26 */
 
-/** The three groups the Tweaks page draws, in this order. */
+/** The groups the Tweaks page draws, in this order. */
 enum class TweakGroup(val label: String) {
+    DISPLAY("Display"),
     ANIMATION("Animation"),
     BEHAVIOUR("Behaviour"),
 }
 
 /** The glyph a row shows. The model names the intent; the UI owns the actual vector. */
 enum class TweakIcon {
+    FONT_SIZE,
     ANIMATION,
     LIFECYCLE,
     PROCESSES,
@@ -18,17 +20,17 @@ enum class TweakIcon {
 }
 
 /**
- * Which settings table a key lives in. Every row that survives on this device is `Global`; `System`
- * is here because that is where the two input overlays live, and writing the wrong table is a
- * silent no-op (or, for `System`'s private keys, a hard refusal).
+ * Which settings table a key lives in. Most rows are `Global`; `System` is where the input overlays
+ * and the font scale live. Writing the wrong table is a silent no-op (or, for `System`'s private
+ * keys, a hard refusal).
  */
 enum class SettingsStore { GLOBAL, SYSTEM }
 
 /**
  * One row on the Tweaks page.
  *
- * Every key is a number in `Settings.Global`, so one [Float] covers all three shapes. A [Toggle]
- * stores [Toggle.onValue] instead of 1 because "stay awake while charging" is a plug-type bitmask.
+ * Every key is a number, so one [Float] covers every shape. A [Toggle] stores [Toggle.onValue]
+ * instead of 1 because "stay awake while charging" is a plug-type bitmask.
  *
  * Nothing here is persisted: the value is always read back from the settings database.
  */
@@ -76,6 +78,26 @@ sealed interface Tweak {
 
         companion object {
             val SCALE_CHOICES = listOf(0f, 0.5f, 1f, 1.5f, 2f, 5f, 10f)
+        }
+    }
+
+    /**
+     * The system font scale, `Settings.System.font_scale`. Not a developer option: writing it needs
+     * `WRITE_SETTINGS`, and the platform applies it to every app live. Stock is 1×.
+     */
+    data class FontScale(
+        override val key: String,
+        override val group: TweakGroup,
+        override val title: String,
+        override val caption: String,
+        override val icon: TweakIcon,
+        override val store: SettingsStore = SettingsStore.SYSTEM,
+    ) : Tweak {
+        override val stock: Float get() = 1f
+        override val choices: List<Float> get() = FONT_CHOICES
+
+        companion object {
+            val FONT_CHOICES = listOf(0.85f, 1f, 1.15f, 1.3f, 1.5f, 2f)
         }
     }
 

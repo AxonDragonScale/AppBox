@@ -58,6 +58,8 @@ visible but disabled with the reason attached, because `adbd` cannot run without
 | Turn Wireless debugging off | Silent, immediate; also cancels the auto-off timer |
 | Tap the endpoint row or the command block | Copies `adb connect <ip>:<port>` for the address shown. Android 13+ shows the system's own clipboard confirmation; 12/12L get a toast |
 | Tap the Auto-off row | Menu: Off / 5 / 15 / 30 min. Default Off. The selected item is highlighted; the row's trailing value shows the current choice |
+| Tap the Font size chip | Menu: 85 / 100 / 115 / 130 / 150 / 200 %. Writes `Settings.System.font_scale`; AMS repaints every app immediately, so the Tweaks page itself resizes as the menu closes |
+| Open Tweaks without the Write Settings grant | The Display card carries a hint — "Font size needs Write Settings." — with an **Allow** action that opens the system's Modify system settings toggle |
 | Tap **Pause for 5 min** (card or tile) | Developer options is on: writes off, arms the timed session, restores the pre-session state at expiry |
 | Tap **Resume for 5 min** (card or tile) | Developer options is off: writes on (replaying the last ADB snapshot), arms the session, turns off at expiry |
 | Tap **Turn on now** / **Turn off now** (card) or the active timed tile | Ends the session early and restores the pre-session state |
@@ -167,8 +169,9 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
   told apart by "this setting", and the message is the user's only cue about what to retry.
 - A setup step that cannot work without the phone being plugged in says so, and a command that is
   silent on success says that too.
-- The permission is explained once, on setup: one line for what it is for, one for why granting it
-  is safe — no scare wording, no legalese.
+- Each grant is explained once: the secure-settings one on Setup, the Write Settings one in the
+  Tweaks hint when it is missing. Our copy stays to one line; the system sheet carries the safety
+  wording — no scare wording, no legalese.
 - Never surface a raw exception, a stack trace, or an internal key name in the UI. Key names belong
   in [context.md](./context.md).
 - Empty and pending states say what is happening, not "Loading…".
@@ -176,11 +179,14 @@ transport. If the fallback is ever needed, it belongs behind the network pill, n
 ## Out of scope (v1)
 
 Zero-permission shelf (special-access deep links, package/activity inspector, device info), Shizuku
-and root grants, logcat viewer, density/size overrides, widgets, dynamic shortcuts. The Tweaks page
-ships the extra `Settings.Global` toggles; the three that stay out of reach — Show taps, Pointer
-location, Layout bounds — need the system UID or a shell-UID bridge rather than another key, so
-Shizuku is what would unlock them. The architecture leaves room: any new tool is another entry in
-the same repository pattern, and the tiles are the model for adding an entry point.
+and root grants, logcat viewer, **display size**, widgets, dynamic shortcuts. Display size is
+deliberately deferred: `display_density_forced` is only read by WindowManagerService at boot, so a
+direct write applies after a restart, and applying it live needs the hidden
+`IWindowManager.setForcedDisplayDensityForUser` or a shell bridge. The Tweaks page ships the
+`Settings.Global` toggles plus Font size in `Settings.System`; the three that stay out of reach —
+Show taps, Pointer location, Layout bounds — need the system UID or a shell-UID bridge rather than
+another key, so Shizuku is what would unlock them. The architecture leaves room: any new tool is
+another entry in the same repository pattern, and the tiles are the model for adding an entry point.
 
 ## Related Context
 

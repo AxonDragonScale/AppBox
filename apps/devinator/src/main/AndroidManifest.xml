@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <!-- Font size writes Settings.System.font_scale; a special app access the user grants in Settings. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
     <!--
         The platform's local-network protection (API 37+). Only mDNS needs it, to read the adbd
         port; without a declaration the platform answers discovery with its own "choose a device"

@@ -28,9 +28,9 @@ import com.axondragonscale.devinator.ui.theme.DevinatorTheme
 private const val PREVIEW_PACKAGE = "com.axondragonscale.devinator"
 
 /**
- * The one permission the app needs, in both directions: the same `pm grant` Setup shows, and the
- * `pm revoke` that takes it back. Neither command can be run from inside the app, so this page is
- * reference — which is why it is a page and not a sheet.
+ * The one permission that can only be granted over adb, in both directions: the same `pm grant`
+ * Setup shows, and the `pm revoke` that takes it back. Neither command can be run from inside the
+ * app, so this page is reference — which is why it is a page and not a sheet.
  */
 @Composable
 fun PermissionScreen(

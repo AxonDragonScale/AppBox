@@ -550,6 +550,21 @@ the same change as the work it learns from.**
   so a component can be repaired in place instead of rebuilt. `replace_id` keeps the old node's
   position, so a wider replacement needs a follow-up `node_move` to keep its right edge aligned.
 
+- **2026-11-09** — when a Zed session exposes **no** OpenPencil MCP tools, the official `openpencil`
+  CLI in app mode is the working fallback: `tool call clone_node / rename_node / update_node /
+  set_text / set_text_resize / delete_node / insert_icon` mutate the open document, and
+  `openpencil documents save --document-id …` persists it. `documents activate --page-id` can hit the
+  20 s timeout and still switch pages — confirm with a follow-up `query_nodes`. This is still the
+  tool registry, not a hand-rolled bridge; prefer the MCP tools whenever the host has them. To add a
+  one-row card to a fixed-layout screen, `clone_node` an existing card, delete its extra rows and
+  dividers, resize it, and `insert_icon` the new glyph — ids come back per clone, and
+  `get_page_tree root_id=…` re-derives the children.
+- **2026-11-09** — `clone_node` takes only an `id`: the copy lands beside the original with the
+  original's `x`/`y`, so rename and reposition it immediately. `update_node` accepts `x`, `y`,
+  `width`, `height` and `text` in one call, which is how a fixed-layout screen is re-stacked after
+  inserting a group. Set a chip text to `WIDTH_AND_HEIGHT` with `set_text_resize` or the cloned
+  text node keeps the old fixed width and the longer label clips.
+
 ## Related
 
 - [Devinator UI spec](../../apps/devinator/ui.md) — tokens, components and copy this skill
