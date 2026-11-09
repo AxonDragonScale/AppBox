@@ -12,6 +12,8 @@ kotlin {
 
         androidMain.dependencies {
             implementation(projects.core.android)
+            implementation(projects.libraries.logcatViewer)
+            implementation(libs.androidx.lifecycle.viewmodel.compose.android)
             implementation(libs.androidx.activity.compose)
         }
     }

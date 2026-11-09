@@ -100,6 +100,14 @@ fun LogcatViewer(
 - `onShare == null` falls back to an `ACTION_SEND` chooser opened with the passed context.
 - Snackbars are drawn inside the viewer; there is no host callback for them.
 
+Two hosts exist:
+
+- **Devinator** navigates to its own `Route.Logcat` and renders `LogcatViewer(onBack = …)` directly.
+- **Every app that uses `:core:devtools`** gets an **Open Logcat** built-in on Android, which
+  presents the viewer as a full-screen dialog with no per-app wiring. That module also exposes
+  `LogcatDevToolsScreen(onBack = …)` for a host that prefers a navigation destination; the JVM and
+  iOS actuals are no-ops.
+
 The host owns the theme (`MaterialTheme`). The viewer reads `MaterialTheme.colorScheme` and adds only
 what Material has no role for, through `LogcatStyle`:
 

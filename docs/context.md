@@ -100,7 +100,7 @@ Check here before writing a helper — the shared one usually exists.
 | Doc | What's inside |
 |---|---|
 | [libraries/tlv/context](./libraries/tlv/context.md) | `:libraries:tlv` — BER-TLV codec, KMP, independently published |
-| [libraries/logcat-viewer/context](./libraries/logcat-viewer/context.md) | `:libraries:logcat-viewer` — in-app log viewer with a host-supplied source |
+| [libraries/logcat-viewer/context](./libraries/logcat-viewer/context.md) | `:libraries:logcat-viewer` — in-app log viewer with a host-supplied source; built into DevTools on Android |
 
 ### Design and reference
 
