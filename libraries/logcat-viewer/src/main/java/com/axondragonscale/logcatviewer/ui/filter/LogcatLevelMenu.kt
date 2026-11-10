@@ -69,9 +69,17 @@ internal fun LevelMenu(
             )
         }
         LogcatMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            LogLevel.entries.forEach { level ->
+            val entries = LogLevel.entries
+            entries.forEachIndexed { index, level ->
                 val selected = level in levels
-                LogcatMenuRow(selected = selected, onClick = { onToggle(level, !selected) }) {
+                LogcatMenuRow(
+                    selected = selected,
+                    onClick = { onToggle(level, !selected) },
+                    shape = selectionShape(
+                        selectedAbove = entries.getOrNull(index - 1)?.let { it in levels } == true,
+                        selectedBelow = entries.getOrNull(index + 1)?.let { it in levels } == true,
+                    ),
+                ) {
                     Text(
                         text = level.letter.toString(),
                         style = LocalLogcatStyle.current.mono.copy(fontWeight = FontWeight.SemiBold),
@@ -103,3 +111,14 @@ internal fun LevelMenu(
         }
     }
 }
+
+/**
+ * Adjacent selected rows read as one block, so only the ends of a run are rounded: rounding every
+ * row leaves a scalloped waist at each boundary.
+ */
+private fun selectionShape(selectedAbove: Boolean, selectedBelow: Boolean) = RoundedCornerShape(
+    topStart = if (selectedAbove) 0.dp else 8.dp,
+    topEnd = if (selectedAbove) 0.dp else 8.dp,
+    bottomStart = if (selectedBelow) 0.dp else 8.dp,
+    bottomEnd = if (selectedBelow) 0.dp else 8.dp,
+)

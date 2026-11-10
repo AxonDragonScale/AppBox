@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.logcatviewer.model.LogBuffer
@@ -66,6 +67,7 @@ internal fun LogcatMenu(
 internal fun LogcatMenuRow(
     selected: Boolean,
     onClick: () -> Unit,
+    shape: Shape = RoundedCornerShape(8.dp),
     content: @Composable RowScope.() -> Unit,
 ) {
     Row(
@@ -73,7 +75,7 @@ internal fun LogcatMenuRow(
             .padding(horizontal = 8.dp)
             .fillMaxWidth()
             .height(40.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(shape)
             .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp),
