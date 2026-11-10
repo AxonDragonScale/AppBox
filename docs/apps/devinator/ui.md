@@ -503,10 +503,11 @@ rather than redrawing the layout.
 ## Logcat viewer — Console
 
 Built, in the shared `:libraries:logcat-viewer`. Entry: the terminal button in Home's top bar. The
-`Logcat · Console board` on the Screens page at `y = 3200` is the design reference — default, level
+visual reference left this file when the viewer became a library: see
+`libraries/logcat-viewer/logcat-viewer.fig` → Screens, `Logcat · Console board` — default, level
 menu, entry sheet, filter sheet, overflow, paused, no matches, saved views, save view, view actions
-and delete view, plus a control map. Its **no access** frame is obsolete: the viewer reads this app's
-own records with no permission, so there is nothing to gate.
+and delete view, plus a control map. Its **no access** frame is kept there as history: the viewer
+reads this app's own records with no permission, so there is nothing to gate.
 
 **Scope.** Live tail with pause and autoscroll, multi-select level filter, content search with
 optional regex, tag and package filters including exclusions, buffer switch, saved views, copy a

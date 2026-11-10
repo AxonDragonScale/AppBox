@@ -236,8 +236,11 @@ dialog turns grey. Two sibling layers, both absolute at `0, 0`.
 A duration/permission menu must match what Material emits, or design and code drift:
 
 - Panel: 16 dp radius, 8 dp vertical content padding, drop shadow.
-- Selected row: highlighted fill, **8 dp** radius, `padding(horizontal = 8.dp)`. 16 − 8 = 8 keeps
-  the selected row concentric with the panel.
+- Selected row: highlighted fill, `padding(horizontal = 8.dp)`, and **8 dp on its outer corners only**.
+  16 − 8 = 8 keeps the selection concentric with the panel. In a multi-select menu the run of
+  adjacent selected rows is **one block**: the first row rounds its top corners, the last its bottom,
+  the rows between stay square. Rounding every row to 8 leaves a scalloped waist at each boundary,
+  which reads as several loose pills rather than one selection.
 - Panel width hugs its widest item — no fixed width. A `width(148.dp)` menu was rejected.
 - Anchor to the trailing control, not the full-width row: a `DropdownMenu` inside a `Box` that
   wraps only the trailing icon/value opens right-aligned; anchored to the row it opens at the
@@ -342,6 +345,12 @@ MCP calls give up at ~20 s on the client, but the app usually finishes the work.
 - One design per app: `apps/<app>/<app>.fig`, sourced from `docs/apps/<app>/ui.md`
   (copy in the spec is literal — do not paraphrase it in the design). When the design and the app
   disagree, the `.fig` is fixed first, then `ui.md`, then the code.
+- A publishable library that ships UI keeps its own file beside the module —
+  `libraries/logcat-viewer/logcat-viewer.fig` — with the same three pages. When a board moves out of
+  an app, **copy the file and prune it** rather than redrawing the screens: the copy keeps the
+  variables, the bindings and the node ids, and the source keeps everything else.
+- A library Foundations stack replaces the app icon panel with the panel that defines it: for the
+  log viewer that is `05 · Log level ramp` (level colours, tints and the `LogcatStyle` tokens).
 - Type is `Roboto` for UI and `Roboto Mono` for commands and endpoints, at the sizes the app ships
   (command 12, endpoint 13). None of it is metric-accurate until both families are installed — see
   [Fonts](#fonts-must-resolve-or-the-design-lies).
@@ -505,6 +514,16 @@ the same change as the work it learns from.**
 - **2026-11-08** — Material `DropdownMenu` carries 8 dp vertical content padding and, with a 16 dp
   panel radius, a selected row needs an 8 dp radius and `padding(horizontal = 8.dp)` to look
   concentric with the panel (16 − 8 = 8). The `.fig` and the Compose code match on 16 / 8 / 8.
+  **Refined 2026-11-10** — only the selected run's outer corners take the 8; a run of adjacent
+  selected rows reads as one block (see the menu recipe).
+- **2026-11-10** — stale text carets: a 1 px vertical line inside a text node's glyphs, at any
+  character, is editor state the rasteriser still draws. `openpencil eval` reports no
+  `selectionStart`, and `get_node` shows nothing; re-assigning the node's own `characters` clears it
+  (`set_text` with the same string works too, through MCP or `tool call`). Bulk-fix a subtree in one
+  `eval` pass — `root.findAll(n => n.type === "TEXT").forEach(t => { if (t.characters) t.characters = t.characters })`
+  — and assert that no `width`/`height` changed, because a page-wide pass is heavy enough to time out
+  and leave the layout recomputed mid-transaction (a whole board collapsed to narrow columns once and
+  needed `undo`). Batch four screens at a time.
 - **2026-11-08** — a `DropdownMenu` anchored to a full-width row opens at the **left edge**; put it
   in a `Box` that wraps only the trailing control and it opens right-aligned. Never size the menu
   with a fixed width — let it hug the widest item.
@@ -620,6 +639,35 @@ the same change as the work it learns from.**
   and `layoutSizingVertical = "HUG"`. Then re-anchor the sheet: the row grows (24 → 54), so give the
   bottom sheet an explicit new height and `y` (e.g. 336/579 → 348/567) rather than letting the body
   paint past its rounded bottom.
+- **2026-11-10** — splitting a board out into a new file is a **copy and prune**, never a re-draw:
+  copy the `.fig`, open the copy, delete the top-level nodes the new file does not own, then delete the
+  board from the source and save both. Variables, bindings and node ids survive the copy, so the ids
+  you used in the source work in the copy for the edits made in the same session. Prune pages with
+  `delete_node` on each top-level frame, not by removing the page: an emptied page still refuses
+  `delete_node` with `Missing resumed component <id>` until the page is the active one.
+- **2026-11-10** — `export_image` (and any raster export) resolves against the **active tab and that
+  tab's active page**, not the `document_id`/`page_id` you pass: with two documents open, exporting a
+  node in the inactive one answers `No visible nodes to export`, and a page id answers `Raster export
+  selection must stay on a single page`. Call `activate_document` with `page_id` first, then export.
+  `get_node` / `node_bounds` / `lint` are model reads and need no activation.
+- **2026-11-10** — a component library is one `render` per specimen row: write `<Component
+  name="Family/Prop=Value">` inline in the JSX, then `combine_as_variants(ids=…)`. The set snapshots its
+  width from where its variants sit **when it is combined**; move variants after combining and the set
+  keeps the stale width and overflows its parent. `node_resize` on the set **scales the variants**, so
+  the recovery is resize-then-`undo`: undo restores the variant sizes and leaves the correct smaller
+  set width.
+- **2026-11-10** — `figma.variables` is **undefined** in app-mode `eval` (`getLocalVariables` throws),
+  so bulk stroke binding has to go through `bind_variable` one node at a time. `lint_fix` still binds
+  fills only, as before. A design with ~45 hardcoded fills per page is one `lint_fix` call.
+- **2026-11-10** — `analyze_overlaps` reports a false `parent-overflow` when a child sits at the same
+  origin as its parent (a menu panel at `0,0` inside its `Variants` frame): both bounding boxes are
+  identical, yet it claims tens of thousands of square px of overflow. Check the pair with
+  `node_bounds` before moving anything.
+- **2026-11-10** — generating JSX from a script: pass the tree to `openpencil tool call render
+  --document-id <tab> --args-file <json>` (`{"jsx": …, "parent_id": …}`). It mutates the open document
+  and returns ids that match the MCP ids, so the two hosts can be interleaved. In a Python f-string the
+  braces of an attribute are replacement fields — `name={"a & b"}` emits `name=a & b` and fails to
+  parse as `Unexpected token (line:col)`; write `name="a & b"` instead.
 
 ## Related
 

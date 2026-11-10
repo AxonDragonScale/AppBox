@@ -36,6 +36,7 @@ A host that holds a broader identity — root, a shell bridge, a remote device �
 libraries/logcat-viewer/
 ├── build.gradle.kts
 ├── consumer-rules.pro
+├── logcat-viewer.fig           # Foundations, Components and the twelve-state board
 ├── proguard-rules.pro
 └── src/main/java/com/axondragonscale/logcatviewer/
     ├── LogcatViewer.kt              # public entry: wiring, lifecycle, effects, style
@@ -210,8 +211,12 @@ Previews: `android preview list :libraries:logcat-viewer`, then
 
 ## Design source
 
-Devinator's board `Logcat · Console board` in `apps/devinator/devinator.fig` is the visual reference.
-Its **no access** frame predates the decision to read only own logs and has no shipped counterpart.
+`libraries/logcat-viewer/logcat-viewer.fig` is the visual reference. It is the library's own board, not
+Devinator's: Foundations carries the Material-role palette, the typography roles the viewer reads and
+the log-level ramp; Components carries the log row, level glyph, rule chip, buttons, menus, sheets and
+dialogs; Screens carries `Logcat · Console board` — twelve states plus the control map. Its **no access**
+frame is kept as history and predates the decision to read only own logs, so it has no shipped
+counterpart.
 
 ## Related Context
 
