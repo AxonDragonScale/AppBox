@@ -1,0 +1,5 @@
+#!/bin/sh
+# Delegate to the global commit-msg check, so one rule governs every repo.
+# Absent on machines without ~/.githooks: the check is simply skipped.
+[ -x "$HOME/.githooks/commit-msg" ] && exec "$HOME/.githooks/commit-msg" "$@"
+exit 0

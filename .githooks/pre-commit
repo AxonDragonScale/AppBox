@@ -3,6 +3,11 @@
 # Installed via: git config core.hooksPath .githooks
 set -e
 
+# Global checks first; the same hook is skipped on machines without ~/.githooks.
+if [ -x "$HOME/.githooks/pre-commit" ]; then
+  "$HOME/.githooks/pre-commit" "$@"
+fi
+
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
