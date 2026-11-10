@@ -54,10 +54,11 @@ class AlbumManager(
         suspend fun addWallpapers(uris: List<Uri>) {
             uris.forEach { uri -> context.takePersistableUriPermission(uri) }
 
-            // TODO: Verify
-            // Make sure existing wallpapers are not re-added
+            // Re-selecting a wallpaper the album already holds is a no-op, not an error.
             val existingWallpaperUris = album.getAllWallpapers().map { it.uri }
             val newWallpapers = uris.filter { it.toString() !in existingWallpaperUris }
+            if (newWallpapers.isEmpty()) return
+
             val newWallpaperEntities = newWallpapers.map { Wallpaper(it.toString()) }
             val newWallpaperIds = repository.saveWallpapers(newWallpaperEntities)
 
@@ -67,6 +68,45 @@ class AlbumManager(
             }
         }
 
+        /** Removes [folderId] together with the wallpapers it owns. */
+        suspend fun removeFolder(folderId: Int) {
+            repository.deleteFullFolder(folderId)
+            normalise()
+        }
+
+        /** Removes [wallpaperId] from the album or from the folder that owns it. */
+        suspend fun removeWallpaper(wallpaperId: Int) {
+            repository.deleteWallpapers(listOf(wallpaperId))
+            normalise()
+        }
+
+        /**
+         * Drops references to rows that no longer exist and recomputes the cover.
+         *
+         * Deleting a row cannot edit the id lists that point at it, so the album and every folder
+         * are re-read from the join and written back pruned. A folder whose last wallpaper is gone
+         * is deleted, matching what [SyncManager] does when it finds an empty folder on disk.
+         */
+        private suspend fun normalise() {
+            repository.getFullAlbum(album.id)?.folders
+                ?.filter { it.wallpapers.isEmpty() }
+                ?.forEach { repository.deleteFolders(listOf(it.id)) }
+
+            val current = repository.getFullAlbum(album.id) ?: return
+            val newCover = current.folders.firstOrNull()?.coverUri
+                ?: current.wallpapers.firstOrNull()?.uri
+
+            repository.updateAlbum(current.id) {
+                this.coverUri = newCover
+                folderIds = current.folders.map { it.id }
+                wallpaperIds = current.wallpapers.map { it.id }
+            }
+            current.folders.forEach { folder ->
+                repository.updateFolder(folder.id) {
+                    wallpapers = folder.wallpapers.map { it.id }
+                }
+            }
+        }
     }
 
 }

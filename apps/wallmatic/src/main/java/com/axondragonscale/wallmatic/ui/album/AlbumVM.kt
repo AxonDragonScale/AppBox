@@ -84,13 +84,19 @@ internal class AlbumVM(
     private fun onDeleteFolder(
         event: AlbumUiEvent.DeleteFolder,
     ) = runAndSyncState {
-        repository.deleteFolders(listOf(event.folderId))
+        val fullAlbum = uiState.value.album ?: return@runAndSyncState
+        albumManager.forAlbum(fullAlbum) {
+            removeFolder(event.folderId)
+        }
     }
 
     private fun onDeleteWallpaper(
         event: AlbumUiEvent.DeleteWallpaper,
     ) = runAndSyncState {
-        repository.deleteWallpapers(listOf(event.wallpaperId))
+        val fullAlbum = uiState.value.album ?: return@runAndSyncState
+        albumManager.forAlbum(fullAlbum) {
+            removeWallpaper(event.wallpaperId)
+        }
     }
 
     private fun onSetWallpaper(

@@ -64,7 +64,7 @@ class SyncManager(
             }
 
             // Update wallpaper and config if current wallpaper is not in the album
-            syncConfig()
+            repairConfig()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -131,8 +131,11 @@ class SyncManager(
     /**
      * Validates config against the current album state and resets it if necessary.
      * Triggers an immediate wallpaper update if the current wallpaper is stale.
+     *
+     * This only reads Room and config, never the filesystem, so it is the cheap repair to run
+     * after the user deletes an album that might be the configured one.
      */
-    private suspend fun syncConfig() {
+    suspend fun repairConfig() {
         val config = appPrefsRepository.configFlow.first()
         if (!config.isInit) return
 

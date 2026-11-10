@@ -71,8 +71,8 @@ class UpdateCoordinator(
                 armRetry()
             }
             is WallpaperUpdateResult.Skipped -> {
-                this.logW { "Skipped, retrying. reason: ${result.reason}" }
-                armRetry()
+                this.logW { "Skipped, waiting for the next cycle. reason: ${result.reason}" }
+                armNextCycle()
             }
         }
     }
@@ -86,6 +86,16 @@ class UpdateCoordinator(
         val config = schedulableConfig() ?: return tickScheduler.cancel()
         val delay = config.updateInterval.coerceIn(MIN_RETRY_DELAY_MILLIS, MAX_RETRY_DELAY_MILLIS)
         arm(System.currentTimeMillis() + delay)
+    }
+
+    /**
+     * A skip leaves `lastUpdated` untouched, so `nextUpdate` is already in the past and arming it
+     * would tick again immediately, forever. A skip is a condition only the user can clear (album
+     * deleted, every wallpaper blacklisted), so spend the wake-up on the next full interval.
+     */
+    private suspend fun armNextCycle() {
+        val config = schedulableConfig() ?: return tickScheduler.cancel()
+        arm(System.currentTimeMillis() + config.updateInterval)
     }
 
     private fun arm(triggerAtMillis: Long) {

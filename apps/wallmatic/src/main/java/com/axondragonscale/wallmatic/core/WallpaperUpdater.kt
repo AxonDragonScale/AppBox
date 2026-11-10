@@ -175,14 +175,14 @@ class WallpaperUpdater(
 
     /**
      * Applies [wallpaper] to [target]. Failures are logged and returned, never thrown.
+     *
+     * The stream is opened eagerly and closed as soon as [WallpaperManager.setStream] returns, so a
+     * missing file or a revoked URI grant is an ordinary failure instead of a leaked descriptor.
      */
     fun setWallpaper(wallpaper: Wallpaper, target: TargetScreen): Result<Unit> = runCatching {
-        manager.setStream(
-            context.contentResolver.openInputStream(wallpaper.uri.toUri()),
-            null,
-            true,
-            target.toFlag(),
-        )
+        val stream = context.contentResolver.openInputStream(wallpaper.uri.toUri())
+            ?: error("Cannot open wallpaper. uri: ${wallpaper.uri}")
+        stream.use { manager.setStream(it, null, true, target.toFlag()) }
         Unit
     }.onFailure { e ->
         this.logE { "Setting wallpaper failed. wallpaperId: ${wallpaper.id}, target: $target, error: ${e.message}" }

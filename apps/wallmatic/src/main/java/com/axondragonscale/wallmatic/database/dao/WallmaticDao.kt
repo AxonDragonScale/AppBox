@@ -59,15 +59,26 @@ interface WallmaticDao {
     @Query("DELETE FROM folder WHERE id IN (:ids)")
     suspend fun deleteFolders(ids: List<Int>)
 
+    @Query("DELETE FROM folder WHERE id = :id")
+    suspend fun deleteFolder(id: Int)
+
     @Query("DELETE FROM wallpaper WHERE id IN (:ids)")
     suspend fun deleteWallpapers(ids: List<Int>)
 
     @Transaction
     suspend fun deleteFullAlbum(id: Int) {
         val album = getAlbum(id) ?: return
+        val folders = getFolders(album.folderIds)
         deleteAlbum(album.id)
         deleteFolders(album.folderIds)
-        deleteWallpapers(album.wallpaperIds)
+        deleteWallpapers(album.wallpaperIds + folders.flatMap { it.wallpapers })
+    }
+
+    @Transaction
+    suspend fun deleteFullFolder(id: Int) {
+        val folder = getFolder(id) ?: return
+        deleteFolder(folder.id)
+        deleteWallpapers(folder.wallpapers)
     }
 
 

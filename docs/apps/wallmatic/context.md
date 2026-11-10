@@ -172,7 +172,7 @@ Key settings:
 ### Wallpaper Auto-Cycle (Summary)
 1. `TickScheduler` keeps exactly one `AlarmManager` tick armed at `config.nextUpdate` (`lastUpdated + updateInterval`)
 2. `TickReceiver` handles the tick plus `BOOT_COMPLETED`, `TIME_SET`, `TIMEZONE_CHANGED` and `MY_PACKAGE_REPLACED`, and forwards all of them to `UpdateCoordinator.reconcile()`
-3. `reconcile()` applies the wallpaper if due (`WallpaperUpdater.updateWallpaper()`) and re-arms the tick from the new `lastUpdated` — or a bounded 1–5 minute retry when nothing applied
+3. `reconcile()` applies the wallpaper if due (`WallpaperUpdater.updateWallpaper()`) and re-arms the tick from the new `lastUpdated` — or, when an apply failed, a bounded 1–5 minute retry
 4. `FallbackWorker` re-evaluates the same rule every 15 minutes in case the alarm was dropped; `SyncWorker` refreshes albums off the timed path; `WallmaticActivity.onStart` reconciles on every return to the foreground
 
 For full details on scheduling, workers, tiles, and the update lifecycle, see [Background Services](./background-services.md).

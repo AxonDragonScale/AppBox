@@ -2,6 +2,8 @@ package com.axondragonscale.wallmatic.ui.albums
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.wallmatic.background.UpdateCoordinator
+import com.axondragonscale.wallmatic.core.SyncManager
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +19,8 @@ import kotlinx.coroutines.launch
  */
 class AlbumsVM(
     private val repository: WallmaticRepository,
+    private val syncManager: SyncManager,
+    private val updateCoordinator: UpdateCoordinator,
 ): ViewModel() {
 
     val uiState = MutableStateFlow(AlbumsUiState())
@@ -55,7 +59,11 @@ class AlbumsVM(
     }
 
     private fun deleteAlbum(event: AlbumsUiEvent.DeleteAlbum) = viewModelScope.launch(Dispatchers.IO) {
-        repository.deleteAlbum(event.albumId)
+        repository.deleteFullAlbum(event.albumId)
+        // The deleted album may have been the configured one: repair rather than leave the tick
+        // pointing at an album that no longer exists.
+        syncManager.repairConfig()
+        updateCoordinator.reschedule()
     }
 
 }

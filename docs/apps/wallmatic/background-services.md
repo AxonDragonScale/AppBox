@@ -26,10 +26,10 @@ A cycle is due once `nextUpdate` has passed. Every trigger runs the same rule �
 | `Updated` | `nextUpdate` computed from the new `lastUpdated`, plus an enqueued `SyncWorker` |
 | `NotDue` | `nextUpdate` |
 | `Failed` | `now + updateInterval`, clamped to 1–5 minutes, plus an enqueued `SyncWorker` |
-| `Skipped` | the same bounded retry |
+| `Skipped` | `now + updateInterval` — never retried early |
 | config missing, `isInit` false, or auto-cycle off everywhere | alarm cancelled |
 
-`Failed` and `Skipped` do not advance `lastUpdated`, so a normal arm would be due immediately and loop; the bounded retry is what prevents that. `SyncWorker` is enqueued on those outcomes so a wallpaper deleted from disk is pruned before the retry picks again.
+`Failed` and `Skipped` do not advance `lastUpdated`, so `nextUpdate` is already in the past and arming it would tick again immediately. The two are treated differently because they age differently: a failed apply can clear on its own, so it retries within 1–5 minutes and enqueues `SyncWorker` so a wallpaper deleted from disk is pruned before the retry picks again. A skip is a condition only the user can clear — the album is gone, or every wallpaper in it is blacklisted — so it waits a full interval instead of burning a wake-up every few minutes on something that cannot change. `Skipped` deliberately does not enqueue `SyncWorker`: a permanently skipped album would otherwise rescan its SAF folders on every cycle.
 
 ## TickScheduler — the timer
 
@@ -72,8 +72,8 @@ It is deliberately off the timed path: `syncAlbums()` scans SAF folders and can 
 
 Core logic for selecting and applying wallpapers.
 
-- No-arg `updateWallpaper()`: reads config, checks if the interval has passed, determines target (`Home` / `Lock` / `Both`), delegates to the `TargetScreen` overload. Returns `NotDue` if the interval has not elapsed, `Skipped` when nothing was applied for a non-failure reason (unusable config, empty album whitelist), otherwise whatever the delegated update returned
-- `updateWallpaper(target)`: loads album(s), picks random wallpaper(s), calls `WallpaperManager.setStream()`, then persists config for the screens that actually applied — `currentWallpaperId` per applied screen, `lastUpdated` as soon as at least one screen applied. Returns `Updated`, `Skipped(reason)` (config null / not initialised / album missing / album has no whitelisted wallpaper) or `Failed(cause)`
+- No-arg `updateWallpaper()`: reads config, checks if the interval has passed, determines target (`Home` / `Lock` / `Both`), delegates to the `TargetScreen` overload. Returns `NotDue` if the interval has not elapsed, `Skipped` when nothing was applied for a non-failure reason (unusable config, album missing, empty album whitelist), otherwise whatever the delegated update returned. A `Skipped` is permanent from the scheduler's point of view — it is reported once per interval, not retried
+- `updateWallpaper(target)`: loads album(s), picks random wallpaper(s), calls `WallpaperManager.setStream()`, then persists config for the screens that actually applied — `currentWallpaperId` per applied screen, `lastUpdated` as soon as at least one screen applied. Returns `Updated`, `Skipped(reason)` (config null / not initialised / album missing / album has no whitelisted wallpaper) or `Failed(cause)`. The input stream is opened eagerly and closed as soon as `setStream()` returns, so a missing file or a revoked URI grant is a failure, not a leaked descriptor
 - An album whose whitelist is empty (every wallpaper blacklisted) is not a failure: `getRandomWallpaperOrNull()` returns `null`, that screen is skipped with a warning naming the album id, and the other screen is still applied. If no screen applied and nothing threw, the result is `Skipped(reason)`; a failure cause always wins over a skip reason, and `Failed` stays reserved for an apply that actually failed
 - A failed apply is never persisted as a success: if nothing applied, no config is written at all, `lastUpdated` stays unadvanced and `Failed` is returned. If only some screens applied, the successes are persisted, `lastUpdated` advances and `Failed` still carries the first failure
 - When `mirrorHomeConfigForLock = true`: single pick from home album applied to both screens
@@ -120,6 +120,16 @@ If step 5 applies nothing, step 6 becomes the bounded retry instead, and `SyncWo
 ```
 
 `onStart` fires on first launch and on every return to the foreground, including after the system picker closes. `updateWallpaper()` honours the interval, so the normal case is a cheap `NotDue` no-op; an overdue cycle is applied instead of waiting for a deferred alarm. `syncAlbums()` stays in `onCreate` because syncing in `onStart` races with the picker writing the same albums.
+
+### Album or folder deleted
+
+```
+1. AlbumsVM   → WallmaticDao.deleteFullAlbum()   album + folders + their wallpapers, one transaction
+2. SyncManager.repairConfig()                    resets isInit if the configured album is gone
+3. UpdateCoordinator.reschedule()                re-arms, or cancels when auto-cycle is now off
+```
+
+Deleting a folder or a wallpaper from the album screen goes through `AlbumManager`, which deletes the rows and then re-reads the join to drop dangling ids and recompute the cover. A folder whose last wallpaper was removed is deleted, matching `syncAlbums()`.
 
 ### Reboot / app update
 

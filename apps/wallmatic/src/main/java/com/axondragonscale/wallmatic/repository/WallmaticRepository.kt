@@ -121,8 +121,12 @@ class WallmaticRepository(
 
     // MARK: Delete --------------------------------------------------------------------------------
 
-    suspend fun deleteAlbum(albumId: Int) {
-        wallmaticDao.deleteAlbum(albumId)
+    suspend fun deleteFullAlbum(albumId: Int) {
+        wallmaticDao.deleteFullAlbum(albumId)
+    }
+
+    suspend fun deleteFullFolder(folderId: Int) {
+        wallmaticDao.deleteFullFolder(folderId)
     }
 
     suspend fun deleteFolders(folderIds: List<Int>) {
