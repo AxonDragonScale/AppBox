@@ -50,8 +50,10 @@ cannot reach the MCP tools inspects and reports — the human or a Zed agent mak
    binary — never touch it from a terminal.
 9. **Tokens are one collection per theme** (there is no add-mode API), and `lint_fix`
    binds hardcoded colours to them in bulk — far cheaper than `bind_variable` per node.
-10. **Screens are built from frames, not instances.** Instances cannot take text
-    overrides through this API, and `create_instance` has no parent parameter.
+10. **Compose screens from instances; keep only layout wrappers as frames.** Instances *do* take
+    text and visibility overrides once the master exposes component properties (added with `eval`,
+    see [Component library](#component-library)); `create_instance` still has no parent parameter,
+    so place instances with `render`/`reparent_node`.
 
 ## Tool map
 
@@ -206,7 +208,12 @@ create_variable("bg", "COLOR", "#0E1013", collectionId)
    Components must be **siblings**; `reparent_node` them into one parent first.
 4. `create_slot(frame id)` on an inner frame of a main component gives instances a
    `Content` slot.
-5. Screens still use plain frames (see golden rule 10); the library is the contract.
+5. Add text and boolean properties with `eval`: `addComponentProperty("Label", "TEXT", "Save")`
+   then bind the layer with `text.componentPropertyReferences = { characters: propId }`
+   (`visible` for a boolean). Instances override them as JSX props, or through
+   `properties={{"Show subtitle":"false"}}` when the name has spaces.
+6. Screens are composed from instances (golden rule 10); only layout wrappers stay as frames.
+   Variant selection uses the variant's full child name: `Variant="Active=Albums"`.
 
 ### Screens
 
@@ -288,7 +295,8 @@ XPath via `query_nodes` beats scanning trees:
 | Render landed on the wrong page | no `page_id`; `switch_page` did not stick | pass `page_id`, move nodes with `reparent_node` |
 | `combine_as_variants` fails | components are not siblings | reparent into one parent first |
 | Variant set is named after a whole component | names not `Name/Prop=Value` | rename, then combine |
-| Instance shows the master's text everywhere | instances have no text overrides here | build screens from frames |
+| Instance shows the master's text everywhere | the master has no component property bound to that text | add one with `addComponentProperty` + `componentPropertyReferences`, then override on the instance |
+| Instance variant ignores `Variant="Albums"` | variant children are named `Active=Albums` | pass the full child name: `Variant="Active=Albums"` |
 | `HUG` rejected by `batch_update` | frame is not auto-layout | set `direction` first, then `HUG` |
 | RPC timeout on `render` | heavy subtree / app throttled | see below — verify before retrying |
 
@@ -668,6 +676,75 @@ the same change as the work it learns from.**
   and returns ids that match the MCP ids, so the two hosts can be interleaved. In a Python f-string the
   braces of an attribute are replacement fields — `name={"a & b"}` emits `name=a & b` and fails to
   parse as `Unexpected token (line:col)`; write `name="a & b"` instead.
+
+- **2026-11-10** — CLI `render` rejects a leading `const`/`return` (and therefore
+  `defineVars`/`defineMode`) with `Unexpected token when processing JSX children`. Create tokens with
+  `create_collection` + `create_variable`, then bind in plain JSX with `designVar('Primary')`; the
+  second argument selects the collection, `designVar('Primary','Dark')`. One collection per theme,
+  no mode switching.
+- **2026-11-10** — a gradient fill (`linearGradient` / `fills`) makes raster export fail with
+  `null is not an object (evaluating 'e.delete')` in both `export_image` and `export`. The model is
+  fine; compose the look from solid shapes instead, or import it as SVG.
+- **2026-11-10** — `<Vector d=…>` and `paths={[…]}` are **not** supported by this CLI renderer
+  (`Unsupported prop` warnings, empty vector). Import the artwork with `import_svg`; author the SVG
+  at the display size and set the imported frame's fill afterwards.
+- **2026-11-10** — component properties are not exposed as tools, but `eval` reaches them:
+  `component.addComponentProperty("Label","TEXT","Save")` plus
+  `text.componentPropertyReferences = { characters: propId }` gives every instance a text override;
+  a BOOLEAN property bound to `{ visible: propId }` hides a layer. JSX props cannot contain spaces, so
+  `properties={{"Show subtitle":"false"}}` is the way to set those (booleans as the string
+  `"false"`; a native `false` fails validation).
+- **2026-11-10** — instances really are live links: changing the master's fill with `set_fill`
+  repainted both instances on another page immediately. Screens can therefore be built from
+  instances, and one master edit propagates everywhere.
+- **2026-11-10** — variant selection needs the variant child's full name. For a set whose children
+  are `Active=Home`/`Active=Albums`/`Active=Settings`, `Variant="Albums"` silently keeps the first
+  variant; `Variant="Active=Albums"` selects correctly. Sets with plain `Default`/`Blacklisted`
+  children take the short value.
+- **2026-11-10** — a 1 px divider frame inside a flex row defaults to **100 high** (golden rule 3)
+  and paints far past its card. Setting `height` through `eval` did not stick; `node_resize` with
+  both dimensions (`width: 1, height: 32`) did. Check every separator after rendering a segmented
+  control.
+- **2026-11-10** — `mt`/`mx` margins are silently dropped; insert a fixed-height spacer frame
+  (`<Frame h={16} w="fill" />`) between siblings instead.
+- **2026-11-10** — resizing a variant's children leaves the **component set's** frame at the old
+  size, so the variants overflow their specimen and paint over the row below. `node_resize` on the
+  set scales the variants (the old trap); use `set.resizeWithoutConstraints(width, height)` in
+  `eval` instead — the set frame changes, the variants keep their size.
+- **2026-11-10** — matching a design to the running app: capture with `android screen capture`,
+  sample real colours from the PNG, and compare `android layout` bounds for dp sizes. The app's
+  `Card` is `surfaceContainerHighest` (`#E6E0E9` / `#36343B`) and the background is `#FEF7FF` /
+  `#141218` — not the older `#FFFBFE` / `#1C1B1F`.
+
+- **2026-11-11** — `clone_node` on a screen duplicates its instances but **not the image fills on
+  their children**: a cloned `AlbumPlate` or `WallpaperTile` instance falls back to the component's
+  solid fill, so the copy reads as empty grey plates behind the new overlay. Reapply
+  `set_image_fill` to every cloned instance child after cloning, or copy the screen's images after
+  the clone.
+- **2026-11-11** — scrambled glyphs with the **characters still correct** are mixed per-character
+  font runs, not a broken font. Text saved through headless renders/edits can carry several font
+  styles inside one string; the app then maps glyphs to the wrong face ("Test" renders as "Ters",
+  times as noise). Fix every text node in an app-mode `eval` by normalizing the whole range from
+  its first run: `setRangeFontName(0, len, getRangeFontName(0, 1))`, then the same for size, fills,
+  letter spacing and line height. Batch per page or screen; 130 nodes per call is fine. A new
+  `render`ed text node in the same file is the quick proof that the font itself is healthy.
+- **2026-11-11** — a saved `.fig` can lag behind the live document after several tool-call edits:
+  the file shows an earlier checkpoint (old copy, old colours) while the open document is current.
+  Reopen the saved file, verify one screen, and persist with MCP `save_file`; do not trust
+  `documents save` alone. Delete the extra `*-final.fig` / `*-live.fig` copies afterwards and keep
+  one canonical file.
+- **2026-11-11** — renaming a variant child (`Active=Albums` → `Active=Library`) updates the layer
+  name but **not the variant property value**. `Variant="Active=Library"` then fails to resolve and
+  silently falls back to the first variant; `setProperties({Variant:"Active=Albums"})` still selects
+  the renamed child. Rebuild the variant set to change the stored value, or keep the old value in
+  code and change only the visible label.
+- **2026-11-11** — moving a text node that carries a component property (an index from a caption
+  onto the image) with `reparent_node` keeps the binding; instance overrides follow the text to its
+  new parent. Add a small ink box behind it for contrast, then `node_move` the text onto the box.
+- **2026-11-11** — replacing an app's visual world in place: copy the old `.fig` to
+  `<app>-v1.fig`, `documents new --path` the canonical file, and build the three pages there. The
+  old document stays open on the moved path; close it without saving at the end. Keeping the v1 file
+  beside the new one is the cheapest before/after and costs no page in the deliverable.
 
 ## Related
 
