@@ -84,6 +84,7 @@ subsystem.
 | [apps/topty/security](./apps/topty/security.md) | PBKDF2, AES-256-GCM, biometrics, key storage, re-encryption |
 | [apps/topty/backup-restore](./apps/topty/backup-restore.md) | Backup formats (Topty/Aegis/URI), import/export flows |
 | [apps/wallmatic/context](./apps/wallmatic/context.md) | `:apps:wallmatic` — scheduled wallpaper rotation, albums |
+| [apps/wallmatic/ui](./apps/wallmatic/ui.md) | Wallmatic wallpaper-library design: paper/ink/indigo tokens, component library, Home/Lock model, 17 screens |
 | [apps/wallmatic/background-services](./apps/wallmatic/background-services.md) | Update cycle, Doze/reboot survival, tiles, receivers |
 
 ### Core modules
