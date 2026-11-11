@@ -23,7 +23,7 @@ bar and a wallpaper reduced to a thumbnail.
 - **Paper** ground, **ink** type, one **indigo** signal from the launcher (`#4B46C0`).
 - Square images with 1 px rules; no rounded cards.
 - Tabs and segmented controls share one language: a 1 px ruled track and a full-width ink rule for
-  the active item — a 3 px top rule flush on the bottom bar, a 2 px underline flush on the bottom
+  the active item — a 3 px top rule flush on the bottom bar, a 3 px underline flush on the bottom
   edge of the Home/Lock switcher and segmented controls.
 - Chakra Petch for display, labels and numbers; Roboto for body and captions.
 - The active target (Home / Lock) is a switcher, not two duplicated cards.
@@ -85,13 +85,13 @@ Specimens are 420 wide, three per row. Masters live on **Components**; screens u
 |---|---|---|
 | `Button` | `Style=Filled` · `Outline` · `Text`, text `Label` | 48 dp, square, label 12 tracked |
 | `Switch` | `On` · `Off` | 52 × 32, square track and thumb |
-| `HomeLockTabs` | `Selected=Home` · `Selected=Lock` | 364 × 40, 1 px track, full-width 2 px ink underline flush with the bottom edge under the active label |
+| `HomeLockTabs` | `Selected=Home` · `Selected=Lock` | 364 × 40, 1 px track, full-width 3 px ink underline flush with the bottom edge under the active label |
 | `IntervalPicker` | text `Value` | 364 × 76, 7 ticks, Custom action; no NEXT row |
 | `AlbumCard` | text `Title` · `Subtitle`, optional target badge | 178 × 433; square image, caption below; an active card carries a paper `HOME` or `LOCK` badge over the image |
 | `WallpaperTile` | text `Index` | 178 × 395; paper index label with ink type on the image |
 | `SettingsRow` | `Trailing=Switch` · `Chevron` · `Segmented`, text `Title`/`Subtitle` | 364 × 72 |
-| `Segmented` | — | 128 × 32, 2 / 3 / 4 grid size, full-width 2 px ink underline flush with the bottom edge under the active value |
-| `ThemeSegmented` | — | 128 × 32, sun / auto / moon, full-width 2 px ink underline flush with the bottom edge under the active icon |
+| `Segmented` | — | 128 × 32, 2 / 3 / 4 grid size, full-width 3 px ink underline flush with the bottom edge under the active value |
+| `ThemeSegmented` | — | 128 × 32, sun / auto / moon, full-width 3 px ink underline flush with the bottom edge under the active icon |
 | `TabBar` | `Active=Home` · `Library` · `Settings` | paper bar, 64 dp, full-width 3 px ink rule on the top edge of the active segment |
 | `TopBar` | text `Title` | back + screen name, no eyebrow |
 | `EmptyState` | text `Title`/`Description` | outlined blank card |
