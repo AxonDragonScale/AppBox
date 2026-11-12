@@ -143,7 +143,9 @@ Home and Lock are two targets of one screen, not two stacked cards.
   well as Home. The filled `CHANGE ALBUM` button at the bottom of Home is gone, and so is the old
   `CHANGE` text beside the `ALBUM` eyebrow: one dropdown for one job.
 - The interval is **shared** by both targets, as in the product. It sits once, below the target,
-  so changing it changes the schedule for both. The current/next times live in the right column;
+  so changing it changes the schedule for both. A 1 px RuleSoft rule separates the preview block
+  from the schedule, 37 dp above and 38 dp below it, so the picker reads as its own section rather
+  than hanging off the preview. The current/next times live in the right column;
   the picker does not repeat a NEXT row. An outline `CHANGE NOW` button (364 × 48, 12 dp below the
   picker, the `Button` `Style=Outline` treatment) applies the next wallpaper immediately; it is
   grouped with the picker, not pinned to the bottom of the screen.

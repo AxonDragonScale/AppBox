@@ -46,6 +46,7 @@ import com.axondragonscale.wallmatic.ui.component.CustomIntervalSheet
 import com.axondragonscale.wallmatic.ui.component.EmptyAlbumLayout
 import com.axondragonscale.wallmatic.ui.component.EmptyPreviewMark
 import com.axondragonscale.wallmatic.ui.component.HomeLockTabs
+import com.axondragonscale.wallmatic.ui.component.HorizontalRule
 import com.axondragonscale.wallmatic.ui.component.IntervalPicker
 import com.axondragonscale.wallmatic.ui.component.Masthead
 import com.axondragonscale.wallmatic.ui.component.SelectAlbumSheet
@@ -296,7 +297,9 @@ private fun ActiveAlbum(
             )
             Spacer(modifier = Modifier.height(22.dp))
         } else {
-            Spacer(modifier = Modifier.height(76.dp))
+            Spacer(modifier = Modifier.height(40.dp))
+            HorizontalRule(color = MaterialTheme.wallmatic.ruleSoft)
+            Spacer(modifier = Modifier.height(35.dp))
         }
 
         IntervalPicker(
