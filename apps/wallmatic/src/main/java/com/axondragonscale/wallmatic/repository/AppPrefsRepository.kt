@@ -12,9 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.axondragonscale.commons.UIMode
 import com.axondragonscale.wallmatic.model.Config
 import com.axondragonscale.wallmatic.model.copy
-import com.axondragonscale.wallmatic.util.homeConfig
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.InputStream
 import java.io.OutputStream
@@ -78,8 +76,9 @@ class AppPrefsRepository(
 
     val configFlow = context.configStore.data
 
-    suspend fun setConfig(config: Config) {
-        context.configStore.updateData { config }
+    /** Read-modify-write against the latest stored document; the only config write path. */
+    suspend fun updateConfig(transform: (Config) -> Config) {
+        context.configStore.updateData { transform(it) }
     }
 
     // ------------------------ Dev Tools Prefs ------------------------
@@ -93,9 +92,9 @@ class AppPrefsRepository(
         val newInterval = if (fastAutoCycle) 1 else 15
         context.appPrefs.edit { prefs ->
             prefs[fastAutoCycleKey] = fastAutoCycle
-            setConfig(configFlow.first().copy {
-                updateInterval = newInterval.minutes.inWholeMilliseconds
-            })
+        }
+        updateConfig { config ->
+            config.copy { updateInterval = newInterval.minutes.inWholeMilliseconds }
         }
     }
 

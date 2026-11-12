@@ -8,8 +8,14 @@ import kotlinx.serialization.Serializable
  */
 object Route {
 
+    object Args {
+        const val ALBUM_ID = "albumId"
+        const val FOLDER_ID = "folderId"
+        const val WALLPAPER_ID = "wallpaperId"
+    }
+
     @Serializable
-    data class Dashboard(val tab: Int = Tab.Home.position)
+    data class Dashboard(val tab: Int = Tab.Home.ordinal)
 
     @Serializable
     data class Album(val albumId: Int)

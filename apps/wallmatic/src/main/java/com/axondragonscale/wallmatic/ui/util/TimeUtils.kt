@@ -10,13 +10,9 @@ import java.util.Locale
  * Created by Ronak Harkhani on 26/09/24
  */
 
-/**
- * Converts this epoch millis Long to string in the format: `dd MMM - HH:mm a`
- *
- * Locale.US is to capitalize the am/pm
- */
-fun Long.toDateTimeString(): String =
-    DateTimeFormatter.ofPattern("dd MMM - hh:mm a", Locale.US)
+/** Formats an epoch millis in the design's caption format: `10 Nov · 11:30 PM`. */
+fun Long.toShortDateTimeString(): String =
+    DateTimeFormatter.ofPattern("dd MMM · hh:mm a", Locale.US)
         .format(
             LocalDateTime.ofInstant(
                 Instant.ofEpochMilli(this),
@@ -24,9 +20,7 @@ fun Long.toDateTimeString(): String =
             )
         )
 
-/**
- * Converts this epoch millis Long to string in the format: `yyyy-MM-dd'T'HH:mm:ss`
- */
+/** Formats an epoch millis for logs: `yyyy-MM-dd'T'HH:mm:ss`. */
 fun Long.toTimestampString(): String =
     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
         .format(

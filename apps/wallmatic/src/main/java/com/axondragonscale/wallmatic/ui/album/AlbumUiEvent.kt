@@ -16,6 +16,8 @@ sealed interface AlbumUiEvent {
     data class ShowFolderActions(val folder: FullFolder): AlbumUiEvent
     data class ShowWallpaperActions(val wallpaper: Wallpaper): AlbumUiEvent
     data class DeleteFolder(val folderId: Int): AlbumUiEvent
-    data class DeleteWallpaper(val wallpaperId: Int): AlbumUiEvent
     data class SetWallpaper(val wallpaper: Wallpaper, val target: TargetScreen): AlbumUiEvent
+    data class BlacklistWallpaper(val wallpaper: Wallpaper) : AlbumUiEvent
+    data class WhitelistWallpaper(val wallpaper: Wallpaper) : AlbumUiEvent
+    data class SetActive(val target: TargetScreen) : AlbumUiEvent
 }

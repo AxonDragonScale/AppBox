@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
+import com.axondragonscale.wallmatic.ui.Route
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -20,7 +21,7 @@ class FolderVM(
     private val wallpaperUpdater: WallpaperUpdater,
 ) : ViewModel() {
 
-    private val folderId: Int = savedStateHandle.get<Int>("folderId")!!
+    private val folderId: Int = savedStateHandle.get<Int>(Route.Args.FOLDER_ID)!!
     val uiState = MutableStateFlow(FolderUiState())
 
     init {

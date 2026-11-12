@@ -10,7 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.axondragonscale.wallmatic.ui.album.Album
-import com.axondragonscale.wallmatic.ui.bottombar.Tabs
+import com.axondragonscale.wallmatic.ui.bottombar.Tab
 import com.axondragonscale.wallmatic.ui.dashboard.Dashboard
 import com.axondragonscale.wallmatic.ui.devtools.WallmaticDevTools
 import com.axondragonscale.wallmatic.ui.folder.Folder
@@ -40,28 +40,19 @@ fun WallmaticApp(modifier: Modifier = Modifier) {
             val dashboard: Route.Dashboard = backStackEntry.toRoute()
             Dashboard(
                 navController = navController,
-                tab = Tabs[dashboard.tab],
+                tab = Tab.entries.getOrElse(dashboard.tab) { Tab.Home },
             )
         }
 
-        composable<Route.Album> { backStackEntry ->
-            val album: Route.Album = backStackEntry.toRoute()
-            Album(
-                navController = navController,
-                albumId = album.albumId,
-            )
+        composable<Route.Album> {
+            Album(navController = navController)
         }
 
-        composable<Route.Folder> { backStackEntry ->
-            val folder: Route.Folder = backStackEntry.toRoute()
-            Folder(
-                navController = navController,
-                folderId = folder.folderId,
-            )
+        composable<Route.Folder> {
+            Folder(navController = navController)
         }
 
-        composable<Route.Wallpaper> { backStackEntry ->
-            val wallpaper: Route.Wallpaper = backStackEntry.toRoute()
+        composable<Route.Wallpaper> {
             Wallpaper()
         }
 

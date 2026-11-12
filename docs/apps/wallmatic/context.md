@@ -60,6 +60,7 @@ com.axondragonscale.wallmatic/
 ├── model/
 │   ├── FullAlbum.kt                  # Album with resolved folders/wallpapers
 │   ├── FullFolder.kt                 # Folder with resolved wallpapers
+│   ├── Interval.kt                   # Tick list, bounds, labels and coercion
 │   ├── TargetScreen.kt               # Home/Lock/Both enum
 │   └── UIMode.kt                     # Light/Dark/Auto theme mode
 ├── repository/
@@ -69,9 +70,9 @@ com.axondragonscale.wallmatic/
 │   ├── Route.kt                      # Navigation routes (type-safe)
 │   ├── WallmaticApp.kt               # Root composable with NavHost
 │   ├── album/                        # Album detail screen
-│   ├── albums/                       # Albums list screen
-│   ├── bottombar/                    # Bottom navigation
-│   ├── common/                       # Shared UI components
+│   ├── albums/                       # Library (album list) screen
+│   ├── bottombar/                    # Tab definitions
+│   ├── component/                    # Paper/ink component kit (see ui.md)
 │   ├── dashboard/                    # Main dashboard with tabs
 │   ├── folder/                       # Folder detail screen
 │   ├── home/                         # Home tab (current wallpaper)
@@ -80,6 +81,7 @@ com.axondragonscale.wallmatic/
 │   ├── util/                         # UI utilities
 │   └── wallpaper/                    # Wallpaper detail/preview
 └── util/
+    ├── ConfigUtils.kt                # Config derivation: active targets, activation, failures
     └── DevTools.kt                   # Development utilities
 ```
 
@@ -96,9 +98,9 @@ object Route {
 
 ### Main Screens
 
-- **Dashboard**: Tabbed container (Home, Albums, Settings)
-- **Home**: Current wallpaper display, quick actions
-- **Albums**: List of user-created albums
+- **Dashboard**: Tabbed container (Home, Library, Settings)
+- **Home**: The active album's current wallpaper, the Home/Lock switcher, schedule and shared interval, album selection, and the failure row
+- **Library**: Album grid with target badges and the create action
 - **Album**: Album detail with folders and wallpapers
 - **Folder**: Folder contents
 - **Wallpaper**: Full-screen wallpaper preview
@@ -139,27 +141,29 @@ data class Album(
 ```protobuf
 message Config {
   bool isInit = 1;
-  bool mirrorHomeConfigForLock = 2;
-  WallpaperConfig homeConfig = 3;
-  WallpaperConfig lockConfig = 4;
-  int64 updateInterval = 5;  // Shared interval for both screens (millis)
-  int64 lastUpdated = 6;     // Shared last update timestamp (epoch millis)
+  int64 updateInterval = 2;  // Shared interval for both screens (millis)
+  int64 lastUpdated = 3;     // Shared last update timestamp (epoch millis)
+  bool mirrorHomeConfigForLock = 4;
+  WallpaperConfig homeConfig = 5;
+  WallpaperConfig lockConfig = 6;
+  int64 lastFailedAt = 7;    // Last failed apply; -1 after a clean update
+  int32 failedTarget = 8;    // Target that failed last: 0 Home, 1 Lock, 2 Both
 }
 
 message WallpaperConfig {
   int32 albumId = 1;
   bool autoCycleEnabled = 2;
   int32 currentWallpaperId = 3;
-  // field 4 retired (was updateInterval) — do not reuse
-  // field 5 retired (was lastUpdated) — do not reuse
 }
 ```
 
 Key settings:
 - **`mirrorHomeConfigForLock`**: When true, lock screen uses the same wallpaper as home screen
-- **`autoCycleEnabled`**: Per-screen toggle for automatic wallpaper cycling
+- **`autoCycleEnabled`**: Per-screen flag; selecting an album sets it, and the Home design has no pause control
 - **`updateInterval`**: Single shared interval for both screens (milliseconds)
 - **`lastUpdated`**: Shared timestamp — used with `updateInterval` to compute the next update time
+- **`lastFailedAt`**: Written by `WallpaperUpdater` on a failed apply, cleared on success; drives the
+  `LAST UPDATE FAILED` row
 
 ## Data Flow
 

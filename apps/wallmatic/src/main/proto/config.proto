@@ -10,6 +10,8 @@ message Config {
   bool mirrorHomeConfigForLock = 4;
   WallpaperConfig homeConfig = 5;
   WallpaperConfig lockConfig = 6;
+  int64 lastFailedAt = 7;
+  int32 failedTarget = 8;
 }
 
 message WallpaperConfig {

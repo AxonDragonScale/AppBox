@@ -2,46 +2,45 @@ package com.axondragonscale.wallmatic.ui.folder
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Wallpaper
-import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
-import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.ui.Route
-import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
-import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
-import com.axondragonscale.wallmatic.ui.common.EmptyState
-import com.axondragonscale.wallmatic.ui.common.LoadingState
-import com.axondragonscale.wallmatic.ui.common.TopBar
-import com.axondragonscale.wallmatic.ui.common.Wallpaper
+import com.axondragonscale.wallmatic.ui.component.EmptyStateCard
+import com.axondragonscale.wallmatic.ui.component.HorizontalRule
+import com.axondragonscale.wallmatic.ui.component.StateMessage
+import com.axondragonscale.wallmatic.ui.wallpaper.WallpaperActionsOverlay
+import com.axondragonscale.wallmatic.ui.component.WallpaperTile
+import com.axondragonscale.wallmatic.ui.component.WallmaticTopBar
+import com.axondragonscale.wallmatic.ui.theme.Dimens
+import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
+import com.axondragonscale.wallmatic.ui.theme.wallmatic
 import org.koin.androidx.compose.koinViewModel
+import java.util.Locale
 
 /**
  * Created by Ronak Harkhani on 17/09/24
@@ -51,7 +50,6 @@ import org.koin.androidx.compose.koinViewModel
 fun Folder(
     modifier: Modifier = Modifier,
     navController: NavHostController,
-    folderId: Int,
 ) {
     val vm: FolderVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
@@ -61,6 +59,7 @@ fun Folder(
     Folder(
         modifier = modifier,
         uiState = uiState,
+        onBack = { navController.popBackStack() },
         onEvent = { event ->
             when (event) {
                 is FolderUiEvent.NavigateToWallpaper ->
@@ -70,15 +69,24 @@ fun Folder(
 
                 else -> vm.onEvent(event)
             }
-        }
+        },
     )
 
-    wallpaperActionsTarget?.let {
-        WallpaperActionsContextMenuDialog(
-            wallpaper = it,
-            onSetWallpaper = { target -> vm.onEvent(FolderUiEvent.SetWallpaper(it, target)) },
-            onBlacklist = { vm.onEvent(FolderUiEvent.BlacklistWallpaper(it)) },
-            onWhitelist = { vm.onEvent(FolderUiEvent.WhitelistWallpaper(it)) },
+    wallpaperActionsTarget?.let { wallpaper ->
+        WallpaperActionsOverlay(
+            wallpaper = wallpaper,
+            onSetWallpaper = { target ->
+                wallpaperActionsTarget = null
+                vm.onEvent(FolderUiEvent.SetWallpaper(wallpaper, target))
+            },
+            onBlacklist = {
+                wallpaperActionsTarget = null
+                vm.onEvent(FolderUiEvent.BlacklistWallpaper(wallpaper))
+            },
+            onWhitelist = {
+                wallpaperActionsTarget = null
+                vm.onEvent(FolderUiEvent.WhitelistWallpaper(wallpaper))
+            },
             onDismiss = { wallpaperActionsTarget = null },
         )
     }
@@ -88,148 +96,153 @@ fun Folder(
 private fun Folder(
     modifier: Modifier = Modifier,
     uiState: FolderUiState,
+    onBack: () -> Unit,
     onEvent: (FolderUiEvent) -> Unit,
 ) {
-    when {
-        uiState.isLoading ->
-            LoadingState(message = "Loading folder...")
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.wallmatic.paper)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+        WallmaticTopBar(
+            title = uiState.folder?.name ?: "Folder",
+            onBack = onBack,
+        )
 
-        uiState.folder == null ->
-            EmptyState(
-                title = "Folder Not Found",
-                description = "This folder may have been deleted"
-            )
+        HorizontalRule(
+            modifier = Modifier.padding(horizontal = Dimens.screenPadding),
+            color = MaterialTheme.wallmatic.ink,
+        )
 
-        uiState.folder.wallpapers.isEmpty() ->
-            Column(modifier = modifier.fillMaxSize()) {
-                TopBar(
-                    title = "Folder",
-                    subtitle = uiState.folder.name
-                )
-                EmptyState(
-                    title = "No Wallpapers",
-                    description = "This folder doesn't contain any images"
-                )
-            }
+        when {
+            uiState.isLoading -> Loading()
 
-        else ->
-            Column(modifier = modifier.fillMaxSize()) {
-                TopBar(
-                    title = "Folder",
-                    subtitle = uiState.folder.name
-                )
+            uiState.folder == null -> NotFound()
 
-                LazyVerticalStaggeredGrid(
-                    modifier = Modifier.fillMaxSize(),
-                    columns = StaggeredGridCells.Fixed(uiState.gridSize),
-                    contentPadding = PaddingValues(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(uiState.folder.wallpapers) {
-                        Wallpaper(
-                            modifier = Modifier.combinedClickable(
-                                onClick = { onEvent(FolderUiEvent.NavigateToWallpaper(it.id)) },
-                                onLongClick = { onEvent(FolderUiEvent.ShowWallpaperActions(it)) }
-                            ),
-                            wallpaper = it,
-                        )
-                    }
+            uiState.folder.wallpapers.isEmpty() -> EmptyFolder()
 
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        Spacer(modifier = Modifier.navigationBarsPadding())
-                    }
-                }
-            }
-    }
-}
-
-@Composable
-fun WallpaperActionsContextMenuDialog(
-    modifier: Modifier = Modifier,
-    wallpaper: Wallpaper,
-    onSetWallpaper: (TargetScreen) -> Unit,
-    onBlacklist: () -> Unit,
-    onWhitelist: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    ContextMenuDialog(
-        modifier = modifier,
-        context = {
-            Wallpaper(
-                modifier = Modifier,
-                uri = wallpaper.uri,
-                cornerRadius = 12.dp,
-            )
-        },
-        contextMenuItems = buildList {
-            add(
-                ContextMenuItem(
-                    icon = Icons.Default.Home,
-                    text = "Set Home Screen",
-                    action = {
-                        onSetWallpaper(TargetScreen.Home)
-                        onDismiss()
-                    },
-                )
-            )
-            add(
-                ContextMenuItem(
-                    icon = Icons.Default.Lock,
-                    text = "Set Lock Screen",
-                    action = {
-                        onSetWallpaper(TargetScreen.Lock)
-                        onDismiss()
-                    },
-                )
-            )
-            add(
-                ContextMenuItem(
-                    icon = Icons.Default.Wallpaper,
-                    text = "Set Both",
-                    action = {
-                        onSetWallpaper(TargetScreen.Both)
-                        onDismiss()
-                    },
-                )
-            )
-            add(
-                if (wallpaper.isBlacklisted)
-                    ContextMenuItem(
-                        icon = Icons.Outlined.CheckCircle,
-                        text = "Whitelist",
-                        action = {
-                            onWhitelist()
-                            onDismiss()
-                        },
-                    )
-                else
-                    ContextMenuItem(
-                        icon = Icons.Default.Block,
-                        text = "Blacklist",
-                        action = {
-                            onBlacklist()
-                            onDismiss()
-                        },
-                    )
-            )
-        },
-        onDismiss = onDismiss,
-    )
-}
-
-
-@Preview(name = "Light Mode", showBackground = true)
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun PreviewLoading() {
-    WallmaticTheme {
-        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-            val uiState = remember { FolderUiState() }
-            Folder(
+            else -> FolderGrid(
                 uiState = uiState,
-                onEvent = { }
+                onEvent = onEvent,
             )
         }
     }
 }
+
+@Composable
+private fun FolderGrid(
+    modifier: Modifier = Modifier,
+    uiState: FolderUiState,
+    onEvent: (FolderUiEvent) -> Unit,
+) {
+    val folder = uiState.folder ?: return
+
+    LazyVerticalGrid(
+        modifier = modifier.fillMaxSize(),
+        columns = GridCells.Fixed(uiState.gridSize),
+        contentPadding = PaddingValues(
+            start = Dimens.screenPadding,
+            end = Dimens.screenPadding,
+            top = 32.dp,
+            bottom = 32.dp,
+        ),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        itemsIndexed(folder.wallpapers) { index, wallpaper ->
+            WallpaperTile(
+                uri = wallpaper.uri,
+                index = index + 1,
+                onClick = { onEvent(FolderUiEvent.NavigateToWallpaper(wallpaper.id)) },
+                onLongClick = { onEvent(FolderUiEvent.ShowWallpaperActions(wallpaper)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun Loading() {
+    CenteredMessage(title = "LOADING")
+}
+
+@Composable
+private fun NotFound() {
+    CenteredMessage(
+        title = "FOLDER NOT FOUND",
+        description = "This folder may have been deleted.",
+    )
+}
+
+@Composable
+private fun EmptyFolder() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        EmptyStateCard(
+            modifier = Modifier.padding(Dimens.screenPadding),
+            title = "No wallpapers",
+            description = "This folder doesn't contain any images.",
+        )
+    }
+}
+
+@Composable
+private fun CenteredMessage(
+    title: String,
+    description: String? = null,
+) {
+    StateMessage(
+        modifier = Modifier.fillMaxSize(),
+        title = title,
+        description = description,
+    )
+}
+
+@Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 851)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 851)
+@Composable
+private fun FolderPreview() {
+    WallmaticTheme {
+        Folder(
+            uiState = FolderUiState(
+                isLoading = false,
+                folder = previewFolder(),
+            ),
+            onBack = {},
+            onEvent = {},
+        )
+    }
+}
+
+@Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 851)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 851)
+@Composable
+private fun FolderEmptyPreview() {
+    WallmaticTheme {
+        Folder(
+            uiState = FolderUiState(
+                isLoading = false,
+                folder = FullFolder(
+                    id = 1,
+                    name = "Wallpapers",
+                    coverUri = null,
+                    folderUri = "",
+                    wallpapers = emptyList(),
+                ),
+            ),
+            onBack = {},
+            onEvent = {},
+        )
+    }
+}
+
+private fun previewFolder() = FullFolder(
+    id = 1,
+    name = "Wallpapers",
+    coverUri = null,
+    folderUri = "",
+    wallpapers = (1..8).map { Wallpaper(uri = "").apply { id = it } },
+)

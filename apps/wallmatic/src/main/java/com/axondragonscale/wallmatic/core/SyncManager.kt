@@ -142,7 +142,7 @@ class SyncManager(
         val refreshConfig: suspend (Int, Int, TargetScreen) -> Unit = { albumId, currentWallpaperId, target ->
             val album = repository.getFullAlbum(albumId)
             if (album == null || !album.hasWallpapers())
-                appPrefsRepository.setConfig(config.copy { isInit = false })
+                appPrefsRepository.updateConfig { it.copy { isInit = false } }
             else if (currentWallpaperId !in album.getAllWallpapers().map { it.id }) {
                 val result = wallpaperUpdater.updateWallpaper(target)
                 this.logD { "Config repair wallpaper update. target: $target, result: $result" }

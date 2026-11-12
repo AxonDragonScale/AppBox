@@ -3,8 +3,8 @@ package com.axondragonscale.wallmatic.ui.home
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.Config
-import com.axondragonscale.wallmatic.model.homeConfigOrNull
-import com.axondragonscale.wallmatic.model.lockConfigOrNull
+import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.util.albumIdFor
 
 /**
  * Created by Ronak Harkhani on 22/06/24
@@ -16,6 +16,11 @@ data class HomeUiState(
     val homeWallpaper: Wallpaper? = null,
     val lockWallpaper: Wallpaper? = null,
 ) {
-    val homeAlbum by lazy { albums.firstOrNull { it.id == config.homeConfigOrNull?.albumId } }
-    val lockAlbum by lazy { albums.firstOrNull { it.id == config.lockConfigOrNull?.albumId } }
+    fun albumFor(target: TargetScreen): Album? =
+        albums.firstOrNull { it.id == config.albumIdFor(target) }
+
+    fun wallpaperFor(target: TargetScreen): Wallpaper? = when (target) {
+        TargetScreen.Home, TargetScreen.Both -> homeWallpaper
+        TargetScreen.Lock -> lockWallpaper
+    }
 }

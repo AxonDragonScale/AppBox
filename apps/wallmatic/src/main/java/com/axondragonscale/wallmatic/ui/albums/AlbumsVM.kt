@@ -2,13 +2,20 @@ package com.axondragonscale.wallmatic.ui.albums
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.commons.collect
 import com.axondragonscale.wallmatic.background.UpdateCoordinator
 import com.axondragonscale.wallmatic.core.SyncManager
 import com.axondragonscale.wallmatic.database.entity.Album
+import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
+import com.axondragonscale.wallmatic.util.activateAlbum
+import com.axondragonscale.wallmatic.util.activeTargetsFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -19,6 +26,7 @@ import kotlinx.coroutines.launch
  */
 class AlbumsVM(
     private val repository: WallmaticRepository,
+    private val appPrefsRepository: AppPrefsRepository,
     private val syncManager: SyncManager,
     private val updateCoordinator: UpdateCoordinator,
 ): ViewModel() {
@@ -30,9 +38,29 @@ class AlbumsVM(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.getAlbums().collect { albums ->
-                uiState.update { it.copy(isLoading = false, albums = albums) }
+            combine(
+                repository.getAlbums(),
+                appPrefsRepository.configFlow,
+            ) { albums, config ->
+                AlbumsSnapshot(
+                    albums = albums,
+                    activeTargets = albums
+                        .associate { album -> album.id to config.activeTargetsFor(album.id) }
+                        .filterValues { targets -> targets.isNotEmpty() },
+                    mirrorEnabled = config.mirrorHomeConfigForLock,
+                )
             }
+                .distinctUntilChanged()
+                .collect { snapshot ->
+                    uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            albums = snapshot.albums,
+                            activeTargets = snapshot.activeTargets,
+                            mirrorEnabled = snapshot.mirrorEnabled,
+                        )
+                    }
+                }
         }
     }
 
@@ -40,6 +68,7 @@ class AlbumsVM(
         is AlbumsUiEvent.CreateAlbum -> createAlbum(event)
         is AlbumsUiEvent.RenameAlbum -> renameAlbum(event)
         is AlbumsUiEvent.DeleteAlbum -> deleteAlbum(event)
+        is AlbumsUiEvent.SetActive -> setActive(event)
 
         // Handled in the view
         is AlbumsUiEvent.ShowAlbumActionsDialog -> Unit
@@ -66,4 +95,15 @@ class AlbumsVM(
         updateCoordinator.reschedule()
     }
 
+    private fun setActive(event: AlbumsUiEvent.SetActive) = viewModelScope.launch(Dispatchers.IO) {
+        appPrefsRepository.updateConfig { it.activateAlbum(event.albumId, event.target) }
+        updateCoordinator.applyNow(event.target)
+    }
+
 }
+
+private data class AlbumsSnapshot(
+    val albums: List<Album>,
+    val activeTargets: Map<Int, Set<TargetScreen>>,
+    val mirrorEnabled: Boolean,
+)

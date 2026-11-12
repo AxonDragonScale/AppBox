@@ -1,52 +1,39 @@
 package com.axondragonscale.wallmatic.ui.album
 
 import android.content.res.Configuration
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Wallpaper
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
@@ -54,17 +41,22 @@ import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.ui.Route
-import com.axondragonscale.wallmatic.ui.common.ContextMenuDialog
-import com.axondragonscale.wallmatic.ui.common.ContextMenuItem
-import com.axondragonscale.wallmatic.ui.common.EmptyState
-import com.axondragonscale.wallmatic.ui.common.FluidFabButton
-import com.axondragonscale.wallmatic.ui.common.FluidFabButtonProperties
-import com.axondragonscale.wallmatic.ui.common.LoadingState
-import com.axondragonscale.wallmatic.ui.common.TopBar
-import com.axondragonscale.wallmatic.ui.common.Wallpaper
+import com.axondragonscale.wallmatic.ui.component.ContextMenuOverlay
+import com.axondragonscale.wallmatic.ui.component.ContextMenuItem
+import com.axondragonscale.wallmatic.ui.component.EmptyAlbumLayout
+import com.axondragonscale.wallmatic.ui.component.HorizontalRule
+import com.axondragonscale.wallmatic.ui.component.StateMessage
+import com.axondragonscale.wallmatic.ui.component.WallmaticButton
+import com.axondragonscale.wallmatic.ui.component.WallmaticFab
+import com.axondragonscale.wallmatic.ui.component.WallmaticTopBar
+import com.axondragonscale.wallmatic.ui.wallpaper.WallpaperActionsOverlay
+import com.axondragonscale.wallmatic.ui.component.WallpaperTile
+import com.axondragonscale.wallmatic.ui.theme.Dimens
+import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
-import com.axondragonscale.wallmatic.ui.util.getAspectRatio
+import com.axondragonscale.wallmatic.ui.theme.wallmatic
 import org.koin.androidx.compose.koinViewModel
+import java.util.Locale
 
 /**
  * Created by Ronak Harkhani on 23/06/24
@@ -74,7 +66,6 @@ import org.koin.androidx.compose.koinViewModel
 fun Album(
     modifier: Modifier = Modifier,
     navController: NavHostController,
-    albumId: Int,
 ) {
     val vm: AlbumVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
@@ -82,9 +73,21 @@ fun Album(
     var folderActionsTarget by remember { mutableStateOf<FullFolder?>(null) }
     var wallpaperActionsTarget by remember { mutableStateOf<Wallpaper?>(null) }
 
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+        onResult = { uri -> uri?.let { vm.onEvent(AlbumUiEvent.FolderSelected(it)) } },
+    )
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments(),
+        onResult = { uris -> if (uris.isNotEmpty()) vm.onEvent(AlbumUiEvent.ImagesSelected(uris)) },
+    )
+
     Album(
         modifier = modifier,
         uiState = uiState,
+        onBack = { navController.popBackStack() },
+        onPickFolder = { folderPickerLauncher.launch(null) },
+        onPickImages = { imagePickerLauncher.launch(arrayOf("image/*")) },
         onEvent = { event ->
             when (event) {
                 is AlbumUiEvent.NavigateToFolder ->
@@ -101,346 +104,309 @@ fun Album(
         },
     )
 
-    folderActionsTarget?.let {
-        FolderActionsContextMenuDialog(
-            folder = it,
-            onDelete = { vm.onEvent(AlbumUiEvent.DeleteFolder(it.id)) },
+    folderActionsTarget?.let { folder ->
+        ContextMenuOverlay(
+            items = listOf(
+                ContextMenuItem(
+                    icon = Icons.Outlined.Delete,
+                    text = "Delete…",
+                    action = {
+                        folderActionsTarget = null
+                        vm.onEvent(AlbumUiEvent.DeleteFolder(folder.id))
+                    },
+                ),
+            ),
             onDismiss = { folderActionsTarget = null },
         )
     }
 
-    wallpaperActionsTarget?.let {
-        WallpaperActionsContextMenuDialog(
-            wallpaper = it,
-            onSetWallpaper = { target -> vm.onEvent(AlbumUiEvent.SetWallpaper(it, target)) },
-            onDelete = { vm.onEvent(AlbumUiEvent.DeleteWallpaper(it.id)) },
+    wallpaperActionsTarget?.let { wallpaper ->
+        WallpaperActionsOverlay(
+            wallpaper = wallpaper,
+            onSetWallpaper = { target ->
+                wallpaperActionsTarget = null
+                vm.onEvent(AlbumUiEvent.SetWallpaper(wallpaper, target))
+            },
+            onBlacklist = {
+                wallpaperActionsTarget = null
+                vm.onEvent(AlbumUiEvent.BlacklistWallpaper(wallpaper))
+            },
+            onWhitelist = {
+                wallpaperActionsTarget = null
+                vm.onEvent(AlbumUiEvent.WhitelistWallpaper(wallpaper))
+            },
             onDismiss = { wallpaperActionsTarget = null },
         )
     }
-
 }
 
 @Composable
 private fun Album(
     modifier: Modifier = Modifier,
     uiState: AlbumUiState,
+    onBack: () -> Unit,
+    onPickFolder: () -> Unit,
+    onPickImages: () -> Unit,
     onEvent: (AlbumUiEvent) -> Unit,
 ) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    var showAddSheet by rememberSaveable { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.wallmatic.paper)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
     ) {
-        when {
-            uiState.loading ->
-                LoadingState(message = "Loading album...")
-
-            uiState.album == null ->
-                EmptyState(
-                    title = "Album Not Found",
-                    description = "This album may have been deleted"
-                )
-
-            uiState.album.folders.isEmpty() && uiState.album.wallpapers.isEmpty() ->
-                Column(modifier = Modifier.fillMaxSize()) {
-                    TopBar(
-                        title = "Album",
-                        subtitle = uiState.album.name,
-                    )
-                    EmptyState(
-                        title = "No Wallpapers Yet",
-                        description = "Add folders or images to start building your collection"
+        WallmaticTopBar(
+            title = uiState.album?.name ?: "Album",
+            onBack = onBack,
+            trailing = uiState.activeTargets.takeIf { it.isNotEmpty() }?.let { targets ->
+                {
+                    Text(
+                        text = targets.label(mirrorEnabled = uiState.mirrorEnabled),
+                        style = WallmaticTextStyles.microStrong.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.sp,
+                        ),
+                        color = MaterialTheme.wallmatic.primary,
                     )
                 }
+            },
+        )
 
-            else -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    TopBar(
-                        title = "Album",
-                        subtitle = uiState.album.name,
-                    )
+        HorizontalRule(
+            modifier = Modifier.padding(horizontal = Dimens.screenPadding),
+            color = MaterialTheme.wallmatic.ink,
+        )
 
-                    LazyVerticalStaggeredGrid(
-                        modifier = Modifier.fillMaxSize(),
-                        columns = StaggeredGridCells.Fixed(uiState.gridSize),
-                        contentPadding = PaddingValues(8.dp),
-                        verticalItemSpacing = 8.dp,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        for (folder in uiState.album.folders) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                Folder(
-                                    folder = folder,
-                                    enabled = true,
-                                    onClick = { onEvent(AlbumUiEvent.NavigateToFolder(folder.id)) },
-                                    onLongClick = { onEvent(AlbumUiEvent.ShowFolderActions(folder)) },
-                                    onWallpaperClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(it)) }
-                                )
-                            }
-                        }
+        when {
+            uiState.loading -> Loading()
 
-                        items(uiState.album.wallpapers) {
-                            Wallpaper(
-                                modifier = Modifier.combinedClickable(
-                                    onClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(it.id)) },
-                                    onLongClick = { onEvent(AlbumUiEvent.ShowWallpaperActions(it)) }
-                                ),
-                                wallpaper = it,
+            uiState.album == null -> NotFound()
+
+            !uiState.hasContent -> EmptyAlbum(
+                onAddWallpapers = { showAddSheet = true },
+            )
+
+            else -> AlbumContent(
+                uiState = uiState,
+                onAddWallpapers = { showAddSheet = true },
+                onEvent = onEvent,
+            )
+        }
+    }
+
+    if (showAddSheet) {
+        AddWallpapersSheet(
+            onAddFolder = {
+                showAddSheet = false
+                onPickFolder()
+            },
+            onAddImages = {
+                showAddSheet = false
+                onPickImages()
+            },
+            onDismiss = { showAddSheet = false },
+        )
+    }
+}
+
+@Composable
+private fun AlbumContent(
+    modifier: Modifier = Modifier,
+    uiState: AlbumUiState,
+    onAddWallpapers: () -> Unit,
+    onEvent: (AlbumUiEvent) -> Unit,
+) {
+    val album = uiState.album ?: return
+
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            modifier = Modifier.fillMaxSize(),
+            columns = GridCells.Fixed(uiState.gridSize),
+            contentPadding = PaddingValues(
+                start = Dimens.screenPadding,
+                end = Dimens.screenPadding,
+                top = 16.dp,
+                bottom = Dimens.gridBottomInset,
+            ),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                if (album.folders.isNotEmpty() || !uiState.isActive) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        if (!uiState.isActive) {
+                            ReadyToRotateBanner(
+                                mirrorEnabled = uiState.mirrorEnabled,
+                                onSetActive = { target ->
+                                    onEvent(AlbumUiEvent.SetActive(target))
+                                },
                             )
                         }
 
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            Spacer(modifier = Modifier.navigationBarsPadding())
+                        album.folders.forEach { folder ->
+                            FolderCard(
+                                folder = folder,
+                                onClick = { onEvent(AlbumUiEvent.NavigateToFolder(folder.id)) },
+                                onLongClick = { onEvent(AlbumUiEvent.ShowFolderActions(folder)) },
+                            )
                         }
                     }
                 }
             }
+
+            itemsIndexed(album.wallpapers) { index, wallpaper ->
+                WallpaperTile(
+                    uri = wallpaper.uri,
+                    index = index + 1,
+                    onClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(wallpaper.id)) },
+                    onLongClick = { onEvent(AlbumUiEvent.ShowWallpaperActions(wallpaper)) },
+                )
+            }
         }
 
-        if (!uiState.loading && uiState.album != null)
-            PickerButton(
-                modifier = Modifier.navigationBarsPadding(),
-                onFolderSelected = { onEvent(AlbumUiEvent.FolderSelected(it)) },
-                onImagesSelected = { onEvent(AlbumUiEvent.ImagesSelected(it)) },
-            )
+        WallmaticFab(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = Dimens.fabEndInset, bottom = Dimens.fabBottomInset),
+            onClick = onAddWallpapers,
+        )
     }
 }
 
 @Composable
-private fun Folder(
+private fun Loading() {
+    StateMessage(
+        modifier = Modifier.fillMaxSize(),
+        title = "LOADING",
+    )
+}
+
+@Composable
+private fun NotFound() {
+    StateMessage(
+        modifier = Modifier.fillMaxSize(),
+        title = "ALBUM NOT FOUND",
+        description = "This album may have been deleted.",
+    )
+}
+
+@Composable
+private fun EmptyAlbum(
     modifier: Modifier = Modifier,
-    folder: FullFolder,
-    enabled: Boolean = false,
-    onClick: () -> Unit = {},
-    onLongClick: () -> Unit = {},
-    onWallpaperClick: (wallpaperId: Int) -> Unit = {},
+    onAddWallpapers: () -> Unit,
 ) {
-    Card(
+    Column(
         modifier = modifier
-            .clip(CardDefaults.shape)
-            .combinedClickable(
-                enabled = enabled,
-                onClick = onClick,
-                onLongClick = onLongClick,
-            )
+            .fillMaxSize()
+            .padding(horizontal = Dimens.screenPadding),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(
-                modifier = Modifier.padding(top = 8.dp),
-                text = folder.name,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "${folder.wallpapers.size} wallpapers",
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
-        LazyRow(
-            modifier = Modifier.height(300.dp),
-            contentPadding = PaddingValues(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(folder.wallpapers) {
-                // Height + Aspect Ratio = Fixed Size = Better Perf
-                Wallpaper(
-                    modifier = Modifier
-                        .aspectRatio(getAspectRatio())
-                        .clickable(enabled) { onWallpaperClick(it.id) },
-                    wallpaper = it,
-                    cornerRadius = 8.dp,
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        EmptyAlbumLayout(
+            eyebrow = "EMPTY ALBUM",
+            title = "This album is empty.",
+            description = "Add wallpapers from your device. You can add more later.",
+            steps = emptyList(),
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        WallmaticButton(text = "Add wallpapers", onClick = onAddWallpapers)
+
+        Spacer(modifier = Modifier.height(48.dp))
     }
 }
 
-@Composable
-private fun BoxScope.PickerButton(
-    modifier: Modifier = Modifier,
-    onFolderSelected: (Uri) -> Unit,
-    onImagesSelected: (List<Uri>) -> Unit,
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree(),
-        onResult = { uri -> if (uri != null) onFolderSelected(uri) }
-    )
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenMultipleDocuments(),
-        onResult = { uris -> if (uris.isNotEmpty()) onImagesSelected(uris) }
-    )
-
-//    // Photo Picker. Provided by Photos app. Albums available.
-//    val photoPickerLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.PickMultipleVisualMedia(),
-//        onResult = {
-//            println("zeref $it")
-//        }
-//    )
-
-    FluidFabButton(
-        modifier = modifier
-            .align(Alignment.BottomCenter)
-            .padding(bottom = 24.dp),
-        isExpanded = isExpanded,
-        duration = 500,
-        onClick = { isExpanded = !isExpanded },
-        leftButton = FluidFabButtonProperties(
-            icon = Icons.Default.Folder,
-            onClick = {
-                isExpanded = !isExpanded
-                folderPickerLauncher.launch(null)
-            }
-        ),
-        rightButton = FluidFabButtonProperties(
-            icon = Icons.Default.Image,
-            onClick = {
-                isExpanded = !isExpanded
-                imagePickerLauncher.launch(arrayOf("image/*"))
-            }
-        ),
-    )
+private fun Set<TargetScreen>.label(mirrorEnabled: Boolean): String {
+    val home = TargetScreen.Home in this
+    val lock = TargetScreen.Lock in this
+    return when {
+        home && lock -> "ACTIVE · BOTH"
+        mirrorEnabled && home -> "ACTIVE · BOTH"
+        home -> "ACTIVE · HOME"
+        else -> "ACTIVE · LOCK"
+    }
 }
 
+@Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 851)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 851)
 @Composable
-private fun FolderActionsContextMenuDialog(
-    modifier: Modifier = Modifier,
-    folder: FullFolder,
-    onDelete: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    ContextMenuDialog(
-        modifier = modifier,
-        context = {
-          Folder(folder = folder)
-        },
-        contextMenuItems = listOf(
-            ContextMenuItem(
-                icon = Icons.Default.Delete,
-                text = "Delete",
-                action = {
-                    onDelete()
-                    onDismiss()
-                },
-            )
-        ),
-        onDismiss = onDismiss,
-        maxWidthPercent = 0.8f,
-    )
-}
-
-@Composable
-fun WallpaperActionsContextMenuDialog(
-    modifier: Modifier = Modifier,
-    wallpaper: Wallpaper,
-    onSetWallpaper: (TargetScreen) -> Unit,
-    onDelete: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    ContextMenuDialog(
-        modifier = modifier,
-        context = {
-            Wallpaper(
-                wallpaper = wallpaper,
-                cornerRadius = 12.dp,
-            )
-        },
-        contextMenuItems = listOf(
-            ContextMenuItem(
-                icon = Icons.Default.Home,
-                text = "Set Home Screen",
-                action = {
-                    onSetWallpaper(TargetScreen.Home)
-                    onDismiss()
-                },
-            ),
-            ContextMenuItem(
-                icon = Icons.Default.Lock,
-                text = "Set Lock Screen",
-                action = {
-                    onSetWallpaper(TargetScreen.Lock)
-                    onDismiss()
-                },
-            ),
-            ContextMenuItem(
-                icon = Icons.Default.Wallpaper,
-                text = "Set Both",
-                action = {
-                    onSetWallpaper(TargetScreen.Both)
-                    onDismiss()
-                },
-            ),
-            ContextMenuItem(
-                icon = Icons.Default.Delete,
-                text = "Delete",
-                action = {
-                    onDelete()
-                    onDismiss()
-                },
-            )
-        ),
-        onDismiss = onDismiss,
-    )
-}
-
-@Preview(name = "Light Mode", showBackground = true)
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun Preview() {
+private fun AlbumPreview() {
     WallmaticTheme {
-        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-            val uiState = remember {
-                AlbumUiState(
-                    loading = false,
-                    album = FullAlbum(
-                        id = 1,
-                        name = "Album Name",
-                        coverUri = null,
-                        folders = listOf(
-                            FullFolder(
-                                id = 1,
-                                name = "Folder 1",
-                                coverUri = null,
-                                folderUri = "null",
-                                wallpapers = listOf(
-                                    Wallpaper(""),
-                                    Wallpaper(""),
-                                    Wallpaper(""),
-                                    Wallpaper(""),
-                                ),
-                            )
-                        ),
-                        wallpapers = listOf(
-                            Wallpaper(""),
-                            Wallpaper(""),
-                            Wallpaper(""),
-                        ),
-                    )
-                )
-            }
-            Album(
-                uiState = uiState,
-                onEvent = { }
-            )
-        }
+        Album(
+            uiState = AlbumUiState(
+                loading = false,
+                album = previewAlbum(),
+                activeTargets = setOf(TargetScreen.Home),
+            ),
+            onBack = {},
+            onPickFolder = {},
+            onPickImages = {},
+            onEvent = {},
+        )
     }
 }
 
-@Preview(name = "Light Mode", showBackground = true)
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 851)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 851)
 @Composable
-private fun PreviewLoading() {
+private fun AlbumReadyPreview() {
     WallmaticTheme {
-        Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-            val uiState = remember { AlbumUiState() }
-            Album(
-                uiState = uiState,
-                onEvent = { }
-            )
-        }
+        Album(
+            uiState = AlbumUiState(
+                loading = false,
+                album = previewAlbum(),
+            ),
+            onBack = {},
+            onPickFolder = {},
+            onPickImages = {},
+            onEvent = {},
+        )
     }
+}
+
+@Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 851)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 851)
+@Composable
+private fun AlbumEmptyPreview() {
+    WallmaticTheme {
+        Album(
+            uiState = AlbumUiState(
+                loading = false,
+                album = FullAlbum(
+                    id = 2,
+                    name = "Nature",
+                    coverUri = null,
+                    folders = emptyList(),
+                    wallpapers = emptyList(),
+                ),
+            ),
+            onBack = {},
+            onPickFolder = {},
+            onPickImages = {},
+            onEvent = {},
+        )
+    }
+}
+
+private fun previewAlbum(): FullAlbum {
+    val folderWallpapers = (1..24).map { Wallpaper(uri = "").apply { id = it } }
+    return FullAlbum(
+        id = 1,
+        name = "Nature",
+        coverUri = null,
+        folders = listOf(
+            FullFolder(
+                id = 1,
+                name = "Wallpapers",
+                coverUri = null,
+                folderUri = "",
+                wallpapers = folderWallpapers,
+            ),
+        ),
+        wallpapers = (25..28).map { Wallpaper(uri = "").apply { id = it } },
+    )
 }

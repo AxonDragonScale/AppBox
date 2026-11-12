@@ -14,6 +14,7 @@ import com.axondragonscale.wallmatic.core.WallpaperUpdater
 import com.axondragonscale.wallmatic.model.Config
 import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
+import com.axondragonscale.wallmatic.util.failedTargetOrNull
 import com.axondragonscale.wallmatic.util.isAutoCycleEnabled
 import com.axondragonscale.wallmatic.util.nextUpdate
 import kotlinx.coroutines.flow.firstOrNull
@@ -44,9 +45,15 @@ class UpdateCoordinator(
     private val mutex = Mutex()
     private val workManager = WorkManager.getInstance(context)
 
-    /** Applies the cycle if it is due, then re-arms. Idempotent, so every trigger calls it. */
+    /** Applies the cycle if it is due — or the recorded failed target — then re-arms. */
     suspend fun reconcile() = mutex.withLock {
-        armAfter(wallpaperUpdater.updateWallpaper())
+        val failedTarget = appPrefsRepository.configFlow.firstOrNull()?.failedTargetOrNull
+        val result = if (failedTarget != null) {
+            wallpaperUpdater.updateWallpaper(failedTarget)
+        } else {
+            wallpaperUpdater.updateWallpaper()
+        }
+        armAfter(result)
     }
 
     /** Applies immediately, bypassing the interval, then re-arms from the new `lastUpdated`. */

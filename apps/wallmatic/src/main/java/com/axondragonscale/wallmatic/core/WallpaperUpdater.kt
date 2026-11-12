@@ -12,9 +12,9 @@ import com.axondragonscale.wallmatic.model.copy
 import com.axondragonscale.wallmatic.model.getRandomWallpaperOrNull
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
-import com.axondragonscale.wallmatic.util.homeConfig
-import com.axondragonscale.wallmatic.util.lockConfig
+import com.axondragonscale.wallmatic.util.configValue
 import com.axondragonscale.wallmatic.util.nextUpdate
+import com.axondragonscale.wallmatic.util.resolvesFailure
 import kotlinx.coroutines.flow.firstOrNull
 
 /**
@@ -109,9 +109,11 @@ class WallpaperUpdater(
         val applyHome = target.isHome() || config.mirrorHomeConfigForLock
         val applyLock = target.isLock() && !config.mirrorHomeConfigForLock
 
-        var updatedConfig = config
+        var homeWallpaperId: Int? = null
+        var lockWallpaperId: Int? = null
         var applied = false
         var firstFailure: Throwable? = null
+        var firstFailedTarget: TargetScreen? = null
         var skipReason: String? = null
 
         if (applyHome) {
@@ -125,12 +127,14 @@ class WallpaperUpdater(
                 val applyTarget = if (config.mirrorHomeConfigForLock) TargetScreen.Both else TargetScreen.Home
                 setWallpaper(wallpaper, applyTarget)
                     .onSuccess {
-                        updatedConfig = updatedConfig.homeConfig { currentWallpaperId = wallpaper.id }
-                        if (config.mirrorHomeConfigForLock)
-                            updatedConfig = updatedConfig.lockConfig { currentWallpaperId = wallpaper.id }
+                        homeWallpaperId = wallpaper.id
+                        if (config.mirrorHomeConfigForLock) lockWallpaperId = wallpaper.id
                         applied = true
                     }
-                    .onFailure { e -> firstFailure = firstFailure ?: e }
+                    .onFailure { e ->
+                        firstFailure = firstFailure ?: e
+                        firstFailedTarget = firstFailedTarget ?: applyTarget
+                    }
             }
         }
         if (applyLock) {
@@ -142,10 +146,13 @@ class WallpaperUpdater(
             } else {
                 setWallpaper(wallpaper, TargetScreen.Lock)
                     .onSuccess {
-                        updatedConfig = updatedConfig.lockConfig { currentWallpaperId = wallpaper.id }
+                        lockWallpaperId = wallpaper.id
                         applied = true
                     }
-                    .onFailure { e -> firstFailure = firstFailure ?: e }
+                    .onFailure { e ->
+                        firstFailure = firstFailure ?: e
+                        firstFailedTarget = firstFailedTarget ?: TargetScreen.Lock
+                    }
             }
         }
 
@@ -155,6 +162,13 @@ class WallpaperUpdater(
         if (!applied) {
             if (cause != null) {
                 this.logE { "Wallpaper update failed. Nothing applied. cause: ${cause.message}" }
+                // The Home screen reports the failure; the schedule itself stays due.
+                appPrefsRepository.updateConfig { current ->
+                    current.copy {
+                        lastFailedAt = timestamp
+                        failedTarget = (firstFailedTarget ?: target).configValue
+                    }
+                }
                 return WallpaperUpdateResult.Failed(cause)
             }
 
@@ -163,7 +177,28 @@ class WallpaperUpdater(
             return WallpaperUpdateResult.Skipped(reason)
         }
 
-        appPrefsRepository.setConfig(updatedConfig.copy { lastUpdated = timestamp })
+        appPrefsRepository.updateConfig { current ->
+            current.copy {
+                homeWallpaperId?.let { id ->
+                    homeConfig = homeConfig.copy { currentWallpaperId = id }
+                }
+                lockWallpaperId?.let { id ->
+                    lockConfig = lockConfig.copy { currentWallpaperId = id }
+                }
+                lastUpdated = timestamp
+
+                when {
+                    cause != null -> {
+                        lastFailedAt = timestamp
+                        failedTarget = (firstFailedTarget ?: target).configValue
+                    }
+                    current.resolvesFailure(target) -> {
+                        lastFailedAt = -1
+                        failedTarget = 0
+                    }
+                }
+            }
+        }
         if (cause == null) {
             this.logD { "Wallpaper update complete" }
             return WallpaperUpdateResult.Updated
