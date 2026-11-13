@@ -9,6 +9,7 @@ import android.net.Uri
  */
 
 fun Context.takePersistableUriPermission(uri: Uri) {
-    val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    // Wallmatic only reads these URIs, and a picker may grant read without write.
+    val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
     this.contentResolver.takePersistableUriPermission(uri, flags)
 }

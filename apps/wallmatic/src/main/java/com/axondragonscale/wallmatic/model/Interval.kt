@@ -3,7 +3,6 @@ package com.axondragonscale.wallmatic.model
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.math.abs
 
 /**
@@ -17,9 +16,10 @@ object Interval {
 
     val minimum: Duration = 5.minutes
     val maximum: Duration = 168.hours
+    val default: Duration = 15.minutes
 
     val ticks: List<Tick> = listOf(
-        Tick(15.minutes, "15m"),
+        Tick(default, "15m"),
         Tick(30.minutes, "30m"),
         Tick(1.hours, "1h"),
         Tick(3.hours, "3h"),
@@ -27,8 +27,6 @@ object Interval {
         Tick(12.hours, "12h"),
         Tick(24.hours, "24h"),
     )
-
-    fun fromMillis(millis: Long): Duration = millis.milliseconds
 
     fun coerce(duration: Duration): Duration = duration.coerceIn(minimum, maximum)
 

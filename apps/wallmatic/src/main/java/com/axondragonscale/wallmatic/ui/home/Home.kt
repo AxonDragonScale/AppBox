@@ -34,17 +34,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
-import com.axondragonscale.wallmatic.model.Interval
+import com.axondragonscale.wallmatic.model.FullAlbum
+import com.axondragonscale.wallmatic.model.FullFolder
+import com.axondragonscale.wallmatic.model.ScreenConfig
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.config
-import com.axondragonscale.wallmatic.model.copy
-import com.axondragonscale.wallmatic.model.crop
-import com.axondragonscale.wallmatic.model.wallpaperConfig
+import com.axondragonscale.wallmatic.model.WallmaticConfig
+import com.axondragonscale.wallmatic.model.WallpaperCrop
+import com.axondragonscale.wallmatic.model.WallpaperFailure
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.component.CustomIntervalSheet
-import com.axondragonscale.wallmatic.ui.component.EmptyAlbumLayout
+import com.axondragonscale.wallmatic.ui.component.EmptyAlbumScreen
 import com.axondragonscale.wallmatic.ui.component.EmptyPreviewMark
 import com.axondragonscale.wallmatic.ui.component.HomeLockTabs
 import com.axondragonscale.wallmatic.ui.component.HorizontalRule
@@ -62,10 +62,9 @@ import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
 import com.axondragonscale.wallmatic.ui.util.countSummary
 import com.axondragonscale.wallmatic.ui.util.toShortDateTimeString
-import com.axondragonscale.wallmatic.util.failedTargetOrNull
-import com.axondragonscale.wallmatic.util.nextUpdate
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 /**
  * Created by Ronak Harkhani on 06/06/24
@@ -84,7 +83,7 @@ fun Home(
     var showSelectAlbum by rememberSaveable { mutableStateOf(false) }
     var showCustomInterval by rememberSaveable { mutableStateOf(false) }
 
-    val mirrored = uiState.config.mirrorHomeConfigForLock
+    val mirrored = uiState.config.mirrorHomeForLock
     val activeTarget = if (mirrored) TargetScreen.Home else target
     val activeAlbum = uiState.albumFor(activeTarget)
 
@@ -98,7 +97,7 @@ fun Home(
             when (event) {
                 HomeUiEvent.CreateAlbumClick -> onNavigateToLibrary()
 
-                is HomeUiEvent.SelectAlbumClick -> showSelectAlbum = true
+                HomeUiEvent.SelectAlbumClick -> showSelectAlbum = true
                 HomeUiEvent.CustomIntervalClick -> showCustomInterval = true
 
                 is HomeUiEvent.NavigateToWallpaper ->
@@ -112,18 +111,17 @@ fun Home(
     if (showSelectAlbum) {
         SelectAlbumSheet(
             albums = uiState.albums,
-            selectedAlbumId = activeAlbum?.id ?: -1,
+            selectedAlbumId = activeAlbum?.id,
             onSelectAlbum = { vm.onEvent(HomeUiEvent.AlbumSelected(it.id, activeTarget)) },
             onDismiss = { showSelectAlbum = false },
-            coverCrops = uiState.coverCrops,
         )
     }
 
     if (showCustomInterval) {
         CustomIntervalSheet(
-            initial = Interval.fromMillis(uiState.config.updateInterval),
+            initial = uiState.config.interval,
             onConfirm = {
-                vm.onEvent(HomeUiEvent.IntervalUpdated(it.inWholeMilliseconds))
+                vm.onEvent(HomeUiEvent.IntervalUpdated(it))
                 showCustomInterval = false
             },
             onDismiss = { showCustomInterval = false },
@@ -140,20 +138,22 @@ private fun Home(
     onTargetChange: (TargetScreen) -> Unit,
     onEvent: (HomeUiEvent) -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = Dimens.screenPadding),
-    ) {
-        Spacer(modifier = Modifier.height(20.dp))
-
+    Column(modifier = modifier.fillMaxSize()) {
         if (showTargetTabs) {
-            HomeLockTabs(selected = target, onSelect = onTargetChange)
             Spacer(modifier = Modifier.height(20.dp))
+
+            HomeLockTabs(
+                modifier = Modifier.padding(horizontal = Dimens.screenPadding),
+                selected = target,
+                onSelect = onTargetChange,
+            )
         }
 
         when {
-            uiState.isLoading -> Loading()
+            uiState.isLoading -> {
+                Spacer(modifier = Modifier.height(20.dp))
+                Loading()
+            }
 
             uiState.albums.isEmpty() -> NoAlbums(
                 modifier = Modifier.weight(1f),
@@ -162,18 +162,24 @@ private fun Home(
 
             uiState.albumFor(target) == null -> NoActiveAlbum(
                 modifier = Modifier.weight(1f),
-                onChangeAlbum = { onEvent(HomeUiEvent.SelectAlbumClick(target)) },
+                onChangeAlbum = { onEvent(HomeUiEvent.SelectAlbumClick) },
             )
 
-            else -> ActiveAlbum(
-                modifier = Modifier.weight(1f),
-                uiState = uiState,
-                target = target,
-                onEvent = onEvent,
-            )
+            else -> {
+                Spacer(modifier = Modifier.height(20.dp))
+
+                ActiveAlbum(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = Dimens.screenPadding),
+                    uiState = uiState,
+                    target = target,
+                    onEvent = onEvent,
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
+            }
         }
-
-        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
@@ -197,7 +203,7 @@ private fun ActiveAlbum(
     val album = uiState.albumFor(target) ?: return
     val wallpaper = uiState.wallpaperFor(target)
     val config = uiState.config
-    val hasSchedule = config.lastUpdated > 0
+    val failure = config.failure
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -206,7 +212,7 @@ private fun ActiveAlbum(
                     .weight(180f)
                     .aspectRatio(Dimens.DeviceAspectRatio),
                 uri = wallpaper?.uri,
-                crop = wallpaper?.crop,
+                crop = wallpaper?.crop ?: WallpaperCrop.Default,
                 interactive = !wallpaper?.uri.isNullOrBlank(),
                 onClick = { wallpaper?.let { onEvent(HomeUiEvent.NavigateToWallpaper(it.id)) } },
             ) {
@@ -231,7 +237,7 @@ private fun ActiveAlbum(
                         .fillMaxWidth()
                         .border(1.dp, MaterialTheme.wallmatic.ink)
                         .clickable(onClickLabel = "Change album") {
-                            onEvent(HomeUiEvent.SelectAlbumClick(target))
+                            onEvent(HomeUiEvent.SelectAlbumClick)
                         }
                         .padding(horizontal = 10.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -278,25 +284,23 @@ private fun ActiveAlbum(
 
                 ScheduleLabel("CURRENT")
                 Spacer(modifier = Modifier.height(2.dp))
-                ScheduleValue(config.lastUpdated.scheduleTime())
+                ScheduleValue(config.lastUpdated?.toShortDateTimeString() ?: "—")
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 ScheduleLabel("NEXT")
                 Spacer(modifier = Modifier.height(2.dp))
-                ScheduleValue(if (hasSchedule) config.nextUpdate.scheduleTime() else "—")
+                ScheduleValue(config.nextUpdate?.toShortDateTimeString() ?: "—")
             }
         }
 
-        if (config.lastFailedAt > 0) {
+        if (failure != null) {
             Spacer(modifier = Modifier.height(16.dp))
             StatusRow(
                 title = "Last update failed",
-                detail = config.lastFailedAt.toShortDateTimeString(),
+                detail = failure.at.toShortDateTimeString(),
                 action = "Retry",
-                onAction = {
-                    onEvent(HomeUiEvent.RetryUpdate(config.failedTargetOrNull ?: target))
-                },
+                onAction = { onEvent(HomeUiEvent.RetryUpdate(failure.target)) },
             )
             Spacer(modifier = Modifier.height(22.dp))
         } else {
@@ -306,8 +310,8 @@ private fun ActiveAlbum(
         }
 
         IntervalPicker(
-            value = Interval.fromMillis(config.updateInterval),
-            onValueChange = { onEvent(HomeUiEvent.IntervalUpdated(it.inWholeMilliseconds)) },
+            value = config.interval,
+            onValueChange = { onEvent(HomeUiEvent.IntervalUpdated(it)) },
             onCustomClick = { onEvent(HomeUiEvent.CustomIntervalClick) },
         )
 
@@ -339,24 +343,20 @@ private fun ScheduleValue(text: String) {
     )
 }
 
-private fun Long.scheduleTime(): String =
-    if (this <= 0L || this == Long.MAX_VALUE) "—" else toShortDateTimeString()
-
 @Composable
 private fun NoAlbums(
     modifier: Modifier = Modifier,
     onCreateAlbum: () -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        EmptyAlbumLayout(
-            eyebrow = "GET STARTED",
-            title = "No album\nyet.",
-            description = "An album is a folder of wallpapers. Create one, add a few, and Wallmatic rotates them on your schedule.",
-            steps = listOf("Create an album", "Add wallpapers", "Set it active"),
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        WallmaticButton(text = "Create album", onClick = onCreateAlbum)
-    }
+    EmptyAlbumScreen(
+        modifier = modifier,
+        eyebrow = "GET STARTED",
+        title = "No album\nyet.",
+        description = "An album is a folder of wallpapers. Create one, add a few, and Wallmatic rotates them on your schedule.",
+        steps = listOf("Create an album", "Add wallpapers", "Set it active"),
+        actionText = "Create album",
+        onAction = onCreateAlbum,
+    )
 }
 
 @Composable
@@ -364,16 +364,15 @@ private fun NoActiveAlbum(
     modifier: Modifier = Modifier,
     onChangeAlbum: () -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        EmptyAlbumLayout(
-            eyebrow = "GET STARTED",
-            title = "No album\nselected.",
-            description = "Choose an album to start rotating its wallpapers on your schedule.",
-            steps = emptyList(),
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        WallmaticButton(text = "Change album", onClick = onChangeAlbum)
-    }
+    EmptyAlbumScreen(
+        modifier = modifier,
+        eyebrow = "GET STARTED",
+        title = "No album\nselected.",
+        description = "Choose an album to start rotating its wallpapers on your schedule.",
+        steps = emptyList(),
+        actionText = "Change album",
+        onAction = onChangeAlbum,
+    )
 }
 
 @Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 851)
@@ -440,9 +439,12 @@ private fun HomeUpdateFailedPreview() {
             Masthead(section = "Home")
             Home(
                 uiState = activeState.copy(
-                    config = activeState.config.copy {
-                        lastFailedAt = 1_700_000_900_000L
-                    },
+                    config = activeState.config.copy(
+                        failure = WallpaperFailure(
+                            target = TargetScreen.Home,
+                            at = Instant.fromEpochMilliseconds(1_700_000_900_000L),
+                        ),
+                    ),
                 ),
                 target = TargetScreen.Home,
                 showTargetTabs = false,
@@ -463,12 +465,13 @@ private fun HomeNoActiveAlbumPreview() {
             Home(
                 uiState = HomeUiState(
                     isLoading = false,
-                    albums = listOf(Album(name = "Test").apply { id = 1 }),
-                    config = config {
-                        isInit = true
-                        updateInterval = 15.minutes.inWholeMilliseconds
-                        homeConfig = wallpaperConfig { albumId = 99 }
-                    },
+                    albums = listOf(previewAlbum()),
+                    config = WallmaticConfig(
+                        interval = 15.minutes,
+                        mirrorHomeForLock = false,
+                        home = ScreenConfig(albumId = 99),
+                        lock = ScreenConfig(albumId = 99),
+                    ),
                 ),
                 target = TargetScreen.Home,
                 showTargetTabs = true,
@@ -480,32 +483,27 @@ private fun HomeNoActiveAlbumPreview() {
 }
 
 private fun activeState(mirrored: Boolean): HomeUiState {
-    val now = 1_700_000_000_000L
-    val album = Album(name = "Test").apply {
-        id = 1
-        folderIds = listOf(1)
-        wallpaperIds = (1..24).toList()
-    }
+    val now = Instant.fromEpochMilliseconds(1_700_000_000_000L)
     return HomeUiState(
         isLoading = false,
-        albums = listOf(album),
-        config = config {
-            isInit = true
-            updateInterval = 15.minutes.inWholeMilliseconds
-            lastUpdated = now
-            mirrorHomeConfigForLock = mirrored
-            homeConfig = wallpaperConfig {
-                albumId = 1
-                autoCycleEnabled = true
-                currentWallpaperId = 1
-            }
-            lockConfig = wallpaperConfig {
-                albumId = 1
-                autoCycleEnabled = true
-                currentWallpaperId = 2
-            }
-        },
-        homeWallpaper = Wallpaper(uri = "").apply { id = 1 },
-        lockWallpaper = Wallpaper(uri = "").apply { id = 2 },
+        albums = listOf(previewAlbum()),
+        config = WallmaticConfig(
+            interval = 15.minutes,
+            lastUpdated = now,
+            mirrorHomeForLock = mirrored,
+            home = ScreenConfig(albumId = 1, currentWallpaperId = 1),
+            lock = ScreenConfig(albumId = 1, currentWallpaperId = 2),
+        ),
+        homeWallpaper = Wallpaper(uri = "", albumId = 1).apply { id = 1 },
+        lockWallpaper = Wallpaper(uri = "", albumId = 1).apply { id = 2 },
     )
 }
+
+private fun previewAlbum() = FullAlbum(
+    id = 1,
+    name = "Test",
+    folders = listOf(
+        FullFolder(id = 1, name = "Folder", folderUri = "", wallpapers = emptyList()),
+    ),
+    wallpapers = (1..24).map { Wallpaper(uri = "", albumId = 1) },
+)

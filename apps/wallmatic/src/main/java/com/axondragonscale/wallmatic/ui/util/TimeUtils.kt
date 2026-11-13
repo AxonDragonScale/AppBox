@@ -1,10 +1,10 @@
 package com.axondragonscale.wallmatic.ui.util
 
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.time.Instant
 
 /**
  * Created by Ronak Harkhani on 26/09/24
@@ -15,17 +15,9 @@ fun Long.toShortDateTimeString(): String =
     DateTimeFormatter.ofPattern("dd MMM · hh:mm a", Locale.US)
         .format(
             LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(this),
+                java.time.Instant.ofEpochMilli(this),
                 ZoneId.systemDefault()
             )
         )
 
-/** Formats an epoch millis for logs: `yyyy-MM-dd'T'HH:mm:ss`. */
-fun Long.toTimestampString(): String =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-        .format(
-            LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(this),
-                ZoneId.systemDefault()
-            )
-        )
+fun Instant.toShortDateTimeString(): String = toEpochMilliseconds().toShortDateTimeString()

@@ -27,9 +27,7 @@ class WallpaperCropTransformation(
         val rect = viewport(
             sourceWidth = input.width,
             sourceHeight = input.height,
-            focalX = crop.focalX,
-            focalY = crop.focalY,
-            zoom = crop.zoom,
+            crop = crop,
             targetAspect = targetWidth.toFloat() / targetHeight,
         )
 

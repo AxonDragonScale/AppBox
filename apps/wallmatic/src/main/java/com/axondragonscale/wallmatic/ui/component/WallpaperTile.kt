@@ -33,7 +33,7 @@ import java.util.Locale
 fun WallpaperTile(
     modifier: Modifier = Modifier,
     uri: String?,
-    crop: WallpaperCrop? = null,
+    crop: WallpaperCrop = WallpaperCrop.Default,
     index: Int? = null,
     interactive: Boolean = true,
     onClick: () -> Unit = {},

@@ -33,7 +33,7 @@ import com.axondragonscale.wallmatic.ui.theme.wallmatic
 @Composable
 fun ReadyToRotateBanner(
     modifier: Modifier = Modifier,
-    mirrorEnabled: Boolean,
+    targets: List<TargetScreen>,
     onSetActive: (TargetScreen) -> Unit,
 ) {
     Row(
@@ -61,7 +61,7 @@ fun ReadyToRotateBanner(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        if (mirrorEnabled) {
+        if (TargetScreen.Both in targets) {
             SetActiveButton(
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
@@ -74,16 +74,13 @@ fun ReadyToRotateBanner(
                 modifier = Modifier.align(Alignment.CenterVertically),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                SetActiveButton(
-                    modifier = Modifier.width(56.dp),
-                    text = "HOME",
-                    onClick = { onSetActive(TargetScreen.Home) },
-                )
-                SetActiveButton(
-                    modifier = Modifier.width(56.dp),
-                    text = "LOCK",
-                    onClick = { onSetActive(TargetScreen.Lock) },
-                )
+                targets.forEach { target ->
+                    SetActiveButton(
+                        modifier = Modifier.width(56.dp),
+                        text = target.label,
+                        onClick = { onSetActive(target) },
+                    )
+                }
             }
         }
     }
@@ -118,7 +115,7 @@ private fun SetActiveButton(
 @Composable
 private fun ReadyToRotateBannerPreview() {
     WallmaticTheme {
-        BannerPreview(mirrorEnabled = true)
+        BannerPreview(targets = listOf(TargetScreen.Both))
     }
 }
 
@@ -127,19 +124,19 @@ private fun ReadyToRotateBannerPreview() {
 @Composable
 private fun ReadyToRotateBannerSplitPreview() {
     WallmaticTheme {
-        BannerPreview(mirrorEnabled = false)
+        BannerPreview(targets = listOf(TargetScreen.Home, TargetScreen.Lock))
     }
 }
 
 @Composable
-private fun BannerPreview(mirrorEnabled: Boolean) {
+private fun BannerPreview(targets: List<TargetScreen>) {
     Box(
         modifier = Modifier
             .background(MaterialTheme.wallmatic.paper)
             .padding(24.dp),
     ) {
         ReadyToRotateBanner(
-            mirrorEnabled = mirrorEnabled,
+            targets = targets,
             onSetActive = {},
         )
     }

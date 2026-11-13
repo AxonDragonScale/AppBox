@@ -1,18 +1,19 @@
 package com.axondragonscale.wallmatic.model
 
-import com.axondragonscale.wallmatic.database.entity.Wallpaper
-
 /**
  * Created by Ronak Harkhani on 11/13/26
  */
 
-/** A crop off the centred 1x default, as a focal point plus zoom in the source image. */
+/** A focal point plus zoom into the source image. */
 data class WallpaperCrop(
-    val focalX: Float,
-    val focalY: Float,
-    val zoom: Float,
-)
+    val focalX: Float = 0.5f,
+    val focalY: Float = 0.5f,
+    val zoom: Float = 1f,
+) {
 
-/** The crop a preview must show, or null while the wallpaper is at the default centre crop. */
-val Wallpaper.crop: WallpaperCrop?
-    get() = if (hasCustomCrop) WallpaperCrop(cropFocalX, cropFocalY, cropZoom) else null
+    companion object {
+        val Default = WallpaperCrop()
+    }
+
+    val isDefault: Boolean get() = this == Default
+}

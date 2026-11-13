@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,20 +27,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullFolder
-import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.component.EmptyStateCard
 import com.axondragonscale.wallmatic.ui.component.HorizontalRule
 import com.axondragonscale.wallmatic.ui.component.StateMessage
-import com.axondragonscale.wallmatic.ui.wallpaper.WallpaperActionsOverlay
 import com.axondragonscale.wallmatic.ui.component.WallpaperTile
 import com.axondragonscale.wallmatic.ui.component.WallmaticTopBar
 import com.axondragonscale.wallmatic.ui.theme.Dimens
-import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
+import com.axondragonscale.wallmatic.ui.wallpaper.WallpaperActionsOverlay
 import org.koin.androidx.compose.koinViewModel
-import java.util.Locale
 
 /**
  * Created by Ronak Harkhani on 17/09/24
@@ -234,7 +230,6 @@ private fun FolderEmptyPreview() {
                 folder = FullFolder(
                     id = 1,
                     name = "Wallpapers",
-                    coverUri = null,
                     folderUri = "",
                     wallpapers = emptyList(),
                 ),
@@ -248,7 +243,6 @@ private fun FolderEmptyPreview() {
 private fun previewFolder() = FullFolder(
     id = 1,
     name = "Wallpapers",
-    coverUri = null,
     folderUri = "",
-    wallpapers = (1..8).map { Wallpaper(uri = "").apply { id = it } },
+    wallpapers = (1..8).map { Wallpaper(uri = "", albumId = 1).apply { id = it } },
 )

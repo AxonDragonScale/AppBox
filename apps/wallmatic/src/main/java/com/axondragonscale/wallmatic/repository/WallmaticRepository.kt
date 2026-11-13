@@ -8,157 +8,77 @@ import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.WallpaperCrop
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 
 /**
  * Created by Ronak Harkhani on 26/06/24
  */
-class WallmaticRepository(
-    private val wallmaticDao: WallmaticDao,
-) {
+class WallmaticRepository(private val dao: WallmaticDao) {
 
-    // MARK: Full Getters --------------------------------------------------------------------------
-
-    suspend fun getAllFullAlbums(): List<FullAlbum> {
-        val albums = wallmaticDao.getAlbums().firstOrNull() ?: emptyList()
-        return albums.map {
-            FullAlbum(
-                id = it.id,
-                name = it.name,
-                coverUri = it.coverUri,
-                folders = getFullFolders(it.folderIds),
-                wallpapers = getWallpapers(it.wallpaperIds),
-            )
+    fun observeFullAlbums(): Flow<List<FullAlbum>> =
+        combine(dao.observeAlbums(), dao.observeFolders(), dao.observeWallpapers()) { albums, folders, wallpapers ->
+            assembleAlbums(albums, folders, wallpapers)
         }
-    }
+
+    fun observeFullFolders(): Flow<List<FullFolder>> =
+        combine(dao.observeFolders(), dao.observeWallpapers()) { folders, wallpapers ->
+            assembleFolders(folders, wallpapers)
+        }
+
+    suspend fun getAllFullAlbums(): List<FullAlbum> = assembleAlbums(
+        dao.observeAlbums().first(),
+        dao.observeFolders().first(),
+        dao.observeWallpapers().first(),
+    )
 
     suspend fun getFullAlbum(albumId: Int): FullAlbum? {
-        val album = wallmaticDao.getAlbum(albumId) ?: return null
-        return FullAlbum(
-            id = album.id,
-            name = album.name,
-            coverUri = album.coverUri,
-            folders = getFullFolders(album.folderIds),
-            wallpapers = getWallpapers(album.wallpaperIds),
-        )
+        val album = dao.getAlbum(albumId) ?: return null
+        val folders = dao.getFolders(albumId).map { folder ->
+            FullFolder(folder.id, folder.name, folder.folderUri, dao.getFolderWallpapers(folder.id))
+        }
+        return FullAlbum(album.id, album.name, folders, dao.getDirectWallpapers(albumId))
     }
 
-    suspend fun getFullFolders(folderIds: List<Int>): List<FullFolder> {
-        return wallmaticDao
-            .getFolders(folderIds)
-            .map { folder ->
-                FullFolder(
-                    id = folder.id,
-                    name = folder.name,
-                    coverUri = folder.coverUri,
-                    folderUri = folder.folderUri,
-                    wallpapers = getWallpapers(folder.wallpapers),
-                )
+    suspend fun getWallpaper(id: Int): Wallpaper? = dao.getWallpaper(id)
+
+    suspend fun getAlbumWallpaperUris(albumId: Int): Set<String> =
+        dao.getAlbumWallpaperUris(albumId).toSet()
+
+    suspend fun getAlbumFolderUris(albumId: Int): Set<String> =
+        dao.getAlbumFolderUris(albumId).toSet()
+
+    suspend fun saveAlbum(name: String): Int = dao.upsertAlbum(Album(name)).toInt()
+    suspend fun renameAlbum(albumId: Int, name: String) = dao.updateAlbumName(albumId, name)
+    suspend fun saveFolderWithWallpapers(folder: Folder, wallpapers: List<Wallpaper>): Int =
+        dao.upsertFolderWithWallpapers(folder, wallpapers)
+    suspend fun saveWallpapers(wallpapers: List<Wallpaper>): List<Int> =
+        dao.upsertWallpapers(wallpapers).map { it.toInt() }
+
+    suspend fun updateWallpaperCrop(wallpaperId: Int, crop: WallpaperCrop) =
+        dao.updateWallpaperCrop(wallpaperId, crop.focalX, crop.focalY, crop.zoom)
+
+    suspend fun setBlacklisted(wallpaperId: Int, blacklisted: Boolean) =
+        dao.setBlacklisted(wallpaperId, blacklisted)
+
+    suspend fun deleteFullAlbum(albumId: Int) = dao.deleteFullAlbum(albumId)
+    suspend fun deleteFullFolder(folderId: Int) = dao.deleteFullFolder(folderId)
+    suspend fun deleteWallpaper(wallpaperId: Int) = dao.deleteWallpaper(wallpaperId)
+
+    private fun assembleAlbums(albums: List<Album>, folders: List<Folder>, wallpapers: List<Wallpaper>): List<FullAlbum> {
+        val foldersByAlbum = folders.groupBy { it.albumId }
+        val wallpapersByFolder = wallpapers.filter { it.folderId != null }.groupBy { it.folderId }
+        return albums.map { album ->
+            val fullFolders = foldersByAlbum[album.id].orEmpty().map { folder ->
+                FullFolder(folder.id, folder.name, folder.folderUri, wallpapersByFolder[folder.id].orEmpty())
             }
-    }
-
-    suspend fun getFullFolder(folderId: Int): FullFolder? {
-        return getFullFolders(listOf(folderId)).firstOrNull()
-    }
-
-    // MARK: Base Getters --------------------------------------------------------------------------
-
-    fun getAlbums(): Flow<List<Album>> {
-        return wallmaticDao.getAlbums()
-    }
-
-    suspend fun getWallpapers(wallpaperIds: List<Int>): List<Wallpaper> {
-        return wallmaticDao.getWallpapers(wallpaperIds)
-    }
-
-    fun getWallpapersFlow(wallpaperIds: List<Int>): Flow<List<Wallpaper>> {
-        return wallmaticDao.getWallpapersFlow(wallpaperIds)
-    }
-
-    /**
-     * Non-default crops keyed by wallpaper URI, live. A cover is only a URI snapshot, so this is
-     * how it resolves its crop; when two rows share a URI the lowest id wins, keeping it stable.
-     */
-    fun getCoverCrops(): Flow<Map<String, WallpaperCrop>> {
-        return wallmaticDao.getCustomCropsFlow().map { rows ->
-            buildMap {
-                rows.forEach { row ->
-                    putIfAbsent(row.uri, WallpaperCrop(row.cropFocalX, row.cropFocalY, row.cropZoom))
-                }
-            }
+            val direct = wallpapers.filter { it.albumId == album.id && it.folderId == null }
+            FullAlbum(album.id, album.name, fullFolders, direct)
         }
     }
 
-    suspend fun getWallpaper(wallpaperId: Int): Wallpaper? {
-        return wallmaticDao.getWallpaper(wallpaperId)
+    private fun assembleFolders(folders: List<Folder>, wallpapers: List<Wallpaper>): List<FullFolder> {
+        val byFolder = wallpapers.filter { it.folderId != null }.groupBy { it.folderId }
+        return folders.map { FullFolder(it.id, it.name, it.folderUri, byFolder[it.id].orEmpty()) }
     }
-
-    // MARK: Update --------------------------------------------------------------------------------
-
-    suspend fun updateAlbum(albumId: Int, block: Album.() -> Unit) {
-        wallmaticDao.getAlbum(albumId)?.let { album ->
-            block(album)
-            wallmaticDao.upsertAlbum(album)
-        }
-    }
-
-    suspend fun updateFolder(folderId: Int, block: Folder.() -> Unit) {
-        wallmaticDao.getFolder(folderId)?.let { folder ->
-            block(folder)
-            wallmaticDao.upsertFolder(folder)
-        }
-    }
-
-    suspend fun updateWallpaper(wallpaperId: Int, block: Wallpaper.() -> Unit) {
-        wallmaticDao.getWallpaper(wallpaperId)?.let { wallpaper ->
-            block(wallpaper)
-            wallmaticDao.upsertWallpaper(wallpaper)
-        }
-    }
-
-    suspend fun updateWallpaperCrop(wallpaperId: Int, focalX: Float, focalY: Float, zoom: Float) {
-        wallmaticDao.updateWallpaperCrop(wallpaperId, focalX, focalY, zoom)
-    }
-
-    // MARK: Save / Create -------------------------------------------------------------------------
-
-    suspend fun saveAlbum(album: Album): Int {
-        val albumId = wallmaticDao.upsertAlbum(album)
-        return albumId.toInt()
-    }
-
-    suspend fun saveFolder(folder: Folder): Int {
-        val folderId = wallmaticDao.upsertFolder(folder)
-        return folderId.toInt()
-    }
-
-    suspend fun saveWallpapers(wallpapers: List<Wallpaper>): List<Int> {
-        val wallpaperIds = wallmaticDao.upsertWallpapers(wallpapers)
-        return wallpaperIds.map { it.toInt() }
-    }
-
-    suspend fun saveWallpaper(wallpaper: Wallpaper): Int {
-        val wallpaperIds = wallmaticDao.upsertWallpapers(listOf(wallpaper))
-        return wallpaperIds.first().toInt()
-    }
-
-    // MARK: Delete --------------------------------------------------------------------------------
-
-    suspend fun deleteFullAlbum(albumId: Int) {
-        wallmaticDao.deleteFullAlbum(albumId)
-    }
-
-    suspend fun deleteFullFolder(folderId: Int) {
-        wallmaticDao.deleteFullFolder(folderId)
-    }
-
-    suspend fun deleteFolders(folderIds: List<Int>) {
-        wallmaticDao.deleteFolders(folderIds)
-    }
-
-    suspend fun deleteWallpapers(wallpaperIds: List<Int>) {
-        wallmaticDao.deleteWallpapers(wallpaperIds)
-    }
-
 }

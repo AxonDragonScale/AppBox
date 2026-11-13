@@ -23,7 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.component.ContextMenu
 import com.axondragonscale.wallmatic.ui.component.ContextMenuItem
 import com.axondragonscale.wallmatic.ui.component.WallpaperTile
@@ -132,7 +131,7 @@ private fun WallpaperActionsPreview() {
             contentAlignment = Alignment.Center,
         ) {
             WallpaperActionsContent(
-                wallpaper = Wallpaper(uri = "").apply { id = 1 },
+                wallpaper = Wallpaper(uri = "", albumId = 1).apply { id = 1 },
                 onSetWallpaper = {},
                 onAdjust = {},
                 onBlacklist = {},

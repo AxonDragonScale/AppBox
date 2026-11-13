@@ -89,7 +89,7 @@ fun WallmaticTabBar(
 @Composable
 private fun WallmaticTabBarPreview() {
     WallmaticTheme {
-        var active by remember { mutableStateOf(Tab.Albums) }
+        var active by remember { mutableStateOf(Tab.Library) }
         Column(modifier = Modifier.background(MaterialTheme.wallmatic.paper)) {
             WallmaticTabBar(active = active, onSelect = { active = it })
         }

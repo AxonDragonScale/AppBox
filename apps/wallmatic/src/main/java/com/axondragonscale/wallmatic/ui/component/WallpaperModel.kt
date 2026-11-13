@@ -17,8 +17,8 @@ import com.axondragonscale.wallmatic.model.WallpaperCrop
  * case the request carries the crop transformation.
  */
 @Composable
-fun wallpaperModel(uri: String?, crop: WallpaperCrop?): Any? {
-    if (uri.isNullOrBlank() || crop == null) return uri
+fun wallpaperModel(uri: String?, crop: WallpaperCrop = WallpaperCrop.Default): Any? {
+    if (uri.isNullOrBlank() || crop.isDefault) return uri
 
     val context = LocalPlatformContext.current
     return remember(uri, crop) {

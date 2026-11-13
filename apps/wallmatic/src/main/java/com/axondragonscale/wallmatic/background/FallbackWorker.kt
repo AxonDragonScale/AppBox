@@ -15,7 +15,7 @@ class FallbackWorker(
     private val updateCoordinator: UpdateCoordinator by inject()
 
     override suspend fun doWork(): Result {
-        updateCoordinator.reconcile()
+        updateCoordinator.applyIfDue()
         return Result.success()
     }
 

@@ -61,7 +61,7 @@ type 36 / 28 / 22 / 20 / 16 / 14 / 11 / 10.
 
 | Style | Size / line | Face | Use |
 |---|---|---|---|
-| Display | 36 / 44 | Chakra Petch Bold | Screen titles: Albums, Settings |
+| Display | 36 / 44 | Chakra Petch Bold | Screen titles: Library, Settings |
 | Headline | 28 / 34 | Chakra Petch Bold | Card title, dialog title |
 | Title | 22 / 28 | Chakra Petch Regular | Top bar, sheet title |
 | Title Small | 16 / 24 | Chakra Petch SemiBold | Album row title, interval value |
@@ -91,7 +91,7 @@ screens use instances.
 
 | Component | Variants / properties | Notes |
 |---|---|---|
-| `Button` | `Style=Filled` · `Outline` · `Text`, text `Label` | 48 dp, square, label 12 tracked |
+| `Button` | `Style=Filled` · `Outline`, text `Label` | 48 dp, square, label 12 tracked |
 | `Switch` | `On` · `Off` | 52 × 32, square track and thumb |
 | `HomeLockTabs` | `Selected=Home` · `Selected=Lock` | 364 × 40, 1 px track, full-width 3 px ink underline flush with the bottom edge under the active label |
 | `IntervalPicker` | text `Value` | 364 × 76, 7 ticks, Custom action; tap or drag snaps to the nearest tick; the value reads `HR` for hours and `MIN` for minutes while the ticks stay `15m` … `24h` |
@@ -270,6 +270,9 @@ a second album is not onboarding. Home and Library do not scroll when the conten
 bottom action is anchored above the tab bar — and Album's `ADD WALLPAPERS` sits above the navigation
 bar.
 
+Home · no album and Library · no albums are one shared `EmptyAlbumScreen` in code: the same eyebrow,
+title, description, numbered steps and bottom action, differing only in copy.
+
 Frames live on the **Screens** page.
 
 ## Implementation notes
@@ -277,8 +280,8 @@ Frames live on the **Screens** page.
 The code follows the frames; these are the places where the design is silent or deliberately
 differs from what shipped.
 
-- Auto-cycling has no pause control in the design. Selecting an album enables it; an existing paused
-  config resumes by re-selecting the album.
+- Auto-cycling has no pause control in the design, and the code has no pause flag either: once an
+  album is active it cycles. Selecting an album sets the target and applies immediately.
 - Mirroring preserves the Lock album configuration while it is on and restores it when turned off; the
   frames do not show that hidden state.
 - The active-target actions are target-aware: `SET AS ACTIVE` writes both targets only while Mirror

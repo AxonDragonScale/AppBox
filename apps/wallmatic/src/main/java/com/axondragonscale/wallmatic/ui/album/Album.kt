@@ -40,7 +40,6 @@ import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.component.ContextMenuOverlay
 import com.axondragonscale.wallmatic.ui.component.ContextMenuItem
@@ -50,14 +49,13 @@ import com.axondragonscale.wallmatic.ui.component.StateMessage
 import com.axondragonscale.wallmatic.ui.component.WallmaticButton
 import com.axondragonscale.wallmatic.ui.component.WallmaticFab
 import com.axondragonscale.wallmatic.ui.component.WallmaticTopBar
-import com.axondragonscale.wallmatic.ui.wallpaper.WallpaperActionsOverlay
 import com.axondragonscale.wallmatic.ui.component.WallpaperTile
 import com.axondragonscale.wallmatic.ui.theme.Dimens
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
+import com.axondragonscale.wallmatic.ui.wallpaper.WallpaperActionsOverlay
 import org.koin.androidx.compose.koinViewModel
-import java.util.Locale
 
 /**
  * Created by Ronak Harkhani on 23/06/24
@@ -166,10 +164,10 @@ private fun Album(
         WallmaticTopBar(
             title = uiState.album?.name ?: "Album",
             onBack = onBack,
-            trailing = uiState.activeTargets.takeIf { it.isNotEmpty() }?.let { targets ->
+            trailing = uiState.targetLabel?.let { label ->
                 {
                     Text(
-                        text = targets.label(mirrorEnabled = uiState.mirrorEnabled),
+                        text = "ACTIVE · $label",
                         style = WallmaticTextStyles.microStrong.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.sp,
@@ -244,7 +242,7 @@ private fun AlbumContent(
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (!uiState.isActive) {
                             ReadyToRotateBanner(
-                                mirrorEnabled = uiState.mirrorEnabled,
+                                targets = uiState.activatableTargets,
                                 onSetActive = { target ->
                                     onEvent(AlbumUiEvent.SetActive(target))
                                 },
@@ -326,17 +324,6 @@ private fun EmptyAlbum(
     }
 }
 
-private fun Set<TargetScreen>.label(mirrorEnabled: Boolean): String {
-    val home = TargetScreen.Home in this
-    val lock = TargetScreen.Lock in this
-    return when {
-        home && lock -> "ACTIVE · BOTH"
-        mirrorEnabled && home -> "ACTIVE · BOTH"
-        home -> "ACTIVE · HOME"
-        else -> "ACTIVE · LOCK"
-    }
-}
-
 @Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 851)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 851)
 @Composable
@@ -346,7 +333,8 @@ private fun AlbumPreview() {
             uiState = AlbumUiState(
                 loading = false,
                 album = previewAlbum(),
-                activeTargets = setOf(TargetScreen.Home),
+                targetLabel = "HOME",
+                isActive = true,
             ),
             onBack = {},
             onPickFolder = {},
@@ -365,6 +353,7 @@ private fun AlbumReadyPreview() {
             uiState = AlbumUiState(
                 loading = false,
                 album = previewAlbum(),
+                activatableTargets = listOf(TargetScreen.Both),
             ),
             onBack = {},
             onPickFolder = {},
@@ -385,7 +374,6 @@ private fun AlbumEmptyPreview() {
                 album = FullAlbum(
                     id = 2,
                     name = "Nature",
-                    coverUri = null,
                     folders = emptyList(),
                     wallpapers = emptyList(),
                 ),
@@ -399,20 +387,18 @@ private fun AlbumEmptyPreview() {
 }
 
 private fun previewAlbum(): FullAlbum {
-    val folderWallpapers = (1..24).map { Wallpaper(uri = "").apply { id = it } }
+    val folderWallpapers = (1..24).map { Wallpaper(uri = "", albumId = 1).apply { id = it } }
     return FullAlbum(
         id = 1,
         name = "Nature",
-        coverUri = null,
         folders = listOf(
             FullFolder(
                 id = 1,
                 name = "Wallpapers",
-                coverUri = null,
                 folderUri = "",
                 wallpapers = folderWallpapers,
             ),
         ),
-        wallpapers = (25..28).map { Wallpaper(uri = "").apply { id = it } },
+        wallpapers = (25..28).map { Wallpaper(uri = "", albumId = 1).apply { id = it } },
     )
 }

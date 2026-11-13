@@ -1,19 +1,16 @@
-package com.axondragonscale.wallmatic.ui.albums
+package com.axondragonscale.wallmatic.ui.library
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,18 +25,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.axondragonscale.commons.collectWithLifecycle
-import com.axondragonscale.wallmatic.database.entity.Album
-import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.database.entity.Wallpaper
+import com.axondragonscale.wallmatic.model.FullAlbum
+import com.axondragonscale.wallmatic.model.FullFolder
+import com.axondragonscale.wallmatic.model.ScreenConfig
+import com.axondragonscale.wallmatic.model.WallmaticConfig
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.component.AlbumCard
 import com.axondragonscale.wallmatic.ui.component.AlbumNameDialog
-import com.axondragonscale.wallmatic.ui.component.EmptyAlbumLayout
+import com.axondragonscale.wallmatic.ui.component.EmptyAlbumScreen
 import com.axondragonscale.wallmatic.ui.component.Masthead
 import com.axondragonscale.wallmatic.ui.component.StateMessage
-import com.axondragonscale.wallmatic.ui.component.WallmaticButton
 import com.axondragonscale.wallmatic.ui.component.WallmaticFab
 import com.axondragonscale.wallmatic.ui.theme.Dimens
-import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
 import com.axondragonscale.wallmatic.ui.util.countSummary
@@ -50,18 +48,27 @@ import org.koin.androidx.compose.koinViewModel
  */
 
 @Composable
-fun Albums(
+fun Library(
     modifier: Modifier = Modifier,
     navController: NavController,
     openCreateAlbumDialog: Boolean = false,
     onOpenCreateAlbumDialogHandled: () -> Unit = {},
 ) {
-    val vm: AlbumsVM = koinViewModel()
+    val vm: LibraryVM = koinViewModel()
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     var showCreateAlbumDialog by rememberSaveable { mutableStateOf(false) }
-    var renameAlbumDialog by remember { mutableStateOf<Album?>(null) }
-    var albumActionsDialog by remember { mutableStateOf<Album?>(null) }
+    var renameAlbumDialog by remember { mutableStateOf<Int?>(null) }
+    var albumActionsDialog by remember { mutableStateOf<Int?>(null) }
+
+    // Ids, not snapshots: a sync must not leave a stale album next to a live menu.
+    val renameAlbum = renameAlbumDialog?.let { id -> uiState.albums.firstOrNull { it.id == id } }
+    val actionsAlbum = albumActionsDialog?.let { id -> uiState.albums.firstOrNull { it.id == id } }
+
+    LaunchedEffect(uiState.albums) {
+        if (renameAlbumDialog != null && renameAlbum == null) renameAlbumDialog = null
+        if (albumActionsDialog != null && actionsAlbum == null) albumActionsDialog = null
+    }
 
     LaunchedEffect(openCreateAlbumDialog) {
         if (openCreateAlbumDialog) {
@@ -72,23 +79,23 @@ fun Albums(
 
     vm.uiEffect.collectWithLifecycle { uiEffect ->
         when (uiEffect) {
-            is AlbumsUiEffect.NavigateToAlbum ->
+            is LibraryUiEffect.NavigateToAlbum ->
                 navController.navigate(route = Route.Album(uiEffect.albumId))
         }
     }
 
-    Albums(
+    Library(
         modifier = modifier,
         uiState = uiState,
         onEvent = {
             when (it) {
-                is AlbumsUiEvent.ShowCreateAlbumDialog ->
+                is LibraryUiEvent.ShowCreateAlbumDialog ->
                     showCreateAlbumDialog = true
 
-                is AlbumsUiEvent.ShowAlbumActionsDialog ->
-                    albumActionsDialog = it.album
+                is LibraryUiEvent.ShowAlbumActionsDialog ->
+                    albumActionsDialog = it.album.id
 
-                is AlbumsUiEvent.NavigateToAlbum ->
+                is LibraryUiEvent.NavigateToAlbum ->
                     navController.navigate(route = Route.Album(it.albumId))
 
                 else -> vm.onEvent(it)
@@ -100,41 +107,39 @@ fun Albums(
         AlbumNameDialog(
             onDismiss = { showCreateAlbumDialog = false },
             onConfirm = { albumName ->
-                vm.onEvent(AlbumsUiEvent.CreateAlbum(albumName = albumName))
+                vm.onEvent(LibraryUiEvent.CreateAlbum(albumName = albumName))
             },
         )
     }
 
-    renameAlbumDialog?.let { album ->
+    renameAlbum?.let { album ->
         AlbumNameDialog(
             currentAlbumName = album.name,
             title = "Rename album",
             helper = null,
             onDismiss = { renameAlbumDialog = null },
             onConfirm = { albumName ->
-                vm.onEvent(AlbumsUiEvent.RenameAlbum(albumId = album.id, albumName = albumName))
+                vm.onEvent(LibraryUiEvent.RenameAlbum(albumId = album.id, albumName = albumName))
             },
         )
     }
 
-    albumActionsDialog?.let { album ->
+    actionsAlbum?.let { album ->
         AlbumActionsOverlay(
             album = album,
             targetLabel = uiState.targetLabelFor(album.id),
-            coverCrop = uiState.coverCropFor(album),
-            activeTargets = uiState.activeTargets[album.id].orEmpty(),
-            mirrorEnabled = uiState.mirrorEnabled,
+            targets = uiState.targetsFor(album.id),
             onSetActive = { target ->
                 albumActionsDialog = null
-                vm.onEvent(AlbumsUiEvent.SetActive(album.id, target))
+                vm.onEvent(LibraryUiEvent.SetActive(album.id, target))
             },
             onRename = {
                 albumActionsDialog = null
-                renameAlbumDialog = album
+                renameAlbumDialog = album.id
             },
             onDelete = {
                 albumActionsDialog = null
-                vm.onEvent(AlbumsUiEvent.DeleteAlbum(album.id))
+                vm.onEvent(LibraryUiEvent.DeleteAlbum(album.id))
             },
             onDismiss = { albumActionsDialog = null },
         )
@@ -142,23 +147,28 @@ fun Albums(
 }
 
 @Composable
-private fun Albums(
+private fun Library(
     modifier: Modifier = Modifier,
-    uiState: AlbumsUiState,
-    onEvent: (AlbumsUiEvent) -> Unit,
+    uiState: LibraryUiState,
+    onEvent: (LibraryUiEvent) -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> Loading()
 
-            uiState.albums.isEmpty() -> LibraryEmpty(
-                onCreateAlbum = { onEvent(AlbumsUiEvent.ShowCreateAlbumDialog) },
+            uiState.albums.isEmpty() -> EmptyAlbumScreen(
+                eyebrow = "GET STARTED",
+                title = "No albums yet.",
+                description = "An album is a folder of wallpapers. Create one to start rotating.",
+                steps = listOf("Create an album", "Add wallpapers", "Set it active"),
+                actionText = "Create album",
+                onAction = { onEvent(LibraryUiEvent.ShowCreateAlbumDialog) },
             )
 
             else -> AlbumGrid(
                 uiState = uiState,
-                onAlbumClick = { onEvent(AlbumsUiEvent.NavigateToAlbum(it.id)) },
-                onAlbumLongClick = { onEvent(AlbumsUiEvent.ShowAlbumActionsDialog(it)) },
+                onAlbumClick = { onEvent(LibraryUiEvent.NavigateToAlbum(it.id)) },
+                onAlbumLongClick = { onEvent(LibraryUiEvent.ShowAlbumActionsDialog(it)) },
             )
         }
 
@@ -167,7 +177,7 @@ private fun Albums(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = Dimens.fabEndInset, bottom = Dimens.fabBottomInset),
-                onClick = { onEvent(AlbumsUiEvent.ShowCreateAlbumDialog) },
+                onClick = { onEvent(LibraryUiEvent.ShowCreateAlbumDialog) },
             )
         }
     }
@@ -184,9 +194,9 @@ private fun Loading() {
 @Composable
 private fun AlbumGrid(
     modifier: Modifier = Modifier,
-    uiState: AlbumsUiState,
-    onAlbumClick: (Album) -> Unit,
-    onAlbumLongClick: (Album) -> Unit,
+    uiState: LibraryUiState,
+    onAlbumClick: (FullAlbum) -> Unit,
+    onAlbumLongClick: (FullAlbum) -> Unit,
 ) {
     LazyVerticalGrid(
         modifier = modifier.fillMaxSize(),
@@ -204,8 +214,7 @@ private fun AlbumGrid(
             AlbumCard(
                 title = album.name,
                 subtitle = album.countSummary(),
-                coverUri = album.coverUri,
-                coverCrop = uiState.coverCropFor(album),
+                cover = album.cover,
                 target = uiState.targetLabelFor(album.id),
                 onClick = { onAlbumClick(album) },
                 onLongClick = { onAlbumLongClick(album) },
@@ -214,41 +223,14 @@ private fun AlbumGrid(
     }
 }
 
-@Composable
-private fun LibraryEmpty(
-    modifier: Modifier = Modifier,
-    onCreateAlbum: () -> Unit,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = Dimens.screenPadding),
-    ) {
-        Spacer(modifier = Modifier.height(20.dp))
-
-        EmptyAlbumLayout(
-            eyebrow = "GET STARTED",
-            title = "No albums yet.",
-            description = "An album is a folder of wallpapers. Create one to start rotating.",
-            steps = listOf("Create an album", "Add wallpapers", "Set it active"),
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        WallmaticButton(text = "Create album", onClick = onCreateAlbum)
-
-        Spacer(modifier = Modifier.height(24.dp))
-    }
-}
-
 @Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 787)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 787)
 @Composable
-private fun AlbumsPreview() {
+private fun LibraryPreview() {
     WallmaticTheme {
         Column(modifier = Modifier.background(MaterialTheme.wallmatic.paper)) {
             Masthead(section = "Library")
-            Albums(
+            Library(
                 uiState = previewState(),
                 onEvent = {},
             )
@@ -259,44 +241,43 @@ private fun AlbumsPreview() {
 @Preview(name = "Light Mode", showBackground = true, widthDp = 412, heightDp = 787)
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, widthDp = 412, heightDp = 787)
 @Composable
-private fun AlbumsEmptyPreview() {
+private fun LibraryEmptyPreview() {
     WallmaticTheme {
         Column(modifier = Modifier.background(MaterialTheme.wallmatic.paper)) {
             Masthead(section = "Library")
-            Albums(
-                uiState = AlbumsUiState(isLoading = false),
+            Library(
+                uiState = LibraryUiState(isLoading = false),
                 onEvent = {},
             )
         }
     }
 }
 
-private fun previewState() = AlbumsUiState(
+private fun previewState() = LibraryUiState(
     isLoading = false,
     albums = listOf(
-        Album(name = "Test").apply {
-            id = 1
-            folderIds = listOf(1)
-            wallpaperIds = (1..24).toList()
-        },
-        Album(name = "Nature").apply {
-            id = 2
-            folderIds = listOf(2)
-            wallpaperIds = (1..24).toList()
-        },
-        Album(name = "City").apply {
-            id = 3
-            folderIds = listOf(3)
-            wallpaperIds = (1..12).toList()
-        },
-        Album(name = "Space").apply {
-            id = 4
-            folderIds = listOf(4)
-            wallpaperIds = (1..31).toList()
-        },
+        previewAlbum(id = 1, name = "Test", folders = 1, wallpapers = 24),
+        previewAlbum(id = 2, name = "Nature", folders = 1, wallpapers = 24),
+        previewAlbum(id = 3, name = "City", folders = 1, wallpapers = 12),
+        previewAlbum(id = 4, name = "Space", folders = 1, wallpapers = 31),
     ),
-    activeTargets = mapOf(
-        1 to setOf(TargetScreen.Home),
-        3 to setOf(TargetScreen.Lock),
+    config = WallmaticConfig(
+        mirrorHomeForLock = false,
+        home = ScreenConfig(albumId = 1),
+        lock = ScreenConfig(albumId = 3),
     ),
+)
+
+private fun previewAlbum(id: Int, name: String, folders: Int, wallpapers: Int) = FullAlbum(
+    id = id,
+    name = name,
+    folders = List(folders) { index ->
+        FullFolder(
+            id = index + 1,
+            name = "Folder",
+            folderUri = "",
+            wallpapers = emptyList(),
+        )
+    },
+    wallpapers = List(wallpapers) { Wallpaper(uri = "", albumId = id) },
 )

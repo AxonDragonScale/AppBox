@@ -26,7 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.axondragonscale.wallmatic.model.WallpaperCrop
+import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
@@ -40,8 +40,7 @@ fun AlbumRow(
     modifier: Modifier = Modifier,
     title: String,
     subtitle: String,
-    coverUri: String?,
-    coverCrop: WallpaperCrop? = null,
+    cover: Wallpaper?,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -64,9 +63,10 @@ fun AlbumRow(
                 .background(colors.paperHigh)
                 .border(1.dp, colors.ink),
         ) {
-            if (coverUri != null) {
+            val coverWallpaper = cover?.takeIf { it.uri.isNotBlank() }
+            if (coverWallpaper != null) {
                 AsyncImage(
-                    model = wallpaperModel(uri = coverUri, crop = coverCrop),
+                    model = wallpaperModel(uri = coverWallpaper.uri, crop = coverWallpaper.crop),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
@@ -122,14 +122,14 @@ private fun AlbumRowPreview() {
             AlbumRow(
                 title = "Test",
                 subtitle = "1 Folder · 24 Wallpapers",
-                coverUri = null,
+                cover = null,
                 selected = true,
                 onClick = {},
             )
             AlbumRow(
                 title = "Nature",
                 subtitle = "1 Folder · 24 Wallpapers",
-                coverUri = null,
+                cover = null,
                 selected = false,
                 onClick = {},
             )

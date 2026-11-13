@@ -5,7 +5,6 @@ package com.axondragonscale.wallmatic.ui.wallpaper
  */
 sealed interface WallpaperUiEvent {
     data object EnterEdit : WallpaperUiEvent
-    data object ExitEdit : WallpaperUiEvent
     data class ZoomChanged(val zoom: Float) : WallpaperUiEvent
     data class FocusChanged(val focalX: Float, val focalY: Float) : WallpaperUiEvent
     data object Center : WallpaperUiEvent

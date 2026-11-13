@@ -3,20 +3,19 @@ package com.axondragonscale.wallmatic.background
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.axondragonscale.wallmatic.core.SyncManager
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-/** Refreshes albums against the filesystem. Deferred, so the timed path never waits on SAF. */
+/** Syncs albums with the filesystem, then repairs the config. Deferred, off the timed path. */
 class SyncWorker(
     appContext: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params), KoinComponent {
 
-    private val syncManager: SyncManager by inject()
+    private val updateCoordinator: UpdateCoordinator by inject()
 
     override suspend fun doWork(): Result {
-        syncManager.syncAlbums()
+        updateCoordinator.refresh()
         return Result.success()
     }
 

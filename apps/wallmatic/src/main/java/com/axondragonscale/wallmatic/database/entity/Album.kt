@@ -8,10 +8,7 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "album")
 data class Album(
-    var name: String,
-    var coverUri: String? = null,
-    var wallpaperIds: List<Int> = emptyList(),
-    var folderIds: List<Int> = emptyList(),
+    val name: String,
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Int = 0

@@ -63,8 +63,9 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.axondragonscale.wallmatic.core.MAX_CROP_ZOOM
 import com.axondragonscale.wallmatic.core.MIN_CROP_ZOOM
+import com.axondragonscale.wallmatic.core.cropBox
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
-import com.axondragonscale.wallmatic.model.crop
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.component.HorizontalRule
 import com.axondragonscale.wallmatic.ui.component.StateMessage
 import com.axondragonscale.wallmatic.ui.component.TextAction
@@ -125,7 +126,7 @@ private fun Wallpaper(
     when {
         uiState.isLoading -> Message(title = "LOADING")
 
-        uiState.isMissing || wallpaper == null -> Message(
+        wallpaper == null -> Message(
             title = "WALLPAPER NOT FOUND",
             description = "This wallpaper may have been deleted.",
         )
@@ -199,9 +200,9 @@ private fun Content(
                     modifier = Modifier.fillMaxSize(),
                     uri = wallpaper.uri,
                     sourceAspect = sourceAspect,
-                    zoom = uiState.draftZoom,
-                    focalX = uiState.draftFocalX,
-                    focalY = uiState.draftFocalY,
+                    zoom = uiState.draftCrop.zoom,
+                    focalX = uiState.draftCrop.focalX,
+                    focalY = uiState.draftCrop.focalY,
                     onSourceAspect = { sourceAspect = it },
                     onGestureStart = {
                         chromeVisible = false
@@ -259,9 +260,9 @@ private fun Content(
                         val zoom = target.coerceIn(MIN_CROP_ZOOM, MAX_CROP_ZOOM)
                         onEvent(WallpaperUiEvent.ZoomChanged(zoom))
                         geometry?.let { crop ->
-                            val x = clampFocal(uiState.draftFocalX, crop.fractionX, zoom)
-                            val y = clampFocal(uiState.draftFocalY, crop.fractionY, zoom)
-                            if (x != uiState.draftFocalX || y != uiState.draftFocalY) {
+                            val x = clampFocal(uiState.draftCrop.focalX, crop.fractionX, zoom)
+                            val y = clampFocal(uiState.draftCrop.focalY, crop.fractionY, zoom)
+                            if (x != uiState.draftCrop.focalX || y != uiState.draftCrop.focalY) {
                                 onEvent(WallpaperUiEvent.FocusChanged(x, y))
                             }
                         }
@@ -375,8 +376,9 @@ private fun CropViewport(
                             }
 
                             val targetAspect = size.width.toFloat() / size.height.toFloat()
-                            val fractionX = min(1f, targetAspect / aspect)
-                            val fractionY = min(1f, aspect / targetAspect)
+                            val crop = cropGeometry(aspect, targetAspect)
+                            val fractionX = crop.fractionX
+                            val fractionY = crop.fractionY
 
                             val newZoom = (gestureZoom * zoomChange).coerceIn(MIN_CROP_ZOOM, MAX_CROP_ZOOM)
                             if (newZoom != gestureZoom) {
@@ -440,7 +442,7 @@ private fun EditorFooter(
     onReset: () -> Unit,
 ) {
     val colors = MaterialTheme.wallmatic
-    val centered = uiState.draftFocalX == 0.5f && uiState.draftFocalY == 0.5f
+    val centered = uiState.draftCrop.focalX == 0.5f && uiState.draftCrop.focalY == 0.5f
 
     Column(
         modifier = modifier
@@ -465,14 +467,14 @@ private fun EditorFooter(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = zoomLabel(uiState.draftZoom),
+                    text = zoomLabel(uiState.draftCrop.zoom),
                     style = WallmaticTextStyles.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = colors.ink,
                 )
             }
 
             ZoomRail(
-                zoom = uiState.draftZoom,
+                zoom = uiState.draftCrop.zoom,
                 onZoomChange = onZoomChange,
             )
 
@@ -487,7 +489,7 @@ private fun EditorFooter(
                 )
                 TextAction(
                     text = "Reset",
-                    enabled = !centered || uiState.draftZoom != 1f,
+                    enabled = !centered || uiState.draftCrop.zoom != 1f,
                     onClick = onReset,
                 )
             }
@@ -590,7 +592,9 @@ private fun ZoomRail(
     }
 }
 
-private val ZoomTicks = listOf(1f, 1.5f, 2f, 2.5f, 3f, 3.5f, 4f)
+private val ZoomTicks = List(7) { index ->
+    MIN_CROP_ZOOM + (MAX_CROP_ZOOM - MIN_CROP_ZOOM) * index / 6f
+}
 
 private fun zoomFraction(zoom: Float): Float = ((zoom - MIN_CROP_ZOOM) / (MAX_CROP_ZOOM - MIN_CROP_ZOOM))
     .coerceIn(0f, 1f)
@@ -606,10 +610,10 @@ private data class CropGeometry(
     val fractionY: Float,
 )
 
-private fun cropGeometry(sourceAspect: Float, targetAspect: Float): CropGeometry = CropGeometry(
-    fractionX = min(1f, targetAspect / sourceAspect),
-    fractionY = min(1f, sourceAspect / targetAspect),
-)
+private fun cropGeometry(sourceAspect: Float, targetAspect: Float): CropGeometry {
+    val box = cropBox(sourceAspect, targetAspect, WallpaperCrop.Default)
+    return CropGeometry(fractionX = box.width, fractionY = box.height)
+}
 
 private fun clampFocal(focal: Float, fraction: Float, zoom: Float): Float {
     val half = fraction / (2f * zoom)
@@ -636,12 +640,10 @@ private fun GraphicsLayerScope.applyCropTransform(
 
     val targetAspect = size.width / size.height
     val sourceHeight = 1f / sourceAspect
-    val cropWidth = min(1f, targetAspect / sourceAspect) / zoom
-    val cropHeight = min(1f, sourceAspect / targetAspect) * sourceHeight / zoom
+    val box = cropBox(sourceAspect, targetAspect, WallpaperCrop(focalX, focalY, zoom))
+    val cropWidth = box.width
+    val cropHeight = box.height
     if (cropWidth <= 0f || cropHeight <= 0f) return
-
-    val left = (focalX - cropWidth / 2f).coerceIn(0f, 1f - cropWidth)
-    val top = (focalY * sourceHeight - cropHeight / 2f).coerceIn(0f, sourceHeight - cropHeight)
 
     val fit = min(size.width, size.height / sourceHeight)
     val scale = size.width / cropWidth / fit
@@ -651,8 +653,8 @@ private fun GraphicsLayerScope.applyCropTransform(
     scaleX = scale
     scaleY = scale
     transformOrigin = TransformOrigin(0f, 0f)
-    translationX = -left * (size.width / cropWidth) - scale * offsetX
-    translationY = -top * (size.height / cropHeight) - scale * offsetY
+    translationX = -box.left * (size.width / cropWidth) - scale * offsetX
+    translationY = -box.top * (size.height / cropHeight) - scale * offsetY
     clip = true
 }
 
@@ -678,7 +680,7 @@ private fun WallpaperViewPreview() {
         Wallpaper(
             uiState = WallpaperUiState(
                 isLoading = false,
-                wallpaper = Wallpaper(uri = "").apply { id = 1 },
+                wallpaper = Wallpaper(uri = "", albumId = 1).apply { id = 1 },
             ),
             onEvent = {},
         )
@@ -693,7 +695,7 @@ private fun WallpaperEditPreview() {
         Wallpaper(
             uiState = WallpaperUiState(
                 isLoading = false,
-                wallpaper = Wallpaper(uri = "").apply { id = 1 },
+                wallpaper = Wallpaper(uri = "", albumId = 1).apply { id = 1 },
                 mode = WallpaperMode.Edit,
             ),
             onEvent = {},
@@ -711,14 +713,11 @@ private fun WallpaperEditAdjustedPreview() {
                 isLoading = false,
                 wallpaper = Wallpaper(
                     uri = "",
-                    cropFocalX = 0.42f,
-                    cropFocalY = 0.5f,
-                    cropZoom = 2f,
+                    albumId = 1,
+                    crop = WallpaperCrop(focalX = 0.42f, focalY = 0.5f, zoom = 2f),
                 ).apply { id = 1 },
                 mode = WallpaperMode.Edit,
-                draftFocalX = 0.38f,
-                draftFocalY = 0.5f,
-                draftZoom = 2.5f,
+                draftCrop = WallpaperCrop(focalX = 0.38f, focalY = 0.5f, zoom = 2.5f),
             ),
             onEvent = {},
         )
@@ -730,6 +729,9 @@ private fun WallpaperEditAdjustedPreview() {
 @Composable
 private fun WallpaperMissingPreview() {
     WallmaticTheme {
-        Wallpaper(uiState = WallpaperUiState(isLoading = false, isMissing = true), onEvent = {})
+        Wallpaper(
+            uiState = WallpaperUiState(isLoading = false, wallpaper = null),
+            onEvent = {},
+        )
     }
 }

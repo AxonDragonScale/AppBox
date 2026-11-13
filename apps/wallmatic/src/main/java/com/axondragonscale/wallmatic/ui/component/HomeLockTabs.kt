@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -19,7 +20,6 @@ import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
-import java.util.Locale
 
 /**
  * Created by Ronak Harkhani on 12/11/26
@@ -40,10 +40,10 @@ fun HomeLockTabs(
         indicator = RuledIndicator.Bottom,
         border = true,
         dividerColor = MaterialTheme.wallmatic.ink,
-        role = androidx.compose.ui.semantics.Role.Tab,
+        role = Role.Tab,
     ) { target, isSelected ->
         Text(
-            text = target.name.uppercase(Locale.ROOT),
+            text = target.label,
             style = WallmaticTextStyles.microStrong,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
             color = if (isSelected) {

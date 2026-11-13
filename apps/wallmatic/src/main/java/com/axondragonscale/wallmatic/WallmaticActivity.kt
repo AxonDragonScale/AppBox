@@ -11,20 +11,17 @@ import androidx.lifecycle.lifecycleScope
 import com.axondragonscale.commons.isDarkTheme
 import com.axondragonscale.commons.logD
 import com.axondragonscale.wallmatic.background.UpdateCoordinator
-import com.axondragonscale.wallmatic.core.SyncManager
-import com.axondragonscale.wallmatic.repository.AppPrefsRepository
+import com.axondragonscale.wallmatic.repository.PreferencesRepository
 import com.axondragonscale.wallmatic.ui.WallmaticApp
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 
 class WallmaticActivity : ComponentActivity() {
 
-    private val appPrefsRepository: AppPrefsRepository by inject()
-    private val syncManager: SyncManager by inject()
+    private val preferencesRepository: PreferencesRepository by inject()
     private val updateCoordinator: UpdateCoordinator by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,18 +31,16 @@ class WallmaticActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        val initialUiMode = runBlocking { appPrefsRepository.uiModeFlow.first() }
-        val initialDynamicTheme = runBlocking { appPrefsRepository.dynamicThemeFlow.first() }
+        val initialUiMode = runBlocking { preferencesRepository.uiMode.get() }
+        val initialDynamicTheme = runBlocking { preferencesRepository.dynamicTheme.get() }
 
         // Syncing in onStart races with the picker closing and writing the same albums.
-        lifecycleScope.launch(Dispatchers.IO) {
-            syncManager.syncAlbums()
-        }
+        lifecycleScope.launch(Dispatchers.IO) { updateCoordinator.refresh() }
 
         setContent {
-            val uiMode by appPrefsRepository.uiModeFlow
+            val uiMode by preferencesRepository.uiMode.flow
                 .collectAsStateWithLifecycle(initialValue = initialUiMode)
-            val dynamicTheme by appPrefsRepository.dynamicThemeFlow
+            val dynamicTheme by preferencesRepository.dynamicTheme.flow
                 .collectAsStateWithLifecycle(initialValue = initialDynamicTheme)
 
             WallmaticTheme(
@@ -59,7 +54,7 @@ class WallmaticActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        lifecycleScope.launch(Dispatchers.IO) { updateCoordinator.reconcile() }
+        lifecycleScope.launch(Dispatchers.IO) { updateCoordinator.applyIfDue() }
     }
 
 }

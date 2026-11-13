@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.theme.Dimens
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
@@ -37,8 +38,7 @@ fun AlbumCard(
     modifier: Modifier = Modifier,
     title: String,
     subtitle: String,
-    coverUri: String?,
-    coverCrop: WallpaperCrop? = null,
+    cover: Wallpaper?,
     target: String? = null,
     captionPadding: PaddingValues = PaddingValues(top = 6.dp),
     interactive: Boolean = true,
@@ -52,13 +52,13 @@ fun AlbumCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(Dimens.TileAspectRatio),
-            uri = coverUri,
-            crop = coverCrop,
+            uri = cover?.uri,
+            crop = cover?.crop ?: WallpaperCrop.Default,
             interactive = interactive,
             onClick = onClick,
             onLongClick = onLongClick,
         ) {
-            if (coverUri.isNullOrBlank()) {
+            if (cover?.uri.isNullOrBlank()) {
                 EmptyPreviewMark(modifier = Modifier.align(Alignment.Center))
             }
 
@@ -119,7 +119,7 @@ private fun AlbumCardPreview() {
                 modifier = Modifier.width(178.dp),
                 title = "Test",
                 subtitle = "1 Folder · 24 Wallpapers",
-                coverUri = null,
+                cover = null,
                 target = "Home",
                 onClick = {},
             )

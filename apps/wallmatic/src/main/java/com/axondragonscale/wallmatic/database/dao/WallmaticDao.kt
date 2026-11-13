@@ -15,43 +15,58 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface WallmaticDao {
 
-    // Get All
+    // region Observe
 
-    @Query("SELECT * FROM album")
-    fun getAlbums(): Flow<List<Album>>
+    @Query("SELECT * FROM album ORDER BY id")
+    fun observeAlbums(): Flow<List<Album>>
 
-    @Query("SELECT * FROM folder WHERE id in (:ids)")
-    suspend fun getFolders(ids: List<Int>): List<Folder>
+    @Query("SELECT * FROM folder ORDER BY id")
+    fun observeFolders(): Flow<List<Folder>>
 
-    @Query("SELECT * FROM wallpaper WHERE id IN (:ids) ORDER BY isBlacklisted")
-    suspend fun getWallpapers(ids: List<Int>): List<Wallpaper>
+    @Query("SELECT * FROM wallpaper ORDER BY isBlacklisted, id")
+    fun observeWallpapers(): Flow<List<Wallpaper>>
 
-    @Query("SELECT * FROM wallpaper WHERE id IN (:ids) ORDER BY isBlacklisted")
-    fun getWallpapersFlow(ids: List<Int>): Flow<List<Wallpaper>>
+    // endregion
 
-    @Query(
-        "SELECT id, uri, cropFocalX, cropFocalY, cropZoom FROM wallpaper " +
-            "WHERE cropZoom > 1.0 OR cropFocalX != 0.5 OR cropFocalY != 0.5 ORDER BY id"
-    )
-    fun getCustomCropsFlow(): Flow<List<WallpaperCropRow>>
-
-    // Get One
+    // region Read
 
     @Query("SELECT * FROM album WHERE id = :id")
     suspend fun getAlbum(id: Int): Album?
 
-    @Query("SELECT * FROM folder WHERE id = :id")
-    suspend fun getFolder(id: Int): Folder?
+    @Query("SELECT * FROM folder WHERE albumId = :albumId ORDER BY id")
+    suspend fun getFolders(albumId: Int): List<Folder>
 
     @Query("SELECT * FROM wallpaper WHERE id = :id")
     suspend fun getWallpaper(id: Int): Wallpaper?
 
-    // Update
+    @Query("SELECT * FROM wallpaper WHERE albumId = :albumId AND folderId IS NULL ORDER BY isBlacklisted, id")
+    suspend fun getDirectWallpapers(albumId: Int): List<Wallpaper>
 
-    @Query("UPDATE wallpaper SET cropFocalX = :focalX, cropFocalY = :focalY, cropZoom = :zoom WHERE id = :id")
+    @Query("SELECT * FROM wallpaper WHERE folderId = :folderId ORDER BY isBlacklisted, id")
+    suspend fun getFolderWallpapers(folderId: Int): List<Wallpaper>
+
+    @Query("SELECT uri FROM wallpaper WHERE albumId = :albumId")
+    suspend fun getAlbumWallpaperUris(albumId: Int): List<String>
+
+    @Query("SELECT folderUri FROM folder WHERE albumId = :albumId")
+    suspend fun getAlbumFolderUris(albumId: Int): List<String>
+
+    // endregion
+
+    // region Update
+
+    @Query("UPDATE wallpaper SET focalX = :focalX, focalY = :focalY, zoom = :zoom WHERE id = :id")
     suspend fun updateWallpaperCrop(id: Int, focalX: Float, focalY: Float, zoom: Float)
 
-    // Upsert
+    @Query("UPDATE wallpaper SET isBlacklisted = :blacklisted WHERE id = :id")
+    suspend fun setBlacklisted(id: Int, blacklisted: Boolean)
+
+    @Query("UPDATE album SET name = :name WHERE id = :id")
+    suspend fun updateAlbumName(id: Int, name: String)
+
+    // endregion
+
+    // region Upsert
 
     @Upsert
     suspend fun upsertAlbum(album: Album): Long
@@ -60,66 +75,49 @@ interface WallmaticDao {
     suspend fun upsertFolder(folder: Folder): Long
 
     @Upsert
-    suspend fun upsertWallpaper(wallpaper: Wallpaper): Long
+    suspend fun upsertWallpapers(wallpapers: List<Wallpaper>): LongArray
 
-    @Upsert
-    suspend fun upsertWallpapers(wallpaper: List<Wallpaper>): LongArray
+    @Transaction
+    suspend fun upsertFolderWithWallpapers(folder: Folder, wallpapers: List<Wallpaper>): Int {
+        val folderId = upsertFolder(folder).toInt()
+        upsertWallpapers(wallpapers.map { it.copy(folderId = folderId) })
+        return folderId
+    }
 
-    // Delete
+    // endregion
 
-    @Query("DELETE FROM album WHERE id = :id")
-    suspend fun deleteAlbum(id: Int)
+    // region Delete
 
-    @Query("DELETE FROM folder WHERE id IN (:ids)")
-    suspend fun deleteFolders(ids: List<Int>)
+    @Query("DELETE FROM wallpaper WHERE id = :id")
+    suspend fun deleteWallpaper(id: Int)
+
+    @Query("DELETE FROM wallpaper WHERE folderId = :folderId")
+    suspend fun deleteFolderWallpapers(folderId: Int)
+
+    @Query("DELETE FROM wallpaper WHERE albumId = :albumId")
+    suspend fun deleteAlbumWallpapers(albumId: Int)
 
     @Query("DELETE FROM folder WHERE id = :id")
     suspend fun deleteFolder(id: Int)
 
-    @Query("DELETE FROM wallpaper WHERE id IN (:ids)")
-    suspend fun deleteWallpapers(ids: List<Int>)
+    @Query("DELETE FROM folder WHERE albumId = :albumId")
+    suspend fun deleteAlbumFolders(albumId: Int)
+
+    @Query("DELETE FROM album WHERE id = :id")
+    suspend fun deleteAlbum(id: Int)
 
     @Transaction
     suspend fun deleteFullAlbum(id: Int) {
-        val album = getAlbum(id) ?: return
-        val folders = getFolders(album.folderIds)
-        deleteAlbum(album.id)
-        deleteFolders(album.folderIds)
-        deleteWallpapers(album.wallpaperIds + folders.flatMap { it.wallpapers })
+        deleteAlbumWallpapers(id)
+        deleteAlbumFolders(id)
+        deleteAlbum(id)
     }
 
     @Transaction
     suspend fun deleteFullFolder(id: Int) {
-        val folder = getFolder(id) ?: return
-        deleteFolder(folder.id)
-        deleteWallpapers(folder.wallpapers)
+        deleteFolderWallpapers(id)
+        deleteFolder(id)
     }
 
-
-    // Delete All
-
-    @Query("DELETE FROM album")
-    suspend fun deleteAllAlbums()
-
-    @Query("DELETE FROM folder")
-    suspend fun deleteAllFolders()
-
-    @Query("DELETE FROM wallpaper")
-    suspend fun deleteAllWallpapers()
-
-    @Transaction
-    suspend fun deleteAllData() {
-        deleteAllAlbums()
-        deleteAllFolders()
-        deleteAllWallpapers()
-    }
+    // endregion
 }
-
-/** A wallpaper's URI with its non-default crop, for covers that only keep a URI snapshot. */
-data class WallpaperCropRow(
-    val id: Int,
-    val uri: String,
-    val cropFocalX: Float,
-    val cropFocalY: Float,
-    val cropZoom: Float,
-)

@@ -14,22 +14,33 @@ This document covers the wallpaper update system: what triggers a cycle, how the
 ## The rule
 
 ```
-nextUpdate = lastUpdated + updateInterval
+nextUpdate = lastUpdated + interval
 ```
 
 A cycle is due once `nextUpdate` has passed. Every trigger runs the same rule — apply if due, then leave exactly one wake-up armed. The schedule is derived from `lastUpdated` in the DataStore, never encoded in a chain of enqueued work, so a lost trigger costs at most one cycle and any later trigger repairs it.
 
-`UpdateCoordinator.reconcile()` is the only implementation, guarded by a `Mutex` so an alarm, an app start and a fallback run cannot apply twice.
+`UpdateCoordinator.applyIfDue()` is the only scheduled entry point, guarded by a `Mutex` so an alarm,
+an app start and a fallback run cannot apply twice.
 
 | Outcome of the attempt | Next wake-up |
 |---|---|
 | `Updated` | `nextUpdate` computed from the new `lastUpdated`, plus an enqueued `SyncWorker` |
 | `NotDue` | `nextUpdate` |
-| `Failed` | `now + updateInterval`, clamped to 1–5 minutes, plus an enqueued `SyncWorker` |
-| `Skipped` | `now + updateInterval` — never retried early |
-| config missing, `isInit` false, or auto-cycle off everywhere | alarm cancelled |
+| `Failed` | `now + interval`, clamped to 1–5 minutes, plus an enqueued `SyncWorker` |
+| `Skipped` | `now + interval` — never retried early |
+| config missing or not initialised | alarm cancelled |
 
-`Skipped` does not advance `lastUpdated`; a `Failed` attempt advances it only when at least one screen applied. When nothing applied, `nextUpdate` is already in the past and arming it would tick again immediately. Failures are also recorded in `lastFailedAt` / `failedTarget` for the Home screen, and `reconcile()` retries that target directly — so a partial apply (one screen succeeded, the other failed) is not blocked by the advanced `lastUpdated`. The two outcomes are treated differently because they age differently: a failed apply can clear on its own, so it retries within 1–5 minutes and enqueues `SyncWorker` so a wallpaper deleted from disk is pruned before the retry picks again. A skip is a condition only the user can clear — the album is gone, or every wallpaper in it is blacklisted — so it waits a full interval instead of burning a wake-up every few minutes on something that cannot change. `Skipped` deliberately does not enqueue `SyncWorker`: a permanently skipped album would otherwise rescan its SAF folders on every cycle.
+`Skipped` does not advance `lastUpdated`; a `Failed` attempt advances it only when at least one
+screen applied. When nothing applied, `nextUpdate` is already in the past and arming it would tick
+again immediately. A failure is also recorded in the config's `failure` (`target` + `at`), and
+`cycleIfDue()` retries that target directly — so a partial apply (one screen succeeded, the other
+failed) is not blocked by the advanced `lastUpdated`. The two outcomes are treated differently
+because they age differently: a failed apply can clear on its own, so it retries within 1–5 minutes
+and enqueues `SyncWorker` so a wallpaper deleted from disk is pruned before the retry picks again. A
+skip is a condition only the user can clear — the album is gone, or every wallpaper in it is
+blacklisted — so it waits a full interval instead of burning a wake-up every few minutes on
+something that cannot change. `Skipped` deliberately does not enqueue `SyncWorker`: a permanently
+skipped album would otherwise rescan its SAF folders on every cycle.
 
 ## TickScheduler — the timer
 
@@ -54,35 +65,58 @@ One receiver for everything that starts or invalidates a tick.
 | `TIME_SET`, `TIMEZONE_CHANGED` | an `RTC` trigger is wall-clock, so the deadline must be re-armed after a clock change |
 | `MY_PACKAGE_REPLACED` | an app update clears all alarms |
 
-`onReceive` arms a provisional tick at `now + MAX_RETRY_DELAY_MILLIS` *before* calling `goAsync()`. The alarm that fired has already been consumed, so without this a process death during the update would leave nothing armed at all. `reconcile()` overwrites the provisional with the exact deadline.
+`onReceive` arms a provisional tick at `now + UpdateCoordinator.MAX_RETRY_DELAY` *before* calling
+`goAsync()`. The alarm that fired has already been consumed, so without this a process death during
+the update would leave nothing armed at all. `applyIfDue()` overwrites the provisional with the exact
+deadline.
 
 ## FallbackWorker — the durability net
 
-A 15-minute periodic `CoroutineWorker` whose whole body is `reconcile()`. It is not the timer and its imprecision does not matter: in the normal case it finds the cycle not due and does a single DataStore read.
+A 15-minute periodic `CoroutineWorker` whose whole body is `applyIfDue()`. It is not the timer and its imprecision does not matter: in the normal case it finds the cycle not due and does a single DataStore read.
 
 It exists because an alarm lives in `system_server` and can be cleared without the app ever learning about it — OEM battery managers, force-stops, an update whose broadcast was missed. WorkManager persists its own state in a database and reschedules after a reboot, so this is the layer that cannot silently vanish. Both layers evaluate the same idempotent rule, so running them together is harmless.
 
 ## SyncWorker
 
-Plain one-shot `CoroutineWorker` (unique work name, `KEEP`) that runs `SyncManager.syncAlbums()`. Enqueued by `UpdateCoordinator` after an applied or failed cycle, and called directly by `WallmaticActivity.onCreate`.
+Plain one-shot `CoroutineWorker` (unique work name, `KEEP`) that runs
+`UpdateCoordinator.refresh()` — `AlbumSyncer.syncAlbums()` outside the mutex, then
+`ConfigReconciler.reconcile()` under it. Enqueued by `UpdateCoordinator` after an applied or failed
+cycle, and called directly by `WallmaticActivity.onCreate` and the Dev Tools sync action.
 
-It is deliberately off the timed path: `syncAlbums()` scans SAF folders and can take seconds, while a tick runs inside the ~10-second window a doze-exempt alarm grants a receiver. Applying a wallpaper only needs Room, so the tick stays IO-bound.
+It is deliberately off the timed path: `syncAlbums()` scans SAF folders and can take seconds, while
+a tick runs inside the ~10-second window a doze-exempt alarm grants a receiver. Applying a wallpaper
+only needs Room, so the tick stays IO-bound. The reconcile half is cheap — Room and config only,
+never the filesystem.
 
-## WallpaperUpdater (`apps/wallmatic/src/main/java/com/axondragonscale/wallmatic/core/WallpaperUpdater.kt`)
+## WallpaperCycler and WallpaperApplier
 
-Core logic for selecting and applying wallpapers.
+`WallpaperCycler` owns selection, persistence and the cadence rule; `WallpaperApplier` owns the
+Android half of an apply. The cycler never decodes a bitmap and the applier never reads config.
 
-- No-arg `updateWallpaper()`: reads config, checks if the interval has passed, determines target (`Home` / `Lock` / `Both`), delegates to the `TargetScreen` overload. Returns `NotDue` if the interval has not elapsed, `Skipped` when nothing was applied for a non-failure reason (unusable config, album missing, empty album whitelist), otherwise whatever the delegated update returned. A `Skipped` is permanent from the scheduler's point of view — it is reported once per interval, not retried
-- `updateWallpaper(target)`: loads album(s), picks random wallpaper(s), applies each with `setWallpaper()`, then persists config for the screens that actually applied — `currentWallpaperId` per applied screen, `lastUpdated` as soon as at least one screen applied. Returns `Updated`, `Skipped(reason)` (config null / not initialised / album missing / album has no whitelisted wallpaper) or `Failed(cause)`. `setWallpaper()` streams a wallpaper with no custom crop and decodes one with a crop — both paths are in [Wallmatic context](./context.md#apply). A missing file or a revoked URI grant is a failure, not a leaked descriptor
+### WallpaperCycler (`apps/wallmatic/src/main/java/com/axondragonscale/wallmatic/core/WallpaperCycler.kt`)
+
+- `cycleIfDue()`: reads config and honours the interval. Config missing or not initialised → `Skipped`. A recorded `failure` → `cycle(failure.target)` immediately. A non-null `nextUpdate` still in the future → `NotDue`; a null `nextUpdate` (never applied) is due. Otherwise it resolves the due target from the configured albums (`Home`, `Lock`, or `Both`) and delegates to `cycle(target)`; nothing configured → `Skipped`
+- `cycle(target)`: loads the album(s), picks a random non-blacklisted wallpaper per applied screen and applies each through `WallpaperApplier.apply()`, then persists config for the screens that actually applied — `currentWallpaperId` per applied screen, `lastUpdated` as soon as one screen applied. Returns `Updated`, `Skipped(reason)` (config null / not initialised / album missing / album has no whitelisted wallpaper) or `Failed(cause)`. A missing file or a revoked URI grant is a failure, not a leaked descriptor
 - An album whose whitelist is empty (every wallpaper blacklisted) is not a failure: `getRandomWallpaperOrNull()` returns `null`, that screen is skipped with a warning naming the album id, and the other screen is still applied. If no screen applied and nothing threw, the result is `Skipped(reason)`; a failure cause always wins over a skip reason, and `Failed` stays reserved for an apply that actually failed
-- A failed apply is never persisted as a success: if nothing applied, `lastUpdated` stays unadvanced, `lastFailedAt` and `failedTarget` are recorded, and `Failed` is returned. If only some screens applied, the successes are persisted, `lastUpdated` advances, `lastFailedAt` is still recorded and `Failed` carries the first failure. A fully clean apply clears `lastFailedAt` to `-1`
-- `lastFailedAt` / `failedTarget` are what the Home screen's `LAST UPDATE FAILED` row reads; `reconcile()` retries the recorded target directly, and a clean apply to the target that failed clears the record
-- When `mirrorHomeConfigForLock = true`: single pick from home album applied to both screens
-- The explicit `TargetScreen` overload bypasses the interval check — used by `UpdateCoordinator.applyNow()` for tiles and explicit album changes
+- A failed apply is never persisted as a success: if nothing applied, `lastUpdated` stays unadvanced and a `WallpaperFailure` is recorded; if only some screens applied, the successes are persisted and `lastUpdated` advances, while `Failed` carries the first failure. A successful apply that resolves the failed target clears the record
+- `applyWallpaper(wallpaper, target)` skips the random pick but otherwise records exactly like a cycle apply. Mirroring goes through one `effectiveTarget` rule, so any request — `Set Home` included — is applied and recorded as `Both`; Home and Lock cannot diverge. `reapply(wallpaper)` resolves the screens already showing it through `config.currentTargetFor()` and returns `NotDue` when it is not current anywhere
+- When `mirrorHomeForLock = true`: one pick from the home album is applied to both screens, and every apply and record is `Both`
+- The explicit `cycle(target)` bypasses the interval check — used by `UpdateCoordinator.applyNow()` for tiles, album changes and the failure row's `RETRY`
+- A failed `applyWallpaper` returns `Failed` but does not record a `WallpaperFailure`, so the schedule keeps its existing deadline and does not retry that target
+
+### WallpaperApplier
+
+`apply(wallpaper, target)` returns a `Result` and never throws. It streams a wallpaper with no custom
+crop and decodes one with a crop — both paths are in [Wallmatic context](./context.md#apply).
+`applySize()` and `sourceSize()` expose the target bounds and the probed source dimensions for Dev
+Tools.
 
 ## Quick Settings Tiles
 
-Three `TileService`s for immediate manual wallpaper changes from the notification shade:
+Three `TileService`s for immediate manual wallpaper changes from the notification shade, all in
+`apps/wallmatic/src/main/java/com/axondragonscale/wallmatic/background/TileServices.kt`. They extend
+`TargetTileService`, which owns the tap handling and the injected `UpdateCoordinator`; each subclass
+only declares its target.
 
 | Service | Target | Icon |
 |---|---|---|
@@ -95,8 +129,9 @@ Tile taps call `UpdateCoordinator.applyNow(target)`: the interval check is bypas
 `Set Home` / `Set Lock` / `Set Both` in a wallpaper's long-press menu takes the same mutex-guarded
 path through `UpdateCoordinator.applyWallpaper()`: the chosen wallpaper is applied immediately,
 `currentWallpaperId` is written for the targets actually applied (`Both` writes both), and
-`lastUpdated` advances before the tick is re-armed. A failed apply is not recorded as current and
-leaves the bounded retry in charge.
+`lastUpdated` advances before the tick is re-armed. With mirroring on, every target is applied and
+recorded as `Both`. A failed apply is not recorded as current and, unlike a cycle failure, records no
+`WallpaperFailure`, so the schedule keeps its deadline instead of retrying that target.
 
 ## Saving a crop
 
@@ -104,38 +139,38 @@ Saving in the editor's edit mode writes only the three crop columns, then asks t
 re-apply the wallpaper if it is already showing:
 
 ```
-1. Wallpaper editor (edit mode) → UPDATE wallpaper SET cropFocalX / cropFocalY / cropZoom WHERE id
+1. Wallpaper editor (edit mode) → UPDATE wallpaper SET focalX / focalY / zoom WHERE id
        ↓
 2. UpdateCoordinator.reapply(wallpaper)               (mutex)
        ↓
 3. Config.currentTargetFor(wallpaperId) → Home / Lock / Both, or null
        ↓
-4. WallpaperUpdater.applyWallpaper()    → setWallpaper() + currentWallpaperId, lastUpdated
+4. WallpaperCycler.applyWallpaper()     → applier.apply() + currentWallpaperId, lastUpdated
        ↓
-5. armAfter(Updated)                    → next tick a full interval away
+5. armForResult(Updated)                → next tick a full interval away
 ```
 
-`reapply()` takes the same mutex as `reconcile()`, so a crop save cannot race a scheduled apply.
+`reapply()` takes the same mutex as `applyIfDue()`, so a crop save cannot race a scheduled apply.
 `currentTargetFor` resolves the screens already showing that wallpaper and honours
-`mirrorHomeConfigForLock`, so a mirrored Lock is re-applied as `Both`. The apply is recorded like a
-cycle apply — `currentWallpaperId` per screen and `lastUpdated` — and the schedule is re-armed from
-the new timestamp. A wallpaper that is not current anywhere gets only its crop written; nothing is
-applied and the existing tick stands.
+`mirrorHomeForLock`, so a mirrored Lock is re-applied as `Both`. The apply is recorded like a cycle
+apply — `currentWallpaperId` per screen and `lastUpdated` — and the schedule is re-armed from the new
+timestamp. A wallpaper that is not current anywhere gets only its crop written; nothing is applied
+and the existing tick stands.
 
 ## Data Flows
 
 ### Scheduled cycle
 
 ```
-1. Alarm fires at lastUpdated + updateInterval
+1. Alarm fires at lastUpdated + interval
        ↓
 2. TickReceiver arms a provisional tick, then goAsync()
        ↓
-3. UpdateCoordinator.reconcile()          (mutex)
+3. UpdateCoordinator.applyIfDue()         (mutex)
        ↓
-4. WallpaperUpdater.updateWallpaper()     ← interval check
+4. WallpaperCycler.cycleIfDue()           ← interval check, failure retry
        ↓
-5. setWallpaper() → persist currentWallpaperId + lastUpdated
+5. WallpaperApplier.apply() → persist currentWallpaperId + lastUpdated
        ↓
 6. arm the next tick at the new nextUpdate, enqueue SyncWorker
 ```
@@ -145,32 +180,39 @@ If step 5 applies nothing, step 6 becomes the bounded retry instead, and `SyncWo
 ### App start
 
 ```
-1. WallmaticActivity.onCreate() → SyncManager.syncAlbums()
+1. WallmaticActivity.onCreate() → UpdateCoordinator.refresh()
        ↓
-2. WallmaticActivity.onStart()  → UpdateCoordinator.reconcile()
+2. WallmaticActivity.onStart()  → UpdateCoordinator.applyIfDue()
 ```
 
-`onStart` fires on first launch and on every return to the foreground, including after the system picker closes. `updateWallpaper()` honours the interval, so the normal case is a cheap `NotDue` no-op; an overdue cycle is applied instead of waiting for a deferred alarm. `syncAlbums()` stays in `onCreate` because syncing in `onStart` races with the picker writing the same albums.
+`onStart` fires on first launch and on every return to the foreground, including after the system picker closes. `cycleIfDue()` honours the interval, so the normal case is a cheap `NotDue` no-op; an overdue cycle is applied instead of waiting for a deferred alarm. Syncing stays in `onCreate` because syncing in `onStart` races with the picker writing the same albums.
 
 ### Album or folder deleted
 
 ```
-1. AlbumsVM   → WallmaticDao.deleteFullAlbum()   album + folders + their wallpapers, one transaction
-2. SyncManager.repairConfig()                    resets isInit if the configured album is gone
-3. UpdateCoordinator.reschedule()                re-arms, or cancels when auto-cycle is now off
+1. LibraryVM → WallmaticRepository.deleteFullAlbum()    album + folders + their wallpapers, one transaction
+2. UpdateCoordinator.albumsChanged()                    (mutex)
+3. ConfigReconciler.reconcile()                         clears that screen's album if the configured
+                                                        album is gone, else re-applies a stale
+                                                        current wallpaper
+4. armForResult(result)                                 re-arms from the reconcile apply or the current nextUpdate
 ```
 
-Deleting a folder or a wallpaper from the album screen goes through `AlbumManager`, which deletes the rows and then re-reads the join to drop dangling ids and recompute the cover. A folder whose last wallpaper was removed is deleted, matching `syncAlbums()`.
+Deleting a folder from the album screen goes through `AlbumEditor.removeFolder`, which calls
+`deleteFullFolder` to remove the folder and its wallpapers in one transaction. There is no
+single-wallpaper delete action: `AlbumSyncer` prunes a wallpaper row when its file disappears, and
+deletes a folder whose last wallpaper is gone. There are no dangling id lists to re-read and no cover
+to recompute, because ownership lives on the child and covers are derived.
 
 ### Reboot / app update
 
 ```
 1. BOOT_COMPLETED or MY_PACKAGE_REPLACED
        ↓
-2. TickReceiver → reconcile() → tick re-armed, fallback re-ensured
+2. TickReceiver → applyIfDue() → tick re-armed, fallback re-ensured
 ```
 
-A clock change needs no immediate update: the next run re-evaluates `lastUpdated + updateInterval` itself.
+A clock change needs no immediate update: the next run re-evaluates `lastUpdated + interval` itself.
 
 ## Permissions
 

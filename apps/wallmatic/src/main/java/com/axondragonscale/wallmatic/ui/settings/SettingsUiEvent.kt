@@ -9,6 +9,6 @@ internal sealed interface SettingsUiEvent {
     data class UIModeUpdated(val uiMode: UIMode) : SettingsUiEvent
     data class DynamicThemeToggled(val dynamicTheme: Boolean) : SettingsUiEvent
     data class GridSizedUpdated(val gridSize: Int): SettingsUiEvent
-    data class MirrorHomeConfigForLockToggled(val enabled: Boolean) : SettingsUiEvent
+    data class MirrorHomeForLockToggled(val enabled: Boolean) : SettingsUiEvent
     data object NavigateToDevTools : SettingsUiEvent
 }

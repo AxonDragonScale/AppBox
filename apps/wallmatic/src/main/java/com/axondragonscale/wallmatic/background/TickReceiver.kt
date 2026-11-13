@@ -38,13 +38,13 @@ class TickReceiver : BroadcastReceiver(), KoinComponent {
         TAG.logD { "onReceive: $action" }
 
         // The alarm that fired is already consumed. Arm a replacement before anything can suspend,
-        // so a process death during the update cannot leave no wake-up at all; reconcile refines it.
-        tickScheduler.armAt(System.currentTimeMillis() + UpdateCoordinator.MAX_RETRY_DELAY_MILLIS)
+        // so a process death during the update cannot leave no wake-up at all; applyIfDue refines it.
+        tickScheduler.armAt(System.currentTimeMillis() + UpdateCoordinator.MAX_RETRY_DELAY.inWholeMilliseconds)
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                updateCoordinator.reconcile()
+                updateCoordinator.applyIfDue()
             } finally {
                 pendingResult.finish()
             }

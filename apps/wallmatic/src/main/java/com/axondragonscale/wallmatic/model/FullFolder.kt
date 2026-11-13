@@ -8,7 +8,8 @@ import com.axondragonscale.wallmatic.database.entity.Wallpaper
 data class FullFolder(
     val id: Int,
     val name: String,
-    val coverUri: String?,
     val folderUri: String,
     val wallpapers: List<Wallpaper>,
-)
+) {
+    val cover: Wallpaper? get() = wallpapers.firstOrNull()
+}

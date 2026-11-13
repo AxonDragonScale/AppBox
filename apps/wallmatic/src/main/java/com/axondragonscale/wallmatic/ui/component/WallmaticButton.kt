@@ -27,7 +27,7 @@ import java.util.Locale
  * Created by Ronak Harkhani on 12/11/26
  */
 
-enum class WallmaticButtonStyle { Filled, Outline, Text }
+enum class WallmaticButtonStyle { Filled, Outline }
 
 @Composable
 fun WallmaticButton(
@@ -41,18 +41,16 @@ fun WallmaticButton(
     val container = when (style) {
         WallmaticButtonStyle.Filled -> colors.primary
         WallmaticButtonStyle.Outline -> Color.Transparent
-        WallmaticButtonStyle.Text -> Color.Transparent
     }
     val content = when (style) {
         WallmaticButtonStyle.Filled -> colors.onPrimary
         WallmaticButtonStyle.Outline -> colors.ink
-        WallmaticButtonStyle.Text -> colors.primary
     }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(if (style == WallmaticButtonStyle.Text) 40.dp else 48.dp)
+            .height(48.dp)
             .background(container)
             .then(
                 if (style == WallmaticButtonStyle.Outline) {
@@ -89,12 +87,6 @@ private fun WallmaticButtonPreview() {
                 modifier = Modifier.padding(top = 16.dp),
                 text = "Open album",
                 style = WallmaticButtonStyle.Outline,
-                onClick = {},
-            )
-            WallmaticButton(
-                modifier = Modifier.padding(top = 16.dp),
-                text = "Custom interval",
-                style = WallmaticButtonStyle.Text,
                 onClick = {},
             )
         }

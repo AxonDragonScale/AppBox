@@ -5,7 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.axondragonscale.commons.logD
-import com.axondragonscale.wallmatic.ui.util.toTimestampString
+import java.time.Instant
 
 /**
  * Owns the single alarm that drives the auto-cycle.
@@ -30,7 +30,7 @@ class TickScheduler(context: Context) {
         val now = System.currentTimeMillis()
         val triggerAt = triggerAtMillis.coerceAtLeast(now)
         alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
-        this.logD { "Tick armed for ${triggerAt.toTimestampString()} (delay: ${triggerAt - now}ms)" }
+        this.logD { "Tick armed for ${Instant.ofEpochMilli(triggerAt)} (delay: ${triggerAt - now}ms)" }
     }
 
     fun cancel() {

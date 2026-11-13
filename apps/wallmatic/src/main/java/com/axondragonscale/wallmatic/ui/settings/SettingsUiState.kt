@@ -9,5 +9,5 @@ internal data class SettingsUiState(
     val uiMode: UIMode = UIMode.AUTO,
     val dynamicTheme: Boolean = false,
     val gridSize: Int = 2,
-    val mirrorHomeConfigForLock: Boolean = false,
+    val mirrorHomeForLock: Boolean = false,
 )

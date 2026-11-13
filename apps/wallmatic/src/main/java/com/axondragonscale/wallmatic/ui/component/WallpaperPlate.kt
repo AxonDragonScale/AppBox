@@ -24,7 +24,7 @@ import com.axondragonscale.wallmatic.ui.theme.wallmatic
 fun WallpaperPlate(
     modifier: Modifier = Modifier,
     uri: String?,
-    crop: WallpaperCrop? = null,
+    crop: WallpaperCrop = WallpaperCrop.Default,
     interactive: Boolean = true,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,

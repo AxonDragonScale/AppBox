@@ -4,12 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.wallmatic.background.UpdateCoordinator
-import com.axondragonscale.wallmatic.repository.AppPrefsRepository
+import com.axondragonscale.wallmatic.repository.PreferencesRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.ui.Route
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -18,23 +18,25 @@ import kotlinx.coroutines.launch
 class FolderVM(
     private val savedStateHandle: SavedStateHandle,
     private val repository: WallmaticRepository,
-    private val appPrefsRepository: AppPrefsRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val updateCoordinator: UpdateCoordinator,
 ) : ViewModel() {
 
     private val folderId: Int = savedStateHandle.get<Int>(Route.Args.FOLDER_ID)!!
-    private val wallpaperIds = MutableStateFlow<List<Int>>(emptyList())
     val uiState = MutableStateFlow(FolderUiState())
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            appPrefsRepository.gridSizeFlow.collect { gridSize ->
-                uiState.value = uiState.value.copy(gridSize = gridSize)
-            }
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            syncUiStateWithFolder()
-            observeWallpapers()
+            combine(
+                preferencesRepository.gridSize.flow,
+                repository.observeFullFolders(),
+            ) { gridSize, folders ->
+                FolderUiState(
+                    isLoading = false,
+                    gridSize = gridSize,
+                    folder = folders.firstOrNull { it.id == folderId },
+                )
+            }.collect { uiState.value = it }
         }
     }
 
@@ -48,48 +50,17 @@ class FolderVM(
         is FolderUiEvent.ShowWallpaperActions -> Unit
     }
 
-    private suspend fun syncUiStateWithFolder() {
-        val folder = repository.getFullFolder(folderId)
-        uiState.value = uiState.value.copy(isLoading = false, folder = folder)
-        wallpaperIds.value = folder?.wallpapers?.map { it.id }.orEmpty()
-    }
-
-    /** Keeps the grid's wallpapers live, so a crop saved elsewhere repaints without a reload. */
-    private suspend fun observeWallpapers() = wallpaperIds.collectLatest { ids ->
-        if (ids.isEmpty()) return@collectLatest
-        repository.getWallpapersFlow(ids).collect { wallpapers ->
-            uiState.value = uiState.value.copy(folder = uiState.value.folder?.copy(wallpapers = wallpapers))
+    private fun onBlacklistWallpaper(event: FolderUiEvent.BlacklistWallpaper) =
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setBlacklisted(event.wallpaper.id, true)
         }
-    }
 
-    private inline fun runAndSyncState(
-        crossinline block: suspend () -> Unit
-    ) = viewModelScope.launch(Dispatchers.IO) {
-        block()
-        syncUiStateWithFolder()
-    }
-
-    private fun onBlacklistWallpaper(
-        event: FolderUiEvent.BlacklistWallpaper,
-    ) = runAndSyncState {
-        repository.updateWallpaper(event.wallpaper.id) {
-            isBlacklisted = true
+    private fun onWhitelistWallpaper(event: FolderUiEvent.WhitelistWallpaper) =
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setBlacklisted(event.wallpaper.id, false)
         }
-        // TODO: Update Cover
-    }
 
-    private fun onWhitelistWallpaper(
-        event: FolderUiEvent.WhitelistWallpaper,
-    ) = runAndSyncState {
-        repository.updateWallpaper(event.wallpaper.id) {
-            isBlacklisted = false
-        }
-        // TODO: Update Cover
-    }
-
-    private fun onSetWallpaper(
-        event: FolderUiEvent.SetWallpaper,
-    ) = viewModelScope.launch(Dispatchers.IO) {
+    private fun onSetWallpaper(event: FolderUiEvent.SetWallpaper) = viewModelScope.launch(Dispatchers.IO) {
         updateCoordinator.applyWallpaper(event.wallpaper, event.target)
     }
 

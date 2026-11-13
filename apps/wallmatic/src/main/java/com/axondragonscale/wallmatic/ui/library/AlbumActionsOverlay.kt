@@ -1,4 +1,4 @@
-package com.axondragonscale.wallmatic.ui.albums
+package com.axondragonscale.wallmatic.ui.library
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -21,9 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.wallmatic.database.entity.Album
+import com.axondragonscale.wallmatic.database.entity.Wallpaper
+import com.axondragonscale.wallmatic.model.FullAlbum
+import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.component.AlbumCard
 import com.axondragonscale.wallmatic.ui.component.ContextMenu
 import com.axondragonscale.wallmatic.ui.component.ContextMenuItem
@@ -39,24 +40,20 @@ import com.axondragonscale.wallmatic.ui.util.countSummary
 /** Scrimmed album plate with the actions menu, as drawn in `10 · Context menu`. */
 @Composable
 fun AlbumActionsOverlay(
-    album: Album,
+    album: FullAlbum,
     targetLabel: String?,
-    activeTargets: Set<TargetScreen>,
-    mirrorEnabled: Boolean,
+    targets: List<TargetScreen>,
     onSetActive: (TargetScreen) -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
-    coverCrop: WallpaperCrop? = null,
 ) {
     WallmaticOverlay(onDismiss = onDismiss) {
         AlbumActionsContent(
             modifier = Modifier.align(Alignment.Center),
             album = album,
             targetLabel = targetLabel,
-            coverCrop = coverCrop,
-            activeTargets = activeTargets,
-            mirrorEnabled = mirrorEnabled,
+            targets = targets,
             onSetActive = onSetActive,
             onRename = onRename,
             onDelete = onDelete,
@@ -67,14 +64,12 @@ fun AlbumActionsOverlay(
 @Composable
 private fun AlbumActionsContent(
     modifier: Modifier = Modifier,
-    album: Album,
+    album: FullAlbum,
     targetLabel: String?,
-    activeTargets: Set<TargetScreen>,
-    mirrorEnabled: Boolean,
+    targets: List<TargetScreen>,
     onSetActive: (TargetScreen) -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
-    coverCrop: WallpaperCrop? = null,
 ) {
     Column(
         modifier = modifier.padding(24.dp),
@@ -85,8 +80,7 @@ private fun AlbumActionsContent(
             modifier = Modifier.width(178.dp),
             title = album.name,
             subtitle = album.countSummary(),
-            coverUri = album.coverUri,
-            coverCrop = coverCrop,
+            cover = album.cover,
             target = targetLabel,
             captionPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
             interactive = false,
@@ -103,35 +97,22 @@ private fun AlbumActionsContent(
                         action = onRename,
                     ),
                 )
-                if (mirrorEnabled) {
-                    if (TargetScreen.Home !in activeTargets) {
-                        add(
-                            ContextMenuItem(
-                                icon = Icons.Filled.CheckCircle,
-                                text = "Set active",
-                                action = { onSetActive(TargetScreen.Both) },
-                            ),
-                        )
-                    }
-                } else {
-                    if (TargetScreen.Home !in activeTargets) {
-                        add(
-                            ContextMenuItem(
-                                icon = Icons.Filled.Home,
-                                text = "Set Home",
-                                action = { onSetActive(TargetScreen.Home) },
-                            ),
-                        )
-                    }
-                    if (TargetScreen.Lock !in activeTargets) {
-                        add(
-                            ContextMenuItem(
-                                icon = Icons.Filled.Lock,
-                                text = "Set Lock",
-                                action = { onSetActive(TargetScreen.Lock) },
-                            ),
-                        )
-                    }
+                targets.forEach { target ->
+                    add(
+                        ContextMenuItem(
+                            icon = when (target) {
+                                TargetScreen.Home -> Icons.Filled.Home
+                                TargetScreen.Lock -> Icons.Filled.Lock
+                                TargetScreen.Both -> Icons.Filled.CheckCircle
+                            },
+                            text = when (target) {
+                                TargetScreen.Home -> "Set Home"
+                                TargetScreen.Lock -> "Set Lock"
+                                TargetScreen.Both -> "Set active"
+                            },
+                            action = { onSetActive(target) },
+                        ),
+                    )
                 }
                 add(
                     ContextMenuItem(
@@ -157,14 +138,9 @@ private fun AlbumActionsPreview() {
             contentAlignment = Alignment.Center,
         ) {
             AlbumActionsContent(
-                album = Album(name = "Test").apply {
-                    id = 1
-                    folderIds = listOf(1)
-                    wallpaperIds = (1..24).toList()
-                },
+                album = previewAlbum(),
                 targetLabel = null,
-                activeTargets = emptySet(),
-                mirrorEnabled = true,
+                targets = listOf(TargetScreen.Both),
                 onSetActive = {},
                 onRename = {},
                 onDelete = {},
@@ -185,14 +161,9 @@ private fun AlbumActionsMirrorOffPreview() {
             contentAlignment = Alignment.Center,
         ) {
             AlbumActionsContent(
-                album = Album(name = "Test").apply {
-                    id = 1
-                    folderIds = listOf(1)
-                    wallpaperIds = (1..24).toList()
-                },
+                album = previewAlbum(),
                 targetLabel = "HOME",
-                activeTargets = setOf(TargetScreen.Home),
-                mirrorEnabled = false,
+                targets = listOf(TargetScreen.Lock),
                 onSetActive = {},
                 onRename = {},
                 onDelete = {},
@@ -200,3 +171,12 @@ private fun AlbumActionsMirrorOffPreview() {
         }
     }
 }
+
+private fun previewAlbum() = FullAlbum(
+    id = 1,
+    name = "Test",
+    folders = listOf(
+        FullFolder(id = 1, name = "Folder", folderUri = "", wallpapers = emptyList()),
+    ),
+    wallpapers = (1..24).map { Wallpaper(uri = "", albumId = 1) },
+)

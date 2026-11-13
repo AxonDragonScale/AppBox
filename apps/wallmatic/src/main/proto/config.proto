@@ -1,21 +1,30 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "com.axondragonscale.wallmatic.model";
+option java_package = "com.axondragonscale.wallmatic.proto";
 
 message Config {
-  bool isInit = 1;
-  int64 updateInterval = 2;
-  int64 lastUpdated = 3;
-  bool mirrorHomeConfigForLock = 4;
-  WallpaperConfig homeConfig = 5;
-  WallpaperConfig lockConfig = 6;
-  int64 lastFailedAt = 7;
-  int32 failedTarget = 8;
+  int64 updateInterval = 1;
+  int64 lastUpdated = 2;
+  bool mirrorHomeForLock = 3;
+  ScreenConfig home = 4;
+  ScreenConfig lock = 5;
+  Failure failure = 6;
 }
 
-message WallpaperConfig {
+message ScreenConfig {
   int32 albumId = 1;
-  bool autoCycleEnabled = 2;
-  int32 currentWallpaperId = 3;
+  int32 currentWallpaperId = 2;
+}
+
+message Failure {
+  Screen target = 1;
+  int64 at = 2;
+}
+
+enum Screen {
+  SCREEN_UNSPECIFIED = 0;
+  SCREEN_HOME = 1;
+  SCREEN_LOCK = 2;
+  SCREEN_BOTH = 3;
 }

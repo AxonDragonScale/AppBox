@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +39,7 @@ import com.axondragonscale.wallmatic.ui.theme.wallmatic
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+
 /**
  * Created by Ronak Harkhani on 12/11/26
  */
@@ -130,7 +132,7 @@ private fun CustomIntervalContent(
                 style = WallmaticTextStyles.titleSmall.copy(
                     fontSize = 16.sp,
                     lineHeight = 20.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontWeight = FontWeight.Bold,
                 ),
                 color = MaterialTheme.wallmatic.ink,
             )

@@ -26,11 +26,11 @@ import androidx.compose.ui.unit.dp
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.WallpaperCrop
-import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.component.WallpaperPlate
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
+import com.axondragonscale.wallmatic.ui.util.countSummary
 
 /**
  * Created by Ronak Harkhani on 12/11/26
@@ -71,7 +71,7 @@ fun FolderCard(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = "${folder.wallpapers.size} ${if (folder.wallpapers.size == 1) "Wallpaper" else "Wallpapers"}",
+                text = folder.countSummary(),
                 style = WallmaticTextStyles.caption,
                 color = colors.inkMuted,
             )
@@ -91,7 +91,7 @@ fun FolderCard(
                         .width(108.dp)
                         .height(240.dp),
                     uri = wallpaper?.uri,
-                    crop = wallpaper?.crop,
+                    crop = wallpaper?.crop ?: WallpaperCrop.Default,
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )
@@ -104,7 +104,7 @@ fun FolderCard(
 private fun FolderStrip(
     modifier: Modifier = Modifier,
     uri: String?,
-    crop: WallpaperCrop?,
+    crop: WallpaperCrop,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -133,9 +133,8 @@ private fun FolderCardPreview() {
                 folder = FullFolder(
                     id = 1,
                     name = "Wallpapers",
-                    coverUri = null,
                     folderUri = "",
-                    wallpapers = (1..3).map { Wallpaper(uri = "").apply { id = it } },
+                    wallpapers = (1..3).map { Wallpaper(uri = "", albumId = 1).apply { id = it } },
                 ),
                 onClick = {},
                 onLongClick = {},

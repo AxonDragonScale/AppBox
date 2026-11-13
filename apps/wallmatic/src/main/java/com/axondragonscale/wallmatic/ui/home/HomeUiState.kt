@@ -1,24 +1,21 @@
 package com.axondragonscale.wallmatic.ui.home
 
-import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
-import com.axondragonscale.wallmatic.model.Config
+import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.model.WallpaperCrop
-import com.axondragonscale.wallmatic.util.albumIdFor
+import com.axondragonscale.wallmatic.model.WallmaticConfig
 
 /**
  * Created by Ronak Harkhani on 22/06/24
  */
 data class HomeUiState(
     val isLoading: Boolean = true,
-    val albums: List<Album> = emptyList(),
-    val config: Config = Config.getDefaultInstance(),
+    val albums: List<FullAlbum> = emptyList(),
+    val config: WallmaticConfig = WallmaticConfig(),
     val homeWallpaper: Wallpaper? = null,
     val lockWallpaper: Wallpaper? = null,
-    val coverCrops: Map<String, WallpaperCrop> = emptyMap(),
 ) {
-    fun albumFor(target: TargetScreen): Album? =
+    fun albumFor(target: TargetScreen): FullAlbum? =
         albums.firstOrNull { it.id == config.albumIdFor(target) }
 
     fun wallpaperFor(target: TargetScreen): Wallpaper? = when (target) {

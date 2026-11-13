@@ -8,21 +8,12 @@ import com.axondragonscale.wallmatic.database.entity.Wallpaper
 data class FullAlbum(
     val id: Int,
     val name: String,
-    val coverUri: String?,
     val folders: List<FullFolder>,
     val wallpapers: List<Wallpaper>,
-)
+) {
+    val cover: Wallpaper? get() = folders.firstOrNull()?.cover ?: wallpapers.firstOrNull()
+    val allWallpapers: List<Wallpaper> get() = wallpapers + folders.flatMap { it.wallpapers }
+    val hasWallpapers: Boolean get() = allWallpapers.isNotEmpty()
 
-fun FullAlbum.hasWallpapers() =
-    wallpapers.isNotEmpty() || folders.any { it.wallpapers.isNotEmpty() }
-
-fun FullAlbum.getAllWallpapers() =
-    wallpapers + folders.flatMap { it.wallpapers }
-
-fun FullAlbum.getWhitelistedWallpapers() =
-    this.getAllWallpapers().filter { !it.isBlacklisted }
-
-fun FullAlbum.getRandomWallpaperOrNull(): Wallpaper? =
-    getWhitelistedWallpapers().randomOrNull()
-
-
+    fun getRandomWallpaperOrNull(): Wallpaper? = allWallpapers.filter { !it.isBlacklisted }.randomOrNull()
+}

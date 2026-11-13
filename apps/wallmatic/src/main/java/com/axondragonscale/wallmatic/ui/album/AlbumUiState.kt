@@ -10,10 +10,9 @@ internal data class AlbumUiState(
     val loading: Boolean = true,
     val gridSize: Int = 2,
     val album: FullAlbum? = null,
-    val activeTargets: Set<TargetScreen> = emptySet(),
-    val mirrorEnabled: Boolean = true,
+    val targetLabel: String? = null,
+    val isActive: Boolean = false,
+    val activatableTargets: List<TargetScreen> = emptyList(),
 ) {
-    val isActive: Boolean get() = activeTargets.isNotEmpty()
-    val hasContent: Boolean
-        get() = album?.let { it.folders.isNotEmpty() || it.wallpapers.isNotEmpty() } == true
+    val hasContent: Boolean get() = album?.hasWallpapers == true
 }

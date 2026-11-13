@@ -4,19 +4,14 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.axondragonscale.wallmatic.background.UpdateCoordinator
-import com.axondragonscale.wallmatic.core.AlbumManager
-import com.axondragonscale.wallmatic.model.getAllWallpapers
-import com.axondragonscale.wallmatic.repository.AppPrefsRepository
+import com.axondragonscale.wallmatic.core.AlbumEditor
+import com.axondragonscale.wallmatic.repository.ConfigRepository
+import com.axondragonscale.wallmatic.repository.PreferencesRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.ui.Route
-import com.axondragonscale.wallmatic.util.activateAlbum
-import com.axondragonscale.wallmatic.util.activeTargetsFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -25,36 +20,31 @@ import kotlinx.coroutines.launch
 internal class AlbumVM(
     private val savedStateHandle: SavedStateHandle,
     private val repository: WallmaticRepository,
-    private val appPrefsRepository: AppPrefsRepository,
-    private val albumManager: AlbumManager,
+    private val configRepository: ConfigRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val albumEditor: AlbumEditor,
     private val updateCoordinator: UpdateCoordinator,
 ) : ViewModel() {
 
     private val albumId: Int = savedStateHandle.get<Int>(Route.Args.ALBUM_ID)!!
-    private val wallpaperIds = MutableStateFlow<List<Int>>(emptyList())
     val uiState = MutableStateFlow(AlbumUiState())
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            appPrefsRepository.gridSizeFlow.collect { gridSize ->
-                uiState.update { it.copy(gridSize = gridSize) }
-            }
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            appPrefsRepository.configFlow
-                .map { config ->
-                    config.activeTargetsFor(albumId) to config.mirrorHomeConfigForLock
-                }
-                .distinctUntilChanged()
-                .collect { (targets, mirrorEnabled) ->
-                    uiState.update {
-                        it.copy(activeTargets = targets, mirrorEnabled = mirrorEnabled)
-                    }
-                }
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            syncUiStateWithAlbum()
-            observeWallpapers()
+            combine(
+                configRepository.configFlow,
+                preferencesRepository.gridSize.flow,
+                repository.observeFullAlbums(),
+            ) { config, gridSize, albums ->
+                AlbumUiState(
+                    loading = false,
+                    gridSize = gridSize,
+                    album = albums.firstOrNull { it.id == albumId },
+                    targetLabel = config.activeLabelFor(albumId),
+                    isActive = config.activeTargetsFor(albumId).isNotEmpty(),
+                    activatableTargets = config.activatableTargetsFor(albumId),
+                )
+            }.collect { uiState.value = it }
         }
     }
 
@@ -74,93 +64,35 @@ internal class AlbumVM(
         is AlbumUiEvent.ShowWallpaperActions -> Unit
     }
 
-    private inline fun runAndSyncState(
-        crossinline block: suspend () -> Unit,
-    ) = viewModelScope.launch(Dispatchers.IO) {
-        block()
-        syncUiStateWithAlbum()
+    private fun onFolderSelected(event: AlbumUiEvent.FolderSelected) = viewModelScope.launch(Dispatchers.IO) {
+        albumEditor.addFolder(albumId, event.uri)
     }
 
-    private suspend fun syncUiStateWithAlbum() {
-        val album = repository.getFullAlbum(albumId)
-        uiState.update { it.copy(loading = false, album = album) }
-        wallpaperIds.value = album?.getAllWallpapers()?.map { it.id }.orEmpty()
+    private fun onImagesSelected(event: AlbumUiEvent.ImagesSelected) = viewModelScope.launch(Dispatchers.IO) {
+        albumEditor.addWallpapers(albumId, event.uris)
     }
 
-    /** Keeps the grid and folder strips live, so a crop saved elsewhere repaints without a reload. */
-    private suspend fun observeWallpapers() = wallpaperIds.collectLatest { ids ->
-        if (ids.isEmpty()) return@collectLatest
-        repository.getWallpapersFlow(ids).collect { wallpapers ->
-            val byId = wallpapers.associateBy { it.id }
-            uiState.update { state ->
-                val album = state.album ?: return@update state
-                state.copy(
-                    album = album.copy(
-                        wallpapers = album.wallpapers.mapNotNull { byId[it.id] },
-                        folders = album.folders.map { folder ->
-                            folder.copy(wallpapers = folder.wallpapers.mapNotNull { byId[it.id] })
-                        },
-                    ),
-                )
-            }
-        }
+    private fun onDeleteFolder(event: AlbumUiEvent.DeleteFolder) = viewModelScope.launch(Dispatchers.IO) {
+        albumEditor.removeFolder(event.folderId)
+        updateCoordinator.albumsChanged()
     }
 
-    private fun onFolderSelected(
-        event: AlbumUiEvent.FolderSelected,
-    ) = runAndSyncState {
-        val fullAlbum = uiState.value.album ?: return@runAndSyncState
-        albumManager.forAlbum(fullAlbum) {
-            addFolder(event.uri)
-        }
-    }
-
-    private fun onImagesSelected(
-        event: AlbumUiEvent.ImagesSelected,
-    ) = runAndSyncState {
-        val fullAlbum = uiState.value.album ?: return@runAndSyncState
-        albumManager.forAlbum(fullAlbum) {
-            addWallpapers(event.uris)
-        }
-    }
-
-    private fun onDeleteFolder(
-        event: AlbumUiEvent.DeleteFolder,
-    ) = runAndSyncState {
-        val fullAlbum = uiState.value.album ?: return@runAndSyncState
-        albumManager.forAlbum(fullAlbum) {
-            removeFolder(event.folderId)
-        }
-    }
-
-    private fun onSetWallpaper(
-        event: AlbumUiEvent.SetWallpaper,
-    ) = viewModelScope.launch(Dispatchers.IO) {
+    private fun onSetWallpaper(event: AlbumUiEvent.SetWallpaper) = viewModelScope.launch(Dispatchers.IO) {
         updateCoordinator.applyWallpaper(event.wallpaper, event.target)
     }
 
-    private fun onBlacklistWallpaper(
-        event: AlbumUiEvent.BlacklistWallpaper,
-    ) = runAndSyncState {
-        repository.updateWallpaper(event.wallpaper.id) {
-            isBlacklisted = true
+    private fun onBlacklistWallpaper(event: AlbumUiEvent.BlacklistWallpaper) =
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setBlacklisted(event.wallpaper.id, true)
         }
-    }
 
-    private fun onWhitelistWallpaper(
-        event: AlbumUiEvent.WhitelistWallpaper,
-    ) = runAndSyncState {
-        repository.updateWallpaper(event.wallpaper.id) {
-            isBlacklisted = false
+    private fun onWhitelistWallpaper(event: AlbumUiEvent.WhitelistWallpaper) =
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setBlacklisted(event.wallpaper.id, false)
         }
-    }
 
     private fun onSetActive(event: AlbumUiEvent.SetActive) = viewModelScope.launch(Dispatchers.IO) {
-        val id = albumId
-        appPrefsRepository.updateConfig { config ->
-            config.activateAlbum(id, event.target)
-        }
+        configRepository.update { it.activate(albumId, event.target) }
         updateCoordinator.applyNow(event.target)
-        syncUiStateWithAlbum()
     }
 }

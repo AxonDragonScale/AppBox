@@ -1,6 +1,5 @@
 package com.axondragonscale.wallmatic.background
 
-import android.content.Context
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -9,90 +8,86 @@ import androidx.work.WorkManager
 import com.axondragonscale.commons.logD
 import com.axondragonscale.commons.logE
 import com.axondragonscale.commons.logW
-import com.axondragonscale.wallmatic.core.WallpaperUpdateResult
-import com.axondragonscale.wallmatic.core.WallpaperUpdater
+import com.axondragonscale.wallmatic.core.AlbumSyncer
+import com.axondragonscale.wallmatic.core.ConfigReconciler
+import com.axondragonscale.wallmatic.core.WallpaperCycler
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
-import com.axondragonscale.wallmatic.model.Config
 import com.axondragonscale.wallmatic.model.TargetScreen
-import com.axondragonscale.wallmatic.repository.AppPrefsRepository
-import com.axondragonscale.wallmatic.util.currentTargetFor
-import com.axondragonscale.wallmatic.util.failedTargetOrNull
-import com.axondragonscale.wallmatic.util.isAutoCycleEnabled
-import com.axondragonscale.wallmatic.util.nextUpdate
+import com.axondragonscale.wallmatic.model.WallpaperUpdateResult
+import com.axondragonscale.wallmatic.repository.ConfigRepository
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
 
 /**
- * Owns the auto-cycle rule: change the wallpaper once `lastUpdated + updateInterval` has passed,
- * then leave exactly one wake-up armed. The schedule is derived state, never a chain of enqueued
- * work, so every trigger can converge on the correct state independently.
+ * Owns the auto-cycle rule: change the wallpaper once `lastUpdated + interval` has passed, then
+ * leave exactly one wake-up armed. The schedule is derived state, never a chain of enqueued work,
+ * so every trigger can converge on the correct state independently.
  */
 class UpdateCoordinator(
-    context: Context,
-    private val appPrefsRepository: AppPrefsRepository,
-    private val wallpaperUpdater: WallpaperUpdater,
+    private val configRepository: ConfigRepository,
+    private val cycler: WallpaperCycler,
+    private val reconciler: ConfigReconciler,
+    private val albumSyncer: AlbumSyncer,
     private val tickScheduler: TickScheduler,
+    private val workManager: WorkManager,
 ) {
 
     companion object {
         private const val SYNC_WORK_NAME = "wallpaper_sync"
         private const val FALLBACK_WORK_NAME = "wallpaper_fallback"
 
-        private val MIN_RETRY_DELAY_MILLIS = TimeUnit.MINUTES.toMillis(1)
-        val MAX_RETRY_DELAY_MILLIS = TimeUnit.MINUTES.toMillis(5)
+        private val MIN_RETRY_DELAY = 1.minutes
+        val MAX_RETRY_DELAY = 5.minutes
     }
 
     private val mutex = Mutex()
-    private val workManager = WorkManager.getInstance(context)
 
     /** Applies the cycle if it is due — or the recorded failed target — then re-arms. */
-    suspend fun reconcile() = mutex.withLock {
-        val failedTarget = appPrefsRepository.configFlow.firstOrNull()?.failedTargetOrNull
-        val result = if (failedTarget != null) {
-            wallpaperUpdater.updateWallpaper(failedTarget)
-        } else {
-            wallpaperUpdater.updateWallpaper()
-        }
-        armAfter(result)
-    }
+    suspend fun applyIfDue() = mutex.withLock { armForResult(cycler.cycleIfDue()) }
 
     /** Applies immediately, bypassing the interval, then re-arms from the new `lastUpdated`. */
-    suspend fun applyNow(target: TargetScreen) = mutex.withLock {
-        armAfter(wallpaperUpdater.updateWallpaper(target))
-    }
+    suspend fun applyNow(target: TargetScreen) = mutex.withLock { armForResult(cycler.cycle(target)) }
 
     /**
      * Applies a chosen [wallpaper] to [target], skipping the cycle's random pick. The apply is
      * recorded like a cycle apply, so the schedule re-arms from the new `lastUpdated`.
      */
     suspend fun applyWallpaper(wallpaper: Wallpaper, target: TargetScreen) = mutex.withLock {
-        armAfter(wallpaperUpdater.applyWallpaper(wallpaper, target))
+        armForResult(cycler.applyWallpaper(wallpaper, target))
     }
 
     /**
-     * Re-applies [wallpaper] to the screens already showing it, skipping the cycle's random pick.
-     * The apply is recorded like a cycle apply, so an imminent tick cannot undo the adjustment;
-     * a wallpaper that is not current anywhere changes nothing.
+     * Re-applies [wallpaper] to the screens already showing it. A wallpaper that is not current
+     * anywhere changes nothing and leaves the existing tick in place.
      */
-    suspend fun reapply(wallpaper: Wallpaper) = mutex.withLock {
-        val config = appPrefsRepository.configFlow.firstOrNull() ?: return@withLock
-        val target = config.currentTargetFor(wallpaper.id) ?: return@withLock
-        armAfter(wallpaperUpdater.applyWallpaper(wallpaper, target))
+    suspend fun reapply(wallpaper: Wallpaper) = mutex.withLock { armForResult(cycler.reapply(wallpaper)) }
+
+    /** Reconciles config after an album was deleted, then re-arms. */
+    suspend fun albumsChanged() = mutex.withLock { armForResult(reconciler.reconcile() ?: WallpaperUpdateResult.NotDue) }
+
+    /**
+     * Syncs albums with the filesystem, then reconciles config and re-arms. The scan runs outside
+     * the mutex so a slow SAF walk cannot block a scheduled apply.
+     */
+    suspend fun refresh() {
+        albumSyncer.syncAlbums()
+        mutex.withLock { armForResult(reconciler.reconcile() ?: WallpaperUpdateResult.NotDue) }
     }
 
-    /** Re-arms after the interval, album or auto-cycle toggles changed. */
-    suspend fun reschedule() = mutex.withLock { armNext() }
+    /** Re-arms after the interval or mirroring changed. */
+    suspend fun reschedule() = mutex.withLock { armAtNextUpdate() }
 
-    private suspend fun armAfter(result: WallpaperUpdateResult) {
+    private suspend fun armForResult(result: WallpaperUpdateResult) {
         when (result) {
             WallpaperUpdateResult.Updated -> {
                 this.logD { "Applied. Scheduling the next tick" }
                 enqueueSync()
-                armNext()
+                armAtNextUpdate()
             }
-            WallpaperUpdateResult.NotDue -> armNext()
+            WallpaperUpdateResult.NotDue -> armAtNextUpdate()
             is WallpaperUpdateResult.Failed -> {
                 this.logE { "Failed, retrying. cause: ${result.cause.message}" }
                 enqueueSync()
@@ -100,20 +95,24 @@ class UpdateCoordinator(
             }
             is WallpaperUpdateResult.Skipped -> {
                 this.logW { "Skipped, waiting for the next cycle. reason: ${result.reason}" }
-                armNextCycle()
+                armAfterInterval()
             }
         }
     }
 
-    private suspend fun armNext() {
+    private suspend fun armAtNextUpdate() {
         val config = schedulableConfig() ?: return tickScheduler.cancel()
-        arm(config.nextUpdate)
+        arm(config.nextUpdate?.toEpochMilliseconds() ?: System.currentTimeMillis())
     }
 
+    /**
+     * A failure can clear on its own — a transient read, or a row the sync that just ran pruned —
+     * so it retries sooner than a full interval, bounded to keep a broken album from spinning.
+     */
     private suspend fun armRetry() {
         val config = schedulableConfig() ?: return tickScheduler.cancel()
-        val delay = config.updateInterval.coerceIn(MIN_RETRY_DELAY_MILLIS, MAX_RETRY_DELAY_MILLIS)
-        arm(System.currentTimeMillis() + delay)
+        val delay = config.interval.coerceIn(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
+        arm(System.currentTimeMillis() + delay.inWholeMilliseconds)
     }
 
     /**
@@ -121,9 +120,9 @@ class UpdateCoordinator(
      * would tick again immediately, forever. A skip is a condition only the user can clear (album
      * deleted, every wallpaper blacklisted), so spend the wake-up on the next full interval.
      */
-    private suspend fun armNextCycle() {
+    private suspend fun armAfterInterval() {
         val config = schedulableConfig() ?: return tickScheduler.cancel()
-        arm(System.currentTimeMillis() + config.updateInterval)
+        arm(System.currentTimeMillis() + config.interval.inWholeMilliseconds)
     }
 
     private fun arm(triggerAtMillis: Long) {
@@ -131,8 +130,8 @@ class UpdateCoordinator(
         tickScheduler.armAt(triggerAtMillis)
     }
 
-    private suspend fun schedulableConfig(): Config? =
-        appPrefsRepository.configFlow.firstOrNull()?.takeIf { it.isInit && it.isAutoCycleEnabled }
+    private suspend fun schedulableConfig() =
+        configRepository.configFlow.firstOrNull()?.takeIf { it.isInitialised }
 
     private fun enqueueSync() {
         workManager.enqueueUniqueWork(

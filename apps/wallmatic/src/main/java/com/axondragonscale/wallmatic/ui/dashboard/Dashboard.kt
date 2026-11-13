@@ -16,11 +16,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
-import com.axondragonscale.wallmatic.ui.albums.Albums
 import com.axondragonscale.wallmatic.ui.bottombar.Tab
 import com.axondragonscale.wallmatic.ui.component.Masthead
 import com.axondragonscale.wallmatic.ui.component.WallmaticTabBar
 import com.axondragonscale.wallmatic.ui.home.Home
+import com.axondragonscale.wallmatic.ui.library.Library
 import com.axondragonscale.wallmatic.ui.settings.Settings
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
 import kotlinx.coroutines.launch
@@ -62,10 +62,10 @@ fun Dashboard(
                     navController = navController,
                     onNavigateToLibrary = {
                         createAlbumRequest = true
-                        scope.launch { pagerState.animateScrollToPage(Tab.Albums.ordinal) }
+                        scope.launch { pagerState.animateScrollToPage(Tab.Library.ordinal) }
                     },
                 )
-                Tab.Albums -> Albums(
+                Tab.Library -> Library(
                     navController = navController,
                     openCreateAlbumDialog = createAlbumRequest,
                     onOpenCreateAlbumDialogHandled = { createAlbumRequest = false },

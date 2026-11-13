@@ -33,14 +33,13 @@ fun WallmaticApp(modifier: Modifier = Modifier) {
         popEnterTransition = { slideIntoContainer(SlideDirection.Right) },
         popExitTransition = { slideOutOfContainer(SlideDirection.Right) }
     ) {
-        // TODO: Deeplinking to tabs
-        // TODO: Create composable/NavGraph in the screen's package itself
+        // TODO: Support deep links
 
         composable<Route.Dashboard> { backStackEntry ->
             val dashboard: Route.Dashboard = backStackEntry.toRoute()
             Dashboard(
                 navController = navController,
-                tab = Tab.entries.getOrElse(dashboard.tab) { Tab.Home },
+                tab = Tab.entries.firstOrNull { it.name == dashboard.tab } ?: Tab.Home,
             )
         }
 

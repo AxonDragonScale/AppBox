@@ -40,6 +40,7 @@ dependencies {
     implementation(projects.core.common)
     implementation(projects.core.ui)
     implementation(projects.core.devtools)
+    implementation(projects.core.datastore)
     implementation(projects.core.room)
 
     implementation(libs.androidx.core.ktx)

@@ -5,6 +5,5 @@ package com.axondragonscale.wallmatic.util
  */
 
 object Link {
-    const val WALLMATIC = "https://github.com/AxonDragonScale/Wallmatic"
     const val AXON_DRAGON_SCALE = "https://github.com/AxonDragonScale"
 }

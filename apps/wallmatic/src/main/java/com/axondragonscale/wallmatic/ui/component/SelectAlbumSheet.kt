@@ -17,8 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.wallmatic.database.entity.Album
-import com.axondragonscale.wallmatic.model.WallpaperCrop
+import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
@@ -31,11 +30,10 @@ import com.axondragonscale.wallmatic.ui.util.countSummary
 @Composable
 fun SelectAlbumSheet(
     modifier: Modifier = Modifier,
-    albums: List<Album>,
-    selectedAlbumId: Int,
-    onSelectAlbum: (Album) -> Unit,
+    albums: List<FullAlbum>,
+    selectedAlbumId: Int?,
+    onSelectAlbum: (FullAlbum) -> Unit,
     onDismiss: () -> Unit,
-    coverCrops: Map<String, WallpaperCrop> = emptyMap(),
 ) {
     WallmaticBottomSheet(
         height = 420.dp,
@@ -47,7 +45,6 @@ fun SelectAlbumSheet(
             selectedAlbumId = selectedAlbumId,
             onSelectAlbum = onSelectAlbum,
             onDismiss = onDismiss,
-            coverCrops = coverCrops,
         )
     }
 }
@@ -55,11 +52,10 @@ fun SelectAlbumSheet(
 @Composable
 private fun SelectAlbumContent(
     modifier: Modifier = Modifier,
-    albums: List<Album>,
-    selectedAlbumId: Int,
-    onSelectAlbum: (Album) -> Unit,
+    albums: List<FullAlbum>,
+    selectedAlbumId: Int?,
+    onSelectAlbum: (FullAlbum) -> Unit,
     onDismiss: () -> Unit,
-    coverCrops: Map<String, WallpaperCrop> = emptyMap(),
 ) {
     Column(modifier = modifier) {
         SheetDragHandle()
@@ -78,8 +74,7 @@ private fun SelectAlbumContent(
                 AlbumRow(
                     title = album.name,
                     subtitle = album.countSummary(),
-                    coverUri = album.coverUri,
-                    coverCrop = album.coverUri?.let(coverCrops::get),
+                    cover = album.cover,
                     selected = album.id == selectedAlbumId,
                     onClick = {
                         onSelectAlbum(album)
@@ -105,8 +100,8 @@ private fun SelectAlbumSheetPreview() {
         ) {
             SelectAlbumContent(
                 albums = listOf(
-                    Album(name = "Test", coverUri = null),
-                    Album(name = "Nature", coverUri = null),
+                    FullAlbum(id = 1, name = "Test", folders = emptyList(), wallpapers = emptyList()),
+                    FullAlbum(id = 2, name = "Nature", folders = emptyList(), wallpapers = emptyList()),
                 ),
                 selectedAlbumId = 1,
                 onSelectAlbum = {},
