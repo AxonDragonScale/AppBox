@@ -64,16 +64,32 @@ sealed interface Result<out S, out F> {
 }
 ```
 
-Key combinators (`onSuccess`, `onFailure`, `fold`, `map`, `mapFailure`, `recover`, `getOrElse`,
-`getOrDefault`) are top-level `inline` extensions — import them explicitly:
+Key combinators (`onSuccess`, `onFailure`, `onComplete`, `fold`, `map`, `mapFailure`, `recover`,
+`getOrElse`, `getOrDefault`) are top-level `inline` extensions — import them explicitly:
 
 ```kotlin
 import com.axondragonscale.commons.onSuccess
 import com.axondragonscale.commons.onFailure
+import com.axondragonscale.commons.onComplete
 ```
 
-Exception bridges: `runCatching { ... }.toResult { it.message }` and
-`resultOf(onThrow = { ... }) { ... }`. `CancellationException` always propagates.
+Exception bridge: `runCatching { ... }.toResult { it.message }`. `CancellationException` always
+propagates.
+
+`catching` — `Catching.kt` — is the logged bridge for unexpected exceptions:
+
+```kotlin
+val result = catching { readConfig() }          // tag = the receiver's class name
+val tagged = "Sync".catching { syncAlbums() }   // explicit tag
+
+result
+    .onFailure { e -> showError(e) }
+    .onComplete { close() }
+```
+
+It catches `Exception` (not `Throwable`), rethrows `CancellationException`, and logs the exception
+under the receiver's tag. Chain `onFailure` for extra handling and `onComplete` for cleanup. Use
+`runCatching { ... }.toResult { ... }` instead when a failure is expected and should not be logged.
 
 ### Serialization — `Serialization.kt`
 

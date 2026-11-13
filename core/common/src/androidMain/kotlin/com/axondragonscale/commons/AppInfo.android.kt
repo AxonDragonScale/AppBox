@@ -22,25 +22,14 @@ actual object AppInfo {
 
     fun init(context: Context) {
         _packageName = context.packageName
-        try {
+        catching {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.packageManager.getPackageInfo(
-                    context.packageName,
-                    PackageManager.PackageInfoFlags.of(0L)
-                )
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0L))
             } else {
-                @Suppress("DEPRECATION")
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }
             _versionName = packageInfo.versionName ?: "unknown"
-            _versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                packageInfo.longVersionCode.toInt()
-            } else {
-                @Suppress("DEPRECATION")
-                packageInfo.versionCode
-            }
-        } catch (_: PackageManager.NameNotFoundException) {
-            // Leave defaults
+            _versionCode = packageInfo.longVersionCode.toInt()
         }
     }
 }

@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -32,12 +31,7 @@ private inline fun <T> DataStore<Preferences>.read(
     }
     .map { prefs ->
         // Decoding is not suspending, so swallowing everything here cannot hide cancellation.
-        try {
-            decode(prefs)
-        } catch (e: Exception) {
-            this@read.log { e }
-            default
-        }
+        this@read.catching { decode(prefs) }.getOrElse { default }
     }
 
 /**
@@ -45,13 +39,7 @@ private inline fun <T> DataStore<Preferences>.read(
  * Cancellation still propagates, so a stalled scope is never reported as a successful write.
  */
 private suspend fun DataStore<Preferences>.editQuietly(block: (MutablePreferences) -> Unit) {
-    try {
-        edit(block)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        log { e }
-    }
+    catching { edit(block) }
 }
 
 /**

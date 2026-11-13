@@ -1,7 +1,5 @@
 package com.axondragonscale.commons
 
-import kotlinx.coroutines.CancellationException
-
 /**
  * Created by Ronak Harkhani on 27 January 2026.
 A sealed interface representing the result of an operation that can either succeed or fail.
@@ -80,6 +78,14 @@ inline fun <S, F> Result<S, F>.onFailure(block: (F) -> Unit): Result<S, F> = whe
 }
 
 /**
+ * Runs [block] whether this result is a success or a failure, then returns this result unchanged.
+ */
+inline fun <S, F> Result<S, F>.onComplete(block: () -> Unit): Result<S, F> {
+    block()
+    return this
+}
+
+/**
  * Collapses this result into a single value by applying one of the two cases.
  */
 inline fun <S, F, R> Result<S, F>.fold(onSuccess: (S) -> R, onFailure: (F) -> R): R = when (this) {
@@ -127,21 +133,6 @@ inline fun <S, F> Result<S, F>.getOrElse(onFailure: (F) -> S): S = when (this) {
     is Result.Success<S> -> data
     is Result.Failure<F> -> onFailure(data)
 }
-
-/**
- * Wraps [block] in a [Result], converting a thrown exception with [onThrow]. The counterpart of
- * [runCatching] for a typed failure, and the way to build a [Result] from code that still throws.
- *
- * Cancellation is rethrown rather than turned into a failure, so a cancelled scope stays cancelled.
- */
-inline fun <S, F> resultOf(onThrow: (Throwable) -> F, block: () -> S): Result<S, F> =
-    try {
-        Result.Success(block())
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Result.Failure(onThrow(e))
-    }
 
 /**
  * Bridges a [kotlin.Result] into this type, converting the thrown exception with [onThrow].

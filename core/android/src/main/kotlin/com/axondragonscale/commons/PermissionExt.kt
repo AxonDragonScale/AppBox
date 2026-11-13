@@ -26,18 +26,13 @@ fun Context.getDangerousPermissions(): List<PermissionState> {
     val declaredPermissions = packageInfo.requestedPermissions ?: return emptyList()
 
     return declaredPermissions.mapNotNull { permission ->
-        try {
+        catching {
             val permissionInfo = packageManager.getPermissionInfo(permission, 0)
             val isDangerous = permissionInfo.protection == PermissionInfo.PROTECTION_DANGEROUS
 
-            if (isDangerous) {
-                PermissionState(permission, this.isPermissionGranted(permission))
-            } else {
-                null
-            }
-        } catch (_: PackageManager.NameNotFoundException) {
-            null
-        }
+            if (isDangerous) PermissionState(permission, this.isPermissionGranted(permission))
+            else null
+        }.getSuccessResultOrNull()
     }
 }
 

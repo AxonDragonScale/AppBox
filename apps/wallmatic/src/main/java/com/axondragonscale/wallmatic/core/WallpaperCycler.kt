@@ -106,8 +106,8 @@ class WallpaperCycler(
 
         val homeAlbumId = config.home.albumId
         val lockAlbumId = config.albumIdFor(TargetScreen.Lock)
-        val homeAlbum = if (applyHome) homeAlbumId?.let { repository.getFullAlbum(it) } else null
-        val lockAlbum = if (applyLock) lockAlbumId?.let { repository.getFullAlbum(it) } else null
+        val homeAlbum = homeAlbumId?.takeIf { applyHome }?.let { repository.getFullAlbum(it) }
+        val lockAlbum = lockAlbumId?.takeIf { applyLock }?.let { repository.getFullAlbum(it) }
 
         if ((applyHome && homeAlbum == null) || (applyLock && lockAlbum == null)) {
             this.logD { "Albums not found. home: $homeAlbumId, lock: $lockAlbumId" }

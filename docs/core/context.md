@@ -17,7 +17,7 @@ what it uses. This file is kept as the entry point for the shared core modules.
 | Module | Type | Contents | Depends on |
 |---|---|---|---|
 | [`:core:common`](common/context.md) | KMP, no Compose | Logger, `Result`, `CommonJson`, `DateTimeExt`, pure `Flow.collect()`/`combine`, `AppInfo` | coroutines, serialization-json, datetime |
-| `:core:android` | Android library | `ContextExt` (notifications, settings, clear data), `PermissionExt` | androidx-core-ktx |
+| `:core:android` | Android library | `ContextExt` (notifications, settings, clear data), `PermissionExt` | `:core:common`, androidx-core-ktx |
 | `:core:ui` | KMP + Compose | Dropdown, StatCard, charts, date/time pickers, `ModifierExt`, `ComposeUtils`, `UIMode` (`icon`, `isDarkTheme`), `collectWithLifecycle` | `:core:common`, Compose MP, lifecycle-compose |
 | `:core:devtools` | KMP + Compose | `DevToolsScreen`, `DevTool`, builder DSL; Android built-ins (kill app, clear data, permissions, logcat) | `:core:ui`, `:core:android` (androidMain), `:libraries:logcat-viewer` (androidMain) |
 | `:core:datastore` | KMP | `createPreferencesDataStore`, `pref`, `enumPref`, `serializedPref`, `nullablePref` | datastore-preferences, coroutines, serialization-json, `:core:common` |
@@ -29,8 +29,8 @@ what it uses. This file is kept as the entry point for the shared core modules.
 
 ```text
                   :core:common
-        ↑          ↑          ↑          ↑
-   :core:ui  :core:datastore  :core:room  :core:network
+        ↑          ↑          ↑          ↑          ↑
+   :core:ui  :core:datastore  :core:room  :core:network  :core:android
         ↑
    :core:devtools ──→ :core:android
         ↓ (androidMain)
