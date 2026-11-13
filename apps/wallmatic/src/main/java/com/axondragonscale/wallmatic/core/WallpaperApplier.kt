@@ -85,9 +85,7 @@ class WallpaperApplier(private val context: Context) {
         this@WallpaperApplier.catchingFinally { scope ->
             val cropped = croppedBitmap(wallpaper, applySize())
             scope.onFinally { cropped.recycle() }
-            this@WallpaperApplier.logD {
-                "Cropped output ${cropped.width} × ${cropped.height}. wallpaperId: ${wallpaper.id}"
-            }
+            this@WallpaperApplier.logD { "Cropped output ${cropped.width} × ${cropped.height}. wallpaperId: ${wallpaper.id}" }
             manager.setBitmap(cropped, null, true, target.toFlag())
         }.onFailure {
             this@WallpaperApplier.logW { "Custom crop failed, falling back to stream. wallpaperId: ${wallpaper.id}" }

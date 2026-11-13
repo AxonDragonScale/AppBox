@@ -33,8 +33,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.axondragonscale.commons.catching
 import com.axondragonscale.commons.collectWithLifecycle
-import com.axondragonscale.commons.log
+import com.axondragonscale.commons.onFailure
 import com.axondragonscale.devinator.tile.DevTile
 import com.axondragonscale.devinator.ui.components.BackTopBar
 import com.axondragonscale.devinator.ui.components.DevinatorCard
@@ -151,7 +152,7 @@ private fun requestAddTile(
         onError("Quick Settings tiles aren't available on this device.")
         return
     }
-    try {
+    "QuickSettingsTiles".catching {
         manager.requestAddTileService(
             tile.component(context),
             tile.title(context),
@@ -167,8 +168,7 @@ private fun requestAddTile(
                 }
             },
         )
-    } catch (e: Exception) {
-        context.log { e }
+    }.onFailure {
         onError("Couldn't add this tile.")
     }
 }

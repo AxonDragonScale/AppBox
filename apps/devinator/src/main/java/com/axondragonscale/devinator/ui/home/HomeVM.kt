@@ -2,6 +2,7 @@ package com.axondragonscale.devinator.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.axondragonscale.commons.catching
 import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.DurationOption
 import com.axondragonscale.devinator.model.TimedToggleSession
@@ -91,7 +92,7 @@ class HomeVM(
             return@launch
         }
         pendingWireless.value = true
-        try {
+        this@HomeVM.catching(onFinally = { pendingWireless.value = false }) {
             when (val result = repository.setWirelessDebugging(true)) {
                 WriteResult.Failed -> reportFailure(result, "Wireless debugging")
                 WriteResult.AwaitingConsent ->
@@ -101,8 +102,6 @@ class HomeVM(
 
                 WriteResult.Ok -> Unit
             }
-        } finally {
-            pendingWireless.value = false
         }
     }
 

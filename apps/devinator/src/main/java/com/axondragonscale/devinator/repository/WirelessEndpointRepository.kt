@@ -9,7 +9,8 @@ import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.axondragonscale.commons.log
+import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.getOrDefault
 import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.EndpointKind
 import com.axondragonscale.devinator.permission.LocalNetworkAccess
@@ -102,11 +103,9 @@ class WirelessEndpointRepository(context: Context) {
     private fun startDiscovery() {
         val nsd = nsdManager ?: return
         val listener = DiscoveryListener()
-        try {
+        catching {
             nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener)
             discoveryListener = listener
-        } catch (e: Exception) {
-            this.log { e }
         }
     }
 
@@ -127,11 +126,9 @@ class WirelessEndpointRepository(context: Context) {
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) =
                 publish(port)
         }
-        try {
+        catching {
             manager.registerDefaultNetworkCallback(callback)
             networkCallback = callback
-        } catch (e: Exception) {
-            this.log { e }
         }
     }
 
@@ -139,11 +136,7 @@ class WirelessEndpointRepository(context: Context) {
         val manager = connectivityManager ?: return
         val callback = networkCallback ?: return
         networkCallback = null
-        try {
-            manager.unregisterNetworkCallback(callback)
-        } catch (e: Exception) {
-            this.log { e }
-        }
+        catching { manager.unregisterNetworkCallback(callback) }
     }
 
     /** A port change means a new session, so the addresses are re-read with it. */
@@ -177,7 +170,7 @@ class WirelessEndpointRepository(context: Context) {
     @Suppress("DEPRECATION")
     private fun resolve(serviceInfo: NsdServiceInfo) {
         val nsd = nsdManager ?: return
-        try {
+        catching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 registerServiceInfo(nsd, serviceInfo)
             } else {
@@ -189,8 +182,6 @@ class WirelessEndpointRepository(context: Context) {
                     }
                 })
             }
-        } catch (e: Exception) {
-            this.log { e }
         }
     }
 
@@ -212,11 +203,7 @@ class WirelessEndpointRepository(context: Context) {
     private fun stopDiscovery() {
         discoveryListener?.let { listener ->
             discoveryListener = null
-            try {
-                nsdManager?.stopServiceDiscovery(listener)
-            } catch (e: Exception) {
-                this.log { e }
-            }
+            catching { nsdManager?.stopServiceDiscovery(listener) }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) unregisterCallbacks()
         serviceInfoCallbacks.clear()
@@ -226,15 +213,11 @@ class WirelessEndpointRepository(context: Context) {
     private fun unregisterCallbacks() {
         val nsd = nsdManager ?: return
         serviceInfoCallbacks.toList().forEach { callback ->
-            try {
-                nsd.unregisterServiceInfoCallback(callback)
-            } catch (e: Exception) {
-                this.log { e }
-            }
+            catching { nsd.unregisterServiceInfoCallback(callback) }
         }
     }
 
-    private fun readAddresses(): List<InterfaceAddress> = try {
+    private fun readAddresses(): List<InterfaceAddress> = catching {
         NetworkInterface.getNetworkInterfaces().toList()
             .filter { it.isUp && !it.isLoopback }
             .flatMap { networkInterface ->
@@ -243,21 +226,15 @@ class WirelessEndpointRepository(context: Context) {
                     .filterNot { it.isLoopbackAddress || it.isLinkLocalAddress }
                     .map { InterfaceAddress(networkInterface.name.orEmpty(), it.hostAddress.orEmpty()) }
             }
-    } catch (e: Exception) {
-        this.log { e }
-        emptyList()
-    }
+    }.getOrDefault(emptyList())
 
     private fun vpnInterfaces(): Set<String> {
         val manager = connectivityManager ?: return emptySet()
-        return try {
+        return catching {
             val network = manager.activeNetwork ?: return emptySet()
             val isVpn = manager.getNetworkCapabilities(network)
                 ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
             if (isVpn) setOfNotNull(manager.getLinkProperties(network)?.interfaceName) else emptySet()
-        } catch (e: Exception) {
-            this.log { e }
-            emptySet()
-        }
+        }.getOrDefault(emptySet())
     }
 }

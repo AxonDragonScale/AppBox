@@ -98,6 +98,13 @@ and `Error`, before the exception propagates:
 catching(onFinally = { cursor.close() }) { read() }
 ```
 
+When the cleanup itself suspends, use `catchingSuspend`; it is a suspend inline function and takes
+a suspend `onFinally`:
+
+```kotlin
+catchingSuspend(onFinally = { prefs.set(null) }) { write() }
+```
+
 For a resource created inside the block, use `catchingFinally` — `onComplete` is skipped when
 `catching` rethrows cancellation or an `Error`:
 
@@ -110,6 +117,20 @@ catchingFinally { scope ->
 ```
 
 The registered cleanup runs on success, failure, cancellation and `Error`, like a `finally` block.
+
+For coroutines, use `launchCatching` or `withContextCatching`:
+
+```kotlin
+scope.launchCatching { refresh() }
+scope.launchCatching(onFinally = { close() }) { refresh() }
+
+val result = withContextCatching(Dispatchers.IO) { read() }
+val cleaned = withContextCatching(Dispatchers.IO, onFinally = { close() }) { read() }
+```
+
+`launchCatching` returns a `Job`; a logged failure completes it normally. `withContextCatching` is an
+`Any` extension returning `Result<T, Exception>`. Both log failures and run `onFinally` on every
+path, including cancellation and `Error`; cancellation and `Error`s propagate.
 
 ### Serialization — `Serialization.kt`
 

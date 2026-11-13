@@ -1,6 +1,9 @@
 package com.axondragonscale.devinator.repository
 
-import com.axondragonscale.commons.log
+import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.catchingSuspend
+import com.axondragonscale.commons.getOrDefault
+import com.axondragonscale.commons.getOrElse
 import com.axondragonscale.devinator.background.DevAlarms
 import com.axondragonscale.devinator.model.AdbEndpoint
 import com.axondragonscale.devinator.model.DevState
@@ -124,10 +127,7 @@ class DevSettingsRepository(
 
     private suspend fun restoreDeveloperFlagsLocked() {
         val raw = prefs.developerFlagsSnapshot.get() ?: return
-        val snapshot = try {
-            json.decodeFromString<Map<String, Boolean>>(raw)
-        } catch (e: Exception) {
-            log { e }
+        val snapshot = catching { json.decodeFromString<Map<String, Boolean>>(raw) }.getOrElse {
             prefs.developerFlagsSnapshot.set(null)
             return
         }
@@ -137,12 +137,10 @@ class DevSettingsRepository(
             return
         }
 
-        try {
+        catchingSuspend(onFinally = { prefs.developerFlagsSnapshot.set(null) }) {
             snapshot.forEach { (key, enabled) ->
                 if (key in RESTORABLE_FLAG_KEYS) writeRestored(key, enabled)
             }
-        } finally {
-            prefs.developerFlagsSnapshot.set(null)
         }
     }
 
@@ -281,11 +279,9 @@ class DevSettingsRepository(
         val wasOn = previousDeveloperOptions
         previousDeveloperOptions = current.developerOptions
         _state.value = current
-        try {
+        catching {
             // Enabling developer options in Settings has no write path of its own to restore from.
             if (current.developerOptions && wasOn != true) restoreDeveloperFlags()
-        } catch (e: Exception) {
-            log { e }
         }
     }
 
@@ -302,10 +298,6 @@ class DevSettingsRepository(
     }
 
     /** A failed write is a result, not an exception: the UI shows a snackbar and the switch snaps back. */
-    private suspend fun guarded(block: suspend () -> WriteResult): WriteResult = try {
-        block()
-    } catch (e: Exception) {
-        log { e }
-        WriteResult.Failed
-    }
+    private suspend fun guarded(block: suspend () -> WriteResult): WriteResult =
+        catching { block() }.getOrDefault(WriteResult.Failed)
 }

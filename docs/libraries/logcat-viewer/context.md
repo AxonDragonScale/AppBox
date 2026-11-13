@@ -29,6 +29,7 @@ A host that holds a broader identity â€” root, a shell bridge, a remote device â
 | DI | none in the library; `LogcatViewModel.factory(...)` |
 | Persistence | Preferences DataStore (the viewer's own `logcat_viewer` file) |
 | Serialization | kotlinx.serialization (filter snapshot types) |
+| Local module | `:core:common` (logging and `catching`) |
 
 ## Project Structure
 

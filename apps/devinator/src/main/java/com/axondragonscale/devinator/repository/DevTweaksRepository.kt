@@ -1,6 +1,7 @@
 package com.axondragonscale.devinator.repository
 
-import com.axondragonscale.commons.log
+import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.getOrDefault
 import com.axondragonscale.devinator.model.Tweak
 import com.axondragonscale.devinator.model.WriteResult
 import kotlinx.coroutines.CoroutineScope
@@ -61,12 +62,7 @@ class DevTweaksRepository(
      */
     suspend fun reset(): WriteResult = resetMutex.withLock {
         val wrote = TweakCatalog.map { tweak ->
-            try {
-                writeOne(tweak, tweak.stock)
-            } catch (e: Exception) {
-                log { e }
-                false
-            }
+            catching { writeOne(tweak, tweak.stock) }.getOrDefault(false)
         }
         if (wrote.all { it }) WriteResult.Ok else WriteResult.Failed
     }
@@ -84,10 +80,7 @@ class DevTweaksRepository(
     }
 
     /** A rejected write is a result, not a crash; the observer decides what the page shows. */
-    private fun write(block: () -> Boolean): WriteResult = try {
-        if (block()) WriteResult.Ok else WriteResult.Failed
-    } catch (e: Exception) {
-        log { e }
-        WriteResult.Failed
-    }
+    private fun write(block: () -> Boolean): WriteResult =
+        catching { if (block()) WriteResult.Ok else WriteResult.Failed }
+            .getOrDefault(WriteResult.Failed)
 }

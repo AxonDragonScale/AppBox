@@ -7,7 +7,8 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import com.axondragonscale.commons.log
+import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.getOrDefault
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -79,19 +80,11 @@ class QuickSettingsTileRepository(context: Context) {
      * A refused key and an empty one are the same answer here: the device keeps no tiles we can see,
      * so the page offers to add instead of removing blind.
      */
-    private fun rawValue(key: String): String? = try {
-        Settings.Secure.getString(resolver, key)
-    } catch (e: Exception) {
-        this.log { e }
-        null
-    }
+    private fun rawValue(key: String): String? =
+        catching { Settings.Secure.getString(resolver, key) }.getSuccessResultOrNull()
 
-    private fun writeValue(key: String, raw: String): Boolean = try {
-        Settings.Secure.putString(resolver, key, raw)
-    } catch (e: Exception) {
-        this.log { e }
-        false
-    }
+    private fun writeValue(key: String, raw: String): Boolean =
+        catching { Settings.Secure.putString(resolver, key, raw) }.getOrDefault(false)
 
     /** One scan reads either format, since both spell their tiles as `custom(package/class)`. */
     private fun componentsIn(raw: String): List<ComponentName> = TILE_ENTRY.findAll(raw)
@@ -103,14 +96,11 @@ class QuickSettingsTileRepository(context: Context) {
         .filterNot { it.trim().component() == component }
         .joinToString(",")
 
-    private fun removeFromJson(raw: String, component: ComponentName): String? = try {
+    private fun removeFromJson(raw: String, component: ComponentName): String? = catching {
         val root = Json.parseToJsonElement(raw)
         val updated = root.withoutTile(component) ?: return null
         Json.encodeToString(JsonElement.serializer(), updated)
-    } catch (e: Exception) {
-        this.log { e }
-        null
-    }
+    }.getSuccessResultOrNull()
 
     /** Null drops the whole node: it is the tile being removed. Everything else is kept as is. */
     private fun JsonElement.withoutTile(component: ComponentName): JsonElement? = when (this) {

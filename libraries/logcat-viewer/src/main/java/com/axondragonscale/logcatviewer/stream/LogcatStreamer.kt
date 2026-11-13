@@ -1,13 +1,13 @@
 package com.axondragonscale.logcatviewer.stream
 
 import android.util.Log
+import com.axondragonscale.commons.catching
 import com.axondragonscale.logcatviewer.data.ILogcatProcess
 import com.axondragonscale.logcatviewer.data.ILogcatSource
 import com.axondragonscale.logcatviewer.model.LogBuffer
 import com.axondragonscale.logcatviewer.model.LogEntry
 import com.axondragonscale.logcatviewer.model.LogLevel
 import java.util.ArrayDeque
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -132,9 +132,7 @@ internal class LogcatStreamer(
             replayAfter = cursor
         }
 
-        val started = runCatching { source.open(buffer) }
-            .onFailure { Log.w(TAG, "Could not start the log source", it) }
-            .getOrNull() ?: return
+        val started = TAG.catching { source.open(buffer) }.getSuccessResultOrNull() ?: return
 
         process = started
         errorJob = scope.launch { drainErrors(started) }
@@ -212,31 +210,22 @@ internal class LogcatStreamer(
     private suspend fun read(source: ILogcatProcess): Int = withContext(Dispatchers.IO) {
         val reader = source.input.bufferedReader()
         var lines = 0
-        try {
+        TAG.catching {
             while (currentCoroutineContext().isActive) {
                 val line = reader.readLine() ?: break
                 lines++
-                runCatching { synchronized(lock) { accept(line) } }
-                    .onFailure { Log.w(TAG, "Could not parse a log line", it) }
+                TAG.catching { synchronized(lock) { accept(line) } }
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            if (currentCoroutineContext().isActive) Log.w(TAG, "Log reader failed", e)
         }
         lines
     }
 
     /** `logcat` writes failures to stderr; leaving it unread eventually blocks the process. */
     private suspend fun drainErrors(source: ILogcatProcess) = withContext(Dispatchers.IO) {
-        try {
+        TAG.catching {
             source.error.bufferedReader().forEachLine { line ->
                 if (line.isNotBlank()) Log.d(TAG, "logcat: $line")
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            if (currentCoroutineContext().isActive) Log.w(TAG, "Log stderr reader failed", e)
         }
     }
 

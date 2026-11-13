@@ -1,6 +1,13 @@
 package com.axondragonscale.commons
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Created by Ronak Harkhani on 11/14/26
@@ -34,6 +41,50 @@ inline fun <T> Any.catching(
     } finally {
         onFinally()
     }
+
+/**
+ * Suspend-aware [catching]: [block] and [onFinally] may suspend. Use this when the cleanup itself
+ * suspends; [catching] remains the non-suspend entry point.
+ */
+suspend inline fun <T> Any.catchingSuspend(
+    crossinline onFinally: suspend () -> Unit,
+    crossinline block: suspend () -> T,
+): Result<T, Exception> =
+    try {
+        Result.Success(block())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        this.log { e }
+        Result.Failure(e)
+    } finally {
+        onFinally()
+    }
+
+/**
+ * Launches [block], logging any [Exception] it throws. Cancellation and [Error]s still propagate;
+ * a logged failure completes the returned [Job] normally.
+ */
+fun CoroutineScope.launchCatching(
+    context: CoroutineContext = EmptyCoroutineContext,
+    start: CoroutineStart = CoroutineStart.DEFAULT,
+    onFinally: suspend () -> Unit = {},
+    block: suspend CoroutineScope.() -> Unit,
+): Job = launch(context, start) {
+    catchingSuspend(onFinally = onFinally) { block() }
+}
+
+/**
+ * Runs [block] on [context], logging any [Exception] and returning it as a [Result]. Cancellation
+ * and [Error]s propagate. Use a `String` receiver for an explicit tag, or call it inside a class.
+ */
+suspend fun <T> Any.withContextCatching(
+    context: CoroutineContext,
+    onFinally: suspend () -> Unit = {},
+    block: suspend CoroutineScope.() -> T,
+): Result<T, Exception> = catchingSuspend(onFinally = onFinally) {
+    withContext(context) { block() }
+}
 
 /**
  * The cleanup sink for [catchingFinally]. Register work with [onFinally]; it runs after the block

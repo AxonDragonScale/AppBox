@@ -3,6 +3,8 @@ package com.axondragonscale.logcatviewer.data
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Process
+import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.getOrDefault
 import java.io.File
 
 /** Created by Ronak on 09/11/26 */
@@ -21,9 +23,9 @@ internal class LogcatPackageResolver(
 
     fun pidsFor(packages: Set<String>): Set<Int> {
         if (packages.isEmpty()) return emptySet()
-        return runCatching {
+        return catching {
             val uids = packages.mapNotNull { pkg ->
-                runCatching { packageManager.getPackageUid(pkg, 0) }.getOrNull()
+                catching { packageManager.getPackageUid(pkg, 0) }.getSuccessResultOrNull()
             }.toSet()
             val pids = activityManager?.runningAppProcesses.orEmpty()
                 .filter { it.uid in uids }
@@ -35,20 +37,20 @@ internal class LogcatPackageResolver(
 
     fun packageForPid(pid: Int): String? {
         if (pid == Process.myPid()) return appContext.packageName
-        val fromProcesses = runCatching {
+        val fromProcesses = catching {
             activityManager?.runningAppProcesses
                 ?.firstOrNull { it.pid == pid }
                 ?.processName
                 ?.substringBefore(':')
-        }.getOrNull()
+        }.getSuccessResultOrNull()
         if (!fromProcesses.isNullOrBlank()) return fromProcesses
         // Process visibility hides other apps from ActivityManager; cmdline still often answers.
-        return runCatching {
+        return catching {
             File("/proc/$pid/cmdline")
                 .readText()
                 .trim()
                 .substringBefore(':')
                 .takeIf { it.isNotBlank() }
-        }.getOrNull()
+        }.getSuccessResultOrNull()
     }
 }

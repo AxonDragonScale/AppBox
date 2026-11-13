@@ -5,7 +5,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.axondragonscale.commons.log
+import com.axondragonscale.commons.catching
 import kotlin.time.Instant
 
 /** Created by Ronak on 08/11/26 */
@@ -34,18 +34,12 @@ class DeadlineAlarm(
 
     fun armAt(at: Instant) {
         val triggerAt = at.toEpochMilliseconds().coerceAtLeast(System.currentTimeMillis())
-        try {
+        catching {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
-        } catch (e: Exception) {
-            log { e }
         }
     }
 
     fun cancel() {
-        try {
-            alarmManager.cancel(pendingIntent)
-        } catch (e: Exception) {
-            log { e }
-        }
+        catching { alarmManager.cancel(pendingIntent) }
     }
 }

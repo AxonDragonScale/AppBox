@@ -3,7 +3,7 @@ package com.axondragonscale.devinator.background
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.axondragonscale.commons.log
+import com.axondragonscale.commons.catching
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,12 +20,8 @@ abstract class KoinReceiver : BroadcastReceiver(), KoinComponent {
     final override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
-            try {
+            this@KoinReceiver.catching(onFinally = { pendingResult.finish() }) {
                 onReceiveSuspend(context, intent)
-            } catch (e: Exception) {
-                log { e }
-            } finally {
-                pendingResult.finish()
             }
         }
     }

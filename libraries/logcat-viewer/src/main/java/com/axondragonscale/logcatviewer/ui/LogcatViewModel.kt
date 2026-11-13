@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.axondragonscale.commons.catching
 import com.axondragonscale.logcatviewer.data.ILogcatSource
 import com.axondragonscale.logcatviewer.data.ISavedViewsStore
 import com.axondragonscale.logcatviewer.data.LogcatPackageResolver
@@ -178,7 +179,7 @@ internal class LogcatViewModel(
         combine(streamer.entries, appliedFilter()) { raw, (applied, packages) ->
             val query = applied.query.trim()
             val regex = if (applied.regex && query.isNotEmpty()) {
-                runCatching { Regex(query, RegexOption.IGNORE_CASE) }.getOrNull()
+                catching { Regex(query, RegexOption.IGNORE_CASE) }.getSuccessResultOrNull()
             } else {
                 null
             }

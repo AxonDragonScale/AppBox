@@ -1,11 +1,13 @@
 package com.axondragonscale.logcatviewer.data
 
 import android.content.Context
-import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.getOrDefault
+import com.axondragonscale.commons.onFailure
 import com.axondragonscale.logcatviewer.model.SavedView
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
@@ -49,11 +51,8 @@ class DataStoreSavedViewsStore(context: Context) : ISavedViewsStore {
 
     private fun decode(raw: String?): List<SavedView> {
         if (raw == null) return emptyList()
-        return try {
-            json.decodeFromString(serializer, raw)
-        } catch (error: SerializationException) {
-            Log.w(TAG, "Stored saved views could not be read", error)
-            emptyList()
-        }
+        return TAG.catching { json.decodeFromString(serializer, raw) }
+            .onFailure { if (it !is SerializationException) throw it }
+            .getOrDefault(emptyList())
     }
 }

@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.axondragonscale.commons.catching
 import com.axondragonscale.logcatviewer.data.DataStoreSavedViewsStore
 import com.axondragonscale.logcatviewer.data.ILogcatSource
 import com.axondragonscale.logcatviewer.data.ISavedViewsStore
@@ -92,5 +93,5 @@ private fun shareLog(context: Context, text: String) {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
     }
-    runCatching { context.startActivity(Intent.createChooser(send, null)) }
+    "LogcatViewer".catching { context.startActivity(Intent.createChooser(send, null)) }
 }
