@@ -3,6 +3,7 @@ package com.axondragonscale.wallmatic.background
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.axondragonscale.commons.catching
 import com.axondragonscale.commons.logD
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,10 +44,8 @@ class TickReceiver : BroadcastReceiver(), KoinComponent {
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
-            try {
+            TAG.catching(onFinally = { pendingResult.finish() }) {
                 updateCoordinator.applyIfDue()
-            } finally {
-                pendingResult.finish()
             }
         }
     }

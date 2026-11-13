@@ -3,6 +3,8 @@ package com.axondragonscale.wallmatic.core
 import com.axondragonscale.commons.logD
 import com.axondragonscale.commons.logE
 import com.axondragonscale.commons.logW
+import com.axondragonscale.commons.onFailure
+import com.axondragonscale.commons.onSuccess
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.model.WallmaticConfig
@@ -117,7 +119,7 @@ class WallpaperCycler(
         var homeWallpaperId: Int? = null
         var lockWallpaperId: Int? = null
         var applied = false
-        var firstFailure: Throwable? = null
+        var firstFailure: Exception? = null
         var firstFailedTarget: TargetScreen? = null
         var skipReason: String? = null
 
@@ -216,7 +218,7 @@ class WallpaperCycler(
             ?: return WallpaperUpdateResult.Skipped("Config is null")
         val appliedTarget = effectiveTarget(config, target)
 
-        val cause = applier.apply(wallpaper, appliedTarget).exceptionOrNull()
+        val cause = applier.apply(wallpaper, appliedTarget).getFailureResultOrNull()
         if (cause != null) {
             this.logE { "Wallpaper apply failed. wallpaperId: ${wallpaper.id}, cause: ${cause.message}" }
             return WallpaperUpdateResult.Failed(cause)

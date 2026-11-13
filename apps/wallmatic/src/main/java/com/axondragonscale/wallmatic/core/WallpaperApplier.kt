@@ -16,12 +16,14 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.size.Precision
 import coil3.toBitmap
+import com.axondragonscale.commons.Result
+import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.catchingFinally
 import com.axondragonscale.commons.logD
-import com.axondragonscale.commons.logE
 import com.axondragonscale.commons.logW
+import com.axondragonscale.commons.onFailure
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -42,20 +44,15 @@ class WallpaperApplier(private val context: Context) {
     private val manager = WallpaperManager.getInstance(context)
 
     /**
-     * Applies [wallpaper] to [target]; failures are returned, never thrown.
+     * Applies [wallpaper] to [target]; failures are returned as a [Result]. Cancellation and
+     * [Error]s propagate.
      *
      * A wallpaper without a custom crop is streamed straight to the system, which does its own
      * crop. A custom crop is decoded, cropped with [viewport] and applied as a bitmap; if any step
      * of that fails, the stream path is used instead so the wallpaper is still set.
      */
-    suspend fun apply(wallpaper: Wallpaper, target: TargetScreen): Result<Unit> = try {
+    suspend fun apply(wallpaper: Wallpaper, target: TargetScreen): Result<Unit, Exception> = catching {
         if (wallpaper.hasCustomCrop) applyCropped(wallpaper, target) else applyStream(wallpaper, target)
-        Result.success(Unit)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Throwable) {
-        this.logE { "Setting wallpaper failed. wallpaperId: ${wallpaper.id}, target: $target, error: ${e.message}" }
-        Result.failure(e)
     }
 
     /**
@@ -70,13 +67,13 @@ class WallpaperApplier(private val context: Context) {
     }
 
     /** Stored pixel bounds of [uri], or null when the file cannot be read. */
-    fun sourceSize(uri: String): Size? = runCatching {
+    fun sourceSize(uri: String): Size? = catching {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         context.contentResolver.openInputStream(uri.toUri())?.use { BitmapFactory.decodeStream(it, null, options) }
         val width = options.outWidth
         val height = options.outHeight
         if (width > 0 && height > 0) Size(width, height) else null
-    }.getOrNull()
+    }.getSuccessResultOrNull()
 
     private fun applyStream(wallpaper: Wallpaper, target: TargetScreen): Unit {
         val stream = context.contentResolver.openInputStream(wallpaper.uri.toUri())
@@ -85,23 +82,16 @@ class WallpaperApplier(private val context: Context) {
     }
 
     private suspend fun applyCropped(wallpaper: Wallpaper, target: TargetScreen): Unit = withContext(Dispatchers.IO) {
-        var bitmap: Bitmap? = null
-        try {
+        this@WallpaperApplier.catchingFinally { scope ->
             val cropped = croppedBitmap(wallpaper, applySize())
-            bitmap = cropped
+            scope.onFinally { cropped.recycle() }
             this@WallpaperApplier.logD {
                 "Cropped output ${cropped.width} × ${cropped.height}. wallpaperId: ${wallpaper.id}"
             }
             manager.setBitmap(cropped, null, true, target.toFlag())
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            this@WallpaperApplier.logW {
-                "Custom crop failed, falling back to stream. wallpaperId: ${wallpaper.id}, error: ${e.message}"
-            }
+        }.onFailure {
+            this@WallpaperApplier.logW { "Custom crop failed, falling back to stream. wallpaperId: ${wallpaper.id}" }
             applyStream(wallpaper, target)
-        } finally {
-            bitmap?.recycle()
         }
     }
 

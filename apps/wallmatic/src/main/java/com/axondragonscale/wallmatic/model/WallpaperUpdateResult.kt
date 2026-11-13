@@ -19,5 +19,5 @@ sealed interface WallpaperUpdateResult {
     data class Skipped(val reason: String) : WallpaperUpdateResult
 
     /** Applying failed for at least one target. Persisted state only reflects targets that succeeded. */
-    data class Failed(val cause: Throwable) : WallpaperUpdateResult
+    data class Failed(val cause: Exception) : WallpaperUpdateResult
 }

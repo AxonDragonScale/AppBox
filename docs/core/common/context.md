@@ -88,8 +88,28 @@ result
 ```
 
 It catches `Exception` (not `Throwable`), rethrows `CancellationException`, and logs the exception
-under the receiver's tag. Chain `onFailure` for extra handling and `onComplete` for cleanup. Use
-`runCatching { ... }.toResult { ... }` instead when a failure is expected and should not be logged.
+under the receiver's tag. Chain `onFailure` for extra handling and `onComplete` for result cleanup.
+Use `runCatching { ... }.toResult { ... }` instead when a failure is expected and should not be logged.
+
+For work that must run on every path, pass `onFinally`; it runs on success, failure, cancellation
+and `Error`, before the exception propagates:
+
+```kotlin
+catching(onFinally = { cursor.close() }) { read() }
+```
+
+For a resource created inside the block, use `catchingFinally` — `onComplete` is skipped when
+`catching` rethrows cancellation or an `Error`:
+
+```kotlin
+catchingFinally { scope ->
+    val bitmap = decode()
+    scope.onFinally { bitmap.recycle() }
+    apply(bitmap)
+}
+```
+
+The registered cleanup runs on success, failure, cancellation and `Error`, like a `finally` block.
 
 ### Serialization — `Serialization.kt`
 

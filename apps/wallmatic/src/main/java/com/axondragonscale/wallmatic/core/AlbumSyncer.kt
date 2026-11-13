@@ -2,13 +2,11 @@ package com.axondragonscale.wallmatic.core
 
 import android.content.Context
 import androidx.core.net.toUri
-import com.axondragonscale.commons.log
-import com.axondragonscale.commons.logE
+import com.axondragonscale.commons.catching
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.util.FileUtil
-import kotlinx.coroutines.CancellationException
 
 /**
  * Created by Ronak Harkhani on 11/13/26
@@ -27,7 +25,7 @@ class AlbumSyncer(
      * nor app start.
      */
     suspend fun syncAlbums() {
-        try {
+        catching {
             repository.getAllFullAlbums().forEach { album ->
                 val (_, invalidWallpapers) = album.wallpapers.partition {
                     FileUtil.isValidFile(context, it.uri.toUri())
@@ -36,11 +34,6 @@ class AlbumSyncer(
 
                 album.folders.forEach { folder -> syncFolder(album.id, folder) }
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            this.logE { "Album sync failed. error: ${e.message}" }
-            this.log { e }
         }
     }
 
