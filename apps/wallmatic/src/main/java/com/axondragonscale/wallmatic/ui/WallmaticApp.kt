@@ -53,7 +53,7 @@ fun WallmaticApp(modifier: Modifier = Modifier) {
         }
 
         composable<Route.Wallpaper> {
-            Wallpaper()
+            Wallpaper(navController = navController)
         }
 
         composable<Route.DevTools> {

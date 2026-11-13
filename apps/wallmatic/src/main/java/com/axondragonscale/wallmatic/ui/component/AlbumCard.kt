@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.theme.Dimens
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
@@ -37,6 +38,7 @@ fun AlbumCard(
     title: String,
     subtitle: String,
     coverUri: String?,
+    coverCrop: WallpaperCrop? = null,
     target: String? = null,
     captionPadding: PaddingValues = PaddingValues(top = 6.dp),
     interactive: Boolean = true,
@@ -51,6 +53,7 @@ fun AlbumCard(
                 .fillMaxWidth()
                 .aspectRatio(Dimens.TileAspectRatio),
             uri = coverUri,
+            crop = coverCrop,
             interactive = interactive,
             onClick = onClick,
             onLongClick = onLongClick,

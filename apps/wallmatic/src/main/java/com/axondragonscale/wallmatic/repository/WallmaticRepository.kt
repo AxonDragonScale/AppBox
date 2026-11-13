@@ -6,8 +6,10 @@ import com.axondragonscale.wallmatic.database.entity.Folder
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.FullFolder
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 
 /**
  * Created by Ronak Harkhani on 26/06/24
@@ -70,6 +72,24 @@ class WallmaticRepository(
         return wallmaticDao.getWallpapers(wallpaperIds)
     }
 
+    fun getWallpapersFlow(wallpaperIds: List<Int>): Flow<List<Wallpaper>> {
+        return wallmaticDao.getWallpapersFlow(wallpaperIds)
+    }
+
+    /**
+     * Non-default crops keyed by wallpaper URI, live. A cover is only a URI snapshot, so this is
+     * how it resolves its crop; when two rows share a URI the lowest id wins, keeping it stable.
+     */
+    fun getCoverCrops(): Flow<Map<String, WallpaperCrop>> {
+        return wallmaticDao.getCustomCropsFlow().map { rows ->
+            buildMap {
+                rows.forEach { row ->
+                    putIfAbsent(row.uri, WallpaperCrop(row.cropFocalX, row.cropFocalY, row.cropZoom))
+                }
+            }
+        }
+    }
+
     suspend fun getWallpaper(wallpaperId: Int): Wallpaper? {
         return wallmaticDao.getWallpaper(wallpaperId)
     }
@@ -95,6 +115,10 @@ class WallmaticRepository(
             block(wallpaper)
             wallmaticDao.upsertWallpaper(wallpaper)
         }
+    }
+
+    suspend fun updateWallpaperCrop(wallpaperId: Int, focalX: Float, focalY: Float, zoom: Float) {
+        wallmaticDao.updateWallpaperCrop(wallpaperId, focalX, focalY, zoom)
     }
 
     // MARK: Save / Create -------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import com.axondragonscale.wallmatic.background.UpdateCoordinator
 import com.axondragonscale.wallmatic.core.SyncManager
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
 import com.axondragonscale.wallmatic.repository.WallmaticRepository
 import com.axondragonscale.wallmatic.util.activateAlbum
@@ -41,13 +42,15 @@ class AlbumsVM(
             combine(
                 repository.getAlbums(),
                 appPrefsRepository.configFlow,
-            ) { albums, config ->
+                repository.getCoverCrops(),
+            ) { albums, config, coverCrops ->
                 AlbumsSnapshot(
                     albums = albums,
                     activeTargets = albums
                         .associate { album -> album.id to config.activeTargetsFor(album.id) }
                         .filterValues { targets -> targets.isNotEmpty() },
                     mirrorEnabled = config.mirrorHomeConfigForLock,
+                    coverCrops = coverCrops,
                 )
             }
                 .distinctUntilChanged()
@@ -58,6 +61,7 @@ class AlbumsVM(
                             albums = snapshot.albums,
                             activeTargets = snapshot.activeTargets,
                             mirrorEnabled = snapshot.mirrorEnabled,
+                            coverCrops = snapshot.coverCrops,
                         )
                     }
                 }
@@ -106,4 +110,5 @@ private data class AlbumsSnapshot(
     val albums: List<Album>,
     val activeTargets: Map<Int, Set<TargetScreen>>,
     val mirrorEnabled: Boolean,
+    val coverCrops: Map<String, WallpaperCrop>,
 )

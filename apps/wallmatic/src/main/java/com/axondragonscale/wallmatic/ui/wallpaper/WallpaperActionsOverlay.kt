@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Wallpaper
@@ -22,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.component.ContextMenu
 import com.axondragonscale.wallmatic.ui.component.ContextMenuItem
 import com.axondragonscale.wallmatic.ui.component.WallpaperTile
@@ -37,6 +39,7 @@ import com.axondragonscale.wallmatic.ui.theme.wallmatic
 fun WallpaperActionsOverlay(
     wallpaper: Wallpaper,
     onSetWallpaper: (TargetScreen) -> Unit,
+    onAdjust: (Wallpaper) -> Unit,
     onBlacklist: () -> Unit,
     onWhitelist: () -> Unit,
     onDismiss: () -> Unit,
@@ -46,6 +49,7 @@ fun WallpaperActionsOverlay(
             modifier = Modifier.align(Alignment.Center),
             wallpaper = wallpaper,
             onSetWallpaper = onSetWallpaper,
+            onAdjust = onAdjust,
             onBlacklist = onBlacklist,
             onWhitelist = onWhitelist,
         )
@@ -57,6 +61,7 @@ private fun WallpaperActionsContent(
     modifier: Modifier = Modifier,
     wallpaper: Wallpaper,
     onSetWallpaper: (TargetScreen) -> Unit,
+    onAdjust: (Wallpaper) -> Unit,
     onBlacklist: () -> Unit,
     onWhitelist: () -> Unit,
 ) {
@@ -68,6 +73,7 @@ private fun WallpaperActionsContent(
         WallpaperTile(
             modifier = Modifier.width(178.dp),
             uri = wallpaper.uri,
+            crop = wallpaper.crop,
             interactive = false,
             onClick = {},
         )
@@ -90,6 +96,11 @@ private fun WallpaperActionsContent(
                     icon = Icons.Filled.Wallpaper,
                     text = "Set Both",
                     action = { onSetWallpaper(TargetScreen.Both) },
+                ),
+                ContextMenuItem(
+                    icon = Icons.Filled.Crop,
+                    text = "Adjust",
+                    action = { onAdjust(wallpaper) },
                 ),
                 if (wallpaper.isBlacklisted) {
                     ContextMenuItem(
@@ -123,6 +134,7 @@ private fun WallpaperActionsPreview() {
             WallpaperActionsContent(
                 wallpaper = Wallpaper(uri = "").apply { id = 1 },
                 onSetWallpaper = {},
+                onAdjust = {},
                 onBlacklist = {},
                 onWhitelist = {},
             )

@@ -1,7 +1,7 @@
 ---
 title: "Wallmatic — background services"
 status: current
-summary: "The nextUpdate = lastUpdated + interval rule, and how Doze, reboots, alarms and workers keep exactly one wake-up armed."
+summary: "The nextUpdate = lastUpdated + interval rule, how Doze, reboots, alarms and workers keep exactly one wake-up armed, and how a saved crop is re-applied."
 read_when: "Debugging missed updates, Doze or reboot behaviour, or alarm and worker wiring."
 ---
 
@@ -73,7 +73,7 @@ It is deliberately off the timed path: `syncAlbums()` scans SAF folders and can 
 Core logic for selecting and applying wallpapers.
 
 - No-arg `updateWallpaper()`: reads config, checks if the interval has passed, determines target (`Home` / `Lock` / `Both`), delegates to the `TargetScreen` overload. Returns `NotDue` if the interval has not elapsed, `Skipped` when nothing was applied for a non-failure reason (unusable config, album missing, empty album whitelist), otherwise whatever the delegated update returned. A `Skipped` is permanent from the scheduler's point of view — it is reported once per interval, not retried
-- `updateWallpaper(target)`: loads album(s), picks random wallpaper(s), calls `WallpaperManager.setStream()`, then persists config for the screens that actually applied — `currentWallpaperId` per applied screen, `lastUpdated` as soon as at least one screen applied. Returns `Updated`, `Skipped(reason)` (config null / not initialised / album missing / album has no whitelisted wallpaper) or `Failed(cause)`. The input stream is opened eagerly and closed as soon as `setStream()` returns, so a missing file or a revoked URI grant is a failure, not a leaked descriptor
+- `updateWallpaper(target)`: loads album(s), picks random wallpaper(s), applies each with `setWallpaper()`, then persists config for the screens that actually applied — `currentWallpaperId` per applied screen, `lastUpdated` as soon as at least one screen applied. Returns `Updated`, `Skipped(reason)` (config null / not initialised / album missing / album has no whitelisted wallpaper) or `Failed(cause)`. `setWallpaper()` streams a wallpaper with no custom crop and decodes one with a crop — both paths are in [Wallmatic context](./context.md#apply). A missing file or a revoked URI grant is a failure, not a leaked descriptor
 - An album whose whitelist is empty (every wallpaper blacklisted) is not a failure: `getRandomWallpaperOrNull()` returns `null`, that screen is skipped with a warning naming the album id, and the other screen is still applied. If no screen applied and nothing threw, the result is `Skipped(reason)`; a failure cause always wins over a skip reason, and `Failed` stays reserved for an apply that actually failed
 - A failed apply is never persisted as a success: if nothing applied, `lastUpdated` stays unadvanced, `lastFailedAt` and `failedTarget` are recorded, and `Failed` is returned. If only some screens applied, the successes are persisted, `lastUpdated` advances, `lastFailedAt` is still recorded and `Failed` carries the first failure. A fully clean apply clears `lastFailedAt` to `-1`
 - `lastFailedAt` / `failedTarget` are what the Home screen's `LAST UPDATE FAILED` row reads; `reconcile()` retries the recorded target directly, and a clean apply to the target that failed clears the record
@@ -92,6 +92,36 @@ Three `TileService`s for immediate manual wallpaper changes from the notificatio
 
 Tile taps call `UpdateCoordinator.applyNow(target)`: the interval check is bypassed, config is persisted for the applied screens, and the tick is re-armed from the new `lastUpdated` — so a manual change also pushes the next automatic one out by a full interval.
 
+`Set Home` / `Set Lock` / `Set Both` in a wallpaper's long-press menu takes the same mutex-guarded
+path through `UpdateCoordinator.applyWallpaper()`: the chosen wallpaper is applied immediately,
+`currentWallpaperId` is written for the targets actually applied (`Both` writes both), and
+`lastUpdated` advances before the tick is re-armed. A failed apply is not recorded as current and
+leaves the bounded retry in charge.
+
+## Saving a crop
+
+Saving in the editor's edit mode writes only the three crop columns, then asks the coordinator to
+re-apply the wallpaper if it is already showing:
+
+```
+1. Wallpaper editor (edit mode) → UPDATE wallpaper SET cropFocalX / cropFocalY / cropZoom WHERE id
+       ↓
+2. UpdateCoordinator.reapply(wallpaper)               (mutex)
+       ↓
+3. Config.currentTargetFor(wallpaperId) → Home / Lock / Both, or null
+       ↓
+4. WallpaperUpdater.applyWallpaper()    → setWallpaper() + currentWallpaperId, lastUpdated
+       ↓
+5. armAfter(Updated)                    → next tick a full interval away
+```
+
+`reapply()` takes the same mutex as `reconcile()`, so a crop save cannot race a scheduled apply.
+`currentTargetFor` resolves the screens already showing that wallpaper and honours
+`mirrorHomeConfigForLock`, so a mirrored Lock is re-applied as `Both`. The apply is recorded like a
+cycle apply — `currentWallpaperId` per screen and `lastUpdated` — and the schedule is re-armed from
+the new timestamp. A wallpaper that is not current anywhere gets only its crop written; nothing is
+applied and the existing tick stands.
+
 ## Data Flows
 
 ### Scheduled cycle
@@ -105,7 +135,7 @@ Tile taps call `UpdateCoordinator.applyNow(target)`: the interval check is bypas
        ↓
 4. WallpaperUpdater.updateWallpaper()     ← interval check
        ↓
-5. setStream() → persist currentWallpaperId + lastUpdated
+5. setWallpaper() → persist currentWallpaperId + lastUpdated
        ↓
 6. arm the next tick at the new nextUpdate, enqueue SyncWorker
 ```

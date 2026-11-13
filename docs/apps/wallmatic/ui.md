@@ -1,7 +1,7 @@
 ---
 title: "Wallmatic UI — wallpaper library design system"
 status: current
-summary: "The Wallmatic .fig: paper/ink/indigo tokens, Chakra Petch + Roboto, the library component set, Home/Lock model, and 17 screens."
+summary: "The Wallmatic .fig: paper/ink/indigo tokens, Chakra Petch + Roboto, the library component set, Home/Lock model, the two-mode wallpaper viewer/editor, and 21 screens."
 read_when: "Changing Wallmatic's UI, its design tokens, or apps/wallmatic/wallmatic.fig."
 ---
 
@@ -10,7 +10,7 @@ read_when: "Changing Wallmatic's UI, its design tokens, or apps/wallmatic/wallma
 Design source: [`apps/wallmatic/wallmatic.fig`](../../../apps/wallmatic/wallmatic.fig).
 Only `apps/wallmatic/wallmatic.fig` is kept; the earlier design was removed.
 Code source of truth: `apps/wallmatic/src/main/java/com/axondragonscale/wallmatic/ui/`.
-All seventeen screens and the supporting overlays are implemented against this design; the reusable
+All twenty-one screens and the supporting overlays are implemented against this design; the reusable
 kit lives in `ui/component/`. Known implementation gaps are listed at the end of this doc.
 
 The file has three pages: **Foundations**, **Components**, **Screens**.
@@ -73,7 +73,8 @@ type 36 / 28 / 22 / 20 / 16 / 14 / 11 / 10.
 ## Shape, spacing and layout
 
 - Screen 412 × 915, padding 24, content width 364.
-- Every wallpaper preview uses the phone's own 412:915 (0.45) crop. Home preview 180 × 400;
+- Every wallpaper preview is framed at the phone's own 412:915 (0.45) aspect and uses the
+  wallpaper's stored crop, album covers and folder strips included. Home preview 180 × 400;
   album card 178 × 433 (395 image + caption); wallpaper tile 178 × 395; folder strip 108 × 240.
   The folder card's strips scroll horizontally when the folder holds more than the three that fit.
 - Bottom tab bar 64 dp; touch target 48 dp; rule 1 dp. The bar's paper surface and its two vertical
@@ -105,7 +106,7 @@ screens use instances.
 | `Fab` | — | 56 dp, square, one primary action |
 | `AlbumRow` | `State=Selected` · `Unselected`, text `Title`/`Subtitle` | 364 × 72, square radio with a centred indicator |
 | `AlbumNameDialog` | text `Title` | 280 wide, square corners, paper; one dialog for every entry point — `New album`, empty field, helper, `CANCEL` / `CREATE` |
-| `ContextMenu` | `Menu=Album` · `Wallpaper`, album items vary with Mirror | 1 px row rules inset 16 dp from both edges, destructive row isolated; the album menu is `Rename` / `Set active` / `Delete` with Mirror on, and `Rename` / `Set Home` / `Set Lock` / `Delete` with it off, offering only the targets the album is not already active on; no item carries an ellipsis; the album card above the menu sits its title and count on an 8 dp-inset Paper plate so they read over the scrim |
+| `ContextMenu` | `Menu=Album` · `Wallpaper`, album items vary with Mirror | 1 px row rules inset 16 dp from both edges, destructive row isolated; the album menu is `Rename` / `Set active` / `Delete` with Mirror on, and `Rename` / `Set Home` / `Set Lock` / `Delete` with it off, offering only the targets the album is not already active on; the wallpaper menu is `Set Home` / `Set Lock` / `Set Both` / `Adjust` / `Whitelist` or `Blacklist`, with `Adjust` after `Set Both`; no item carries an ellipsis; the album card above the menu sits its title and count on an 8 dp-inset Paper plate so they read over the scrim |
 
 Bottom sheets: the drag handle sits 16 dp below the sheet's top edge, and the sheet title starts 44 dp
 from the top (24 dp below the handle).
@@ -152,10 +153,49 @@ Home and Lock are two targets of one screen, not two stacked cards.
 - `CUSTOM` on the picker opens a stepper sheet for arbitrary hours and minutes.
 
 
+## Wallpaper viewer and editor
+
+`09 · Wallpaper` is a single screen with two modes — view and edit — behind one ViewModel and one
+state: the loaded row, the mode, and a draft crop. `Route.Wallpaper(wallpaperId, edit = false)`
+opens it: tile taps and the Home preview enter view mode, while the `Adjust` row in the long-press
+menu enters edit mode directly with `edit = true`.
+
+**View.** A full-bleed image using the stored crop, with the chrome hidden on entry. A tap toggles
+the chrome: a 56 dp paper top bar — back chevron, `Wallpaper` title, trailing `ADJUST` — with the ink
+rule under it; the chrome hides again 3 s after the tap, or on the next tap.
+
+**Edit.** The viewport **is** the device frame: the image fills the screen at the device aspect, with
+no letterbox and no border, using the draft crop. Pinch zooms continuously between 1x and 4x, drag
+pans, and the crop box never leaves the source. At rest at 1x the viewport shows exactly the centre
+crop the previews and the apply path use. The paper top bar keeps the back chevron but reads
+`Adjust`, with a trailing `DONE` enabled only while the draft differs from the stored crop.
+
+The footer carries a `ZOOM` label with the live readout, a continuous 1x–4x rail with seven evenly
+spaced ticks (`1x` / `1.5x` / `2x` / `2.5x` / `3x` / `3.5x` / `4x`) in the `IntervalPicker` idiom,
+and `CENTER` / `RESET` text actions. Pinch and the rail are both continuous and clamped to 1–4:
+tapping or dragging anywhere on the rail sets that exact zoom, nothing snaps, and the readout shows
+the real value (`1.7x`) with the thumb sitting proportionally between ticks. Pinch is unchanged:
+continuous, clamped to 1–4, preserving the focal point. `CENTER` returns the focal point to
+`0.5 / 0.5` and keeps the zoom; `RESET` returns the whole crop — focal point and zoom — to the
+default.
+
+`ADJUST` switches this screen into edit in place; nothing is pushed. `DONE` writes the crop as a
+single-row `UPDATE`, re-applies it when the wallpaper is already showing, and returns the screen to
+view mode with the chrome visible — it does not pop. Back in edit mode drops the draft and returns
+to view; back in view mode pops. The top-bar back and the system back gesture share that rule.
+
+The viewer opens with its chrome hidden; the editor opens with it visible. In both, chrome auto-hides
+3 s after the last interaction and returns on tap; in the editor it also hides as soon as a drag or
+pinch begins. Rule-of-thirds guides appear only during a gesture and fade out over 400 ms after
+release, so the resting editor carries no guides. Tokens are unchanged: paper, ink, indigo
+`PRIMARY`, square corners, 1 px rules.
+
+
 ## Screens
 
-Seventeen 412 × 915 frames on **Screens** — sixteen in a 4 × 4 grid, gap 60, plus the update-failure
-state in the fifth column of the first row:
+Twenty-one 412 × 915 frames on **Screens** — the sixteen-frame 4 × 4 grid with gap 60, the
+update-failure state in the fifth column of the first row, and the four wallpaper frames that
+follow, `18`–`21` — three states of the one viewer/editor plus the action menu:
 
 1. `01 · Home · mirrored` — no target tabs; device-aspect preview, current/next with the album
    dropdown, picker and outline `CHANGE NOW`, text tab bar.
@@ -172,7 +212,8 @@ state in the fifth column of the first row:
 7. `07 · Select Album` — scrim plus a square paper bottom sheet of album rows with square radios,
    opened from the right-column album dropdown.
 8. `08 · New album` — scrim plus the square `New album` dialog, the same construction as `14`.
-9. `09 · Wallpaper` — full-bleed image, no chrome.
+9. `09 · Wallpaper` — the viewer at rest in view mode: full-bleed image with the chrome hidden; a tap
+   reveals the back chevron, `Wallpaper` title and trailing `ADJUST`.
 10. `10 · Context menu` — scrim, album preview and album menu: `Rename` / `Set active` / `Delete`
     with Mirror on, `Rename` / `Set Home` / `Set Lock` / `Delete` with it off, listing only the
     targets the album is not already active on.
@@ -191,6 +232,15 @@ state in the fifth column of the first row:
 17. `17 · Home · update failed` — Home with a ruled status row under the preview:
     `LAST UPDATE FAILED`, the failed time and a `RETRY` action; the picker and `CHANGE NOW` stay
     available.
+18. `18 · Wallpaper · chrome` — the same screen in view mode with its paper top bar visible: back
+    chevron, `Wallpaper` title, trailing `ADJUST`, and the ink rule beneath.
+19. `19 · Adjust · default` — the same screen in edit mode, at rest at 1x: full-bleed device-aspect
+    viewport, footer reading `1x`, `DONE` disabled, no guides.
+20. `20 · Adjust · adjusted` — the same screen in edit mode after an adjustment at 2x: readout `2x`
+    and the rail thumb on the `2x` tick, `CENTER` and `RESET` enabled, `DONE` enabled; guides are
+    not drawn at rest.
+21. `21 · Wallpaper actions` — scrim over the wallpaper tile and the five-row menu: `Set Home` /
+    `Set Lock` / `Set Both` / `Adjust` / `Whitelist` or `Blacklist`.
 
 Overlays are siblings of the scrim, both absolute at `0, 0`.
 
@@ -220,7 +270,7 @@ a second album is not onboarding. Home and Library do not scroll when the conten
 bottom action is anchored above the tab bar — and Album's `ADD WALLPAPERS` sits above the navigation
 bar.
 
-Frames live on the **Screens** page, `12`–`17` at the end of the grid.
+Frames live on the **Screens** page.
 
 ## Implementation notes
 

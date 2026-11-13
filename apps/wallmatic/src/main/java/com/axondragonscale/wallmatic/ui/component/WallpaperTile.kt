@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.theme.Dimens
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
@@ -32,6 +33,7 @@ import java.util.Locale
 fun WallpaperTile(
     modifier: Modifier = Modifier,
     uri: String?,
+    crop: WallpaperCrop? = null,
     index: Int? = null,
     interactive: Boolean = true,
     onClick: () -> Unit = {},
@@ -42,6 +44,7 @@ fun WallpaperTile(
             .fillMaxWidth()
             .aspectRatio(Dimens.TileAspectRatio),
         uri = uri,
+        crop = crop,
         interactive = interactive,
         onClick = onClick,
         onLongClick = onLongClick,

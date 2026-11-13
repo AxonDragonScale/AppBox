@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullFolder
+import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.component.EmptyStateCard
 import com.axondragonscale.wallmatic.ui.component.HorizontalRule
@@ -78,6 +79,10 @@ fun Folder(
             onSetWallpaper = { target ->
                 wallpaperActionsTarget = null
                 vm.onEvent(FolderUiEvent.SetWallpaper(wallpaper, target))
+            },
+            onAdjust = { onAdjustTarget ->
+                wallpaperActionsTarget = null
+                navController.navigate(Route.Wallpaper(onAdjustTarget.id, edit = true))
             },
             onBlacklist = {
                 wallpaperActionsTarget = null
@@ -154,6 +159,7 @@ private fun FolderGrid(
         itemsIndexed(folder.wallpapers) { index, wallpaper ->
             WallpaperTile(
                 uri = wallpaper.uri,
+                crop = wallpaper.crop,
                 index = index + 1,
                 onClick = { onEvent(FolderUiEvent.NavigateToWallpaper(wallpaper.id)) },
                 onLongClick = { onEvent(FolderUiEvent.ShowWallpaperActions(wallpaper)) },

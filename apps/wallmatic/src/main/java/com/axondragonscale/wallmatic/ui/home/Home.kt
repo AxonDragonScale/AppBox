@@ -40,6 +40,7 @@ import com.axondragonscale.wallmatic.model.Interval
 import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.model.config
 import com.axondragonscale.wallmatic.model.copy
+import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.model.wallpaperConfig
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.component.CustomIntervalSheet
@@ -114,6 +115,7 @@ fun Home(
             selectedAlbumId = activeAlbum?.id ?: -1,
             onSelectAlbum = { vm.onEvent(HomeUiEvent.AlbumSelected(it.id, activeTarget)) },
             onDismiss = { showSelectAlbum = false },
+            coverCrops = uiState.coverCrops,
         )
     }
 
@@ -204,6 +206,7 @@ private fun ActiveAlbum(
                     .weight(180f)
                     .aspectRatio(Dimens.DeviceAspectRatio),
                 uri = wallpaper?.uri,
+                crop = wallpaper?.crop,
                 interactive = !wallpaper?.uri.isNullOrBlank(),
                 onClick = { wallpaper?.let { onEvent(HomeUiEvent.NavigateToWallpaper(it.id)) } },
             ) {

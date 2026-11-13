@@ -1,7 +1,7 @@
 ---
 title: "Wallmatic — wallpaper auto-changer"
 status: current
-summary: "Cycles user-created wallpaper albums on a schedule, with separate home and lock configurations and quick settings tiles."
+summary: "Cycles user-created wallpaper albums on a schedule, with separate home and lock configurations, per-wallpaper crops, and quick settings tiles."
 read_when: "Changing albums, config, scheduling, or the wallpaper apply path."
 ---
 
@@ -45,6 +45,8 @@ com.axondragonscale.wallmatic/
 │   ├── AlbumManager.kt               # Album CRUD operations
 │   ├── FolderManager.kt              # Folder management
 │   ├── SyncManager.kt                # Syncs albums with filesystem
+│   ├── WallpaperCrop.kt              # Crop resolver: viewport()
+│   ├── WallpaperCropTransformation.kt # Coil transformation that crops a preview
 │   ├── WallpaperManager.kt           # Wallpaper operations
 │   └── WallpaperUpdater.kt           # Core wallpaper update logic
 ├── database/
@@ -62,7 +64,8 @@ com.axondragonscale.wallmatic/
 │   ├── FullFolder.kt                 # Folder with resolved wallpapers
 │   ├── Interval.kt                   # Tick list, bounds, labels and coercion
 │   ├── TargetScreen.kt               # Home/Lock/Both enum
-│   └── UIMode.kt                     # Light/Dark/Auto theme mode
+│   ├── UIMode.kt                     # Light/Dark/Auto theme mode
+│   └── WallpaperCrop.kt              # Focal point + zoom, and the Wallpaper.crop helper
 ├── repository/
 │   ├── AppPrefsRepository.kt         # Proto DataStore preferences
 │   └── WallmaticRepository.kt        # Data layer operations
@@ -79,7 +82,7 @@ com.axondragonscale.wallmatic/
 │   ├── settings/                     # Settings screen
 │   ├── theme/                        # Wallmatic-specific theming
 │   ├── util/                         # UI utilities
-│   └── wallpaper/                    # Wallpaper detail/preview
+│   └── wallpaper/                    # Wallpaper viewer and crop editor (one screen, two modes)
 └── util/
     ├── ConfigUtils.kt                # Config derivation: active targets, activation, failures
     └── DevTools.kt                   # Development utilities
@@ -92,7 +95,7 @@ object Route {
     @Serializable data class Dashboard(val tab: Int = Tab.Home.position)
     @Serializable data class Album(val albumId: Int)
     @Serializable data class Folder(val folderId: Int)
-    @Serializable data class Wallpaper(val wallpaperId: Int)
+    @Serializable data class Wallpaper(val wallpaperId: Int, val edit: Boolean = false)
 }
 ```
 
@@ -103,7 +106,10 @@ object Route {
 - **Library**: Album grid with target badges and the create action
 - **Album**: Album detail with folders and wallpapers
 - **Folder**: Folder contents
-- **Wallpaper**: Full-screen wallpaper preview
+- **Wallpaper**: One full-screen screen with two modes. View mode shows the full-bleed image with the
+  stored crop and a chrome that carries `ADJUST`; edit mode is the crop editor — draft focal point and
+  zoom, `CENTER` and `RESET` — switched to in place, or entered directly with
+  `Route.Wallpaper(edit = true)` from the long-press `Adjust` row
 - **Settings**: App configuration
 
 `WallmaticActivity` is the entry point. It syncs albums on start and applies theme preferences. Use `WallmaticActivity.start(context)` to launch it from outside.
@@ -128,13 +134,96 @@ data class Album(
 
 **Folder**: Contains URI reference to device folder, list of wallpaper IDs
 
-**Wallpaper**: Individual wallpaper with URI, parent folder ID, whitelist status
+**Wallpaper**: Individual wallpaper with URI, whitelist status, and the crop fields `cropFocalX` / `cropFocalY` (fractions of the source, default `0.5f`) and `cropZoom` (default `1f`). `hasCustomCrop` is computed — true once any field leaves the default — and nothing stores it.
+
+`WallmaticDatabase` is at version 2. `MIGRATION_1_2` is handwritten and registered on the builder: three `ALTER TABLE wallpaper ADD COLUMN` statements adding `cropFocalX` and `cropFocalY` as `REAL NOT NULL DEFAULT 0.5` and `cropZoom` as `REAL NOT NULL DEFAULT 1.0`. There is no destructive fallback, so an older install opened without this migration would fail to open the database rather than lose its rows.
 
 ### Models
 
 - `FullAlbum`: Album with its resolved folders and wallpapers (joined data)
 - `FullFolder`: Folder with its resolved wallpapers (joined data)
 - `TargetScreen`: Enum — `Home`, `Lock`, `Both`
+- `WallpaperCrop`: Focal point plus zoom; `Wallpaper.crop` returns it, or null while the row is at the default centre crop
+
+## Wallpaper crop
+
+A wallpaper's crop is a focal point plus a zoom, stored on its row. The default — `0.5 / 0.5` at
+`1x` — is the centre crop the app has always applied and drawn; `hasCustomCrop` selects the
+crop-aware paths below. Because the crop lives on the row, the same file added to two folders
+carries two independent crops.
+
+### Resolver
+
+`apps/wallmatic/src/main/java/com/axondragonscale/wallmatic/core/WallpaperCrop.kt` holds one pure
+resolver:
+
+```kotlin
+fun viewport(sourceWidth, sourceHeight, focalX, focalY, zoom, targetAspect): Rect
+```
+
+It takes the largest rect at `targetAspect` that fits the source, divides it by `zoom` (clamped
+1–4), centres it on the focal point and clamps it inside the source, rounding outward so the rect
+covers the region asked for. At default values it returns the centre crop. The apply path, the
+editor and the preview transformation all resolve through it.
+
+### Apply
+
+`WallpaperUpdater.setWallpaper()` is `suspend` and branches on `hasCustomCrop`:
+
+- **No custom crop** — the wallpaper is streamed untouched with
+  `setStream(stream, null, true, flags)`, so nothing is decoded and the system performs its own
+  crop.
+- **Custom crop** — on `Dispatchers.IO`: probe the stored bounds with `BitmapFactory` in
+  `inJustDecodeBounds` mode, choose a decode size that puts the crop region on the target at 1:1,
+  decode through Coil (`Precision.INEXACT`, hardware bitmaps off, memory and disk caches disabled),
+  crop with `viewport` and scale into an `ARGB_8888` bitmap at the target size with a filtering
+  `Canvas` draw, then apply with `setBitmap`. The decode budget is a quarter of
+  `Runtime.getRuntime().maxMemory()`, clamped to 32–64 MB, with a 4096 px absolute dimension guard,
+  so a 12 MP photo at 1x is not downsampled below the crop region. Any failure logs and falls back
+  to the stream path, so the wallpaper is still set.
+- The cropped output is screen-sized by design: the target is
+  `WindowManager.currentWindowMetrics.bounds`, which includes the system bars, so the editor's frame
+  and the applied wallpaper share one aspect. A launcher that pans a wider virtual desktop may shift
+  the framing — accepted rather than compensated for. A higher zoom can upscale the crop region to
+  the target — accepted rather than refused.
+
+### Previews
+
+`WallpaperCropTransformation` (cache key `WallpaperCrop:<focalX>:<focalY>:<zoom>`) resolves the
+rect against each request's own target size, so the Home preview, the 178 × 395 tile and the
+full-bleed viewer show the same region at their own sizes. `wallpaperModel(uri, crop)` wraps the
+URI in an `ImageRequest` carrying that transformation, and returns the plain URI when the crop is
+null. `WallpaperPlate` and `WallpaperTile` take an optional `WallpaperCrop`; the album and folder
+grids, the Home preview, the action overlay and the full-screen viewer pass it. Album covers resolve
+their crop by URI from `WallmaticRepository.getCoverCrops()` — a live `Flow` of the non-default
+crops, so a crop edit repaints any visible card, row or picker entry in place; a cover URI with no
+matching wallpaper row falls back to the centre crop, and when two rows share a URI the lowest id
+wins. Folder strips pass each wallpaper's own `crop`, which the album screen's
+`getWallpapersFlow()` keeps live.
+
+### Viewer and editor
+
+`Route.Wallpaper(wallpaperId, edit = false)` opens `ui/wallpaper/`: `Wallpaper.kt`, `WallpaperVM`,
+`WallpaperUiState` and `WallpaperUiEvent`. One VM and one state cover both modes: `isLoading`, the
+loaded `wallpaper`, `isMissing`, `mode` (`View` / `Edit`), the draft `focalX` / `focalY` / `zoom`,
+`isSaving`, and a computed `isDirty` that compares the draft with the stored crop. `edit = true`
+selects `Edit` at construction; otherwise the mode changes in place and never navigates.
+
+View mode draws the stored crop full-bleed with the chrome hidden until a tap. Edit mode draws the
+draft crop full-bleed: pinch and drag move the draft, `CENTER` returns the focal point to
+`0.5 / 0.5` and keeps the zoom, and `RESET` restores both. `DONE` is enabled only while `isDirty`; it
+saves the crop as a single `UPDATE wallpaper SET cropFocalX / cropFocalY / cropZoom WHERE id`, so the
+row is never duplicated, then returns the screen to view mode rather than popping. Back in edit mode
+discards the draft and returns to view; back in view mode pops.
+
+The editor is reached from `ADJUST` in view mode and from `Adjust` in a wallpaper's long-press menu.
+After the update, the VM reloads the row and calls `UpdateCoordinator.reapply()`: the crop is always
+written, and the wallpaper is re-applied only if it is already showing on Home or Lock — see
+[Background Services](./background-services.md#saving-a-crop).
+
+The album and folder screens observe the `wallpaper` table through `WallmaticDao.getWallpapersFlow()`,
+keyed by their wallpaper ids, so a changed row — a crop included — repaints the grid and the
+folder strips immediately without a reload.
 
 ## Configuration (Proto DataStore)
 
@@ -172,6 +261,12 @@ Key settings:
 2. User adds folder → folder URI persisted, wallpapers scanned from filesystem
 3. Wallpapers inserted into Room with folder reference
 4. Album updated with folder/wallpaper IDs
+
+### Manual Set
+`Set Home` / `Set Lock` / `Set Both` from the wallpaper menu calls
+`UpdateCoordinator.applyWallpaper()`: the chosen row is applied immediately, `currentWallpaperId` is
+written for the applied screens (`Both` writes both) and `lastUpdated` advances, so the Home preview
+and `CURRENT` follow the change. The schedule re-arms from the new timestamp.
 
 ### Wallpaper Auto-Cycle (Summary)
 1. `TickScheduler` keeps exactly one `AlarmManager` tick armed at `config.nextUpdate` (`lastUpdated + updateInterval`)

@@ -11,9 +11,11 @@ import com.axondragonscale.commons.logE
 import com.axondragonscale.commons.logW
 import com.axondragonscale.wallmatic.core.WallpaperUpdateResult
 import com.axondragonscale.wallmatic.core.WallpaperUpdater
+import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.Config
 import com.axondragonscale.wallmatic.model.TargetScreen
 import com.axondragonscale.wallmatic.repository.AppPrefsRepository
+import com.axondragonscale.wallmatic.util.currentTargetFor
 import com.axondragonscale.wallmatic.util.failedTargetOrNull
 import com.axondragonscale.wallmatic.util.isAutoCycleEnabled
 import com.axondragonscale.wallmatic.util.nextUpdate
@@ -59,6 +61,25 @@ class UpdateCoordinator(
     /** Applies immediately, bypassing the interval, then re-arms from the new `lastUpdated`. */
     suspend fun applyNow(target: TargetScreen) = mutex.withLock {
         armAfter(wallpaperUpdater.updateWallpaper(target))
+    }
+
+    /**
+     * Applies a chosen [wallpaper] to [target], skipping the cycle's random pick. The apply is
+     * recorded like a cycle apply, so the schedule re-arms from the new `lastUpdated`.
+     */
+    suspend fun applyWallpaper(wallpaper: Wallpaper, target: TargetScreen) = mutex.withLock {
+        armAfter(wallpaperUpdater.applyWallpaper(wallpaper, target))
+    }
+
+    /**
+     * Re-applies [wallpaper] to the screens already showing it, skipping the cycle's random pick.
+     * The apply is recorded like a cycle apply, so an imminent tick cannot undo the adjustment;
+     * a wallpaper that is not current anywhere changes nothing.
+     */
+    suspend fun reapply(wallpaper: Wallpaper) = mutex.withLock {
+        val config = appPrefsRepository.configFlow.firstOrNull() ?: return@withLock
+        val target = config.currentTargetFor(wallpaper.id) ?: return@withLock
+        armAfter(wallpaperUpdater.applyWallpaper(wallpaper, target))
     }
 
     /** Re-arms after the interval, album or auto-cycle toggles changed. */

@@ -25,6 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullFolder
+import com.axondragonscale.wallmatic.model.WallpaperCrop
+import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.component.WallpaperPlate
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
@@ -83,11 +85,13 @@ fun FolderCard(
         ) {
             val slots = maxOf(folder.wallpapers.size, 3)
             items(slots) { index ->
+                val wallpaper = folder.wallpapers.getOrNull(index)
                 FolderStrip(
                     modifier = Modifier
                         .width(108.dp)
                         .height(240.dp),
-                    uri = folder.wallpapers.getOrNull(index)?.uri,
+                    uri = wallpaper?.uri,
+                    crop = wallpaper?.crop,
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )
@@ -100,6 +104,7 @@ fun FolderCard(
 private fun FolderStrip(
     modifier: Modifier = Modifier,
     uri: String?,
+    crop: WallpaperCrop?,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -109,6 +114,7 @@ private fun FolderStrip(
             onLongClick = onLongClick,
         ),
         uri = uri,
+        crop = crop,
         interactive = false,
     )
 }

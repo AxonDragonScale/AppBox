@@ -33,8 +33,9 @@ class HomeVM(
         viewModelScope.launch(Dispatchers.IO) {
             combine(
                 appPrefsRepository.configFlow,
-                wallmaticRepository.getAlbums()
-            ) { config, albums ->
+                wallmaticRepository.getAlbums(),
+                wallmaticRepository.getCoverCrops(),
+            ) { config, albums, coverCrops ->
                 val homeWallpaper = config.homeConfig.currentWallpaperId
                     .takeIf { it != -1 }
                     ?.let { wallmaticRepository.getWallpaper(it) }
@@ -49,7 +50,8 @@ class HomeVM(
                         config = config,
                         albums = albums,
                         homeWallpaper = homeWallpaper,
-                        lockWallpaper = lockWallpaper
+                        lockWallpaper = lockWallpaper,
+                        coverCrops = coverCrops,
                     )
                 }
             }.collect()

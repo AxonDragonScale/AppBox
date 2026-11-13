@@ -26,6 +26,15 @@ interface WallmaticDao {
     @Query("SELECT * FROM wallpaper WHERE id IN (:ids) ORDER BY isBlacklisted")
     suspend fun getWallpapers(ids: List<Int>): List<Wallpaper>
 
+    @Query("SELECT * FROM wallpaper WHERE id IN (:ids) ORDER BY isBlacklisted")
+    fun getWallpapersFlow(ids: List<Int>): Flow<List<Wallpaper>>
+
+    @Query(
+        "SELECT id, uri, cropFocalX, cropFocalY, cropZoom FROM wallpaper " +
+            "WHERE cropZoom > 1.0 OR cropFocalX != 0.5 OR cropFocalY != 0.5 ORDER BY id"
+    )
+    fun getCustomCropsFlow(): Flow<List<WallpaperCropRow>>
+
     // Get One
 
     @Query("SELECT * FROM album WHERE id = :id")
@@ -36,6 +45,11 @@ interface WallmaticDao {
 
     @Query("SELECT * FROM wallpaper WHERE id = :id")
     suspend fun getWallpaper(id: Int): Wallpaper?
+
+    // Update
+
+    @Query("UPDATE wallpaper SET cropFocalX = :focalX, cropFocalY = :focalY, cropZoom = :zoom WHERE id = :id")
+    suspend fun updateWallpaperCrop(id: Int, focalX: Float, focalY: Float, zoom: Float)
 
     // Upsert
 
@@ -100,3 +114,12 @@ interface WallmaticDao {
         deleteAllWallpapers()
     }
 }
+
+/** A wallpaper's URI with its non-default crop, for covers that only keep a URI snapshot. */
+data class WallpaperCropRow(
+    val id: Int,
+    val uri: String,
+    val cropFocalX: Float,
+    val cropFocalY: Float,
+    val cropZoom: Float,
+)

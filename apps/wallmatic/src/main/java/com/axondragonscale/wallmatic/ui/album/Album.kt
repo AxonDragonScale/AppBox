@@ -40,6 +40,7 @@ import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.FullAlbum
 import com.axondragonscale.wallmatic.model.FullFolder
 import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.model.crop
 import com.axondragonscale.wallmatic.ui.Route
 import com.axondragonscale.wallmatic.ui.component.ContextMenuOverlay
 import com.axondragonscale.wallmatic.ui.component.ContextMenuItem
@@ -126,6 +127,10 @@ fun Album(
             onSetWallpaper = { target ->
                 wallpaperActionsTarget = null
                 vm.onEvent(AlbumUiEvent.SetWallpaper(wallpaper, target))
+            },
+            onAdjust = { onAdjustTarget ->
+                wallpaperActionsTarget = null
+                navController.navigate(Route.Wallpaper(onAdjustTarget.id, edit = true))
             },
             onBlacklist = {
                 wallpaperActionsTarget = null
@@ -260,6 +265,7 @@ private fun AlbumContent(
             itemsIndexed(album.wallpapers) { index, wallpaper ->
                 WallpaperTile(
                     uri = wallpaper.uri,
+                    crop = wallpaper.crop,
                     index = index + 1,
                     onClick = { onEvent(AlbumUiEvent.NavigateToWallpaper(wallpaper.id)) },
                     onLongClick = { onEvent(AlbumUiEvent.ShowWallpaperActions(wallpaper)) },

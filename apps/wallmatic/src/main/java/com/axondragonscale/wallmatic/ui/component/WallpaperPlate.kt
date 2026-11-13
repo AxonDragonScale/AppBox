@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
 
 /**
@@ -23,6 +24,7 @@ import com.axondragonscale.wallmatic.ui.theme.wallmatic
 fun WallpaperPlate(
     modifier: Modifier = Modifier,
     uri: String?,
+    crop: WallpaperCrop? = null,
     interactive: Boolean = true,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
@@ -47,7 +49,7 @@ fun WallpaperPlate(
     ) {
         if (!uri.isNullOrBlank()) {
             AsyncImage(
-                model = uri,
+                model = wallpaperModel(uri = uri, crop = crop),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

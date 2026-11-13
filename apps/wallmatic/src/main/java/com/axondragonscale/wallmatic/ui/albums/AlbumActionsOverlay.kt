@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.component.AlbumCard
 import com.axondragonscale.wallmatic.ui.component.ContextMenu
 import com.axondragonscale.wallmatic.ui.component.ContextMenuItem
@@ -46,12 +47,14 @@ fun AlbumActionsOverlay(
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
+    coverCrop: WallpaperCrop? = null,
 ) {
     WallmaticOverlay(onDismiss = onDismiss) {
         AlbumActionsContent(
             modifier = Modifier.align(Alignment.Center),
             album = album,
             targetLabel = targetLabel,
+            coverCrop = coverCrop,
             activeTargets = activeTargets,
             mirrorEnabled = mirrorEnabled,
             onSetActive = onSetActive,
@@ -71,6 +74,7 @@ private fun AlbumActionsContent(
     onSetActive: (TargetScreen) -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
+    coverCrop: WallpaperCrop? = null,
 ) {
     Column(
         modifier = modifier.padding(24.dp),
@@ -82,6 +86,7 @@ private fun AlbumActionsContent(
             title = album.name,
             subtitle = album.countSummary(),
             coverUri = album.coverUri,
+            coverCrop = coverCrop,
             target = targetLabel,
             captionPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
             interactive = false,

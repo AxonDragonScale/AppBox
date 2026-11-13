@@ -12,6 +12,7 @@ object Route {
         const val ALBUM_ID = "albumId"
         const val FOLDER_ID = "folderId"
         const val WALLPAPER_ID = "wallpaperId"
+        const val EDIT = "edit"
     }
 
     @Serializable
@@ -24,7 +25,7 @@ object Route {
     data class Folder(val folderId: Int)
 
     @Serializable
-    data class Wallpaper(val wallpaperId: Int)
+    data class Wallpaper(val wallpaperId: Int, val edit: Boolean = false)
 
     @Serializable
     data object DevTools

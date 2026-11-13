@@ -81,6 +81,21 @@ fun Config.activeTargetsFor(albumId: Int): Set<TargetScreen> = buildSet {
     if (!mirrorHomeConfigForLock && lockConfig.albumId == albumId) add(TargetScreen.Lock)
 }
 
+/**
+ * The target that currently shows [wallpaperId], or null when it is not applied anywhere.
+ * Mirrored Lock follows Home, since it is not independently configured.
+ */
+fun Config.currentTargetFor(wallpaperId: Int): TargetScreen? {
+    val home = homeConfig.currentWallpaperId == wallpaperId
+    val lock = if (mirrorHomeConfigForLock) home else lockConfig.currentWallpaperId == wallpaperId
+    return when {
+        home && lock -> TargetScreen.Both
+        home -> TargetScreen.Home
+        lock -> TargetScreen.Lock
+        else -> null
+    }
+}
+
 /** Whether applying [applied] resolves the recorded failure, if any. */
 fun Config.resolvesFailure(applied: TargetScreen): Boolean {
     val failed = failedTargetOrNull ?: return true

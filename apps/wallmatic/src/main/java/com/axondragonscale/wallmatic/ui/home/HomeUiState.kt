@@ -4,6 +4,7 @@ import com.axondragonscale.wallmatic.database.entity.Album
 import com.axondragonscale.wallmatic.database.entity.Wallpaper
 import com.axondragonscale.wallmatic.model.Config
 import com.axondragonscale.wallmatic.model.TargetScreen
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.util.albumIdFor
 
 /**
@@ -15,6 +16,7 @@ data class HomeUiState(
     val config: Config = Config.getDefaultInstance(),
     val homeWallpaper: Wallpaper? = null,
     val lockWallpaper: Wallpaper? = null,
+    val coverCrops: Map<String, WallpaperCrop> = emptyMap(),
 ) {
     fun albumFor(target: TargetScreen): Album? =
         albums.firstOrNull { it.id == config.albumIdFor(target) }

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.wallmatic.database.entity.Album
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
@@ -34,6 +35,7 @@ fun SelectAlbumSheet(
     selectedAlbumId: Int,
     onSelectAlbum: (Album) -> Unit,
     onDismiss: () -> Unit,
+    coverCrops: Map<String, WallpaperCrop> = emptyMap(),
 ) {
     WallmaticBottomSheet(
         height = 420.dp,
@@ -45,6 +47,7 @@ fun SelectAlbumSheet(
             selectedAlbumId = selectedAlbumId,
             onSelectAlbum = onSelectAlbum,
             onDismiss = onDismiss,
+            coverCrops = coverCrops,
         )
     }
 }
@@ -56,6 +59,7 @@ private fun SelectAlbumContent(
     selectedAlbumId: Int,
     onSelectAlbum: (Album) -> Unit,
     onDismiss: () -> Unit,
+    coverCrops: Map<String, WallpaperCrop> = emptyMap(),
 ) {
     Column(modifier = modifier) {
         SheetDragHandle()
@@ -75,6 +79,7 @@ private fun SelectAlbumContent(
                     title = album.name,
                     subtitle = album.countSummary(),
                     coverUri = album.coverUri,
+                    coverCrop = album.coverUri?.let(coverCrops::get),
                     selected = album.id == selectedAlbumId,
                     onClick = {
                         onSelectAlbum(album)

@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.axondragonscale.wallmatic.model.WallpaperCrop
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTextStyles
 import com.axondragonscale.wallmatic.ui.theme.WallmaticTheme
 import com.axondragonscale.wallmatic.ui.theme.wallmatic
@@ -40,6 +41,7 @@ fun AlbumRow(
     title: String,
     subtitle: String,
     coverUri: String?,
+    coverCrop: WallpaperCrop? = null,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -64,7 +66,7 @@ fun AlbumRow(
         ) {
             if (coverUri != null) {
                 AsyncImage(
-                    model = coverUri,
+                    model = wallpaperModel(uri = coverUri, crop = coverCrop),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),

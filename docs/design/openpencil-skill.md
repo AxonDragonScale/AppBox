@@ -688,6 +688,12 @@ the same change as the work it learns from.**
 - **2026-11-10** — `<Vector d=…>` and `paths={[…]}` are **not** supported by this CLI renderer
   (`Unsupported prop` warnings, empty vector). Import the artwork with `import_svg`; author the SVG
   at the display size and set the imported frame's fill afterwards.
+- **2026-11-13** — `add_comment` always pins a thread on its **top-level layer**, even when you pass an
+  inner node id: the pin keeps an offset from that frame's origin, and `get_comments` reports the frame,
+  not the layer. Select a wrapper by id for positioning only — a comment cannot be owned by a child.
+- **2026-11-13** — `set_visible` takes `value`, not `visible` (an MCP `set_visible {visible:false}`
+  fails with `value: Missing key`), and a text edit re-hugs an auto-layout parent in place without
+  moving it, so a right-aligned action needs a follow-up `node_move` to keep its gutter edge.
 - **2026-11-10** — component properties are not exposed as tools, but `eval` reaches them:
   `component.addComponentProperty("Label","TEXT","Save")` plus
   `text.componentPropertyReferences = { characters: propId }` gives every instance a text override;
@@ -745,6 +751,18 @@ the same change as the work it learns from.**
   `<app>-v1.fig`, `documents new --path` the canonical file, and build the three pages there. The
   old document stays open on the moved path; close it without saving at the end. Keeping the v1 file
   beside the new one is the cheapest before/after and costs no page in the deliverable.
+- **2026-11-13** — `delete_node` refuses a node **inside an instance** ("Removing this node is not
+  allowed"), so an overlay plate that must drop the component's index badge cannot be made by
+  cloning the grid tile and deleting the badge. Clone a plain IMAGE-filled frame instead (a folder
+  cover strip, same artwork, 1 px ink stroke), then `node_resize` it to the plate size.
+- **2026-11-13** — app-mode `documents open <file>` times out at 20 s on a 3.4 MB `.fig` and leaves
+  an *empty* tab (right filename, one "Page 1", zero nodes). `open -a OpenPencil <file>` loads it
+  correctly: the app opens the path outside the RPC. Check `get_page_tree` before trusting the tab.
+- **2026-11-13** — `parent.appendChild(child)` does **not** reorder an existing child (it answers
+  success and changes nothing). To raise a node's z-order use
+  `parent.insertChild(parent.children.length, child)`. Also, `clone()` copies the source *name*, so
+  collect the originals to delete **before** cloning; filtering the parent's children by name after
+  cloning deletes the clones too and the script dies with `Node <id> has been removed`.
 
 ## Related
 

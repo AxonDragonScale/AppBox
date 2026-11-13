@@ -121,6 +121,7 @@ fun Albums(
         AlbumActionsOverlay(
             album = album,
             targetLabel = uiState.targetLabelFor(album.id),
+            coverCrop = uiState.coverCropFor(album),
             activeTargets = uiState.activeTargets[album.id].orEmpty(),
             mirrorEnabled = uiState.mirrorEnabled,
             onSetActive = { target ->
@@ -204,6 +205,7 @@ private fun AlbumGrid(
                 title = album.name,
                 subtitle = album.countSummary(),
                 coverUri = album.coverUri,
+                coverCrop = uiState.coverCropFor(album),
                 target = uiState.targetLabelFor(album.id),
                 onClick = { onAlbumClick(album) },
                 onLongClick = { onAlbumLongClick(album) },
