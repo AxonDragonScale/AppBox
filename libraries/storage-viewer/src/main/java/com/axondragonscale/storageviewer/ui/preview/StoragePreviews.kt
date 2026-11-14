@@ -3,7 +3,6 @@ package com.axondragonscale.storageviewer.ui.preview
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,8 +21,6 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -32,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.storageviewer.model.Cell
 import com.axondragonscale.storageviewer.model.CellKind
 import com.axondragonscale.storageviewer.model.DatabaseStore
@@ -96,10 +94,9 @@ import com.axondragonscale.storageviewer.ui.style.rememberStorageViewerStyle
 
 @Composable
 private fun StoragePreviewTheme(
-    dark: Boolean = isSystemInDarkTheme(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+    DevToolsTheme {
         CompositionLocalProvider(LocalStorageViewerStyle provides rememberStorageViewerStyle()) {
             Surface(color = MaterialTheme.colorScheme.background) {
                 Column(

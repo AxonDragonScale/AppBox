@@ -1,11 +1,8 @@
 package com.axondragonscale.logcatviewer.ui.preview
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.logcatviewer.model.LogEntry
 import com.axondragonscale.logcatviewer.model.LogFilter
 import com.axondragonscale.logcatviewer.model.LogLevel
@@ -17,11 +14,8 @@ import com.axondragonscale.logcatviewer.ui.style.rememberLogcatStyle
 /** Created by Ronak on 09/11/26 */
 
 @Composable
-internal fun LogcatPreviewTheme(
-    dark: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
-    MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+internal fun LogcatPreviewTheme(content: @Composable () -> Unit) {
+    DevToolsTheme {
         CompositionLocalProvider(
             LocalLogcatStyle provides rememberLogcatStyle(),
             content = content,

@@ -43,6 +43,10 @@ Reads go through `IStorageSource` (`data/IStorageSource.kt`): `stores()`, then `
 listing and an open. `AndroidStorageSource(context)` is the default implementation and reads the
 calling app through `Context`; a host that wants another scope passes its own source.
 
+The viewer renders in the fixed dark `DevToolsTheme` from `:core:ui`, so it does not inherit the host
+app's theme, dynamic colour or light/dark choice; `rememberStorageViewerStyle()` therefore always
+resolves the dark palette, and the light one stays available for a host that passes its own style.
+
 The three surfaces behind that seam:
 
 - `ui/screens/StoresScreen.kt` — the segmented home: Databases, Preferences, Files.
@@ -54,6 +58,14 @@ The three surfaces behind that seam:
 Readers live in `data/` (`Discovery`, `DatabaseReader`, `DataStoreReader`, `SharedPrefsReader`,
 `FileWalker`, `ByteFormat`, `DisplayText`), descriptors and display models in `model/`, and the
 component set, sheets and `StorageViewerStyle` in `ui/`.
+
+`StorageViewModel` keeps the walk in a `SavedStateHandle`: the active tab, the home and detail
+filters, and the depth as one route string — `stores`, `tables:<db path>`, `schema:<db path>|<table>`,
+`rows:<db path>|<table>`, `keys:<store path>`, `folder:<root kind>:<path>`, `file:<root kind>:<path>`.
+The route is a string because it is restored before the store scan exists and can only be matched by
+path against the fresh scan; a store that is gone leaves the viewer at the store list. After the
+scan the saved depth is re-entered and its read re-run, so an activity recreation or process death
+returns to the same screen. Open sheets are not saved and never reopen.
 
 ## Design
 

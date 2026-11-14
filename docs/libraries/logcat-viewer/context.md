@@ -29,7 +29,7 @@ A host that holds a broader identity — root, a shell bridge, a remote device �
 | DI | none in the library; `LogcatViewModel.factory(...)` |
 | Persistence | Preferences DataStore (the viewer's own `logcat_viewer` file) |
 | Serialization | kotlinx.serialization (filter snapshot types) |
-| Local module | `:core:common` (logging and `catching`) |
+| Local module | `:core:common` (logging and `catching`), `:core:ui` (`DevToolsTheme`) |
 
 ## Project Structure
 
@@ -110,8 +110,9 @@ Two hosts exist:
   `LogcatDevToolsScreen(onBack = …)` for a host that prefers a navigation destination; the JVM and
   iOS actuals are no-ops.
 
-The host owns the theme (`MaterialTheme`). The viewer reads `MaterialTheme.colorScheme` and adds only
-what Material has no role for, through `LogcatStyle`:
+The viewer renders in the fixed dark `DevToolsTheme` from `:core:ui`, so it looks the same in every
+host and never inherits the app's theme, dynamic colour or light/dark choice. It reads the resolved
+`MaterialTheme.colorScheme` and adds only what Material has no role for, through `LogcatStyle`:
 
 | Field | Used for | Default |
 |---|---|---|
@@ -122,8 +123,9 @@ what Material has no role for, through `LogcatStyle`:
 | `warnSurface`, `warnRowTint` | warning chips and rows | amber tint |
 | `errorRowTint`, `traceSurface` | error rows and inline traces | error tint |
 
-A host overrides it by passing its own [LogcatStyle]; `rememberLogcatStyle()` is the default that
-follows the resolved Material scheme, so a forced light or dark app gets the matching ramp.
+A host overrides it by passing its own [LogcatStyle]; `rememberLogcatStyle()` is the default and
+resolves against `DevToolsColorScheme`, so it always yields the dark ramp no matter where the screen
+is called from.
 
 ## Where the lines come from
 

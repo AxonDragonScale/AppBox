@@ -16,6 +16,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.axondragonscale.commons.catching
+import com.axondragonscale.commons.compose.DevToolsSystemBars
+import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.logcatviewer.data.DataStoreSavedViewsStore
 import com.axondragonscale.logcatviewer.data.ILogcatSource
 import com.axondragonscale.logcatviewer.data.ISavedViewsStore
@@ -76,15 +78,19 @@ fun LogcatViewer(
         }
     }
 
-    CompositionLocalProvider(LocalLogcatStyle provides style) {
-        LogcatScreen(
-            modifier = modifier,
-            uiState = uiState,
-            title = title,
-            snackbarHostState = snackbarHostState,
-            onEvent = viewModel::onEvent,
-            onBack = onBack,
-        )
+    // The viewer is a developer tool, so it stays on the fixed dark theme wherever it is hosted.
+    DevToolsTheme {
+        DevToolsSystemBars()
+        CompositionLocalProvider(LocalLogcatStyle provides style) {
+            LogcatScreen(
+                modifier = modifier,
+                uiState = uiState,
+                title = title,
+                snackbarHostState = snackbarHostState,
+                onEvent = viewModel::onEvent,
+                onBack = onBack,
+            )
+        }
     }
 }
 

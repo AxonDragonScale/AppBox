@@ -1,5 +1,6 @@
 package com.axondragonscale.commons.devtools
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -10,9 +11,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.HasDefaultViewModelProviderFactory
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.SAVED_STATE_REGISTRY_OWNER_KEY
+import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.enableSavedStateHandles
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryController
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.compose.LocalSavedStateRegistryOwner
+import com.axondragonscale.commons.compose.DevToolsSystemBars
+import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.storageviewer.StorageViewer
 
 internal actual val isStorageViewerAvailable: Boolean = true
@@ -26,7 +42,10 @@ internal fun StorageDevToolsScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
 ) {
-    StorageViewer(modifier = modifier, onBack = onBack)
+    DevToolsTheme {
+        DevToolsSystemBars()
+        StorageViewer(modifier = modifier, onBack = onBack)
+    }
 }
 
 /**
@@ -36,10 +55,15 @@ internal fun StorageDevToolsScreen(
 @Composable
 internal actual fun DevToolsStorageHost(visible: Boolean, onDismiss: () -> Unit) {
     if (!visible) return
-    // The dialog is not a nav destination, so it needs its own store to clear the viewer on close.
-    val owner = remember { StorageDialogViewModelStoreOwner() }
+    // The dialog is not a nav destination, so it needs its own store to clear the viewer on close;
+    // routing that store's state through the host registry keeps the walk across a recreation.
+    val registryOwner = LocalSavedStateRegistryOwner.current
+    val owner = remember(registryOwner) { StorageDialogViewModelStoreOwner(registryOwner) }
     DisposableEffect(owner) {
-        onDispose { owner.viewModelStore.clear() }
+        onDispose {
+            owner.viewModelStore.clear()
+            owner.forget()
+        }
     }
     Dialog(
         onDismissRequest = onDismiss,
@@ -49,16 +73,56 @@ internal actual fun DevToolsStorageHost(visible: Boolean, onDismiss: () -> Unit)
         ),
     ) {
         CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background,
-            ) {
-                StorageViewer(onBack = onDismiss)
+            DevToolsTheme {
+                DevToolsSystemBars()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    StorageViewer(onBack = onDismiss)
+                }
             }
         }
     }
 }
 
-private class StorageDialogViewModelStoreOwner : ViewModelStoreOwner {
+/** A dialog-owned store with its own registry, saved into [host] so the viewer survives recreation. */
+private class StorageDialogViewModelStoreOwner(
+    private val host: SavedStateRegistryOwner,
+) : ViewModelStoreOwner, SavedStateRegistryOwner, HasDefaultViewModelProviderFactory {
+
     override val viewModelStore = ViewModelStore()
+
+    /** The dialog lives exactly as long as the host, so it borrows its lifecycle. */
+    override val lifecycle: Lifecycle get() = host.lifecycle
+
+    private val controller = SavedStateRegistryController.create(this)
+    override val savedStateRegistry: SavedStateRegistry get() = controller.savedStateRegistry
+
+    override val defaultViewModelCreationExtras: CreationExtras
+        get() = MutableCreationExtras().apply {
+            set(SAVED_STATE_REGISTRY_OWNER_KEY, this@StorageDialogViewModelStoreOwner)
+            set(VIEW_MODEL_STORE_OWNER_KEY, this@StorageDialogViewModelStoreOwner)
+        }
+
+    /** The viewer always passes its own factory; this only satisfies the interface. */
+    override val defaultViewModelProviderFactory: ViewModelProvider.Factory = viewModelFactory { }
+
+    init {
+        controller.performAttach()
+        enableSavedStateHandles()
+        controller.performRestore(host.savedStateRegistry.consumeRestoredStateForKey(KEY))
+        host.savedStateRegistry.registerSavedStateProvider(KEY) {
+            Bundle().apply(controller::performSave)
+        }
+    }
+
+    /** Drops the saved walk too, so a reopened dialog starts at the store list. */
+    fun forget() {
+        host.savedStateRegistry.unregisterSavedStateProvider(KEY)
+    }
+
+    private companion object {
+        const val KEY = "storageviewer:dialog"
+    }
 }

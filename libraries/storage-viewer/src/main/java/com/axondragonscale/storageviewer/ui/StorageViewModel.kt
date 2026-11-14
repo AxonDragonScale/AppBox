@@ -1,7 +1,10 @@
 package com.axondragonscale.storageviewer.ui
 
+import androidx.lifecycle.SAVED_STATE_REGISTRY_OWNER_KEY
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -15,6 +18,7 @@ import com.axondragonscale.storageviewer.model.DatabaseTable
 import com.axondragonscale.storageviewer.model.FileNode
 import com.axondragonscale.storageviewer.model.FilePreview
 import com.axondragonscale.storageviewer.model.FileRoot
+import com.axondragonscale.storageviewer.model.FileRootKind
 import com.axondragonscale.storageviewer.model.FolderListing
 import com.axondragonscale.storageviewer.model.PreferenceEntry
 import com.axondragonscale.storageviewer.model.PreferencesStore
@@ -123,16 +127,39 @@ internal sealed interface StorageEffect {
     data class Message(val text: String) : StorageEffect
 }
 
-internal class StorageViewModel(private val source: IStorageSource) : ViewModel() {
+internal class StorageViewModel(
+    private val source: IStorageSource,
+    private val savedStateHandle: SavedStateHandle,
+) : ViewModel() {
 
     companion object {
+        private const val KEY_ROUTE = "route"
+        private const val KEY_TAB = "tab"
+        private const val KEY_QUERY = "query"
+        private const val KEY_DETAIL_QUERY = "detailQuery"
+
         /** Wires the viewer without a DI framework. */
         fun factory(source: IStorageSource): ViewModelProvider.Factory = viewModelFactory {
-            initializer { StorageViewModel(source) }
+            initializer {
+                // A host scoped to a plain store still gets a viewer; only its walk fails to survive.
+                val handle = if (this[SAVED_STATE_REGISTRY_OWNER_KEY] != null) {
+                    createSavedStateHandle()
+                } else {
+                    SavedStateHandle()
+                }
+                StorageViewModel(source, handle)
+            }
         }
     }
 
-    private val _state = MutableStateFlow(StorageUiState())
+    private val _state = MutableStateFlow(
+        StorageUiState(
+            tab = StorageTab.entries.firstOrNull { it.name == savedStateHandle.get<String>(KEY_TAB) }
+                ?: StorageTab.DATABASES,
+            query = savedStateHandle.get<String>(KEY_QUERY).orEmpty(),
+            detailQuery = savedStateHandle.get<String>(KEY_DETAIL_QUERY).orEmpty(),
+        ),
+    )
     val state: StateFlow<StorageUiState> = _state.asStateFlow()
 
     private val effectChannel = Channel<StorageEffect>()
@@ -142,6 +169,7 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
     private var detailJob: Job? = null
     private var searchJob: Job? = null
     private var visibleSeen = false
+    private var pendingRoute: String? = savedStateHandle.get<String>(KEY_ROUTE)
 
     init {
         load()
@@ -172,6 +200,49 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
         is StorageEvent.CopyValue -> copyValue(event)
     }
 
+    // region Saved state
+
+    /** Persisted on every change so the whole walk survives recreation, not just the last event. */
+    private fun persist(state: StorageUiState) {
+        savedStateHandle[KEY_TAB] = state.tab.name
+        savedStateHandle[KEY_QUERY] = state.query
+        savedStateHandle[KEY_DETAIL_QUERY] = state.detailQuery
+        savedStateHandle[KEY_ROUTE] = state.depth.route()
+    }
+
+    /**
+     * Replays the saved walk once. The depth is stored as a route string rather than a model object
+     * because a restored handle predates the store scan, and only a path can be matched against it.
+     */
+    private fun restore(stores: StorageStores) {
+        val route = pendingRoute ?: return
+        pendingRoute = null
+        val detailQuery = _state.value.detailQuery
+        val kind = route.substringBefore(':')
+        val rest = route.substringAfter(':', missingDelimiterValue = "")
+        when (kind) {
+            ROUTE_TABLES -> stores.databases.firstOrNull { it.path == rest }?.let(::openTables)
+            ROUTE_SCHEMA, ROUTE_ROWS -> {
+                val path = rest.substringBefore(ROUTE_FIELD)
+                val table = rest.substringAfter(ROUTE_FIELD, missingDelimiterValue = "")
+                stores.databases.firstOrNull { it.path == path }?.let { store ->
+                    if (kind == ROUTE_SCHEMA) showSchema(store, table) else showRows(store, table)
+                }
+            }
+            ROUTE_KEYS -> stores.preferences.firstOrNull { it.path == rest }?.let(::openPreferences)
+            ROUTE_FOLDER -> stores.folder(rest)?.let { (root, path) -> showFolder(root, path) }
+            ROUTE_FILE -> stores.folder(rest)?.let { (root, path) -> showFile(root, path) }
+            else -> Unit
+        }
+        // Re-entering a depth starts with no filter, so the saved one goes back on the screen it belongs to.
+        if (detailQuery.isNotEmpty() && _state.value.depth != Depth.Stores) {
+            update { it.copy(detailQuery = detailQuery) }
+        }
+        persist(_state.value)
+    }
+
+    // endregion
+
     // region Loading
 
     private fun load() {
@@ -180,6 +251,7 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
             catching { source.stores() }.fold(
                 onSuccess = { stores ->
                     update { it.copy(stores = stores, error = null) }
+                    restore(stores)
                     scheduleSearch()
                 },
                 onFailure = { failure ->
@@ -263,10 +335,10 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
     // region Detail
 
     /** Navigation clears every other depth's value, so a screen always reads the depth it shows. */
-    private fun openTables(store: DatabaseStore) {
+    private fun enter(depth: Depth) {
         update {
             it.copy(
-                depth = Depth.Tables(store),
+                depth = depth,
                 detailQuery = "",
                 tables = DetailState.Loading,
                 schema = DetailState.Loading,
@@ -278,62 +350,35 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
                 sheetEntry = null,
             )
         }
+    }
+
+    private fun openTables(store: DatabaseStore) {
+        enter(Depth.Tables(store))
         loadTables(store)
     }
 
     private fun openPreferences(store: PreferencesStore) {
-        update {
-            it.copy(
-                depth = Depth.Keys(store),
-                detailQuery = "",
-                tables = DetailState.Loading,
-                schema = DetailState.Loading,
-                rows = DetailState.Loading,
-                entries = DetailState.Loading,
-                folder = DetailState.Loading,
-                preview = DetailState.Loading,
-                sheetRow = null,
-                sheetEntry = null,
-            )
-        }
+        enter(Depth.Keys(store))
         loadEntries(store)
     }
 
     private fun openSchema(table: String) {
         val store = _state.value.depth.store ?: return
-        update {
-            it.copy(
-                depth = Depth.Schema(store, table),
-                detailQuery = "",
-                tables = DetailState.Loading,
-                schema = DetailState.Loading,
-                rows = DetailState.Loading,
-                entries = DetailState.Loading,
-                folder = DetailState.Loading,
-                preview = DetailState.Loading,
-                sheetRow = null,
-                sheetEntry = null,
-            )
-        }
+        showSchema(store, table)
+    }
+
+    private fun showSchema(store: DatabaseStore, table: String) {
+        enter(Depth.Schema(store, table))
         loadSchema(store = store, table = table)
     }
 
     private fun openRows(table: String) {
         val store = _state.value.depth.store ?: return
-        update {
-            it.copy(
-                depth = Depth.Rows(store, table),
-                detailQuery = "",
-                tables = DetailState.Loading,
-                schema = DetailState.Loading,
-                rows = DetailState.Loading,
-                entries = DetailState.Loading,
-                folder = DetailState.Loading,
-                preview = DetailState.Loading,
-                sheetRow = null,
-                sheetEntry = null,
-            )
-        }
+        showRows(store, table)
+    }
+
+    private fun showRows(store: DatabaseStore, table: String) {
+        enter(Depth.Rows(store, table))
         loadRows(store = store, table = table)
     }
 
@@ -484,9 +529,13 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
 
     private fun openFile(node: FileNode) {
         val depth = _state.value.depth as? Depth.Folder ?: return
+        showFile(depth.root, node.path)
+    }
+
+    private fun showFile(root: FileRoot, path: String) {
         update {
             it.copy(
-                depth = Depth.File(depth.root, node.path),
+                depth = Depth.File(root, path),
                 previewAsHex = false,
                 detailQuery = "",
                 folder = DetailState.Loading,
@@ -495,7 +544,7 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
                 sheetEntry = null,
             )
         }
-        loadPreview(depth.root, node.path)
+        loadPreview(root, path)
     }
 
     private fun showFolder(root: FileRoot, path: String) {
@@ -588,6 +637,7 @@ internal class StorageViewModel(private val source: IStorageSource) : ViewModel(
         _state.update { current ->
             transform(current).let { next -> next.copy(phase = next.phase()) }
         }
+        persist(_state.value)
     }
 
     private fun StorageUiState.phase(): Phase = when {
@@ -616,6 +666,38 @@ private const val SEARCH_DEBOUNCE_MS = 250L
 
 /** One store's ceiling, so a store with thousands of keys cannot crowd out the others. */
 private const val HITS_PER_STORE = 50
+
+// endregion
+
+// region Route
+
+private const val ROUTE_STORES = "stores"
+private const val ROUTE_TABLES = "tables"
+private const val ROUTE_SCHEMA = "schema"
+private const val ROUTE_ROWS = "rows"
+private const val ROUTE_KEYS = "keys"
+private const val ROUTE_FOLDER = "folder"
+private const val ROUTE_FILE = "file"
+private const val ROUTE_FIELD = '|'
+
+/** The walk as one string: `tables:<db>`, `schema:<db>|<table>`, `folder:<root kind>:<path>`. */
+private fun Depth.route(): String = when (this) {
+    Depth.Stores -> ROUTE_STORES
+    is Depth.Tables -> "$ROUTE_TABLES:${store.path}"
+    is Depth.Schema -> "$ROUTE_SCHEMA:${store.path}$ROUTE_FIELD$table"
+    is Depth.Rows -> "$ROUTE_ROWS:${store.path}$ROUTE_FIELD$table"
+    is Depth.Keys -> "$ROUTE_KEYS:${store.path}"
+    is Depth.Folder -> "$ROUTE_FOLDER:${root.kind.name}:$path"
+    is Depth.File -> "$ROUTE_FILE:${root.kind.name}:$path"
+}
+
+/** The root the route names and the path below it, or null when that root is not in this scan. */
+private fun StorageStores.folder(route: String): Pair<FileRoot, String>? {
+    val kind = FileRootKind.entries.firstOrNull { it.name == route.substringBefore(':') }
+    val path = route.substringAfter(':', missingDelimiterValue = "")
+    val root = roots.firstOrNull { it.kind == kind && path.isNotEmpty() && path.startsWith(it.path) }
+    return root?.let { it to path }
+}
 
 // endregion
 

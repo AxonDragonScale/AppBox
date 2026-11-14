@@ -1,6 +1,5 @@
 package com.axondragonscale.storageviewer.ui.style
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
@@ -11,6 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.axondragonscale.commons.compose.DevToolsColorScheme
 
 /** Created by Ronak on 14/11/26 */
 
@@ -90,12 +90,12 @@ private fun viewerStyle(dark: Boolean): StorageViewerStyle = if (dark) {
 internal val LocalStorageViewerStyle = staticCompositionLocalOf { viewerStyle(dark = true) }
 
 /**
- * The viewer's default: Material colours plus the board's mono faces and kind ramp.
+ * The viewer's default: the dev-tools dark palette plus the board's mono faces and kind ramp.
  */
 @Composable
 public fun rememberStorageViewerStyle(): StorageViewerStyle {
-    // The palette follows the resolved scheme's luminance, so a host forcing Light or Dark gets a
-    // matching viewer without threading a theme flag through every call site.
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    // The viewer always renders inside DevToolsTheme, so the palette resolves from that background
+    // rather than from whatever scheme the host's default argument happened to see.
+    val dark = DevToolsColorScheme.background.luminance() < 0.5f
     return remember(dark) { viewerStyle(dark) }
 }

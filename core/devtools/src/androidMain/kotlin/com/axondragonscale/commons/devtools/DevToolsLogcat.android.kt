@@ -1,6 +1,7 @@
 package com.axondragonscale.commons.devtools
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -12,6 +13,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import com.axondragonscale.commons.compose.DevToolsSystemBars
+import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.logcatviewer.LogcatViewer
 
 actual val isLogcatAvailable: Boolean = true
@@ -25,7 +28,10 @@ fun LogcatDevToolsScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
 ) {
-    LogcatViewer(modifier = modifier, onBack = onBack)
+    DevToolsTheme {
+        DevToolsSystemBars()
+        LogcatViewer(modifier = modifier, onBack = onBack)
+    }
 }
 
 /**
@@ -48,8 +54,14 @@ actual fun DevToolsLogcatHost(visible: Boolean, onDismiss: () -> Unit) {
         ),
     ) {
         CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                LogcatViewer(onBack = onDismiss)
+            DevToolsTheme {
+                DevToolsSystemBars()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    LogcatViewer(onBack = onDismiss)
+                }
             }
         }
     }

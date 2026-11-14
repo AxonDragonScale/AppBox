@@ -13,6 +13,8 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.axondragonscale.commons.compose.DevToolsSystemBars
+import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.storageviewer.data.AndroidStorageSource
 import com.axondragonscale.storageviewer.data.IStorageSource
 import com.axondragonscale.storageviewer.ui.StorageEffect
@@ -64,14 +66,18 @@ public fun StorageViewer(
         }
     }
 
-    CompositionLocalProvider(LocalStorageViewerStyle provides style) {
-        StorageScreen(
-            modifier = modifier,
-            state = state,
-            title = title,
-            snackbarHostState = snackbarHostState,
-            onBack = onBack,
-            onEvent = viewModel::onEvent,
-        )
+    // The viewer is a developer tool, so it stays on the fixed dark theme wherever it is hosted.
+    DevToolsTheme {
+        DevToolsSystemBars()
+        CompositionLocalProvider(LocalStorageViewerStyle provides style) {
+            StorageScreen(
+                modifier = modifier,
+                state = state,
+                title = title,
+                snackbarHostState = snackbarHostState,
+                onBack = onBack,
+                onEvent = viewModel::onEvent,
+            )
+        }
     }
 }

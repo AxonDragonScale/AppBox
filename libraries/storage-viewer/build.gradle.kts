@@ -16,6 +16,9 @@ dependencies {
     // The source seam exposes Result and StorageError.
     api(projects.core.common)
 
+    // The viewer pins itself to the shared dev-tools theme.
+    implementation(projects.core.ui)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.compose)
 

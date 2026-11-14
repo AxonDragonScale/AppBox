@@ -1,5 +1,6 @@
 package com.axondragonscale.commons.devtools
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.axondragonscale.commons.compose.DevToolsSystemBars
+import com.axondragonscale.commons.compose.DevToolsTheme
 
 /**
  * Platform-specific built-in dev tool content (Kill App, Clear Data, App Settings, Permissions).
@@ -55,11 +58,35 @@ fun DevToolsScreen(
     customTools: List<DevTool> = emptyList(),
     extraContent: @Composable (() -> Unit)? = null,
 ) {
+    DevToolsTheme {
+        DevToolsSystemBars()
+        DevToolsContent(
+            modifier = modifier,
+            title = title,
+            subtitle = subtitle,
+            customTools = customTools,
+            extraContent = extraContent,
+        )
+    }
+}
+
+@Composable
+private fun DevToolsContent(
+    modifier: Modifier = Modifier,
+    title: String,
+    subtitle: String?,
+    customTools: List<DevTool>,
+    extraContent: @Composable (() -> Unit)?,
+) {
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     var showLogcat by rememberSaveable { mutableStateOf(false) }
     var showStorage by rememberSaveable { mutableStateOf(false) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(

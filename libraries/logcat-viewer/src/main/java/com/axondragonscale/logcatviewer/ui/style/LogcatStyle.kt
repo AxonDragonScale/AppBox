@@ -13,6 +13,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.axondragonscale.commons.compose.DevToolsColorScheme
 import com.axondragonscale.logcatviewer.model.LogLevel
 
 /** Created by Ronak on 09/11/26 */
@@ -65,13 +66,14 @@ private val DefaultStyle = LogcatStyle(
 
 internal val LocalLogcatStyle = staticCompositionLocalOf { DefaultStyle }
 
-/** The viewer's default: Material colours plus the app's neutral level ramp. */
+/** The viewer's default: the dev-tools dark palette plus the app's neutral level ramp. */
 @Composable
 fun rememberLogcatStyle(): LogcatStyle {
-    val scheme = MaterialTheme.colorScheme
-    // The host may force Light/Dark, so the ramp follows the resolved scheme, not the system.
+    // The viewer always renders inside DevToolsTheme, so the ramp follows that background — reading
+    // MaterialTheme here would resolve against the host's scheme at the call site instead.
+    val scheme = DevToolsColorScheme
     val dark = scheme.background.luminance() < 0.5f
-    return remember(dark, scheme) {
+    return remember(dark) {
         val warn = if (dark) Color(0xFFE8C468) else DefaultStyle.warn
         DefaultStyle.copy(
             debug = if (dark) Color(0xFF8FB8D8) else DefaultStyle.debug,
