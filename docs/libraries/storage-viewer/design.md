@@ -25,7 +25,7 @@ no onboarding, settings or branding.
 Home is a three-segment tab row, `Databases · Preferences · Files`, with the count inside each
 segment. Each segment lists stores; a store opens its own surface.
 
-- Database: store → tables → (schema) → rows → row sheet.
+- Database: store → tables → schema → rows → row sheet.
 - Preferences: store → keys → value sheet.
 - Files: roots → folders → file preview.
 
@@ -39,19 +39,19 @@ loses the store they were in; depth is three below the list, plus a sheet.
 
 | # | Screen | Shows | State |
 |---|---|---|---|
-| 01 | `01 · Stores · databases · dark` | database rows with table count, version, size | content |
-| 02 | `02 · Stores · preferences · dark` | DataStore and SharedPreferences sections in one list | content |
-| 03 | `03 · Stores · files · dark` | five roots, each with a size and item count | content |
+| 01 | `01 · Stores · databases · dark` | database rows with the file size; table count and version arrive when the store opens | content |
+| 02 | `02 · Stores · preferences · dark` | DataStore and SharedPreferences stores in one list, each naming its kind | content |
+| 03 | `03 · Stores · files · dark` | five roots, each with a description and an entry count | content |
 | 04 | `04 · Stores · empty · dark` | no store of the active kind; the copy names that tab | empty |
-| 05 | `05 · Stores · no matches · dark` | query with no store-name match, one clear action | no results |
-| 06 | `06 · Stores · loading · dark` | scanning pill, ellipsis counts, skeleton rows | loading |
+| 05 | `05 · Stores · no matches · dark` | query with no store-name match; the search field's clear action empties it | no results |
+| 06 | `06 · Stores · loading · dark` | ellipsis count and skeleton rows | loading |
 | 07 | `07 · Database · tables · dark` | table rows, each with row and column counts | content |
 | 08 | `08 · Database · tables empty · dark` | a database that holds no tables | empty |
-| 09 | `09 · Database · busy · dark` | locked database, banner with retry, skeleton grid | busy |
+| 09 | `09 · Database · busy · dark` | locked database, busy banner with retry over the empty surface | busy |
 | 10 | `10 · Database · schema · dark` | DDL card, column rows, index rows | content |
 | 11 | `11 · Database · rows · dark` | sticky column header, two-line data rows, row count | content |
-| 12 | `12 · Database · rows · no matches · dark` | rows loaded, zero matches, clear action | no results |
-| 13 | `13 · Table empty · dark` | schema intact, no records | empty |
+| 12 | `12 · Database · rows · no matches · dark` | rows loaded, zero matches; the filter's clear action empties it | no results |
+| 13 | `13 · Table empty · dark` | no records; the definition stays on 10 | empty |
 | 14 | `14 · Database · unreadable · dark` | failed open, plain-language banner, retry | error |
 | 15 | `15 · Store · keys · dark` | key rows with type chip and value preview | content |
 | 16 | `16 · Store · keys empty · dark` | store exists, no entries | empty |
@@ -77,7 +77,7 @@ Sheet overlays composite over their parent and are not counted as screens:
 
 | Surface | Content | Loading | Empty | No results | Error | Busy | Light |
 |---|---|---|---|---|---|---|---|
-| Stores per tab | 01 / 02 / 03 | 06 | 04 | 05 | n/a: discovery is a directory scan; a store that fails to open reports on its own surface | n/a: the scan never blocks | 26 |
+| Stores per tab | 01 / 02 / 03 | 06 | 04 | 05 | banner with retry; a store that fails to open reports on its own surface | n/a: the scan never blocks | 26 |
 | Table list | 07 | n/a: 09 covers a slow open | 08 | n/a: no search field here | 14 | 09 | n/a: no frame; reuses the card surface proved by 26 |
 | Schema | 10 | n/a: read with the table open | n/a: a table always has at least one column | n/a: no search | 14 | 09 | n/a: same card surface as 27 |
 | Rows | 11 | n/a: a slow read is 09 | 13 | 12 | 14 | 09 | 27 |
@@ -93,9 +93,9 @@ A named frame is reused with that surface's nouns; every n/a is a state the surf
 Entry: DevTools opens the viewer and 06 runs the scan → 01 (databases is the default tab), 02 or 03
 by tab, or 04 when nothing was written.
 
-- **Database:** 01 → store → 07 → table → 11. The schema action on a table row opens 10 and back
-  returns to 07. A locked open is 09, an unreadable one 14; 08, 13 and 12 cover no tables, no
-  records and no match.
+- **Database:** 01 → store → 07 → table → 10, then the schema's `Rows` action → 11. A table opens
+  its definition first, and back from 10 or 11 returns to 07. A locked open shows the busy banner,
+  an unreadable one the error banner; 08, 13 and 12 cover no tables, no records and no match.
 - **Preferences:** 02 → store → 15 → row → value sheet. Typing in the store search stays on 15; 18
   is the cross-store search from the home search; 16, 17 and 19 sit on the same surface.
 - **Files:** 03 → root → 20. A folder opens 20 one level deeper and the path line grows; a file
@@ -104,8 +104,8 @@ by tab, or 04 when nothing was written.
 Back: a sheet dismisses first (back, scrim tap, close), a second back leaves the screen; every step
 between a store and its rows is a screen, never an in-place swap. A sheet never resets the list
 behind it: search text, the rows filter and the scroll offset survive dismiss on 11 and 15, and
-scroll is restored under the light variants. Leaving a surface clears its query; each stores tab
-keeps its own query while the viewer is open.
+scroll is restored under the light variants. Leaving a surface clears its query; the stores search
+is one query that survives a tab switch until the viewer closes.
 
 ## 5. Layout and density
 
@@ -114,10 +114,11 @@ keeps its own query while the viewer is open.
   `Database · v1 · read-only`, `cache · read-only`). One line, never two.
 - Lists scroll under a sticky 40 dp column header on 11 and a sticky section header elsewhere; the
   row-count line (`24 rows`) sits with that header. No paging, no footer, no "showing 1 to 10".
-- Row grammar: store 56 single-line, table 48 two-line, database data row 64 two-line, keys 48
+- Row grammar: store 56 two-line, table 48 two-line, database data row 64 two-line, keys 48
   single-line, file row 52 single-line, schema row 40 single-line.
-- A database data row is two lines: `#id · label` at 14/500, then the value preview at mono 13 plus
-  one type chip. `label` is the row's first readable text column.
+- A database data row is two lines: the row's label at mono 13 plus one type chip, then
+  `#id · column value` for up to two other cells at mono 11. `label` is the row's first readable
+  text column, and the chip names the kind of the cell that label came from.
 - Column grid on rows and the row sheet: key 150, type 64, value flex; numeric columns and ids
   end-align with tabular figures. Density target 16 to 20 visible data rows, with no caption strip
   at the bottom of any screen, no prose card under a working list, and at most one info affordance
@@ -138,7 +139,7 @@ Databases, Preferences, Files, Sheets, Light theme — with arrows between steps
 | Top bar | root: 64, 22/500 title, 12 muted subtitle, 40 slots, no back. Detail: same, with back and one trailing slot | component |
 | Segmented tabs | 40 track inside a 44 hit row, 4 inset, pill 999, 3-up at 14/500 with a 12 muted count; active segment `primaryContainer` | component |
 | Search field | 48, radius 16, `surfaceHigh`, 20 leading icon; active state swaps the icon for a 40 clear action and shows the query at 14 with a muted result count | component |
-| Filter bar | 44, one 40 trailing slot; carries the rows filter in v1 and reserves the sort slot for v2 | component |
+| Filter bar | 44; two 44 slots, sort and column filter, inert placeholders for v2; the rows filter is the surface's search field | component |
 | Section header | 40; label 16/500, count 12 muted, optional text action 13/500 | component |
 | Store row | 56; 36 icon tile, name 16/500, meta 12 muted, size mono 12 end, chevron 20 | component |
 | Table row | 48, two lines; 18 icon, mono 12 name, mono 11 muted `24 rows · 6 columns`, chevron 16 | component |
@@ -148,10 +149,10 @@ Databases, Preferences, Files, Sheets, Light theme — with arrows between steps
 | File row | 52; 20 kind icon, name 14/500, size mono 12 end; the folder variant adds a chevron | component |
 | Path line | 24; mono 12 muted, one line, middle-ellipsized from the left, scrolls with the list | component |
 | Meta chip, type chip | 20, radius 6, padding 8, mono 11, `chipFill` + 1 dp `outline`; the type chip names the kind in that kind's colour | component |
-| Status pill, status banner | pill 20, radius 999, mono 11, `SCANNING` only; banner 72 with 20 icon, title 14/500, body 12 muted, an optional muted Details line and a 44 action below; the busy variant is 131 with that action inline | component |
+| Status pill, status banner | pill 20, radius 999, mono 11, unused in v1: the loading state is the `…` count plus skeletons; banner 72 with 20 icon, title 14/500, body 12 muted, an optional muted Details line and a 44 action below; the busy variant is 131 with that action inline | component |
 | Empty state, skeleton row | 64 icon tile, title 16/500, body 14 muted, one action 15/500; a skeleton uses the parent row's height with 2 to 3 bars in `skeletonFill` | component |
 | Info card | card 20, `surface` + 1 dp `outline`, one 13/500 line and one 12 muted line, opens a sheet | inline |
-| Row sheet, value sheet | 24 radius, `surfaceHigh`, handle 40×4, title 18; the row sheet carries six key/value rows 48 and two actions, the value sheet a mono 13 value block, meta row and `Copy value` / `Copy key` | component |
+| Row sheet, value sheet | 24 radius, `surfaceHigh`, handle 40×4, title 18; the row sheet carries one 48 row per cell and two copy actions, the value sheet a mono 13 value block, meta row and `Copy value` / `Copy key` | component |
 
 No dialog component. Copy runs immediately and the platform confirmation is the only feedback.
 
@@ -168,7 +169,7 @@ share every name.
 | Status | `warn` and `warnSurface` for a locked or partial read; `error` and `errorSurface` for a failed read |
 | Store kind | `storeDatabase`, `storePreferences`, `typeFiles` on the store icon tile and its row |
 | Value kind | `kindNeutral` (text, null), `kindNumber` (int, real, long), `kindBool` on the type chip |
-| Fills | `chipFill` on chips, `iconTileFill` behind icons, `skeletonFill` in skeletons, `footerFill` behind the row-count line |
+| Fills | `chipFill` on chips and the section count pill, `iconTileFill` behind icons, `skeletonFill` in skeletons |
 
 The ramp is deliberately five semantic colours, not a palette: three store kinds and two value-kind
 hues, with one neutral for text-like values. A value kind is a label, never the only signal; every
@@ -214,10 +215,12 @@ One word, one meaning:
 - A locked or unreadable file has two states only: `in use` and `couldn't open`, never a driver code
   in a headline. One retry label everywhere: `Retry`, not `Retry read`.
 - Copy verbs: `Copy value`, `Copy key`, `Copy row as JSON`; no `share`, no icon-only copy on a row.
-  One search placeholder per scope: `Search databases`, `Search preference stores`, `Search this
-  store`, `Search keys and values`, `Search files`.
-- Counts are derived from the list they label, never typed: segment counts, section counts,
-  `24 rows`, `3 tables`, `1 hidden`.
+  One search placeholder per scope: `Search databases`, `Search preference stores`, `Search tables`,
+  `Filter rows`, `Search this store`, `Search files`.
+- Counts are derived from the list they label, never typed, and each count appears once per surface:
+  in the active tab segment on the home surface, in the section header on every surface below it.
+  `24 rows`, `3 tables`, `Keys 8`. A top-bar subtitle carries no count; it names the store's version
+  and `Read-only`.
 - Plain language in the UI. A technical identifier (exception class, engine error) may appear only
   as a muted secondary `Details` line, never as the headline or the body.
 
@@ -228,13 +231,15 @@ does not exist for this install opens to 21 rather than disappearing from the li
 
 - Row grammar: 52, 20 kind icon, name 14/500, size mono 12 end-aligned, chevron for folders.
 - Sizes are 1024-based: one decimal below 10 units, an integer from 10 up, `0 B` for zero, never a
-  repeated unit, so 1024 KB prints as 1 MB. They are computed on demand when a folder opens, never
-  on the home list; the roots row shows a count only.
-- `files/datastore/` is hidden by default with a truthful `1 hidden` count and a
-  `Show preference files` toggle. `databases/` and `shared_prefs/` are siblings of the files root,
-  so they cannot appear inside it.
-- Text preview is capped at 64 KB and always states `N of M bytes`; binary shows a hex dump, 16
-  bytes a line. A truncated preview is marked on screen (25), never silently shortened.
+  repeated unit, so 1024 KB prints as 1 MB. A file row shows the file's own size; a folder shows
+  none, because sizing it would mean the recursive walk v1 does not do; the roots row shows a count
+  only.
+- `files/datastore/` is listed like any other folder: the files surface hides nothing, so there is
+  no show/hide toggle and no hidden count. `databases/` and `shared_prefs/` are siblings of the files
+  root, so they cannot appear inside it.
+- Text preview is capped at 64 KB and always states `N of M bytes`; binary shows a hex dump, 8
+  bytes a line with an ASCII gutter. A truncated preview is marked on screen (25), never silently
+  shortened.
 - No cache clear in v1. The surface is read-only and no row carries a destructive action.
 
 ## 10. Accessibility and adaptivity
@@ -249,8 +254,8 @@ does not exist for this install opens to 21 rather than disappearing from the li
   traps focus while open and restores it to the invoking row on dismiss. Back dismisses the sheet,
   then the screen.
 - Edge-to-edge: the list draws under the status and navigation bars, and content is inset by the
-  navigation bar. Above 600 dp the layout moves to list-detail, stores left and the open surface
-  right; it does not stretch a 380 dp column.
+  navigation bar. Above 600 dp the board moves to list-detail, stores left and the open surface
+  right; v1 keeps one column at every width instead of stretching a 380 dp column.
 
 ## 11. Out of scope for v1
 
@@ -258,9 +263,58 @@ Cache clear, sort, recursive search, breadcrumbs, JSON and XML pretty-print, ima
 export or share. v2 order: cache clear, sort, recursive search, breadcrumbs, pretty-print, images,
 export.
 
+## Implementation notes
+
+Where the build is narrower than the board, and why. The board above stays the target.
+
+- **Each count appears once.** The tab segments carry the three store counts on the home surface;
+  every surface below it puts its single count in the section header (`Tables 12`, `Columns 5`,
+  `Rows 24`, `Keys 8`) and states only the store's version and `Read-only` in the top bar. The files
+  surface names its path once, in the mono path line, and its top-bar subtitle is `Read-only` too.
+- **Rows stop at 500.** `rows()` reads one capped page and `TableRows.total` keeps the real count,
+  which the section header does not print: paging is not implemented, so a table past the cap lists
+  its first 500 rows under a `Rows 500` header.
+- **Hex is 8 bytes a line plus an ASCII gutter.** Sixteen bytes and a gutter do not fit the 356 dp
+  content column at mono 11, and the gutter earns more than four extra bytes.
+- **`Calculate size` is not implemented.** A folder size needs a recursive walk the file seam does
+  not do, so a folder row shows no size rather than a partial one.
+- **`View raw bytes` is not implemented.** The seam reads a preference store into entries and has no
+  raw-bytes read, so an unreadable store offers `Retry` only.
+- **The schema screen is reached from a table row, and the rows screen from the schema's `Rows`
+  action.** A table therefore always opens its definition before its records.
+- **Search is client-side over loaded data.** A table or store search filters one loaded page; the
+  home preference search reads every store after a 250 ms settle and keeps 50 hits per store, and a
+  query shorter than two characters is a store-name filter instead.
+- **SharedPreferences is supported but empty in this repo.** Discovery reads `shared_prefs/*.xml`
+  as XML, never through `getSharedPreferences`, but no app here writes one.
+- **A WAL database opens through a query-only writable handle.** A read-only open cannot build the
+  `-shm` index a live WAL file needs, so the fallback opens read-write and pins `query_only=ON`;
+  no statement touches data and the database file is neither created nor modified.
+- **Row typography differs from §6.** The data row leads with its label at mono 13 and puts
+  `#id · column value` on line two at mono 11; table and file names are mono 13 and schema names
+  mono 15, not mono 12; control labels are 14/500 where §6 says 15/500.
+- **The filter bar holds one search field, with no sort or filter icons.** v1 drops the board's
+  icon slots instead of shipping clickable buttons with no action; they return with v2's sort. The
+  cross-store preference search likewise reports a failed read instead of an empty result: every
+  store failing shows the error banner, and some failing keeps the hits under
+  `Some stores could not be read.`
+- **The row sheet also copies TSV.** `Copy as TSV` has no entry in §8's copy table.
+- **Rows are one data grid, not two-line label rows.** 11 renders a sticky 40 dp header of real column
+  names over 44 dp rows, one cell per column at mono 12; widths come from the header and a
+  24-character sample, clamped to 88..240 dp, numeric columns end-align and the whole table (header
+  included) scrolls sideways together. The schema loads with the rows so a table with no records
+  still names its columns. The row sheet is unchanged.
+- **A table's columns are a four-column grid.** Name 150, Type 96, Null 64, Key 56 over a 40 dp
+  header and 44 dp rows, striped by a hairline only. `View rows` is a filled action under the DDL
+  card; the section header has no text action.
+- **The files surface hides nothing.** `files/datastore/` is a row like any other folder, with no
+  show/hide toggle and no hidden count, so every section count is the whole truth.
+- **A table row carries `DDL` and `Rows` actions.** Two 32 dp outlined buttons inside 48 dp targets
+  grow the row from 48 to 56 dp; tapping the body still opens the definition.
+
 ## 12. Open decisions
 
 - Whether the value sheet collapses into inline expandable rows long term; inline is cheaper for
   short scalars, the sheet survives long values and binary.
-- Whether SharedPreferences ships at all: no app in the repo writes one, so 02's second section, 16
-  and 19 exist for the pattern, not for a real store.
+- SharedPreferences ships and is read as XML, but no app in the repo writes one, so 02's second
+  section, 16 and 19 stay unexercised by a real store.

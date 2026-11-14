@@ -13,6 +13,9 @@ android {
 }
 
 dependencies {
+    // The source seam exposes Result and StorageError.
+    api(projects.core.common)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.compose)
 
@@ -22,6 +25,7 @@ dependencies {
     api(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
 
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose.android)
     implementation(libs.androidx.lifecycle.runtime.compose.android)
     implementation(libs.datastore.prefs)

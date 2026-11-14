@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -56,6 +57,7 @@ fun DevToolsScreen(
 ) {
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     var showLogcat by rememberSaveable { mutableStateOf(false) }
+    var showStorage by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -113,6 +115,20 @@ fun DevToolsScreen(
                 }
             }
 
+            // Storage viewer, where the platform has one
+            if (isStorageViewerAvailable) {
+                item {
+                    DevToolItem(
+                        tool = DevTool.Action(
+                            title = "Open Storage",
+                            subtitle = "Inspect databases, preferences and files",
+                            icon = Icons.Rounded.Storage,
+                            onClick = { showStorage = true },
+                        )
+                    )
+                }
+            }
+
             // Custom Tools
             if (customTools.isNotEmpty()) {
                 items(customTools) { tool ->
@@ -133,6 +149,11 @@ fun DevToolsScreen(
         DevToolsLogcatHost(
             visible = showLogcat,
             onDismiss = { showLogcat = false },
+        )
+
+        DevToolsStorageHost(
+            visible = showStorage,
+            onDismiss = { showStorage = false },
         )
     }
 }

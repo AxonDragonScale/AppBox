@@ -1,8 +1,8 @@
 ---
 title: "Storage viewer library"
-status: in-progress
-summary: "Scaffolded Android library for browsing the app's own databases, preferences and files, with a three-page design board behind a 29-screen viewer; no source yet."
-read_when: "Wiring the module, reviewing the design board, or starting the storage viewer implementation."
+status: current
+summary: "Android + Compose library that shows the app its own databases, preferences and files in place, with a public StorageViewer, an IStorageSource seam and a DevTools entry."
+read_when: "Wiring the module, using StorageViewer in an app, reviewing the design board, or changing how storage is read."
 ---
 
 > Context: [Main](../../context.md) > Storage Viewer Library
@@ -11,10 +11,10 @@ read_when: "Wiring the module, reviewing the design board, or starting the stora
 
 ## Overview
 
-Android + Compose library that will show the calling app its own storage:
+Android + Compose library that shows the calling app its own storage:
 
-- **Databases** — SQLite/Room files discovered through `Context.databaseList()` and the
-  `databases/` directory, browsed read-only in place.
+- **Databases** — SQLite/Room files discovered through `Context.databaseList()`, browsed
+  read-only in place.
 - **Preferences** — Preferences DataStore files (`files/datastore/*.preferences_pb`) and
   SharedPreferences XML, read without constructing a second `DataStore`.
 - **Files** — app files, cache, no-backup files, external cache and code cache, browsed read-only,
@@ -25,8 +25,35 @@ makes no snapshots or copies.
 
 ## Current state
 
-The Gradle module is registered and builds an empty AAR. There is no source yet: no
-`StorageViewer` composable, no discovery, no readers.
+The module builds. Its whole public surface is one composable:
+
+```kotlin
+StorageViewer(
+    modifier = Modifier,
+    source = null,                  // IStorageSource; null means AndroidStorageSource(context)
+    title = "Storage",
+    style = rememberStorageViewerStyle(),
+    onBack = null,
+)
+```
+
+Reads go through `IStorageSource` (`data/IStorageSource.kt`): `stores()`, then `describe`,
+`tables`, `schema`, `rows`, `entries`, `children` and `preview`, each returning
+`Result<…, StorageError>` instead of throwing because a store can vanish or lock between a
+listing and an open. `AndroidStorageSource(context)` is the default implementation and reads the
+calling app through `Context`; a host that wants another scope passes its own source.
+
+The three surfaces behind that seam:
+
+- `ui/screens/StoresScreen.kt` — the segmented home: Databases, Preferences, Files.
+- `ui/screens/TablesScreen.kt`, `SchemaScreen.kt`, `RowsScreen.kt` — database browsing, with the
+  locked/retry state and an ordinal id for views and WITHOUT ROWID tables that reject `rowid`.
+- `ui/screens/KeysScreen.kt`, `FolderScreen.kt`, `FilePreviewScreen.kt` — store keys, folder
+  listing across the five roots, and capped text/binary file previews.
+
+Readers live in `data/` (`Discovery`, `DatabaseReader`, `DataStoreReader`, `SharedPrefsReader`,
+`FileWalker`, `ByteFormat`, `DisplayText`), descriptors and display models in `model/`, and the
+component set, sheets and `StorageViewerStyle` in `ui/`.
 
 ## Design
 
@@ -53,18 +80,21 @@ Typography uses Roboto Regular/Medium/Bold and Roboto Mono Regular. The boards a
 SemiBold and Roboto Mono Medium because those faces render 1 px vertical lines at text ends in this
 renderer; the variable Roboto fonts stay installed and the design uses only the clean faces.
 
-## Planned shape
+## Module shape
 
 ```text
 libraries/storage-viewer/src/main/java/com/axondragonscale/storageviewer/
-├── StorageViewer.kt              # public entry: the three store tabs
-├── model/                        # descriptors, schema, rows, preference entries, file nodes
+├── StorageViewer.kt              # public entry: style, source, clipboard, effects
+├── model/                        # descriptors, schema, rows, preference entries, file nodes, errors
 ├── data/                         # IStorageSource, AndroidStorageSource, readers, file walker
-└── ui/                           # home, browser screens, sheets, states
+└── ui/                           # screens, sheets, list rows, chrome, style
 ```
 
-`:core:devtools` will add an Android-only **Open Storage** built-in, mirroring the logcat host
-seam (`isStorageViewerAvailable` / `DevToolsStorageHost`, JVM and iOS no-ops).
+`:core:devtools` has the Android-only **Open Storage** built-in, mirroring the logcat host seam:
+`isStorageViewerAvailable` / `DevToolsStorageHost` in `commonMain`, a `StorageViewer` dialog in
+`androidMain` with a `StorageDevToolsScreen(onBack)` navigation variant, and no-op actuals on JVM
+and iOS. The library is an `androidMain` dependency only, so it never reaches the common
+classpath. See [Core Modules](../../core/context.md).
 
 ## Building
 

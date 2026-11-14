@@ -19,7 +19,7 @@ what it uses. This file is kept as the entry point for the shared core modules.
 | [`:core:common`](common/context.md) | KMP, no Compose | Logger, `Result`, `CommonJson`, `DateTimeExt`, pure `Flow.collect()`/`combine`, `AppInfo` | coroutines, serialization-json, datetime |
 | `:core:android` | Android library | `ContextExt` (notifications, settings, clear data), `PermissionExt` | `:core:common`, androidx-core-ktx |
 | `:core:ui` | KMP + Compose | Dropdown, StatCard, charts, date/time pickers, `ModifierExt`, `ComposeUtils`, `UIMode` (`icon`, `isDarkTheme`), `collectWithLifecycle` | `:core:common`, Compose MP, lifecycle-compose |
-| `:core:devtools` | KMP + Compose | `DevToolsScreen`, `DevTool`, builder DSL; Android built-ins (kill app, clear data, permissions, logcat) | `:core:ui`, `:core:android` (androidMain), `:libraries:logcat-viewer` (androidMain) |
+| `:core:devtools` | KMP + Compose | `DevToolsScreen`, `DevTool`, builder DSL; Android built-ins (kill app, clear data, permissions, logcat, storage) | `:core:ui`, `:core:android` (androidMain), `:libraries:logcat-viewer` and `:libraries:storage-viewer` (androidMain) |
 | `:core:datastore` | KMP | `createPreferencesDataStore`, `pref`, `enumPref`, `serializedPref`, `nullablePref` | datastore-preferences, coroutines, serialization-json, `:core:common` |
 | `:core:room` | KMP | Room `TypeConverter`s + `createDatabase` | room-runtime, kotlinx-datetime, sqlite-bundled |
 | `:core:network` | KMP | `createHttpClient`, `NetworkModule` (provides `Json` + `HttpClient`); OkHttp/Chucker on Android | ktor, `:core:common`, koin-core |
@@ -34,7 +34,7 @@ what it uses. This file is kept as the entry point for the shared core modules.
         ↑
    :core:devtools ──→ :core:android
         ↓ (androidMain)
- :libraries:logcat-viewer
+ :libraries:logcat-viewer  :libraries:storage-viewer
 ```
 
 No core module depends on an app, and no core module depends on `:core:devtools` or `:core:ui`
@@ -88,14 +88,23 @@ DevToolsScreen(
 )
 ```
 
-Built-ins on Android: Kill App, Clear App Data, Open App Settings, Permissions, and Open Logcat.
-JVM/iOS expose Kill App only. The module is KMP because jest/limitless call it from `commonMain`.
+Built-ins on Android: Kill App, Clear App Data, Open App Settings, Permissions, Open Logcat and
+Open Storage. JVM/iOS expose Kill App only. The module is KMP because jest/limitless call it from
+`commonMain`.
 
 The log viewer entry is Android-only and needs no host wiring: tapping **Open Logcat** presents
 `LogcatViewer` as a full-screen dialog (back gesture and the viewer's own back arrow both dismiss
 it). `isLogcatAvailable` / `DevToolsLogcatHost` are the expect/actual seam; the JVM and iOS actuals
 are no-ops. A host that wants it as a navigation destination instead can call
 `LogcatDevToolsScreen(onBack = …)` and add its own route — Devinator does exactly that.
+
+The storage entry sits beside it in the same Diagnostics block and works the same way: **Open
+Storage** presents `StorageViewer` as a full-screen dialog over the app's own databases,
+DataStore/SharedPreferences stores and files. `isStorageViewerAvailable` /
+`DevToolsStorageHost` are its expect/actual seam, with no-ops on JVM and iOS; the
+[storage viewer library](../libraries/storage-viewer/context.md) holds the reader itself, so the
+library stays off the common classpath. The module's `StorageDevToolsScreen(onBack = …)` is the same
+viewer as a navigation destination.
 
 ## DataStore — `:core:datastore`
 
