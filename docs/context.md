@@ -102,6 +102,8 @@ Check here before writing a helper — the shared one usually exists.
 |---|---|
 | [libraries/tlv/context](./libraries/tlv/context.md) | `:libraries:tlv` — BER-TLV codec, KMP, independently published |
 | [libraries/logcat-viewer/context](./libraries/logcat-viewer/context.md) | `:libraries:logcat-viewer` — in-app log viewer with a host-supplied source; built into DevTools on Android |
+| [libraries/storage-viewer/context](./libraries/storage-viewer/context.md) | `:libraries:storage-viewer` — in-app database, DataStore and SharedPreferences viewer (scaffold + design board) |
+| [libraries/storage-viewer/design](./libraries/storage-viewer/design.md) | The board behind `:libraries:storage-viewer`: three-segment home, 29 screens and 5 sheet overlays, state coverage, component and token vocabulary, copy rules, and the files surface. |
 
 ### Design and reference
 

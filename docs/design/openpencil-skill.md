@@ -763,6 +763,50 @@ the same change as the work it learns from.**
   `parent.insertChild(parent.children.length, child)`. Also, `clone()` copies the source *name*, so
   collect the originals to delete **before** cloning; filtering the parent's children by name after
   cloning deletes the clones too and the script dies with `Node <id> has been removed`.
+- **2026-11-14** — `new_document` resolves a relative `path` against the MCP root (the home folder),
+  not the workspace. Create it with a name, then `save_file` with the absolute repo path; the tab
+  retargets to that file and `list_documents` reports the new path.
+- **2026-11-14** — `export_image` answered **"No visible nodes to export"** for every node and for a
+  whole page of a fresh document, including after `activate_document` and a zoom. Headless
+  `openpencil export -f svg --node <id>` worked, and a browser tab on the exported SVG was the
+  reliable review path. Use SVG for layout review; it does not wrap text even when the model has
+  `textAutoResize=HEIGHT` and a fixed width, so check wrapping on the node (`width`/`height`) instead.
+- **2026-11-14** — the headless PNG rasteriser still draws stale vertical carets through text nodes
+  that are absent from the SVG export. Reassigning `characters` (app-mode `eval`, `set_text`) did not
+  remove them here; treat the PNG carets as a rasteriser artifact and verify carets in the app or in
+  SVG, not in the headless PNG.
+- **2026-11-14** — a plain wrapper frame inside a **fixed-height** row defaults to 100 high (golden
+  rule 3). In a 50 dp row with `items="center"` its text sits at `-25` and the row overlaps the
+  header above. Use a direct `<Text w={…}>` child for table cells, or give the wrapper `flex="col"`
+  and an explicit height; do not leave a bare frame around one text node.
+- **2026-11-14** — a batch of app-mode `openpencil eval` calls followed by a save can leave the
+  document open under a **new tab id** with fresh node ids (here `tab-9` → `tab-1`, ids `0:*`).
+  Re-run `list_documents` and re-derive ids by name before the next MCP edit; the saved file is fine.
+- **2026-11-14** — the vertical line artifacts are editor **caret state** that survives save and
+  reopen on a screen/card: `characters = characters`, `set_text` with the same string, and setting
+  `selectionStart`/`selectionEnd` to `null` did **not** clear them. The reliable fix is a fresh
+  `render(replace_id=<card or screen>)` of the whole parent, which recreates every text node; do not
+  run a text eval on that subtree afterwards or the carets return. Replace at card level where the
+  artifact is local (a store list, a table card) and at screen level when lines cross several cards.
+  A `render` that fails validation can still leave a partial node behind, so compare top-level names
+  after a batch and delete the duplicate.
+- **2026-11-14** — a pill button frame placed inside a fixed-height actions row (`h={40}`) but given no
+  height of its own hugs its 14 px text and renders as a thin line. `items="center"` centres it, it
+  does not stretch it. Give every button frame an explicit `h={40}`; check sheet and dialog actions
+  at 2× export.
+- **2026-11-14** — vertical text artifacts are a **font-face** bug, not carets or guides. With the
+  variable `Roboto[wdth,wght].ttf` / `RobotoMono[wght].ttf` installed, the **Roboto SemiBold** and
+  **Roboto Mono Medium** faces drew 1 px text-coloured vertical lines at text ends through whole
+  rows; switching those text nodes to **Roboto Medium** and **Roboto Mono Regular** cleared them,
+  and the fix survived save and reopen. The variable fonts can stay installed system-wide — do not
+  disable or remove them; change the design's font faces instead. Re-rendering a parent only hides
+  the lines until the next reload.
+- **2026-11-14** — `render(replace_id=…)` on a child of an auto-layout frame (`layoutMode`
+  `VERTICAL`) drops the replacement in at the parent's corner (`16, 16`) and leaves the parent's
+  layout stale; `update_node {x, y}` answers `updated: ["x","y"]` but neither the model nor
+  `node_bounds` changes. Fix with `set_layout_child(positioning="ABSOLUTE")` then
+  `node_move(x, y)` — the siblings keep their positions. The same `replace_id` under a plain
+  (non-auto-layout) parent keeps the original position, so check every replaced node's bounds.
 
 ## Related
 
