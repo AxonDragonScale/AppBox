@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- A page, and the one warm mark that means the voice. -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M40,26 H68 V82 H40 Z"
+        android:strokeColor="@color/verso_icon_ink"
+        android:strokeWidth="4" />
+
+    <path
+        android:fillColor="@color/verso_icon_highlight"
+        android:pathData="M47,40 H61 V48 H47 Z" />
+</vector>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="verso_icon_background">#F7F4EC</color>
+    <color name="verso_icon_ink">#191712</color>
+    <color name="verso_icon_highlight">#F2C94C</color>
+    <color name="verso_splash_background">#F7F4EC</color>
+</resources>

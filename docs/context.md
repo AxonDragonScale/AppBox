@@ -86,6 +86,7 @@ subsystem.
 | [apps/wallmatic/context](./apps/wallmatic/context.md) | `:apps:wallmatic` — scheduled wallpaper rotation, albums |
 | [apps/wallmatic/ui](./apps/wallmatic/ui.md) | Wallmatic wallpaper-library design: paper/ink/indigo tokens, component library, Home/Lock model, the two-mode wallpaper viewer/editor, 21 screens |
 | [apps/wallmatic/background-services](./apps/wallmatic/background-services.md) | Update cycle, Doze/reboot survival, tiles, receivers |
+| [apps/verso/context](./apps/verso/context.md) | `:apps:verso` — reader app: scaffold, tokens, what exists and what doesn't |
 
 ### Core modules
 
@@ -120,6 +121,8 @@ fold anything durable into the matching doc above, and remove the row.
 | Doc | Work in flight |
 |---|---|
 | [apps/jest/ui-revamp-plan](./apps/jest/ui-revamp-plan.md) | Responsive redesign, three layout tiers |
+| [apps/verso/spec](./apps/verso/spec.md) | Verso reader app — behavioural spec, pre-code |
+| [apps/verso/ui](./apps/verso/ui.md) | Verso reader app — screen inventory, tokens, components, copy |
 | [libraries/bitops/plan](./libraries/bitops/plan.md) | `KmpBitSet` API — module exists but is not implemented |
 | [libraries/kotp/plan](./libraries/kotp/plan.md) | Extracting OTP generation out of Topty — module not created |
 | [migration/kmp-single-app-migration-playbook](./migration/kmp-single-app-migration-playbook.md) | Repeatable Android → KMP playbook, live until every app is migrated |
