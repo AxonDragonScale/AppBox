@@ -27,8 +27,6 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.compose.LocalSavedStateRegistryOwner
-import com.axondragonscale.commons.compose.DevToolsSystemBars
-import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.storageviewer.StorageViewer
 
 internal actual val isStorageViewerAvailable: Boolean = true

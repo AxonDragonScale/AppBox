@@ -1,4 +1,4 @@
-package com.axondragonscale.commons.compose
+package com.axondragonscale.commons.devtools
 
 import android.app.Activity
 import android.content.Context

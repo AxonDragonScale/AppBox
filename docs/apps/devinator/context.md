@@ -1,8 +1,8 @@
 ---
 title: "Devinator — developer settings toggles"
 status: current
-summary: "Developer-options, USB and wireless-debugging toggles, five QS tiles, a Tweaks page, and an in-app Logcat."
-read_when: "Changing a toggle, its write path, QS tiles, or the Logcat screen."
+summary: "Developer-options, USB and wireless-debugging toggles, five QS tiles, a Tweaks page, and a DevTools screen hosting Logcat and Storage."
+read_when: "Changing a toggle, its write path, QS tiles, the Tweaks page, or the DevTools route."
 ---
 
 > Context: [Main](../../context.md) > Devinator
@@ -16,14 +16,17 @@ A small set of screens plus five Quick Settings tiles. Home flips **Developer op
 wireless debugging off on a timer, and can temporarily pause or resume **Developer options** for a
 chosen duration. **Tweaks** is a second page of developer switches — the three animation scales, don't keep
 activities, process limit, background ANRs, stay awake — plus **Font size**, an ordinary
-`Settings.System` display setting. Both are reached from Home's pages card. **Logcat** streams this
-app's log from the terminal button in Home's top bar; it needs no permission.
+`Settings.System` display setting. Both are reached from Home's pages card. **DevTools** is the app's
+developer surface, reached only from Settings › Developer tools: the shared screen
+from `:core:devtools`, where **Logcat** and **Storage** live as built-ins. Devinator declares no log
+screen or log permission of its own.
 
 - **Package**: `com.axondragonscale.devinator`
 - **Module path**: `:apps:devinator`
 - **Target device**: iQOO 13, OriginOS — OEM quirks are a first-class concern, see [Risks](#risks--verification)
-- **Not** the `devtools` package in [`core:devtools`](../../core/context.md#devtools--coredevtools); that is the debug
-  screen embedded inside other apps. Different thing, similar name.
+- **Not** the `devtools` package in [`core:devtools`](../../core/context.md#devtools--coredevtools) itself; that is the
+  shared debug screen every app embeds. Devinator is one of those hosts, and its own package carries
+  the same name for a different thing: the developer preferences this app is about.
 
 Scope is deliberately small: three switches, tiles, endpoint display, the timed toggle, the
 wireless auto-off timer, and the Tweaks page. Everything else is deferred — see
@@ -94,10 +97,9 @@ com.axondragonscale.devinator/
 │   ├── DevTileServices.kt          # developer options, USB, wireless
 │   └── TimedDevOptionsTileServices.kt # pause and resume
 ├── ui/
-│   ├── Route.kt                    # Setup, Home, Settings, Tweaks, Permission, QuickSettingsTiles, Logcat
+│   ├── Route.kt                    # Setup, Home, Settings, Tweaks, Permission, QuickSettingsTiles, DevTools
 │   ├── components/                 # card, divider, top bars, badge, chip, duration chip, code block, switch, menu, clipboard
-│   ├── theme/  setup/  home/  settings/  tiles/  tweaks/
-│   └── logcat/LogcatRoute.kt       # adapter over :libraries:logcat-viewer
+│   └── theme/  setup/  home/  settings/  tiles/  tweaks/  devtools/
 ```
 
 The suffixes carry one meaning each: `*Repository` owns a source of state (system settings, app
@@ -211,42 +213,25 @@ Home's pages card opens a second page of three groups: **Display**, **Animation*
   13 by toggling each in the ROM's own Developer options and diffing `Settings.Global`,
   `Settings.Secure`, `Settings.System` and `getprop`.
 
-### Logcat viewer
+### DevTools
 
-The screen is `ui/logcat/LogcatRoute.kt`, a thin adapter over the shared `:libraries:logcat-viewer`
-(see [its context](../../libraries/logcat-viewer/context.md)). The app keeps only the navigation
-callbacks; the viewer owns its saved views in its own DataStore.
+`Route.DevTools` hosts `DevinatorDevTools` — the shared `DevToolsScreen` from `:core:devtools`, titled
+"Devinator Dev Tools", with no tools of this app's own. One entry point: **Developer tools** in
+Settings. Home has no action for it. The screen renders in `DevToolsTheme`,
+a fixed dark scheme, so Devinator's own theme choice and dynamic colour never reach it.
 
-The reader is a screen-scoped `logcat -v threadtime` process inside the library's `LogcatStreamer` —
-no `-T` count and no `-b` by default, so it seeds from logcat's default buffers and then follows the
-live tail.
-It runs as this app's UID, which needs no permission: the platform has returned a process's own
-records to it since API 16, and `READ_LOGS` does not widen that on Android 13+ (Android 17 documents
-that third-party apps cannot read device logs). Verified on the iQOO with the grant revoked:
-`run-as <pkg> logcat` still returns this app's lines and only those. Devinator therefore declares no
-log permission, shows no gate and has no setup step for it.
+The shared screen supplies the platform built-ins — **Kill App**, **Clear App Data**, **Open App
+Settings** and a **Permissions** list — and, on Android, two viewers:
 
-A host that holds another identity (root, a shell bridge, a remote device) implements `ILogcatSource`
-and passes it in; the viewer itself never assumes more than the UID it runs as.
+- **Logcat** — **Open Logcat**. `:libraries:logcat-viewer` reading this process's own log records,
+  opened as a dialog inside `DevToolsTheme`. The stream, filters and saved views are described in
+  [the viewer's context](../../libraries/logcat-viewer/context.md).
+- **Storage** — **Open Storage**. `:libraries:storage-viewer` over this app's own files:
+  `devinator_prefs.preferences_pb` (the Preferences DataStore in `files/datastore/`), the app's files
+  and cache, and an empty database list, since Devinator has no Room database.
 
-The reader follows the screen: the app stops it on `ON_STOP` because the platform stops delivering
-records to a backgrounded app's `logcat` child, and starts it again on `ON_START`, resuming after
-the newest shown record. `start` returns a session token and `stop(token)` ignores a stale owner, so
-a cleared ViewModel cannot kill a newer stream. Standard error is drained on its own coroutine, and
-a reader that ends after producing lines is restarted up to three times. The reader parses
-`MM-DD HH:MM:SS.mmm  PID  TID L TAG: message`, merges continuation lines and
-`AndroidRuntime`/stack-frame records into the entry above (same pid, tid and tag), and publishes a
-snapshot every 120 ms — up to 5,000 entries, 16k characters per message. Pause moves new entries into
-a pending queue; resume appends them. Clear empties the view, never the system buffer. Switching
-buffer is a new view and starts empty.
-
-The ViewModel filters the snapshot with the level set, exact tag includes/excludes, package
-includes/excludes and the content query (contains, or regex), all ANDed. Package filters resolve
-through `PackageManager` + `ActivityManager.getRunningAppProcesses` every 3 s; the app's own package
-always resolves, while a package the platform hides resolves to no PIDs and honestly shows no matches.
-The entry sheet resolves `packageForPid` from the same source, falling back to `/proc/<pid>/cmdline`,
-and shows the full package name. Saved views store levels, tags, packages and the query — not the
-buffer or the scroll position — as JSON in the viewer's own `logcat_viewer` DataStore.
+Devinator declares no log permission and no route of its own for either viewer, and passes no
+`customTools`: its developer-facing state is Home and Tweaks, not a debug menu.
 
 ### Endpoint discovery (best effort)
 
@@ -359,8 +344,9 @@ are out of scope for v1.
 ### Build & manifest
 
 - `libs.plugins.android.app.convention` + `kotlin.serialization`; deps: `:core:common`,
-  `:core:ui`, `:core:android`, `:core:datastore`, `:libraries:logcat-viewer`, Compose BOM and bundle,
-  Koin bundle, `navigation.compose`, coroutines, `kotlinx.serialization.json`.
+  `:core:ui`, `:core:datastore`, `:core:devtools` (which carries `DevToolsScreen`, and with it the
+  Logcat and Storage viewers; see [DevTools](#devtools)),
+  Compose BOM and bundle, Koin bundle, `navigation.compose`, coroutines, `kotlinx.serialization.json`.
 - `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
   tools:ignore="ProtectedPermissions" />`
 - `<uses-permission android:name="android.permission.WRITE_SETTINGS"
@@ -387,8 +373,7 @@ are out of scope for v1.
   is the same path at 28×16 for the Setup top bar, tinted `primary` at the call site.
 - `INTERNET` and `ACCESS_NETWORK_STATE` are declared in this module for mDNS (`NsdManager`) and
   `ConnectivityManager` callbacks. They used to arrive transitively through `:core:commons`; now that
-  devinator depends only on `:core:common`, `:core:ui`, `:core:android` and `:core:datastore`, they
-  are explicit. The app makes no outbound requests; the permission exists for local discovery.
+  the app declares its own dependencies, they are explicit. The app makes no outbound requests; the permission exists for local discovery.
 
 ## Risks & verification
 
@@ -406,13 +391,10 @@ Everything here is verified the first time the app is installed on the iQOO.
 | Local-network grant is missing or revoked | launch on a device that never granted it | discovery is skipped, so no picker and no port; the caption points at Developer options |
 | `sysui_qs_tiles` is unreadable above target SDK 33, so tile state and removal vanish on AOSP | open Quick Settings Tiles on a non-OriginOS device | read OriginOS's `super_qs_tiles` where present; otherwise the page is read-only and points at the Quick Settings editor |
 | Several networks at once (Wi-Fi + VPN + hotspot) | connect with a VPN up | rank Wi-Fi → hotspot → VPN and show the top one only |
-| `logcat` shows only this app's records | compare the viewer with `adb shell logcat` | the platform narrows the buffer to the calling UID; a host with a shell identity passes its own `ILogcatSource`, the viewer needs no change |
-| The platform hides other processes from `getRunningAppProcesses` | filter by another package | that package shows no matches; the app's own package still filters |
 
 ## Related Context
 
 - [Design & behaviour](./design.md) — state machine, interaction and edge-case rules
 - [UI spec](./ui.md) — screens, components, copy, tokens for Pencil
-- [Logcat viewer library](../../libraries/logcat-viewer/context.md) — the shared viewer behind the Logcat screen
 - [Coding conventions](../../coding-conventions.md)
 - [Build system](../../build-system.md)

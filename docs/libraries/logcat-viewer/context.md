@@ -29,7 +29,7 @@ A host that holds a broader identity — root, a shell bridge, a remote device �
 | DI | none in the library; `LogcatViewModel.factory(...)` |
 | Persistence | Preferences DataStore (the viewer's own `logcat_viewer` file) |
 | Serialization | kotlinx.serialization (filter snapshot types) |
-| Local module | `:core:common` (logging and `catching`), `:core:ui` (`DevToolsTheme`) |
+| Local module | `:core:common` (logging and `catching`; the viewer takes no theme dependency) |
 
 ## Project Structure
 
@@ -110,9 +110,12 @@ Two hosts exist:
   `LogcatDevToolsScreen(onBack = …)` for a host that prefers a navigation destination; the JVM and
   iOS actuals are no-ops.
 
-The viewer renders in the fixed dark `DevToolsTheme` from `:core:ui`, so it looks the same in every
-host and never inherits the app's theme, dynamic colour or light/dark choice. It reads the resolved
-`MaterialTheme.colorScheme` and adds only what Material has no role for, through `LogcatStyle`:
+The viewer renders in whatever `MaterialTheme` it is composed in; DevTools hosts it inside
+`DevToolsTheme` from `:core:devtools`, so it looks the same in every host and never inherits the
+app's theme, dynamic colour or light/dark choice. The library applies no theme of its own and takes
+no `:core:ui` dependency. It reads
+the resolved `MaterialTheme.colorScheme` and adds only what Material has no role for, through
+`LogcatStyle`:
 
 | Field | Used for | Default |
 |---|---|---|
@@ -124,8 +127,8 @@ host and never inherits the app's theme, dynamic colour or light/dark choice. It
 | `errorRowTint`, `traceSurface` | error rows and inline traces | error tint |
 
 A host overrides it by passing its own [LogcatStyle]; `rememberLogcatStyle()` is the default and
-resolves against `DevToolsColorScheme`, so it always yields the dark ramp no matter where the screen
-is called from.
+returns the fixed dark ramp as plain constants, with no read of the ambient theme, so the values do
+not depend on where the screen is called from.
 
 ## Where the lines come from
 

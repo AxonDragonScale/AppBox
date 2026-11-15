@@ -63,7 +63,8 @@ Nothing in the app's own content is smaller than 12. The two exceptions are syst
 tile labels (11 / 10) and the annotation tags drawn onto reference frames.
 
 Icons: Material Symbols `developer_mode`, `usb`, `wifi_tethering`, `content_copy`, `add`, `timer`,
-`expand_more`, `settings`, `arrow_back`, `key`, `error`, `open_in_new`, `grid_view`, `check`, `close`.
+`expand_more`, `settings`, `arrow_back`, `key`, `error`, `open_in_new`, `grid_view`, `check`,
+`close`.
 
 ## Components
 
@@ -71,8 +72,9 @@ Define these once and reuse by name in the trees below.
 
 - **TopBar** — component `TopBar`, instanced into every screen: `fill_container`, `height 64`,
   `padding 16`, `gap 10`, logo 28×16 tinted `primary`, then a column `gap 2` with "Devinator" 22/600
-  and the tagline "Developer options, minus the hassle." 12 `textMuted`. Home places trailing
-  logcat (terminal glyph) and settings buttons (48 tap targets each) beside the instance.
+  and the tagline "Developer options, minus the hassle." 12 `textMuted`. Home places one trailing
+  48 dp icon button beside the instance — `settings` — the screen's one secondary destination, so the
+  bar stays balanced.
 - **Card** — vertical frame, `fill_container`, `padding 16`, `gap 8`, `cornerRadius 20`, fill `surface`.
 - **SwitchRow** — horizontal, `fill_container`, `height 56`, `gap 12`, `justifyContent space_between`,
   `alignItems center`. The whole row is the toggle; the switch is a non-interactive Material 3
@@ -136,7 +138,7 @@ Define these once and reuse by name in the trees below.
 
 ```
 Screen 412×915 · fill bg · vertical
-├─ TopBar · component `TopBar` · trailing icon buttons 48 · logcat · settings
+├─ TopBar · component `TopBar` · trailing icon button 48 · settings
 └─ column · fill_container · padding 16 · gap 12
    ├─ HeroCard · developer options
    │  └─ row · gap 12 · items centre
@@ -340,11 +342,17 @@ column · padding 16 · gap 12
 │  ├─ Divider · inset 16 both sides
 │  └─ row h56 space_between: "Grant or revoke" 16/600 · chevron
 ├─ Card · row h56 space_between: "Open Developer options" 16/600 · open_in_new
+│  ├─ Divider · inset 16 both sides
+│  └─ row h56 space_between: "Developer tools" 16/600 · "Logcat, storage and app diagnostics" 12
+│     textMuted · chevron
 └─ Card · row h56 space_between: "Devinator" 16/600 · "Version 1.0.0" 14/500 textMuted
 ```
 
 Every navigation label is 16/600: two rows of the same kind must not be two different sizes. The
 status row carries a chip instead of a chevron, which is what keeps it from reading as tappable.
+The developer card holds two exits of one group, both 16/600: `Open Developer options` leaves the
+app with `open_in_new`, `Developer tools` stays inside it with a chevron and carries its one-line
+12 `textMuted` caption under the label.
 
 Appearance is the only card with two controls: the segmented control picks System / Light / Dark, and
 `Dynamic colour` layers Material You over that choice. Dynamic colour defaults off, because the app
@@ -355,6 +363,35 @@ meaningless while wireless debugging is off.
 
 The chevron and `open_in_new` are the two navigation idioms: a chevron stays inside the app, an
 external-link glyph leaves it. Never use one for the other.
+
+## DevTools
+
+Reached only from Settings › `Developer tools`; Home has no DevTools action. This screen is not
+drawn in the Devinator board: it is `DevToolsScreen` from `:core:devtools`, identical in every host
+app, rendered in `DevToolsTheme` — a fixed dark scheme (`bg #0E1013`, `surface #171A1F`, `primary
+#5FD3A6`). Devinator's own theme choice and dynamic colour never reach it.
+
+```
+"Devinator Dev Tools" headline · "Debug utilities for Devinator" 12 textMuted
+App Actions
+├─ Kill App            Force stop the application            destructive
+├─ Clear App Data      Delete all local data and caches      destructive
+├─ Open App Settings   Manage permissions and app info
+└─ Permissions (n/n)   one row per dangerous permission, request / revoke actions
+Diagnostics
+└─ Open Logcat         Read this app's log records            terminal icon
+└─ Open Storage        Inspect databases, preferences and files   storage icon
+```
+
+**Copy is the library's.** The title and subtitle are Devinator's — "Devinator Dev Tools" and
+"Debug utilities for Devinator" — and every row label, caption and icon belongs to `:core:devtools`,
+so this page changes when that module does, not when Devinator is restyled. Devinator passes no
+custom tools: its own developer settings are on Home and Tweaks, and duplicating them here would be
+a second place to keep in sync.
+
+**The two viewers are dialogs inside the same theme**, opened from their rows and closed from their
+own top bar: Logcat reads this process's records, Storage walks Devinator's `devinator_prefs`
+DataStore, app files and cache. Nothing here writes to the settings database.
 
 ## Permission
 
@@ -499,91 +536,6 @@ owns the prompts, and a failed write is a snackbar.
 A light-theme pass is no longer pending: the app ships the light palette and Settings offers
 Light/Dark. When a screen adds a `Style=Light` variant, copy the dark frame and swap the tokens
 rather than redrawing the layout.
-
-## Logcat viewer — Console
-
-Built, in the shared `:libraries:logcat-viewer`. Entry: the terminal button in Home's top bar. The
-visual reference left this file when the viewer became a library: see
-`libraries/logcat-viewer/logcat-viewer.fig` → Screens, `Logcat · Console board` — default, level
-menu, entry sheet, filter sheet, overflow, paused, no matches, saved views, save view, view actions
-and delete view, plus a control map. Its **no access** frame is kept there as history: the viewer
-reads this app's own records with no permission, so there is nothing to gate.
-
-**Scope.** Live tail with pause and autoscroll, multi-select level filter, content search with
-optional regex, tag and package filters including exclusions, buffer switch, saved views, copy a
-line or its raw text, share an export, and expandable stack traces. The viewer reads the lines the
-platform gives this app, which is its own output. It declares no permission and needs no setup step:
-the platform has returned a process's own records to it since API 16, and `READ_LOGS` does not widen
-that on Android 13+.
-
-**Layout.** Top bar: back, title with live state (`Live · all buffers`), **pause**, **jump to bottom**,
-**clear** (a `delete_sweep` icon, not a label) and overflow. There is no footer — autoscroll lives in
-the overflow. A content search field follows with the **funnel** beside it; the `.*` regex chip sits
-inside the field and is the same control in the filter sheet. The filter row below holds the **level
-menu** (multi-select; the button reads `All levels` or `4 levels`) and the **applied-filter chips**
-scrolling sideways. A divider separates the filter row from the stream. Rows are 44 dp, two lines:
-time · level · tag, then the message. PID and TID never appear on the row. Warning and error rows
-tint (`#1D1A12`, `#241418`) and traces open inline.
-
-**Filter model.**
-
-- **Content** — the search field only. Matches the message text; case-insensitive, regex optional.
-- **Tag** — exact tag equality. `Include` on a row adds that tag to the include list; `Exclude` drops
-  every line with it. The filter sheet keeps **Include** and **Exclude** buttons in the same Tag row,
-  above the chips that row currently holds.
-- **Package** — maps the package to its live PIDs, so new processes and app restarts stay in scope.
-  The same Include / Exclude pair sits in the Package row; a row has no package action.
-- Level, tag and package combine with AND; an exclusion chip subtracts. The overflow holds buffer
-  (all / main / system / crash / events), autoscroll, wrap long lines, saved views and export visible.
-  The buffer default is **all**.
-
-**Row sheet.** Tapping a row pins it in a bottom sheet. The header carries the tag and time; PID, TID
-and the **full package name** appear once as chips (`com.axondragonscale.devinator`, never the last
-segment alone), next to `Copy` · `Include` · `Exclude` · `Share`. The stream keeps its scroll
-position. `-v threadtime` carries a thread id, not a thread name, so the header shows the time only.
-Bottom sheets use the Material default drag handle.
-
-**Implementation notes.** The reader runs the platform `logcat` client with `-v threadtime` and no
-`-T`: without a count it seeds from the whole buffer and then follows the live tail. The default
-buffer is **all** (no `-b` flag); switching buffers restarts the reader. It runs as this app's UID,
-so the stream is this app's records — no permission, and no helper app. A host that has another
-identity (root, a shell bridge) implements `ILogcatSource` and passes it in. A session token makes
-`stop` idempotent per owner, so a cleared ViewModel cannot kill the stream a newer one started.
-Standard error is drained so `logcat` cannot block on it, and a reader that dies after producing
-lines is restarted up to three times. The reader is also stopped on `ON_STOP` and started on
-`ON_START`: the platform stops delivering records to an app's child once it is backgrounded, so the
-child is closed rather than left starved, and the restart resumes after the newest shown record so
-nothing repeats. Stack frames and `AndroidRuntime` crash blocks are merged into
-the entry above (same pid, tid and tag), so one exception is one row. Clear empties the view, never
-the system buffer. Up to 5,000 lines are kept and a single message is capped at 16k characters. The
-package filter resolves packages to live PIDs through `getRunningAppProcesses` — the app's own
-package always resolves, and a package the platform hides honestly produces no matches. Saved views
-live in the viewer's own DataStore, so Devinator passes nothing. Export shares up to 2,000 visible
-lines as plain text. The filter sheet's Include/Exclude buttons open a small text dialog, and the
-overflow's Buffer row opens its own menu.
-
-**Saved views.** A view is a named snapshot of the filter state: levels, tags, packages and the
-search text (not the scroll position or the buffer). The overflow's `Saved views` opens a sheet with
-a **Current filters** card and the saved list; tapping a row restores it, and `Save current filters`
-opens the shared name dialog (`Save view`; renaming reuses it prefilled) with Cancel and Save. Each
-row has a kebab with `Rename` and a red `Delete`; deleting is the one irreversible action here, so it
-asks once in a confirm dialog. Views are local only.
-
-**States.** Idle shows `No log lines yet.` with the filters still available. Paused flips the top-bar
-icon to play, stops autoscroll and shows a banner counting the lines that arrived (`3 new lines while
-paused` · `Resume`). No matches keeps the filters visible and offers one `Clear filters` action. Saved
-views lists three example views and the current filter card; the name dialog, the row menu and the
-delete confirm complete the flow.
-
-**Level ramp.** Log levels are functional colour, not brand: `V` uses `textMuted`; `D` debug blue,
-`I` `primary`, `W` warn amber, `E` `error`, `F` `error` on `errorContainer`. The debug, warn and row
-tint values are `LogcatStyle` defaults so the library works in any host; Devinator passes no override
-and gets the same ramp in light and dark.
-
-Copy in the frames is literal: `Live · all buffers`, `Filter message text`, `.*`, `pkg:devinator`,
-`−DevAdbRepo`, `com.axondragonscale.devinator`, `Show 142 lines`, `3 new lines while paused`,
-`Saved views`, `Save current filters`, `Wireless debugging`, `Crashes`, `Boot sequence`, `Save view`,
-`Delete view?`, `Crashes will be removed. This cannot be undone.`
 
 ## Related Context
 

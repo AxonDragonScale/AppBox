@@ -13,8 +13,6 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.axondragonscale.commons.compose.DevToolsSystemBars
-import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.storageviewer.data.AndroidStorageSource
 import com.axondragonscale.storageviewer.data.IStorageSource
 import com.axondragonscale.storageviewer.ui.StorageEffect
@@ -34,6 +32,9 @@ import com.axondragonscale.storageviewer.ui.style.rememberStorageViewerStyle
  *
  * The default [source] reads this app through [LocalContext]; a host that wants a different scope
  * passes its own. Copy runs immediately and the platform's own confirmation is the only feedback.
+ *
+ * It renders in the ambient `MaterialTheme`, so it must be hosted inside the DevTools module's
+ * `DevToolsTheme` — the library supplies no theme of its own.
  *
  * Design source: `libraries/storage-viewer/storage-viewer.fig`, screens 01-06.
  */
@@ -66,18 +67,14 @@ public fun StorageViewer(
         }
     }
 
-    // The viewer is a developer tool, so it stays on the fixed dark theme wherever it is hosted.
-    DevToolsTheme {
-        DevToolsSystemBars()
-        CompositionLocalProvider(LocalStorageViewerStyle provides style) {
-            StorageScreen(
-                modifier = modifier,
-                state = state,
-                title = title,
-                snackbarHostState = snackbarHostState,
-                onBack = onBack,
-                onEvent = viewModel::onEvent,
-            )
-        }
+    CompositionLocalProvider(LocalStorageViewerStyle provides style) {
+        StorageScreen(
+            modifier = modifier,
+            state = state,
+            title = title,
+            snackbarHostState = snackbarHostState,
+            onBack = onBack,
+            onEvent = viewModel::onEvent,
+        )
     }
 }

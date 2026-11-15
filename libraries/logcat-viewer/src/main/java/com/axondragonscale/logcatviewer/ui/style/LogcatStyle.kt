@@ -1,19 +1,19 @@
 package com.axondragonscale.logcatviewer.ui.style
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.axondragonscale.commons.compose.DevToolsColorScheme
 import com.axondragonscale.logcatviewer.model.LogLevel
 
 /** Created by Ronak on 09/11/26 */
@@ -36,6 +36,24 @@ data class LogcatStyle(
     val traceSurface: Color,
 )
 
+private val LevelDebug = Color(0xFF8FB8D8)
+private val LevelWarn = Color(0xFFE8C468)
+
+// The dev-tools palette the defaults were drawn against; the DevTools theme supplies these same
+// values at runtime, and the previews rebuild the scheme from them.
+private val Background = Color(0xFF0E1013)
+private val Surface = Color(0xFF171A1F)
+private val SurfaceVariant = Color(0xFF20242B)
+private val OnSurface = Color(0xFFE6E9EE)
+private val OnSurfaceVariant = Color(0xFF98A0AC)
+private val Primary = Color(0xFF5FD3A6)
+private val OnPrimary = Color(0xFF05231A)
+private val PrimaryContainer = Color(0xFF1F3A30)
+private val OnPrimaryContainer = Color(0xFFA5E7CC)
+private val Error = Color(0xFFF2B8B5)
+private val ErrorContainer = Color(0xFF3A1414)
+private val Outline = Color(0xFF313740)
+
 private val DefaultStyle = LogcatStyle(
     mono = TextStyle(
         fontFamily = FontFamily.Monospace,
@@ -56,35 +74,35 @@ private val DefaultStyle = LogcatStyle(
         fontSize = 20.sp,
         lineHeight = 26.sp,
     ),
-    debug = Color(0xFF3A6B8A),
-    warn = Color(0xFF7A5000),
-    warnSurface = Color(0x1F7A5000),
-    warnRowTint = Color(0x0F7A5000),
-    errorRowTint = Color(0x0FBA1A1A),
-    traceSurface = Color(0x14BA1A1A),
+    debug = LevelDebug,
+    warn = LevelWarn,
+    warnSurface = LevelWarn.copy(alpha = 0.18f),
+    warnRowTint = LevelWarn.copy(alpha = 0.10f),
+    errorRowTint = Error.copy(alpha = 0.12f),
+    traceSurface = Error.copy(alpha = 0.14f),
+)
+
+internal val LogcatPreviewColorScheme: ColorScheme = darkColorScheme(
+    primary = Primary,
+    onPrimary = OnPrimary,
+    primaryContainer = PrimaryContainer,
+    onPrimaryContainer = OnPrimaryContainer,
+    background = Background,
+    onBackground = OnSurface,
+    surface = Surface,
+    onSurface = OnSurface,
+    surfaceVariant = SurfaceVariant,
+    onSurfaceVariant = OnSurfaceVariant,
+    error = Error,
+    errorContainer = ErrorContainer,
+    outline = Outline,
 )
 
 internal val LocalLogcatStyle = staticCompositionLocalOf { DefaultStyle }
 
-/** The viewer's default: the dev-tools dark palette plus the app's neutral level ramp. */
+/** The viewer's defaults: the fixed dark ramp, with no read of the ambient theme. */
 @Composable
-fun rememberLogcatStyle(): LogcatStyle {
-    // The viewer always renders inside DevToolsTheme, so the ramp follows that background — reading
-    // MaterialTheme here would resolve against the host's scheme at the call site instead.
-    val scheme = DevToolsColorScheme
-    val dark = scheme.background.luminance() < 0.5f
-    return remember(dark) {
-        val warn = if (dark) Color(0xFFE8C468) else DefaultStyle.warn
-        DefaultStyle.copy(
-            debug = if (dark) Color(0xFF8FB8D8) else DefaultStyle.debug,
-            warn = warn,
-            warnSurface = warn.copy(alpha = if (dark) 0.18f else 0.12f),
-            warnRowTint = warn.copy(alpha = if (dark) 0.10f else 0.06f),
-            errorRowTint = scheme.error.copy(alpha = if (dark) 0.12f else 0.06f),
-            traceSurface = scheme.error.copy(alpha = if (dark) 0.14f else 0.08f),
-        )
-    }
-}
+fun rememberLogcatStyle(): LogcatStyle = remember { DefaultStyle }
 
 /** The one hairline the screen, the menus and the sheets share between sections. */
 @Composable

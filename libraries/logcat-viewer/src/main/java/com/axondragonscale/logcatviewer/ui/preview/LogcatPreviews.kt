@@ -1,21 +1,22 @@
 package com.axondragonscale.logcatviewer.ui.preview
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.logcatviewer.model.LogEntry
 import com.axondragonscale.logcatviewer.model.LogFilter
 import com.axondragonscale.logcatviewer.model.LogLevel
 import com.axondragonscale.logcatviewer.model.SavedView
 import com.axondragonscale.logcatviewer.ui.LogcatSelection
 import com.axondragonscale.logcatviewer.ui.style.LocalLogcatStyle
+import com.axondragonscale.logcatviewer.ui.style.LogcatPreviewColorScheme
 import com.axondragonscale.logcatviewer.ui.style.rememberLogcatStyle
 
 /** Created by Ronak on 09/11/26 */
 
 @Composable
 internal fun LogcatPreviewTheme(content: @Composable () -> Unit) {
-    DevToolsTheme {
+    MaterialTheme(colorScheme = LogcatPreviewColorScheme) {
         CompositionLocalProvider(
             LocalLogcatStyle provides rememberLogcatStyle(),
             content = content,

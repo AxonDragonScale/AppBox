@@ -43,9 +43,11 @@ Reads go through `IStorageSource` (`data/IStorageSource.kt`): `stores()`, then `
 listing and an open. `AndroidStorageSource(context)` is the default implementation and reads the
 calling app through `Context`; a host that wants another scope passes its own source.
 
-The viewer renders in the fixed dark `DevToolsTheme` from `:core:ui`, so it does not inherit the host
-app's theme, dynamic colour or light/dark choice; `rememberStorageViewerStyle()` therefore always
-resolves the dark palette, and the light one stays available for a host that passes its own style.
+The viewer renders in whatever `MaterialTheme` it is composed in; DevTools hosts it inside
+`DevToolsTheme` from `:core:devtools`, so it does not inherit the host app's theme, dynamic colour or
+light/dark choice. The library applies no theme of its own and takes no `:core:ui` dependency:
+`rememberStorageViewerStyle()` returns the fixed dark palette as plain constants, with no read of the
+ambient theme.
 
 The three surfaces behind that seam:
 

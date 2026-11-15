@@ -18,8 +18,8 @@ what it uses. This file is kept as the entry point for the shared core modules.
 |---|---|---|---|
 | [`:core:common`](common/context.md) | KMP, no Compose | Logger, `Result`, `CommonJson`, `DateTimeExt`, pure `Flow.collect()`/`combine`, `AppInfo` | coroutines, serialization-json, datetime |
 | `:core:android` | Android library | `ContextExt` (notifications, settings, clear data), `PermissionExt` | `:core:common`, androidx-core-ktx |
-| `:core:ui` | KMP + Compose | Dropdown, StatCard, charts, date/time pickers, `ModifierExt`, `ComposeUtils`, `DevToolsTheme` (+ `DevToolsSystemBars`), `UIMode` (`icon`, `isDarkTheme`), `collectWithLifecycle` | `:core:common`, Compose MP, lifecycle-compose |
-| `:core:devtools` | KMP + Compose | `DevToolsScreen`, `DevTool`, builder DSL; Android built-ins (kill app, clear data, permissions, logcat, storage) | `:core:ui`, `:core:android` (androidMain), `:libraries:logcat-viewer` and `:libraries:storage-viewer` (androidMain) |
+| `:core:ui` | KMP + Compose | Dropdown, StatCard, charts, date/time pickers, `ModifierExt`, `ComposeUtils`, `UIMode` (`icon`, `isDarkTheme`), `collectWithLifecycle` | `:core:common`, Compose MP, lifecycle-compose |
+| `:core:devtools` | KMP + Compose | `DevToolsScreen`, `DevTool`, builder DSL, `DevToolsTheme` (+ `DevToolsColorScheme`, `DevToolsSystemBars`); Android built-ins (kill app, clear data, permissions, logcat, storage) | `:core:android` (androidMain), `:libraries:logcat-viewer` and `:libraries:storage-viewer` (androidMain) |
 | `:core:datastore` | KMP | `createPreferencesDataStore`, `pref`, `enumPref`, `serializedPref`, `nullablePref` | datastore-preferences, coroutines, serialization-json, `:core:common` |
 | `:core:room` | KMP | Room `TypeConverter`s + `createDatabase` | room-runtime, kotlinx-datetime, sqlite-bundled |
 | `:core:network` | KMP | `createHttpClient`, `NetworkModule` (provides `Json` + `HttpClient`); OkHttp/Chucker on Android | ktor, `:core:common`, koin-core |
@@ -31,15 +31,16 @@ what it uses. This file is kept as the entry point for the shared core modules.
                   :core:common
         ↑          ↑          ↑          ↑          ↑
    :core:ui  :core:datastore  :core:room  :core:network  :core:android
-        ↑
-   :core:devtools ──→ :core:android
+                                                            ↑
+   :core:devtools ───────────────────────────────────────────┘
         ↓ (androidMain)
  :libraries:logcat-viewer  :libraries:storage-viewer
 ```
 
-No core module depends on an app, and no core module depends on `:core:devtools` or `:core:ui`
-except `devtools` itself and the two viewer libraries, which take `:core:ui` for `DevToolsTheme`.
-`:core:common` must never gain Compose, Koin, Ktor, Room or DataStore.
+No core module depends on an app, and no core module depends on `:core:devtools`. The dev-tools
+theme lives in `:core:devtools` rather than `:core:ui`, because only developer tools render in it:
+the two viewer libraries inherit it from the composition they are hosted in and keep no `:core:ui`
+dependency. `:core:common` must never gain Compose, Koin, Ktor, Room or DataStore.
 
 ## Android — `:core:android`
 
@@ -68,14 +69,9 @@ Compose Multiplatform components, all still in `com.axondragonscale.commons.*`:
 - `compose/StatCard.kt`, `compose/ModifierExt.kt` — `thenIf`, `thenIfElse`, `thenIfNotNull`
 - `compose/chart/` — `BarChart`, `RingChart`, `TrendLine`
 - `compose/datetime/` — `DatePickerDialog`, `TimePickerDialog`
-- `compose/DevToolsTheme.kt` — `DevToolsTheme` + `DevToolsColorScheme`, the one fixed dark, neutral
-  scheme and default type/shape scale every developer tool renders in, regardless of the host app's
-  theme, dynamic colour or light/dark choice
 - `UIMode` + `UIMode.icon` + `UIMode.isDarkTheme()`
 - `LifecycleFlowExt.kt` — `Flow.collectWithLifecycle`
 - Android-only `compose/ComposeUtils.kt` — `navigationBarsHeight()`, `statusBarHeight()`
-- Android-only `DevToolsSystemBars()` — clears the light system-bar icon flags for the dark theme
-  (no-op on JVM and iOS)
 
 Consumers need `implementation(projects.core.ui)` and Compose dependencies (the module exposes
 Compose via `api(libs.bundles.compose.mp)`).
@@ -101,6 +97,13 @@ Open Storage. JVM/iOS expose Kill App only. The module is KMP because jest/limit
 The screen renders inside `DevToolsTheme`, so a debug tool looks the same in every app: fixed dark
 neutral palette, mint primary, default Material type and shapes — the host's theme, dynamic colour
 and light/dark choice never reach it.
+
+The theme lives in this module: `DevToolsTheme`, the `DevToolsColorScheme` behind it, and
+`DevToolsSystemBars()` (which flips the window's system-bar icons to their light appearance, resolving
+the dialog's window or the activity's, and is a no-op on JVM and iOS). Neither viewer library wraps
+itself in the theme any more, so the Android hosts here — `DevToolsLogcatHost`,
+`DevToolsStorageHost`, `LogcatDevToolsScreen`, `StorageDevToolsScreen` — are the single place it is
+applied to them.
 
 The log viewer entry is Android-only and needs no host wiring: tapping **Open Logcat** presents
 `LogcatViewer` as a full-screen dialog (back gesture and the viewer's own back arrow both dismiss

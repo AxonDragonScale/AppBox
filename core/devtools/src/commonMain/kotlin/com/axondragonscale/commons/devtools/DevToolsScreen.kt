@@ -28,8 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.commons.compose.DevToolsSystemBars
-import com.axondragonscale.commons.compose.DevToolsTheme
 
 /**
  * Platform-specific built-in dev tool content (Kill App, Clear Data, App Settings, Permissions).

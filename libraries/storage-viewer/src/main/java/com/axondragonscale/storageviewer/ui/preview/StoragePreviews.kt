@@ -29,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.storageviewer.model.Cell
 import com.axondragonscale.storageviewer.model.CellKind
 import com.axondragonscale.storageviewer.model.DatabaseStore
@@ -88,6 +87,7 @@ import com.axondragonscale.storageviewer.ui.screens.SchemaScreen
 import com.axondragonscale.storageviewer.ui.screens.StoresScreen
 import com.axondragonscale.storageviewer.ui.screens.TablesScreen
 import com.axondragonscale.storageviewer.ui.style.LocalStorageViewerStyle
+import com.axondragonscale.storageviewer.ui.style.StorageViewerPreviewColorScheme
 import com.axondragonscale.storageviewer.ui.style.rememberStorageViewerStyle
 
 /** Created by Ronak on 14/11/26 */
@@ -96,7 +96,7 @@ import com.axondragonscale.storageviewer.ui.style.rememberStorageViewerStyle
 private fun StoragePreviewTheme(
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    DevToolsTheme {
+    MaterialTheme(colorScheme = StorageViewerPreviewColorScheme) {
         CompositionLocalProvider(LocalStorageViewerStyle provides rememberStorageViewerStyle()) {
             Surface(color = MaterialTheme.colorScheme.background) {
                 Column(

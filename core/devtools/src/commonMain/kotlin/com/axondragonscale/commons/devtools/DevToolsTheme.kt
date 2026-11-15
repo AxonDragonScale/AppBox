@@ -1,4 +1,4 @@
-package com.axondragonscale.commons.compose
+package com.axondragonscale.commons.devtools
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

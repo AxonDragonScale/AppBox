@@ -5,8 +5,7 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            // `DevToolsScreen`/`DevTool` expose Compose types and reuse the UI module.
-            api(projects.core.ui)
+            // `DevToolsScreen`/`DevTool` expose Compose types.
             api(libs.bundles.compose.mp)
         }
 

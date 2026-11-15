@@ -13,8 +13,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import com.axondragonscale.commons.compose.DevToolsSystemBars
-import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.logcatviewer.LogcatViewer
 
 actual val isLogcatAvailable: Boolean = true

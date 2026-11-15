@@ -78,6 +78,7 @@ fun SettingsScreen(
         uiState = uiState,
         onBack = { navController.popBackStack() },
         onOpenPermission = { navController.navigate(Route.Permission) },
+        onOpenDevTools = { navController.navigate(Route.DevTools) },
         onOpenDeveloperOptions = {
             context.startActivity(SecureSettingsPermission.developmentSettingsIntent())
         },
@@ -91,6 +92,7 @@ private fun SettingsScreen(
     uiState: SettingsUiState,
     onBack: () -> Unit,
     onOpenPermission: () -> Unit,
+    onOpenDevTools: () -> Unit,
     onOpenDeveloperOptions: () -> Unit,
     onEvent: (SettingsUiEvent) -> Unit,
 ) {
@@ -159,6 +161,15 @@ private fun SettingsScreen(
                         TrailingIcon(imageVector = Icons.AutoMirrored.Filled.OpenInNew)
                     },
                 )
+                DevinatorDivider()
+                SettingsRow(
+                    title = "Developer tools",
+                    subtitle = "Logcat, storage and app diagnostics",
+                    onClick = onOpenDevTools,
+                    trailing = {
+                        TrailingIcon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight)
+                    },
+                )
             }
 
             DevinatorCard {
@@ -182,6 +193,7 @@ private fun SettingsScreen(
 private fun SettingsRow(
     modifier: Modifier = Modifier,
     title: String,
+    subtitle: String? = null,
     onClick: (() -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
 ) {
@@ -194,12 +206,23 @@ private fun SettingsRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
+        Column(
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         trailing()
     }
 }
@@ -273,6 +296,7 @@ private fun SettingsScreenPreview() {
             uiState = SettingsUiState(versionName = "1.0.0", permissionGranted = true),
             onBack = {},
             onOpenPermission = {},
+            onOpenDevTools = {},
             onOpenDeveloperOptions = {},
             onEvent = {},
         )
@@ -287,6 +311,7 @@ private fun SettingsScreenLightPreview() {
             uiState = SettingsUiState(versionName = "1.0.0", permissionGranted = true),
             onBack = {},
             onOpenPermission = {},
+            onOpenDevTools = {},
             onOpenDeveloperOptions = {},
             onEvent = {},
         )
@@ -301,6 +326,7 @@ private fun SettingsScreenNotGrantedPreview() {
             uiState = SettingsUiState(permissionGranted = false, versionName = "1.0.0"),
             onBack = {},
             onOpenPermission = {},
+            onOpenDevTools = {},
             onOpenDeveloperOptions = {},
             onEvent = {},
         )

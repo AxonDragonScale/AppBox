@@ -16,8 +16,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.axondragonscale.commons.catching
-import com.axondragonscale.commons.compose.DevToolsSystemBars
-import com.axondragonscale.commons.compose.DevToolsTheme
 import com.axondragonscale.logcatviewer.data.DataStoreSavedViewsStore
 import com.axondragonscale.logcatviewer.data.ILogcatSource
 import com.axondragonscale.logcatviewer.data.ISavedViewsStore
@@ -40,6 +38,9 @@ import com.axondragonscale.logcatviewer.ui.style.rememberLogcatStyle
  * no helper app are involved. Saved views persist in the library's own DataStore; a host can pass a
  * different [ISavedViewsStore], and a host that can reach more than its own logs passes its own
  * [ILogcatSource].
+ *
+ * It renders in the ambient `MaterialTheme`, so it must be hosted inside the DevTools module's
+ * `DevToolsTheme` — the library supplies no theme of its own.
  *
  * Design source: `Logcat · Console board` in Devinator's `devinator.fig`.
  */
@@ -78,19 +79,15 @@ fun LogcatViewer(
         }
     }
 
-    // The viewer is a developer tool, so it stays on the fixed dark theme wherever it is hosted.
-    DevToolsTheme {
-        DevToolsSystemBars()
-        CompositionLocalProvider(LocalLogcatStyle provides style) {
-            LogcatScreen(
-                modifier = modifier,
-                uiState = uiState,
-                title = title,
-                snackbarHostState = snackbarHostState,
-                onEvent = viewModel::onEvent,
-                onBack = onBack,
-            )
-        }
+    CompositionLocalProvider(LocalLogcatStyle provides style) {
+        LogcatScreen(
+            modifier = modifier,
+            uiState = uiState,
+            title = title,
+            snackbarHostState = snackbarHostState,
+            onEvent = viewModel::onEvent,
+            onBack = onBack,
+        )
     }
 }
 
