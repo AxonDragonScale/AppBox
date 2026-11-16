@@ -131,15 +131,22 @@ Page turning is a swipe, so taps are free for text.
 ### Chrome
 
 - Hidden while reading; a margin tap brings it up, and so does a swipe — down in paged mode, up from the bottom edge band in scroll mode, where a downward swipe has to mean scroll.
-- Top bar: back, title and chapter, bookmark, table of contents, overflow.
-- Bottom bar: progress slider with chapter ticks, chapter name, play/pause, focus mode, display settings.
+- Top bar 56: back, then the title with the chapter under it, then percent over time left — `42%` over
+  `3H 20M LEFT`. Back is the only action there: no bookmark, no overflow.
+- Bottom bar 56, five targets in one row in this order: contents, display settings, the read-aloud
+  primary, focus, more.
+- A 2 dp progress ribbon sits in its own band above the bottom bar, ink to the reading position, with
+  chapter ticks; it never covers the bar's contents.
+- No slider sits on the page.
 - Auto-hides after a few seconds of inactivity, and immediately on the first swipe.
 - While read-aloud is running, a compact play bar stays pinned above the bottom bar showing the spoken sentence and speed.
 
 ### Navigation
 
 - Table of contents nested by heading level, current chapter marked, tap to jump.
-- Progress slider shows the chapter under the thumb while dragging; releasing commits.
+- Contents opens with the progress track at the top: thumb at the current position, a tick per
+  chapter boundary. Dragging names the chapter under the thumb; releasing jumps. The sheet stays
+  open, so the next chapter is one tap away.
 - Chapter next/previous available from the chrome.
 - Footnote and endnote links open a bottom sheet with the note text; closing returns to the exact sentence that held the marker.
 - External links ask once, then open in the browser.
@@ -308,7 +315,8 @@ Page turning is a swipe, so taps are free for text.
 
 ## Bookmarks
 
-- One tap in the chrome bookmarks the current sentence.
+- Bookmarks live in the Contents sheet: added there, listed there with snippet, chapter, percent and
+  date, and jumped to or deleted from the same list.
 - Bookmark list per book: snippet, chapter, percent, date; jump or delete.
 - Bookmarking the same sentence twice merges instead of duplicating.
 - Bookmarks survive theme, typography, layout and mode changes, and read-aloud.

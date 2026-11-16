@@ -10,8 +10,16 @@ read_when: "Designing or implementing any Verso surface, or changing its tokens,
 # Verso UI
 
 Behaviour lives in [the spec](./spec.md). This doc is the visual contract: what every surface looks
-like, which states exist, and what the words say. No `.fig` exists yet — when one does, this doc is
-what it gets built from and the design source moves here, as Wallmatic does.
+like, which states exist, and what the words say.
+
+Design source: [`apps/verso/verso.fig`](../../../apps/verso/verso.fig). **Foundations** is complete —
+cover, colour, typography, shape and layout, iconography, app icon. **Components** carries the full
+kit in four batches: library (`Button`, `FilterChip`, `TabBar`, `ContinueCard`, `BookTile`, `BookRow`,
+`CoverPlaceholder`, `BookDetailHeader`, `ImportRow`), reader (`ReaderTopBar`, `ReaderBottomBar`,
+`PlayBar`, `ProgressSlider`, `SelectionBar`, `FocusFrame`, `FocusPeek`), lists and states (`VoiceRow`,
+`SettingsRow`, `StatBlock`, `Sheet`, `EmptyState`), and the `SegmentedChoice`, `Stepper`, `Switch`,
+`ThemeSwatch` controls. Variants stack inside each set. Screens is deliberately empty until the
+reader surface is proven; this doc is what it gets built from.
 
 ## The idea
 
@@ -79,8 +87,8 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 - Design canvas 412 × 915; app padding 24; content width 364.
 - Reader text column 328 dp, centred, with 32 dp gutters that double as the chrome tap band.
 - Reader margins: 32 dp sides, 24 dp above the first line and below the last.
-- Chrome: top bar 56 dp, bottom bar 72 dp, pinned play bar 48 dp sitting directly above the bottom
-  bar, sheets up to 60% height, scrim ink 40%.
+- Chrome: top bar 56 dp, page 753 dp on the 915 frame, play bar 48 dp, progress ribbon 2 dp, bottom
+  bar 56 dp, sheets up to 60% height, scrim ink 40%.
 - Status and navigation bars are transparent while reading; their icons follow the reading theme.
 - Wide screens: text column capped at 560 dp and centred; library grid gains columns, nothing else.
 - Grid: 3 columns at 412, 10 dp gutter, cover 3:4, title 12 sp under the cover — three reads as a shelf, two reads as a gallery.
@@ -97,9 +105,9 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | `ImportRow` | text `Count`, `State=Importing` · `Failed` | full-width rule, 1 dp progress line, count in Micro |
 | `BookDetailHeader` | text `Title`, `Author`, `Series` | cover 132 × 188 centred, series in Micro under the author |
 | `ActionButton` | `Style=Filled` · `Outline` · `Text`, text `Label` | 48 dp, square, no radius; filled = ink ground, paper label |
-| `ReaderTopBar` | text `Title`, `Chapter` | 56 dp; back, title truncated at 24 chars in UI Strong, chapter in Micro below |
-| `ReaderBottomBar` | text `Percent`, `Chapter` | 72 dp; percent left, chapter centre, three 48 dp actions right |
-| `ProgressSlider` | — | 2 dp track in Rule, filled in Ink, 12 dp square thumb, chapter ticks 1 × 8 dp every boundary, chapter name appears above the thumb while dragging |
+| `ReaderTopBar` | text `Title`, `Chapter`, `Percent`, `TimeLeft` | 412 × 56; back, then title in UI Strong over chapter in Micro, then `42%` over `3H 20M LEFT` in two lines right-aligned; back is the only action |
+| `ReaderBottomBar` | `State=Idle` · `Playing`, text `Percent`, `Chapter` | 412 × 58 — 2 dp ribbon above a 56 dp row of five 48 dp targets: `Contents`, `Aa`, the read-aloud primary, `Focus`, `More`; the primary inverts to an ink square with a paper glyph |
+| `ProgressSlider` | — | 2 dp track in Rule, filled in Ink, 12 dp square thumb, chapter ticks 1 × 8 dp every boundary, chapter name above the thumb while dragging; lives in the Contents sheet, never on the page |
 | `PlayBar` | `State=Playing` · `Paused` · `Loading` | 48 dp; spoken sentence one line, 1 dp top rule, speed chip and play glyph right |
 | `SpeedStepper` | text `Value` | 48 dp tall; − / value / +, value in Display 20, presets row beneath |
 | `VoiceRow` | `State=Selected` · `Idle` · `Downloaded` · `Downloading` · `Failed` | 64 dp; name, engine in Micro, trailing state |
@@ -132,7 +140,7 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | 10 | Display sheet | Typography | Live preview above the sheet |
 | 11 | Voice sheet | Voice, speed, pitch | No voice, engine missing |
 | 12 | Voice downloads | Neural voices | Available, downloading, failed |
-| 13 | Contents sheet | Chapter navigation | Nested, flat, no chapters |
+| 13 | Contents sheet | Scrubbing, chapter navigation, bookmarks | Progress track on top, chapter list with the current chapter marked, bookmarks below; bookmarks are made here. States: nested, flat, no chapters |
 | 14 | Bookmarks sheet | Saved places | Empty, populated |
 | 15 | Selection | Word actions | Word, phrase |
 | 16 | Dictionary sheet | Definition | Found, not found, no provider |
@@ -199,10 +207,28 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 
 ### Chrome
 
-- Top bar: back, book title (one line, ellipsized), chapter in Micro below, then `Bookmark`, `Contents`, `More`.
-- Bottom bar: percent, chapter name, then `Read aloud`, `Focus`, `Aa`.
-- Bars are PaperSunk over the paper with a 1 dp Rule on their inner edge, no shadow, no blur.
+- Top bar 56: back, then the title in UI Strong with the chapter in Micro beneath it, then a two-line
+  readout at the right — `42%` over `3H 20M LEFT`. Nothing here is an action except back.
+- Bottom bar 56, one row of five 48 dp targets: `Contents`, `Aa`, the read-aloud primary, `Focus`,
+  `More`. The primary is an ink square with a paper glyph and is the only filled control in the
+  reader.
+- The 2 dp progress ribbon is its own band above the bar, track in Rule, ink to the reading position,
+  chapter ticks — it never overlays the bar's contents, so the targets keep 4 dp of air above and
+  below.
+- Bars are PaperSunk with a 1 dp Rule on their inner edge, no shadow, no blur.
 - They animate in with a 160 ms fade and 8 dp slide, and leave on the first swipe.
+
+There is no slider on the page. Scrubbing belongs to Contents, which owns the progress track and the
+bookmarks.
+
+### Contents
+
+- Opens with the progress track at the top: thumb at the current position, chapter ticks, the chapter
+  named under the thumb while dragging. Releasing jumps; the sheet stays open so the next chapter is
+  one tap away.
+- Then the chapter list, nested by heading level, the current chapter marked.
+- Then the saved places: snippet, chapter, percent and date, each one tap to jump and a long-press to
+  delete. Bookmarks are made and browsed here; the chrome has no bookmark action.
 
 ### Play bar
 

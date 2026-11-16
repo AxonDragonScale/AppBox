@@ -43,3 +43,6 @@ Pods/
 /.idea/codeStyles/codeStyleConfig.xml
 /.idea/codeStyles/Project.xml
 /.idea/variantx.xml
+
+# Design previews (exports, not sources)
+apps/verso/previews/

@@ -807,6 +807,30 @@ the same change as the work it learns from.**
   `node_bounds` changes. Fix with `set_layout_child(positioning="ABSOLUTE")` then
   `node_move(x, y)` — the siblings keep their positions. The same `replace_id` under a plain
   (non-auto-layout) parent keeps the original position, so check every replaced node's bounds.
+- **2026-11-16** — `wrap` is accepted on a `flex="row"` frame but only honours the main-axis `gap`:
+  the wrapped row sets counter-axis spacing to 0, so the two rows touch instead of forming a grid.
+  Stack explicit `flex="col"` rows with `gap` for a specimen grid rather than relying on `wrap`.
+- **2026-11-16** — `export_image` failed document-wide on a brand-new document (`apps/verso/verso.fig`)
+  with `No visible nodes to export` — for every node, inline and with a path, and **after**
+  `activate_document` succeeded with both the tab id and the page id, while `export_svg`,
+  `node_bounds`, `analyze_overlaps` and `lint` all read the same 539 nodes. **Resolved 2026-11-16** —
+  a hard reopen (`save_file`, `close_file`, `open_file`) re-attached the document as a fresh tab
+  (`tab-2`) and `export_image` then worked for every node and page; a stale tab appears to be the
+  cause.
+- **2026-11-16** — a page built from top-level nodes with no full-bleed filled frame exports its ink
+  **on black**: nothing carries a paper ground, so the raster has no background. A whole-page export
+  shows dark type on black and light-on-dark elements survive, while dark ink text disappears.
+  Every page meant to be read or exported gets one full-bleed sheet frame inserted at index 0 so it
+  sits behind the content — `render(insert_index=0)` is how — exactly as the Foundations panels do.
+- **2026-11-16** — a node-scoped `export_image` renders the selection **on black** when the page's
+  paper ground is a **sibling** rather than an ancestor: Outline and Text variants vanish while
+  light-on-dark fills survive. Include the ground frame and the labels in the same `ids` selection,
+  or export the page. Whole-page exports are unaffected.
+- **2026-11-16** — a variant set whose widths are inflated because its variants were combined at the
+  wrong pitch can be repaired without rebuilding the bodies: `reparent_node` each variant out to the
+  page, restack them at the intended pitch, delete the stale set, then `combine_as_variants` again.
+  This is the recovery path when the set is already combined — resizing the set scales the variants
+  instead.
 
 ## Related
 
