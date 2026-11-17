@@ -831,6 +831,22 @@ the same change as the work it learns from.**
   page, restack them at the intended pitch, delete the stale set, then `combine_as_variants` again.
   This is the recovery path when the set is already combined — resizing the set scales the variants
   instead.
+- **2026-11-17** — text can carry a **stale shaped glyph run**: `characters` and `export_svg` are
+  right, but `export_image` rasterises garbage (`Verso` → `Veqsn`, `Stats` → `Ssass`) and
+  `clone_node` copies it. `get_node`, `get_font_status` and a fresh line in the same family and
+  weight all look fine, so it is node state, not the font. This MCP surface has **no `eval`**, so
+  collect ids with `query_nodes` (`//TEXT[@fontFamily='Fraunces']`) and re-shape each one with
+  `set_text`, passing the node's own characters — the same effect, no `eval` needed. Four at a
+  time, asserting that no width or height changes. A re-shape can **silently fail to stick**: the
+  first pass looked correct in the model, saved, and only after a reopen was the raster still
+  garbage. So the order is re-shape, export a screen and look at it, and only then `save_file`;
+  re-running the identical batches on a freshly reopened document is what worked. Distinct from the
+  mixed-font-run (2026-11-11) and variable-font line (2026-11-14) bugs.
+- **2026-11-17** — two API details worth never rediscovering: `node_bounds` returns
+  `{ id, bounds: { x, y, width, height } }` — a flat `width`/`height` read yields `undefined`, so a
+  bounds assertion silently compares nothing; and node ids **renumber on every document load**, so
+  re-derive any id after a reopen (a component moved `0:1115` → `0:609` → `0:1129` across three
+  opens).
 
 ## Related
 

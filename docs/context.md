@@ -122,7 +122,7 @@ fold anything durable into the matching doc above, and remove the row.
 |---|---|
 | [apps/jest/ui-revamp-plan](./apps/jest/ui-revamp-plan.md) | Responsive redesign, three layout tiers |
 | [apps/verso/spec](./apps/verso/spec.md) | Verso reader app — behavioural spec, pre-code |
-| [apps/verso/ui](./apps/verso/ui.md) | Verso reader app — screen inventory, tokens, components, copy |
+| [apps/verso/ui](./apps/verso/ui.md) | Verso reader app — tokens, components, and every screen's contents, states and copy |
 | [libraries/bitops/plan](./libraries/bitops/plan.md) | `KmpBitSet` API — module exists but is not implemented |
 | [libraries/kotp/plan](./libraries/kotp/plan.md) | Extracting OTP generation out of Topty — module not created |
 | [migration/kmp-single-app-migration-playbook](./migration/kmp-single-app-migration-playbook.md) | Repeatable Android → KMP playbook, live until every app is migrated |

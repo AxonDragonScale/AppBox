@@ -51,7 +51,10 @@ Not in v1 (deliberate, not forgotten):
   - The original is never modified, moved or deleted.
   - Later changes to the original have no effect on the library.
 - Duplicates are detected by content, not filename: the second copy is refused as "Already in library".
-- Imports are queued and cancellable; one bad file never blocks the rest of the batch.
+- Import is a blocking flow: it owns the screen until every file has landed or failed. The library is
+  not usable mid-import, and it never shows partial progress.
+- One bad file never blocks the rest of the batch; failures are reported when the batch ends.
+- Stopping an import keeps the books already imported and discards the file in flight.
 - Failures are reported per file, in plain language:
   - Unsupported or corrupt file.
   - Protected or password-locked — "This book is protected and can't be opened."
@@ -372,7 +375,8 @@ Page turning is a swipe, so taps are free for text.
 ## Edge cases worth pinning
 
 - A book deleted while open closes the reader to the library with a note instead of an error.
-- An import during reading never interrupts; the new book appears when done.
+- An import cannot start while a book is open: the reader closes to the library first, then the import
+  flow takes the screen.
 - A very large book shows its first page immediately; contents may take a moment with visible progress, never a blank screen.
 - No cover, no table of contents, no chapter headings: contents shows a single entry, or says so.
 - A position near the end plus a font change clamps inside the book; the reader never lands on a blank page.
