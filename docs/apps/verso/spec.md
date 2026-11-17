@@ -73,17 +73,25 @@ Not in v1 (deliberate, not forgotten):
 - Two views: cover grid and detail list (cover, title, author, progress).
   - The choice is remembered.
 - Sorts: recently read, recently added, title, author, series, progress, length.
-- Filters: all / unread / reading / finished, plus shelf, tag, author, series, language, format.
+- Filters: a multi-select state dropdown (`Unread` / `Reading` / `Finished`, `Any of` semantics) with no
+  `All` option. None selected means all books in the current scope. Shelf, tag and sort live in the
+  Filter sheet, not here.
 - Library search matches title, author, series, shelf and tag — not book contents.
 - Empty state: one import action and one line explaining formats, nothing else.
 
-### Shelves, series, tags
+### Scope, series, tags
 
-- Shelves are manual collections; a book can sit on many.
-- Tags are flat free-form labels; both shelves and tags appear as filters.
+- Scope is chosen in one place: the Filter sheet, opened from the scope text or the tune icon in the
+  library's filter row. The wordmark is the header on every tab and never changes.
+- A shelf is a place: exactly one is active at a time, or `All books`. Shelves are manual collections;
+  a book can belong to many, but you are only ever in one.
+- A tag is a property: several can be selected at once, and a book must carry every selected tag. Tags
+  are flat free-form labels created from a book's detail screen or in the Filter sheet.
+- Composition is shelf ∩ all selected tags ∩ any selected reading state. Scope appears as plain text at
+  the left of the filter row; state is a dropdown and the tune icon sit right-aligned at its end.
+- Sorting is chosen in the Filter sheet's `SORT` tab; grid/list is a setting, not a library control.
 - Series group automatically from metadata, ordered by series index; a book with no index sorts last.
-- Smart shelves need no curation: Unread, Reading, Finished.
-- Removing a book from a shelf, or deleting a shelf, never deletes a book.
+- Removing a book from a shelf, or deleting a shelf or tag, never deletes a book.
 - Deleting a book removes its shelf and tag memberships.
 
 ### Book detail

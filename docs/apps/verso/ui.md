@@ -20,9 +20,19 @@ in four batches: library (`Button`, `FilterChip`, `TabBar`, `ContinueCard`, `Boo
 `SettingsRow`, `StatBlock`, `Sheet`, `EmptyState`), and the `SegmentedChoice`, `Stepper`, `Switch`,
 `ThemeSwatch` controls. Variants stack inside each set.
 
-**Screens** carries eight built states — the reader chrome, the three tabs with their empty and populated
-variants, and the Settings sub-page. Sheets, focus mode and the book detail screen are
-specified here and drawn next.
+**Screens** carries fifteen built states — the reader chrome, the Library with its text scope, state
+dropdown and Filter sheet, Stats, and Settings with its sub-page. Sheets, focus mode and the book detail
+screen are specified here and drawn next.
+
+The screens are **composed from instances** of those masters: header, filter row, sheet tabs, sheet
+rows, tiles, list rows, continue card, stat blocks, settings rows, reader chrome and tab bar. Editing a
+master changes every screen that uses it. Four structures are deliberately literal frames, because they
+are one-offs and a master would only add indirection: the Stats bar chart, the state-dropdown popover,
+the empty-state body, and the dimmed library behind each sheet's scrim.
+
+Instance copy is **edited on the instance**, never in the master: a master text edit overwrites every
+instance's own words, and instance overrides are written with `set_text` (not `update_node`, which does
+not survive a save).
 
 ## The idea
 
@@ -102,8 +112,8 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | Component | Variants / properties | Notes |
 |---|---|---|
 | `ContinueCard` | text `Title`, `Chapter`, `Percent` | 364 × 96; cover 54 × 80 left, `CONTINUE READING` eyebrow in Micro, title UI Strong, chapter Micro, percent right in Display 34; 2 dp progress rule flush under the card |
-| `BookTile` | text `Title`; `State=Reading` · `Finished` | cover with 1 dp Rule border, 2 dp progress rule under it; finished tiles show a full rule and no percent |
-| `BookRow` | text `Title`, `Author`, `Percent` | 72 dp; cover 40 × 56, percent right in Micro |
+| `BookTile` | text `Title`; `State=Unread` · `Reading` · `Finished` | cover with 1 dp Rule border, 2 dp progress rule under it; unread shows the empty track with no ink, finished the full rule |
+| `BookRow` | text `Title`, `Author`, `Percent` | 72 dp; cover 40 × 56, percent right in Micro; carries its own 1 dp Rule inset 24 on its bottom edge at y 71, like `SettingsRow` and `StatsBookRow` — row masters own their rules, screens never draw loose ones |
 | `CoverPlaceholder` | text `Initials` | PaperSunk block, 1 dp Rule border, initials in Fraunces at 20 |
 | `FilterChip` | `Selected=Yes` · `No`, text `Label` | square, 1 dp Rule; selected inverts to ink ground with paper label |
 | `ImportRow` | text `Name`, `State=Importing` · `Done` · `Failed` | one line per file inside the blocking import flow, not in the library |
@@ -120,9 +130,10 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | `Stepper` | text `Value` | −/+, live updates behind the sheet |
 | `Switch` | `On` · `Off` | 44 × 24 square track, square thumb |
 | `Sheet` | text `Title` | top radius 16, PaperSunk, 1 dp rule on top, handle 32 × 2 dp 16 from the top, title 24 below the handle |
+| `SheetTabs` | `Tab=Shelves` · `Tags` · `Sort` | 412 × 48, three equal segments over a full-width 1 dp Rule, 3 dp ink indicator flush **below** the active label |
 | `TabBar` | `Active=Library` · `Stats` · `Settings` | 64 dp, 1 dp Rule on its top edge, 3 dp ink rule flush under the top edge of the active segment |
 | `SelectionBar` | text `Actions` | floating 48 dp bar above the selection, text actions only |
-| `StatBlock` | text `Value`, `Label` | 114 × 88, value 28/34, label 10 caps, 1 dp rule under — three-up across 364 |
+| `StatBlock` | text `Value`, `Label` | 172 × 80, value 28/34, label 10 caps 6 below, 1 dp rule under — a 2 × 2 grid in the 364 content width |
 | `FocusFrame` | `Shape=Sentence` · `Word` | 364 × 132 fixed, or 364 × 88 for one word; never resizes between sentences |
 | `FocusPeek` | — | current line at full strength, previous and next at InkMuted |
 | `SettingsRow` | text `Title`; `Trailing=Chevron` · `Switch` · `Value` | 64 dp, 1 dp Rule inset 24 |
@@ -141,41 +152,65 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | 7 | Stats — full | `07 · Stats · full` |
 | 8 | Settings | `08 · Settings` |
 | 9 | Settings — Data & storage | `09 · Settings · Data & storage` |
-| 10 | Library — search | to draw |
-| 11 | Shelves | to draw |
-| 12 | Book detail | to draw |
-| 13 | Reader — scroll | to draw |
-| 14 | Contents | to draw |
-| 15 | Display | to draw |
-| 16 | Voice | to draw |
-| 17 | Read aloud settings | to draw |
-| 18 | Voice downloads | to draw |
-| 19 | Selection and dictionary | to draw |
-| 20 | Focus — sentence · word · peek | to draw |
-| 21 | End of book | to draw |
-| 22 | About | to draw |
-| 23 | Dialogs | to draw |
+| 10 | Library — scope, no filters | `10 · Library · scope · all books` |
+| 11 | Library — scope, two states | `11 · Library · scope · two states` |
+| 12 | Filter sheet — shelves · tags · sort | `12 · Library · filter sheet` |
+| 13 | Library — no continue card | `13 · Library · no continue` |
+| 14 | State dropdown — multi-select | `14 · Library · state dropdown` |
+| 15 | Filter sheet — Tags tab | `15 · Library · filter sheet · tags` |
+| 16 | Filter sheet — Sort tab | `16 · Library · filter sheet · sort` |
+| 17 | Library — search | to draw |
+| 18 | Book detail | to draw |
+| 19 | Reader — scroll | to draw |
+| 20 | Contents | to draw |
+| 21 | Display | to draw |
+| 22 | Voice | to draw |
+| 23 | Read aloud settings | to draw |
+| 24 | Voice downloads | to draw |
+| 25 | Selection and dictionary | to draw |
+| 26 | Focus — sentence · word · peek | to draw |
+| 27 | End of book | to draw |
+| 28 | About | to draw |
+| 29 | Dialogs | to draw |
 
 ## Library
 
 **Contents**
 
-- Header: `Verso` in Display, with a single magnifier icon in a 48 dp target at the right edge.
+- Header: `Verso` in Display, unchanged on every tab, with a magnifier in a 48 dp target at the right.
 - Continue card, only when a book is in progress: eyebrow `CONTINUE READING`, title, chapter, percent,
   2 dp progress line flush under the card. The whole card opens the book at the reading position.
-- Filter row: `All`, `Unread`, `Reading`, `Finished` chips, and a trailing `SORT` text action.
+- Filter row, one line at y 200:
+  - left: the scope as **plain text** — `All books`, a shelf name, or `2 tags` — with a chevron, in
+    Inter 12/600 ink. No chip, no stroke, no box. It opens the Filter sheet.
+  - right: the state dropdown and a tune icon. The dropdown reads `All` when nothing is selected,
+    the selected names when one or two are, and `2 states` when all three are. It supports multi-select.
+    The tune icon opens the Filter sheet too, on the tab that was last used.
+  - The two text controls and the icon are right-aligned as one cluster ending at x 388. The state slot
+    hugs its label: `All` sits 8 dp from the tune icon, never floating in a fixed-width gap.
 - Grid: three columns 114 wide, 10 dp gutters, cover 3:4, 2 dp progress line under each cover, title in
   two lines beneath.
 - Tab bar with `LIBRARY` active.
 
+Scope, tags and reading state compose as: **one shelf** (or all books) ∩ **all selected tags** ∩ **any
+selected state**. Another tag narrows the result; another selected state widens it. Each dimension has
+one home — scope and tags in the Filter sheet, state in its dropdown, grid/list in Settings → Library.
+
 **States**
 
+- *No filters selected* — every book in the current scope. The scope text is the only indication of it.
+- *Two states selected* — the dropdown names them (`Unread, Finished`) and only those books show.
+  Selecting all three clears the selection, because it no longer filters anything.
+- *Shelf scope* — the scope text names the shelf; the state dropdown filters within it.
+- *Tag scope* — the scope text reads `2 tags`; the state dropdown filters within them.
 - *Populated, grid* — the default.
-- *Populated, list* — rows 72 dp: cover 40 × 56, title, author, percent right. Denser, same data.
-- *Empty* — no books at all: `No books yet`, `Import a book to start.`, `Import books` (filled) and
-  `Import a folder` (outlined), then the single reassurance line `BOOKS STAY ON THIS DEVICE.` No
+- *Populated, list* — rows 72 dp: cover 40 × 56, title, author, percent right. The default is set in
+  Settings, not on this screen.
+- *Empty library* — no books at all: `No books yet`, `Import a book to start.`, `Import books` (filled)
+  and `Import a folder` (outlined), then the single reassurance line `BOOKS STAY ON THIS DEVICE.` No
   continue card, no filter row.
-- *Filtered to nothing* — `Nothing here yet.` naming the active filter, one action `Clear filter`.
+- *Filtered to nothing* — `Nothing here yet.` naming the active scope or filter, one action
+  `Clear filters`.
 - *No book in progress* — the continue card is absent; the grid starts under the header.
 - *Loading* — one line `Preparing your library…`; no skeleton cards.
 
@@ -183,8 +218,9 @@ Importing is **not** a library state. It is a blocking flow that owns the screen
 library never shows import progress inline, never shows a half-imported shelf, and is not usable
 mid-import.
 
-**Copy** — `No books yet` · `Import a book to start.` · `Books stay on this device.` · `Import books` ·
-`Import a folder` · `Nothing here yet.` · `Clear filter` · `Sort`
+**Copy** — `All books` · `1 tag` · `2 tags` · `Any of` · `No books yet` ·
+`Import a book to start.` · `Books stay on this device.` · `Import books` · `Import a folder` ·
+`Nothing here yet.` · `Clear filters` · `Sort`
 
 ## Library · search
 
@@ -203,23 +239,70 @@ Opens as a sheet over the library, from the magnifier.
 
 **Copy** — `Title, author, series, tag` · `No matches.`
 
-## Shelves
+## State dropdown
 
-Reached from the `SORT` sheet's shelves entry, or a book's `Add to shelf`.
-
-**Contents**
-
-- Shelves with book counts, plus `New shelf`.
-- Each row: name, count, trailing menu for rename and delete.
+Opened from the right-hand dropdown in the filter row. A compact anchored menu, not a sheet: three
+rows — `Unread`, `Reading`, `Finished` — with a tick icon on the **right** of each selected row, the same
+indicator the Filter sheet uses. There is no checkbox on the left and no `Done` action: a tap applies
+immediately, and the menu closes on a tap outside or back. Multi-select with `Any of` semantics: a book
+matches if it is in any selected state. Nothing selected means no state filter, shown in the row as
+`All`. Selecting all three clears the selection, because it filters nothing.
 
 **States**
 
-- *Empty* — `No shelves yet.` and `New shelf`.
-- *Populated* — rows with counts; tapping opens the library filtered to that shelf.
+- *None selected* — `All`, no ticks.
+- *One or two selected* — ticks on the right of those rows, the row reads their names
+  (`Unread, Finished`).
+- *All three* — clears to none, with no message.
+- *No books match* — the library shows `Nothing here yet.` with `Clear filters`.
+
+**Copy** — `All` · `Unread` · `Reading` · `Finished` · `Any of`
+
+## Filter sheet
+
+Opened from the scope text or the tune icon. Three tabs: `SHELVES`, `TAGS`, `SORT`. Grid/list is not
+here — it lives in Settings → Library.
+
+**Contents**
+
+- Tab row: `SHELVES` / `TAGS` / `SORT`, three equal segments over a 1 dp `#DED8C7` divider spanning the
+  full sheet width. The active segment's 3 dp ink indicator sits **just below its label**, flush with the
+  divider — the bottom tab bar's rule, inverted. The active label is ink, the others muted.
+- **One row design for Shelves, Tags and Sort**, so the three tabs feel like one control:
+  - a 64 dp row, 1 dp Rule inset 24, label at the left in Inter 14/20 weight 600 ink;
+  - an optional count in Inter 10 muted, 6 after the label — never pushed to the right;
+  - a 20 dp tick icon at the right edge, present only when the row is active or selected;
+  - the trailing `New shelf` / `New tag` row uses the same height and rule, with a 20 dp plus glyph
+    before the label, no count and no tick.
+- **Shelves** — `All books` first, ticked when active, then user shelves with counts. Selection is
+  single: one shelf is a place you are in.
+- **Tags** — all tags with counts, each ticked when selected. Selection is multiple: tags are properties
+  of a book, not places. A book must carry **every** selected tag; no line explains this — the ticks are
+  the whole feedback.
+- **Sort** — one choice per row, tick on the right of the active one: `Recently read`, `Recently added`,
+  `Title`, `Author`, `Progress`, `Length`. Changing it applies immediately and leaves the choice visible
+  when the sheet is reopened.
+- The sheet hugs its content: Shelves and Tags are the same height, Sort is the tallest.
+- Each shelf or tag row's trailing menu holds rename and delete. Creation, rename and delete happen
+  here; adding a book to a shelf or tag happens from the book detail screen.
+- Selection applies live behind the sheet. There is no `Done`: tapping outside the sheet or pressing
+  back closes it, and the tune icon reopens the last tab.
+
+**States**
+
+- *No shelves* — `No shelves yet.` and `New shelf`; `All books` remains selectable.
+- *No tags* — `No tags yet.` and `New tag`.
+- *All books active* — tick on the right of the first row, scope text reads `All books`.
+- *Shelf active* — tick on that shelf, scope text reads its name.
+- *Tags selected* — ticks on the right of those rows, scope text reads `1 tag` or `2 tags`.
+- *Sort chosen* — the radio moves, the library reorders behind the sheet, no confirm.
 - *Rename* — dialog with the name pre-filled; an empty name is refused.
 - *Delete* — confirmation stating books are not deleted.
 
-**Copy** — `No shelves yet.` · `New shelf` · `Delete shelf? Books stay in your library.`
+**Copy** — `SHELVES` · `TAGS` · `SORT` · `All books` · `New shelf` · `New tag` · `Any of` ·
+`Recently read` · `Recently added` · `Title` · `Author` · `Progress` · `Length` ·
+`No shelves yet.` · `No tags yet.` · `Delete shelf? Books stay in your library.` ·
+`Delete tag? Books stay in your library.`
 
 ## Import
 
@@ -519,7 +602,7 @@ No comparison to friends, no goals, no notifications.
 
 **Contents**
 
-- Sections: `Reading`, `Read aloud`, `Focus`, `Data`, `About`, each a label over rows.
+- Sections: `Reading`, `Read aloud`, `Focus`, `Library`, `Data`, `About`, each a label over rows.
 - Rows carry their current value at the right in InkMuted; controls sit where a value would.
 - Reading: theme, type, bionic reading.
 - Read aloud: `Engine` (`Google speech services` / `Verso voice`), `Voice`, `Speed`, `Pitch` (when the
@@ -527,6 +610,8 @@ No comparison to friends, no goals, no notifications.
   open Read aloud settings, which owns the detail. The screen shows the current choice, it does not
   edit it inline.
 - Focus: shape.
+- Library: `Default view` — `Grid` or `List`. This is the only home for the grid/list choice; it does
+  not appear in the library's filter sheet.
 - Data: `Data & storage`.
 - About: `About`.
 

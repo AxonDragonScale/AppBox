@@ -847,6 +847,30 @@ the same change as the work it learns from.**
   bounds assertion silently compares nothing; and node ids **renumber on every document load**, so
   re-derive any id after a reopen (a component moved `0:1115` → `0:609` → `0:1129` across three
   opens).
+- **2026-11-18** — `batch_update` accepts an operations array containing `font_weight` and answers
+  `{"updated":0}` — a silent no-op, with no error and no mention in `results`. Weight changes must
+  go through `update_node`, which reports `updated:["fontWeight"]`. Instance text is **not** set
+  with `update_node(text=…)`: on a child of an instance that write is **transient** — it answers
+  success, but a save/reopen reverts the string to the master's. Call `set_text` on the same node
+  instead; a `set_text` edit survives `save_file` → `close_file` → `open_file`.
+- **2026-11-18** — rendering children into a **slot inside an instance** leaves the document
+  unsaveable: `save_file` fails with `Missing instance geometry address for <child> under
+  <instance>`. Workaround: `reparent_node` the child out to a normal frame and back into the slot,
+  which assigns the geometry address; bounds are preserved. Slot fills made this way then survive a
+  reopen.
+- **2026-11-18** — `textAutoResize: "TRUNCATE"` is not usable on this build: applied to an existing
+  text node inside an auto-layout it collapses to 0 × 0 and renders nothing; created fresh it wraps
+  and clips with no ellipsis. The working recipe for a one-line ellipsised title is a fixed width,
+  `lineHeight` set, `maxLines: 1` and the `truncate` flag, which requires replacing the node
+  (`render replace_id=…`) rather than editing it.
+- **2026-11-18** — a master change to a **slot's sizing** does not re-resolve on existing instances.
+  Changing `FilterRow`'s State slot from a fixed 120 px to HUG propagated the gap and the surrounding
+  layout, but every instance's slot stayed 0 wide with its 38 px child overflowing; each of the five
+  instances needed `set_layout` plus `set_layout_child(HUG)` applied once. Geometry edits to non-slot
+  children do propagate — sizing on slots does not. Two traps on that path: `batch_update` refuses
+  HUG with "HUG can only be set on auto-layout frames", so the slot needs row auto-layout before it
+  will hug; and an empty hugging slot resolves to 0 × 0, which `node_resize` rejects (set its height
+  with `update_node` instead).
 
 ## Related
 
