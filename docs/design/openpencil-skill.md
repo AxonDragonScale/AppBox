@@ -871,6 +871,49 @@ the same change as the work it learns from.**
   HUG with "HUG can only be set on auto-layout frames", so the slot needs row auto-layout before it
   will hug; and an empty hugging slot resolves to 0 × 0, which `node_resize` rejects (set its height
   with `update_node` instead).
+- **2026-11-21** — **superseded in part** by the same build's behaviour on `Books`/`verso.fig`: setting
+  the `SheetRow` Label and Count slots to HUG on the master (auto-layout first) re-resolved all sixteen
+  row instances in the same pass, and deleting the trailing `add` glyph plus rendering a leading one
+  into the `Trailing=Add` variant reached its instance too. So slot sizing *can* propagate — verify one
+  instance after a master edit instead of pre-applying it everywhere.
+- **2026-11-21** — this surface has no `node_resize`, but `update_node(width, height)` on a
+  **COMPONENT_SET** resizes the set frame and leaves the variants at their own size — the non-scaling
+  alternative to `node_resize`. Growing a set after `render(parent_id=<set>, jsx=<Component
+  name="State=New">)` needs exactly that: the render adds the variant, the set keeps its old bounds.
+- **2026-11-21** — `set_effects` takes `#RRGGBBAA`, so shadow opacity is the hex alpha (`#19171221` is a
+  13 % ink shadow). It **appends** rather than replaces, and no tool removes an effect: one wrong
+  `set_effects` needs one `undo`.
+- **2026-11-21** — `render(replace_id=<text inside an instance slot>)` works and the row stays an
+  instance, which is the way to turn a slot's plain label into a small `Icon` + `Text` row without
+  deleting instance children (`delete_nodes` refuses those).
+- **2026-11-21** — re-centring a tab label that must keep its indicator on the bottom edge is a
+  restructure, not a padding change: each segment becomes `Slot (grow, justify centre) → Label` plus a
+  3 dp `Indicator` as the last child, with an empty 3 dp `Edge` in inactive segments so every label
+  keeps the same baseline. `padding_vertical` alone centres the label but drags the indicator up with
+  it. The master edit propagated into all three instances unchanged.
+
+- **2026-11-21** — `create_instance` has no parent parameter: the instance lands on the **page** at the
+  x/y you give, and `reparent_node` keeps that absolute position as the child's new relative one. A row
+  created at page `(24, 7520)` and reparented into a screen at `y 7000` reported `y 7520` **inside** the
+  screen — displaced by exactly the parent's origin. Either create at `screen + offset` and then set
+  the relative `x`/`y` with `update_node`, or compose the screen literally. The literal route is one
+  `render` per screen and is what the book-detail and import screens in `verso.fig` use.
+
+- **2026-11-21** — deleting a **component set** that this session had edited through
+  `render(parent_id=<set>)` corrupts saving for the whole document: the set's variant stayed on an
+  internal "resumed component" list, so every later `save_document` failed with
+  `Missing resumed component <id>` — including saves to a different path. Nothing in the model looks
+  broken (`list_components`, `query_nodes //*[@id=…]`, lint and `export_component_map` all come back
+  clean and the missing id belongs to no node), and renaming the set or creating other components does
+  not clear it. **Recovery:** `close_document({ unsaved: "discard" })` and reopen — the last good save
+  is intact, so only that session's unsaved work is lost. **Avoid it:** never delete a component set in
+  a session that edited it; rebuild its variants in place instead (delete the variant's children,
+  `render` the new structure into the variant, resize it). In-place rebuilds save cleanly.
+- **2026-11-21** — after a `close_document` + `open_document`, the reopened document gets a **new tab
+  id** on every open (`tab-3` → `tab-6` here), and the id can go stale between two executes even though
+  `list_documents` just returned it. Re-read `list_documents` at the start of every batch and keep the
+  batch small; `open_document` also times out at 20 s while the tab still appears, and a napping app
+  drops tabs until `open -a OpenPencil` and a reopen.
 
 ## Related
 

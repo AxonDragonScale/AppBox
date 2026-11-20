@@ -112,34 +112,43 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | Component | Variants / properties | Notes |
 |---|---|---|
 | `ContinueCard` | text `Title`, `Chapter`, `Percent` | 364 × 96; cover 54 × 80 left, `CONTINUE READING` eyebrow in Micro, title UI Strong, chapter Micro, percent right in Display 34; 2 dp progress rule flush under the card |
-| `BookTile` | text `Title`; `State=Unread` · `Reading` · `Finished` | cover with 1 dp Rule border, 2 dp progress rule under it; unread shows the empty track with no ink, finished the full rule |
+| `BookTile` | text `Title`; `State=Unread` · `Reading` · `Finished` | 114 wide; cover with 1 dp Rule border, 2 dp progress rule under it, title 11/14 on two lines; unread shows the empty track with no ink, finished the full rule |
 | `BookRow` | text `Title`, `Author`, `Percent` | 72 dp; cover 40 × 56, percent right in Micro; carries its own 1 dp Rule inset 24 on its bottom edge at y 71, like `SettingsRow` and `StatsBookRow` — row masters own their rules, screens never draw loose ones |
 | `CoverPlaceholder` | text `Initials` | PaperSunk block, 1 dp Rule border, initials in Fraunces at 20 |
 | `FilterChip` | `Selected=Yes` · `No`, text `Label` | square, 1 dp Rule; selected inverts to ink ground with paper label |
 | `ImportRow` | text `Name`, `State=Importing` · `Done` · `Failed` | one line per file inside the blocking import flow, not in the library |
-| `BookDetailHeader` | text `Title`, `Author`, `Series` | cover 132 × 188 centred, series in Micro under the author |
+| `BookDetailHeader` | text `Title`, `Author`, `Series` | cover 132 × 176 at the left, title 26/32, author and series in the 216 column beside it; series is `Series · n` with the number only when the book has one — no format, no file size |
 | `ActionButton` | `Style=Filled` · `Outline` · `Text`, text `Label` | 48 dp, square, no radius; filled = ink ground, paper label |
 | `ReaderTopBar` | text `Title`, `Chapter`, `Percent` | 412 × 56; back, title over chapter, then `42%` over `3H 20M LEFT` at the right |
 | `ReaderBottomBar` | `State=Idle` · `Playing` | 412 × 58 — 2 dp ribbon over the 56 dp row of five 48 dp targets |
 | `ProgressSlider` | — | 2 dp track in Rule, filled in Ink, 12 dp square thumb, chapter ticks; lives in Contents, never on the page |
 | `PlayBar` | `State=Playing` · `Paused` · `Loading` | 48 dp; spoken sentence one line, speed chip and glyph right |
-| `SpeedStepper` | text `Value` | 48 dp; − / value / +, value in Display 20, presets row beneath |
+| `Stepper` | text `Value` | 132 × 48; − / value / +, value in Display 20, presets row beneath; live updates behind the sheet |
 | `VoiceRow` | `State=Idle` · `Selected` · `Downloaded` · `Downloading` · `Failed` | 64 dp; name, engine in Micro, trailing state |
 | `ThemeSwatch` | `Selected=Yes` · `No` | 64 × 64 square, paper ground with ink `Aa`, 2 dp ink border when selected |
 | `SegmentedChoice` | 2 / 3 / 4 options | 48 dp, 1 dp track, selected inverts to ink |
-| `Stepper` | text `Value` | −/+, live updates behind the sheet |
 | `Switch` | `On` · `Off` | 44 × 24 square track, square thumb |
-| `Sheet` | text `Title` | top radius 16, PaperSunk, 1 dp rule on top, handle 32 × 2 dp 16 from the top, title 24 below the handle |
-| `SheetTabs` | `Tab=Shelves` · `Tags` · `Sort` | 412 × 48, three equal segments over a full-width 1 dp Rule, 3 dp ink indicator flush **below** the active label |
+| `Sheet` | text `Title`, content slot | top radius 16, PaperSunk, handle 32 × 2 dp 16 from the top, title 24 below the handle, then a content slot — the master never carries one sheet's body |
+| `SheetTabs` | `Tab=Shelves` · `Tags` · `Sort` | 412 × 48, three equal segments over a full-width 1 dp Rule; the label is centred in the segment and the active segment's 3 dp ink indicator spans its full width on the bottom edge, flush with the divider — the `TabBar` rule, flipped |
 | `TabBar` | `Active=Library` · `Stats` · `Settings` | 64 dp, 1 dp Rule on its top edge, 3 dp ink rule flush under the top edge of the active segment |
 | `SelectionBar` | text `Actions` | floating 48 dp bar above the selection, text actions only |
 | `StatBlock` | text `Value`, `Label` | 172 × 80, value 28/34, label 10 caps 6 below, 1 dp rule under — a 2 × 2 grid in the 364 content width |
 | `FocusFrame` | `Shape=Sentence` · `Word` | 364 × 132 fixed, or 364 × 88 for one word; never resizes between sentences |
 | `FocusPeek` | — | current line at full strength, previous and next at InkMuted |
-| `SettingsRow` | text `Title`; `Trailing=Chevron` · `SwitchOn` · `SwitchOff` · `Value` | 64 dp, 1 dp Rule inset 24; the switch state lives in the variant, never as an overlay |
+| `SettingsRow` | text `Title`, `Value`; `Trailing=Chevron` · `Value` · `ValueChevron` · `SwitchOn` · `SwitchOff` | 64 dp, 1 dp Rule inset 24; the switch state lives in the variant, never as an overlay; `ValueChevron` is for a counted row that still opens something |
+| `SheetRow` | slots `Label`, `Count`; `Trailing=Check` · `Add` · `None` | 64 dp, 1 dp Rule inset 24; label 14/20 ink, count 10 muted **6 after the label** and never right-aligned; a 20 dp tick at the right edge only when selected; the create variant puts a 20 dp plus before the label |
+| `AppHeader` | slot `Trailing` | 364 × 64; `Verso` in Display 34/40 at the left, a 48 dp search target at the right |
+| `FilterRow` | slots `Scope`, `State` | 364 × 48; scope text and chevron at the left, the state control and a 48 dp tune target as one cluster ending at x 388 |
+| `StatsBookRow` | slots `Cover`, `Text`, `Trailing` | 64 dp; cover 32 × 44, title over author, time with a proportional 2 dp bar |
+| `SectionLabel` | slot `Label` | 10/12 tracked caps in InkMuted, hugging |
+| `PageTitle` | slot `Label` | 34/40 Fraunces, hugging |
+| `Ribbon` | slot `Fill` | 412 × 2 read-aloud progress; the same band the reader's bottom bar sits under |
 | `EmptyState` | text `Title`, `Description` | no illustration; one centred paragraph and one action |
 
 ## Screens
+
+One number per frame: the integer is the screen, and a state of that screen takes a decimal —
+`18.1`, `30.2`. No two frames share a number.
 
 | # | Screen | Built as |
 |---|---|---|
@@ -147,7 +156,7 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | 2 | Library — empty | `02 · Library · empty` |
 | 3 | Library — grid | `03 · Library · grid` |
 | 4 | Library — list | `04 · Library · list` |
-| 5 | Import — blocking flow | to draw — replaces the old inline importing state |
+| 5 | Library — loading | `05 · Library · loading` |
 | 6 | Stats — empty | `06 · Stats · empty` |
 | 7 | Stats — full | `07 · Stats · full` |
 | 8 | Settings | `08 · Settings` |
@@ -160,7 +169,9 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | 15 | Filter sheet — Tags tab | `15 · Library · filter sheet · tags` |
 | 16 | Filter sheet — Sort tab | `16 · Library · filter sheet · sort` |
 | 17 | Library — search | to draw |
-| 18 | Book detail | to draw |
+| 18 | Book detail — unread | `18 · Book detail · unread` |
+| 18.1 | Book detail — in progress | `18.1 · Book detail · in progress` |
+| 18.2 | Book detail — finished | `18.2 · Book detail · finished` |
 | 19 | Reader — scroll | to draw |
 | 20 | Contents | to draw |
 | 21 | Display | to draw |
@@ -172,6 +183,10 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | 27 | End of book | to draw |
 | 28 | About | to draw |
 | 29 | Dialogs | to draw |
+| 30 | Import — preparing | `30 · Import · preparing` |
+| 30.1 | Import — importing | `30.1 · Import · importing` |
+| 30.2 | Import — finished | `30.2 · Import · finished` |
+| 30.3 | Import — stopped | `30.3 · Import · stopped` |
 
 ## Library
 
@@ -189,7 +204,8 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
   - The two text controls and the icon are right-aligned as one cluster ending at x 388. The state slot
     hugs its label: `All` sits 8 dp from the tune icon, never floating in a fixed-width gap.
 - Grid: three columns 114 wide, 10 dp gutters, cover 3:4, 2 dp progress line under each cover, title in
-  two lines beneath.
+  two lines beneath. Rows sit on a 216 dp pitch — a two-line title ends 18 dp above the next row's
+  cover, and a scrolling third row is cut by the tab bar rather than squeezed against it.
 - Tab bar with `LIBRARY` active.
 
 Scope, tags and reading state compose as: **one shelf** (or all books) ∩ **all selected tags** ∩ **any
@@ -212,7 +228,9 @@ one home — scope and tags in the Filter sheet, state in its dropdown, grid/lis
 - *Filtered to nothing* — `Nothing here yet.` naming the active scope or filter, one action
   `Clear filters`.
 - *No book in progress* — the continue card is absent; the grid starts under the header.
-- *Loading* — one line `Preparing your library…`; no skeleton cards.
+- *Loading* — `Preparing your library…` centred in the content area between the header and the tab bar;
+  the header and `LIBRARY` stay in place, nothing else renders. No skeleton cards, no filter row, no
+  continue card.
 
 Importing is **not** a library state. It is a blocking flow that owns the screen until it finishes; the
 library never shows import progress inline, never shows a half-imported shelf, and is not usable
@@ -220,7 +238,7 @@ mid-import.
 
 **Copy** — `All books` · `1 tag` · `2 tags` · `Any of` · `No books yet` ·
 `Import a book to start.` · `Books stay on this device.` · `Import books` · `Import a folder` ·
-`Nothing here yet.` · `Clear filters` · `Sort`
+`Nothing here yet.` · `Clear filters` · `Sort` · `Preparing your library…`
 
 ## Library · search
 
@@ -266,8 +284,9 @@ here — it lives in Settings → Library.
 **Contents**
 
 - Tab row: `SHELVES` / `TAGS` / `SORT`, three equal segments over a 1 dp `#DED8C7` divider spanning the
-  full sheet width. The active segment's 3 dp ink indicator sits **just below its label**, flush with the
-  divider — the bottom tab bar's rule, inverted. The active label is ink, the others muted.
+  full sheet width. Each label is centred in its segment; the active segment's 3 dp ink indicator spans
+  that segment and sits on the bottom edge of the row, flush with the divider — the bottom tab bar's
+  rule, inverted. The active label is ink, the others muted.
 - **One row design for Shelves, Tags and Sort**, so the three tabs feel like one control:
   - a 64 dp row, 1 dp Rule inset 24, label at the left in Inter 14/20 weight 600 ink;
   - an optional count in Inter 10 muted, 6 after the label — never pushed to the right;
@@ -312,45 +331,69 @@ library's empty state, from the magnifier's overflow, or from the system share s
 
 **Contents**
 
-- A 56 dp top bar with `Import` and nothing else — no cancel in the bar, because cancelling mid-file is
-  a decision, not an escape.
-- The overall line: `Importing 3 of 12`, percent in Display beside it.
-- The current file name in UI, one line, ellipsized in the middle so the extension stays visible.
-- A 2 dp overall progress line, determinate, with a per-file segment marked beneath it.
-- A rolling list of finished files, one line each, checkmark and name, capped at the last five.
-- Failures accumulate silently; they are reported at the end, never mid-run.
+- A 56 dp top bar with `Import` and nothing else — no cancel in the bar, because stopping is a decision,
+  taken once, at the foot of the page. The flow owns the screen: no tab bar behind it.
+- One summary, and it changes shape when the run ends: while live it is an eyebrow (`Importing 6 of 12`)
+  with the percent in Display at the right; once it ends it is a Headline sentence instead — `9 of 12
+  imported.`, or `Import stopped.` with `3 books were added.` beneath — and no percent, so processed and
+  imported never get confused.
+- A single 2 dp overall progress line — nothing beneath it, no per-file strip. It freezes where a stopped
+  run stopped.
+- One log, one row per file, outcome inline: a finished file is a muted name with a 16 dp tick, a failed
+  file is an ink name with its reason in Error beneath, the file in flight is an ink name with
+  `IMPORTING` at the right. A stopped run leaves that row reading `STOPPED`.
+- One action docked at the foot of the page: `Stop` while the run is live, `Back to library` once it has
+  ended. There is no confirmation dialog — the books already imported stay, and the page says how many.
 
 **States**
 
 - *Choosing* — the system file picker is up; the screen behind it is the library, and nothing is
   blocked yet.
-- *Preparing* — reading metadata and covers: `Preparing…` with an indeterminate line, no numbers yet.
-- *Importing* — `Importing 3 of 12`, determinate overall progress, the current file named.
-- *Slow file* — a single large file holds the line at `7 of 12` with the file named; the line animates
-  at a lower rate rather than stalling silently.
+- *Preparing* — reading metadata and covers: `Preparing`, an indeterminate line, no numbers, no rows.
+- *Importing* — `Importing 6 of 12`, percent, determinate progress, and outcomes landing in the log as
+  they happen.
+- *Slow file* — a single large file holds the line at `7 of 12` with its row reading `IMPORTING`; the
+  line animates at a lower rate rather than stalling silently.
 - *Finishing* — covers written, index updated: `Finishing…`, once, briefly.
-- *Done, all good* — `12 books imported.` and one action, `Back to library`.
-- *Done, with failures* — `9 of 12 imported.` then the failure list: file name and one plain reason
-  each (`This book is protected and can't be opened.`). One action, `Back to library`.
-- *Cancel requested* — a confirmation: `Stop importing? 3 books are already in your library.` with
-  `Keep importing` and `Stop`. Books already imported stay.
-- *Stopped* — `Import stopped. 3 books were added.` and `Back to library`.
+- *Finished* — the log settles: every file shows a tick or a reason, the headline reads `9 of 12
+  imported.` (or `12 books imported.` when nothing failed), and the action becomes `Back to library`.
+- *Stopped* — `Stop` is taken, the interrupted file's row reads `STOPPED`, the line freezes where it
+  stopped, and the summary reads `Import stopped.` with `3 books were added.` beneath. Books already
+  imported stay.
 - *Nothing selected* — returns to the library unchanged, no message.
 
 The flow never leaves a partially written book behind: a file either lands whole or not at all.
 
-**Copy** — `Import` · `Preparing…` · `Importing 3 of 12` · `Finishing…` · `12 books imported.` ·
-`Back to library` · `Stop importing? 3 books are already in your library.` · `Import stopped.`
+**Copy** — `Import` · `Preparing` · `Importing 6 of 12` · `Finishing…` · `9 of 12 imported.` ·
+`12 books imported.` · `Import stopped.` · `3 books were added.` · `Importing` · `Stopped` · `Stop` ·
+`Back to library`
+
+**Failure reasons** — `This book is protected and can't be opened.` ·
+`This file isn't an EPUB, FB2, TXT, MD or HTML book.` · `The file is damaged and couldn't be read.`
 
 ## Book detail
 
+A leaf screen: it drops the shell's tab bar and carries a 56 dp bar with the back target only, so the
+whole page belongs to the book.
+
 **Contents**
 
-- Cover 132 × 188 with a 1 dp Rule; title in Headline, author in UI, series and `EPUB · 2.4 MB` in Micro.
-- Progress block: percent in Display, chapter beneath, `about 3 h left` in Micro when an estimate exists.
-- Actions: filled `Read` / `Resume` / `Read again`, outlined `Read aloud`.
-- Rows: `Add to shelf`, `Tags`, `Bookmarks` with a count.
-- `Mark finished` / `Mark unread`, then `Delete` alone at the bottom, separated by 24 dp and a rule.
+- Hero, one row: cover 132 × 176 with a 1 dp Rule at the left, and beside it the title in Headline,
+  author in UI, and one Micro line. The identity block is 216 wide, so a two-word title takes two lines
+  and the page never opens on a 300 dp stack.
+- The Micro line is `Series · n` — `EARTHSEA · 1`. The number appears only when the book declares its
+  place in the series. A series book with no number keeps the name; a standalone book drops the line
+  entirely. The format (`EPUB`) and the file size never appear here.
+- Progress head: percent in Display at the left, chapter and `about 3 h left` in Micro right-aligned
+  beside it, then the 2 dp rule at 42%.
+- Actions: filled `Read` / `Resume` / `Read again`, outlined `Read aloud`, side by side 178 each.
+- Rows: `Add to shelf` (chevron), `Tags` (2), `Bookmarks` (3), each count + chevron, reusing `SettingsRow`.
+- `Export` — saves a copy of this book's own file (not the library archive); the row opens the system
+  picker for the destination and carries no trailing value.
+- `Mark finished` / `Mark unread` and `Delete` sit in the same rhythm as those rows — same 64 dp height,
+  same inset rule. The destructive row is set apart by Error colour alone, never by a gap or a rule of
+  its own, and it is last, so no rule closes the list. Destructive actions never share a row with a
+  safe one.
 
 **States**
 
@@ -361,7 +404,8 @@ The flow never leaves a partially written book behind: a file either lands whole
 - *No metadata* — `Unknown author`; the series line is absent rather than empty.
 - *Deleted while open* — returns to the library with `That book is no longer in your library.`
 
-**Copy** — `Resume` · `Read aloud` · `Add to shelf` · `Tags` · `Bookmarks` · `Mark finished` · `Delete`
+**Copy** — `Resume` · `Read aloud` · `Add to shelf` · `Tags` · `Bookmarks` · `Export` · `Mark finished` ·
+`Mark unread` · `Delete`
 
 ## Reader
 

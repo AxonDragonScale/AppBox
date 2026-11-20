@@ -53,8 +53,10 @@ Not in v1 (deliberate, not forgotten):
 - Duplicates are detected by content, not filename: the second copy is refused as "Already in library".
 - Import is a blocking flow: it owns the screen until every file has landed or failed. The library is
   not usable mid-import, and it never shows partial progress.
-- One bad file never blocks the rest of the batch; failures are reported when the batch ends.
-- Stopping an import keeps the books already imported and discards the file in flight.
+- One bad file never blocks the rest of the batch; its failure shows inline in the log as soon as it
+  happens and stays there until the run ends.
+- Stopping an import keeps the books already imported and discards the file in flight. Stop is one
+  action at the foot of the page — no confirmation dialog — and the page reports what landed.
 - Failures are reported per file, in plain language:
   - Unsupported or corrupt file.
   - Protected or password-locked — "This book is protected and can't be opened."
@@ -374,6 +376,8 @@ Page turning is a swipe, so taps are free for text.
   - Shelves and tags.
   - Stats and settings.
   - Book files themselves, only if the user ticks that option.
+- A single book can also be exported on its own from its detail page: the system picker chooses the
+  destination, and the file is copied byte for byte — this is a copy, not a conversion.
 - Import merges rather than replaces:
   - Books are matched by content; a book missing from the archive is never deleted.
   - The newer position wins; a genuine conflict asks once per book, with "apply to all".
