@@ -136,7 +136,7 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 | `StatBlock` | text `Value`, `Label` | 172 × 80, value 28/34, label 10 caps 6 below, 1 dp rule under — a 2 × 2 grid in the 364 content width |
 | `FocusFrame` | `Shape=Sentence` · `Word` | 364 × 132 fixed, or 364 × 88 for one word; never resizes between sentences |
 | `FocusPeek` | — | current line at full strength, previous and next at InkMuted |
-| `SettingsRow` | text `Title`; `Trailing=Chevron` · `Switch` · `Value` | 64 dp, 1 dp Rule inset 24 |
+| `SettingsRow` | text `Title`; `Trailing=Chevron` · `SwitchOn` · `SwitchOff` · `Value` | 64 dp, 1 dp Rule inset 24; the switch state lives in the variant, never as an overlay |
 | `EmptyState` | text `Title`, `Description` | no illustration; one centred paragraph and one action |
 
 ## Screens
