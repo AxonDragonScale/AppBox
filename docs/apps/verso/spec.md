@@ -93,6 +93,8 @@ Not in v1 (deliberate, not forgotten):
   the left of the filter row; state is a dropdown and the tune icon sit right-aligned at its end.
 - Sorting is chosen in the Filter sheet's `SORT` tab; grid/list is a setting, not a library control.
 - Series group automatically from metadata, ordered by series index; a book with no index sorts last.
+- A Series result in search opens the series screen: the series name, its count and author, and its
+  books in series order. Back returns to the search results.
 - Removing a book from a shelf, or deleting a shelf or tag, never deletes a book.
 - Deleting a book removes its shelf and tag memberships.
 
@@ -156,10 +158,12 @@ Page turning is a swipe, so taps are free for text.
 
 ### Navigation
 
-- Table of contents nested by heading level, current chapter marked, tap to jump.
-- Contents opens with the progress track at the top: thumb at the current position, a tick per
-  chapter boundary. Dragging names the chapter under the thumb; releasing jumps. The sheet stays
+- Contents has two tabs: `CHAPTERS` — the table of contents, nested by heading level, current chapter
+  marked, tap to jump — and `BOOKMARKS` — the bookmark list and `Add bookmark`.
+- The progress track sits at the top of the `CHAPTERS` tab only: thumb at the current position, a tick
+  per chapter boundary. Dragging names the chapter under the thumb; releasing jumps. The sheet stays
   open, so the next chapter is one tap away.
+- The percent beside the chapter is the book's position, not the chapter's.
 - Chapter next/previous available from the chrome.
 - Footnote and endnote links open a bottom sheet with the note text; closing returns to the exact sentence that held the marker.
 - External links ask once, then open in the browser.
@@ -328,8 +332,9 @@ Page turning is a swipe, so taps are free for text.
 
 ## Bookmarks
 
-- Bookmarks live in the Contents sheet: added there, listed there with snippet, chapter, percent and
-  date, and jumped to or deleted from the same list.
+- Bookmarks live in the Contents sheet's `BOOKMARKS` tab: added there, listed there with snippet,
+  chapter, percent and date, and jumped to or deleted from the same list.
+- `Add bookmark` sits at the end of that tab and marks the current sentence.
 - Bookmark list per book: snippet, chapter, percent, date; jump or delete.
 - Bookmarking the same sentence twice merges instead of duplicating.
 - Bookmarks survive theme, typography, layout and mode changes, and read-aloud.

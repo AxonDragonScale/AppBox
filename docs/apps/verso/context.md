@@ -26,11 +26,11 @@ A local-first reading app built around read-aloud, a low-eye-movement focus mode
 - **Shell**: `VersoActivity` (edge-to-edge, splash), `VersoApplication` with an empty Koin graph,
   type-safe routes in `Route`, and a three-segment tab bar over Library, Stats and Settings.
 - **Theme**: the palette (`paper`, `paperSunk`, `ink`, `inkMuted`, `rule`, `highlight`, `selection`),
-  the type scale and the spacing tokens from the UI doc. Square everywhere; sheets alone are rounded.
+  the type scale and the spacing tokens from the UI doc. Square everywhere; no rounded surfaces.
 - **Design board**: `apps/verso/verso.fig` — Foundations complete, a four-batch component kit, and the
-  built screens: the reader chrome with its contents and display sheets, Library (empty, grid, list,
-  loading, search in three states, scope and filter states), Stats, Settings, book detail in three
-  states, and the four import states.
+  built screens: the reader with its scroll state and its contents, display and voice sheets, Library
+  (empty, grid, list, loading, search in three states, scope and filter states), Stats, Settings, book
+  detail in three states, the four import states, and a series view.
 - **Library**: the empty state only — header, formats line, `Import books` / `Import a folder`,
   `Books stay on this device.` Both actions are unwired.
 - **Stats / Settings**: honest placeholders, no rows, no fake data.

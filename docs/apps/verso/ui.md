@@ -16,14 +16,14 @@ Design source: [`apps/verso/verso.fig`](../../../apps/verso/verso.fig). **Founda
 cover, colour, typography, shape and layout, iconography, app icon. **Components** carries the full kit
 in four batches: library (`Button`, `FilterChip`, `TabBar`, `ContinueCard`, `BookTile`, `BookRow`,
 `CoverPlaceholder`, `BookDetailHeader`, `ImportRow`), reader (`ReaderTopBar`, `ReaderBottomBar`,
-`PlayBar`, `ProgressSlider`, `SelectionBar`, `FocusFrame`, `FocusPeek`), lists and states (`VoiceRow`,
-`SettingsRow`, `StatBlock`, `Sheet`, `EmptyState`), and the `SegmentedChoice`, `Stepper`, `Switch`,
-`ThemeSwatch` controls. Variants stack inside each set.
+`PlayBar`, `ProgressSlider`, `SpeedSlider`, `SelectionBar`, `FocusFrame`, `FocusPeek`), lists and
+states (`VoiceRow`, `SettingsRow`, `StatBlock`, `Sheet`, `EmptyState`), and the `SegmentedChoice`,
+`Stepper`, `Switch`, `ThemeSwatch` controls. Variants stack inside each set.
 
-**Screens** carries the built states — the reader chrome with its contents and display sheets, the
-Library with its search, text scope, state dropdown and Filter sheet, Stats, Settings with its sub-page,
-book detail in three states, and the four import states. The remaining reader screens, focus mode and
-dialogs are specified here and drawn next.
+**Screens** carries the built states — the reader with its scroll state and its contents, display and
+voice sheets, the Library with its search, text scope, state dropdown and Filter sheet, Stats, Settings
+with its sub-page, book detail in three states, and the four import states. The remaining reader
+screens, focus mode and dialogs are specified here and drawn next.
 
 The screens are **composed from instances** of those masters: header, filter row, sheet tabs, sheet
 rows, tiles, list rows, continue card, stat blocks, settings rows, reader chrome and tab bar. Editing a
@@ -49,7 +49,7 @@ is furniture that can be taken away.
   - Selection is grey. Only the voice is warm.
 - **Type carries hierarchy; hairlines carry structure.** No cards, no elevation, no shadows, no
   gradients, no pills.
-- **Square by default.** Sheets are the only rounded surface, and only at the top.
+- **Square everywhere.** No rounded surfaces: sheets, cards, dialogs and controls all have square corners.
 - **Focus mode is a different place**, not a zoomed page: one line on the same paper, nothing else.
 
 ## Theme
@@ -75,7 +75,7 @@ Highlight is applied as tint, never as a second ink:
 - Optional accessibility cue: 2 dp Highlight rule under the spoken word.
 - Bionic emphasis is weight only, never colour. It sits underneath the highlight with no conflict.
 
-Numeric tokens: spacing 4 / 8 / 12 / 16 / 24 / 32 / 48; radii 0 everywhere except sheet tops at 16;
+Numeric tokens: spacing 4 / 8 / 12 / 16 / 24 / 32 / 48; radii 0 everywhere;
 hairline 1 dp; touch target 48 dp; icons 24 dp.
 
 ## Typography
@@ -116,33 +116,34 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 |---|---|---|
 | `ContinueCard` | text `Title`, `Chapter`, `Percent` | 364 × 96; cover 54 × 80 left, `CONTINUE READING` eyebrow in Micro, title UI Strong, chapter Micro, percent right in Display 34; 2 dp progress rule flush under the card |
 | `BookTile` | text `Title`; `State=Unread` · `Reading` · `Finished` | 114 wide; cover with 1 dp Rule border, 2 dp progress rule under it, title 11/14 on two lines; unread shows the empty track with no ink, finished the full rule |
-| `BookRow` | text `Title`, `Author`, `Percent` | 72 dp; cover 40 × 56, percent right in Micro; carries its own 1 dp Rule inset 24 on its bottom edge at y 71, like `SettingsRow` and `StatsBookRow` — row masters own their rules, screens never draw loose ones |
+| `BookRow` | text `Title`, `Author`, `Percent` | 72 dp; cover 40 × 56, percent right in Micro; carries its own full-width 1 dp Rule on its bottom edge at y 71, like `SettingsRow` and `StatsBookRow` — row masters own their rules, screens never draw loose ones |
 | `CoverPlaceholder` | text `Initials` | PaperSunk block, 1 dp Rule border, initials in Fraunces at 20 |
 | `FilterChip` | `Selected=Yes` · `No`, text `Label` | square, 1 dp Rule; selected inverts to ink ground with paper label |
 | `ImportRow` | text `Name`, `State=Importing` · `Done` · `Failed` | one line per file inside the blocking import flow, not in the library |
 | `BookDetailHeader` | text `Title`, `Author`, `Series` | cover 132 × 176 at the left, title 26/32, author and series in the 216 column beside it; series is `Series · n` with the number only when the book has one — no format, no file size |
 | `ActionButton` | `Style=Filled` · `Outline` · `Text`, text `Label` | 48 dp, square, no radius; filled = ink ground, paper label |
-| `ReaderTopBar` | text `Title`, `Chapter`, `Percent` | 412 × 56; back, title over chapter, then `42%` over `3H 20M LEFT` at the right |
+| `ReaderTopBar` | text `Title`, `Chapter`, `Percent` | 412 × 56; back, title over chapter, then `42%` over `3H 20M LEFT` at the right. The title cell centres its content; a one-line bar (`Data & storage`, `About`) hides the chapter, so the title sits on the bar's centre line |
 | `ReaderBottomBar` | `State=Idle` · `Playing` | 412 × 58 — 2 dp ribbon over the 56 dp row of five 48 dp targets |
 | `ProgressSlider` | — | 2 dp track in Rule, filled in Ink, 12 dp square thumb, chapter ticks; lives in Contents, never on the page |
 | `PlayBar` | `State=Playing` · `Paused` · `Loading` | 48 dp; spoken sentence one line, speed chip and glyph right |
-| `Stepper` | text `Value` | 132 × 48; − / value / +, value in Display 20, presets row beneath; live updates behind the sheet |
-| `VoiceRow` | `State=Idle` · `Selected` · `Downloaded` · `Downloading` · `Failed` | 64 dp; name, engine in Micro, trailing state |
+| `Stepper` | text `Value` | 132 × 48; − / value / +, value in Fraunces 16/20; used for `Size`, `Line height`, `Margins`, `Letter spacing` and `Word spacing` |
+| `SpeedSlider` | — | 364 × 40; 2 dp Rule track, 12 dp Ink thumb, five stops `0.75 1 1.25 1.5 2` with Micro labels; the value sits in the section head |
+| `VoiceRow` | `State=Idle` · `Selected` · `Downloaded` · `Downloading` · `Failed` | 64 dp; name, engine in Micro, trailing state, full-width 1 dp Rule |
 | `ThemeSwatch` | `Selected=Yes` · `No` | 64 × 64 square, paper ground with ink `Aa`, 2 dp ink border when selected |
 | `SegmentedChoice` | 2 / 3 / 4 options | 48 dp, 1 dp track, selected inverts to ink |
 | `Switch` | `On` · `Off` | 44 × 24 square track, square thumb |
-| `Sheet` | text `Title`, content slot | top radius 16, PaperSunk, handle 32 × 2 dp 16 from the top, title 24 below the handle, then a content slot — the master never carries one sheet's body |
+| `Sheet` | text `Title`, content slot | square, PaperSunk, handle 32 × 2 dp 16 from the top, title 24 below the handle, then a content slot — the master never carries one sheet's body |
 | `SheetTabs` | `Tab=Shelves` · `Tags` · `Sort` | 412 × 48, three equal segments over a full-width 1 dp Rule; the label is centred in the segment and the active segment's 3 dp ink indicator spans its full width on the bottom edge, flush with the divider — the `TabBar` rule, flipped |
 | `TabBar` | `Active=Library` · `Stats` · `Settings` | 64 dp, 1 dp Rule on its top edge, 3 dp ink rule flush under the top edge of the active segment |
 | `SelectionBar` | text `Actions` | floating 48 dp bar above the selection, text actions only |
 | `StatBlock` | text `Value`, `Label` | 172 × 80, value 28/34, label 10 caps 6 below, 1 dp rule under — a 2 × 2 grid in the 364 content width |
 | `FocusFrame` | `Shape=Sentence` · `Word` | 364 × 132 fixed, or 364 × 88 for one word; never resizes between sentences |
 | `FocusPeek` | — | current line at full strength, previous and next at InkMuted |
-| `SettingsRow` | text `Title`, `Value`; `Trailing=Chevron` · `Value` · `ValueChevron` · `SwitchOn` · `SwitchOff` | 64 dp, 1 dp Rule inset 24; the switch state lives in the variant, never as an overlay; `ValueChevron` is for a counted row that still opens something |
-| `SheetRow` | slots `Label`, `Count`; `Trailing=Check` · `Add` · `None` | 64 dp, 1 dp Rule inset 24; label 14/20 ink, count 10 muted **6 after the label** and never right-aligned; a 20 dp tick at the right edge only when selected; the create variant puts a 20 dp plus before the label |
+| `SettingsRow` | text `Title`, `Value`; `Trailing=Chevron` · `Value` · `ValueChevron` · `SwitchOn` · `SwitchOff` | 64 dp, full-width 1 dp Rule; the switch state lives in the variant, never as an overlay; `ValueChevron` is for a counted row that still opens something |
+| `SheetRow` | slots `Label`, `Count`; `Trailing=Check` · `Add` · `None` | 64 dp, full-width 1 dp Rule; label 14/20 ink, count 10 muted **6 after the label** and never right-aligned; a 20 dp tick at the right edge only when selected; the create variant puts a 20 dp plus before the label |
 | `AppHeader` | slot `Trailing` | 364 × 64; `Verso` in Display 34/40 at the left, a 48 dp search target at the right |
 | `FilterRow` | slots `Scope`, `State` | 364 × 48; scope text and chevron at the left, the state control and a 48 dp tune target as one cluster ending at x 388 |
-| `StatsBookRow` | slots `Cover`, `Text`, `Trailing` | 64 dp; cover 32 × 44, title over author, time with a proportional 2 dp bar |
+| `StatsBookRow` | slots `Cover`, `Text`, `Trailing` | 64 dp; cover 32 × 44, title over author, time with a proportional 2 dp bar, full-width 1 dp Rule |
 | `SectionLabel` | slot `Label` | 10/12 tracked caps in InkMuted, hugging |
 | `PageTitle` | slot `Label` | 34/40 Fraunces, hugging |
 | `Ribbon` | slot `Fill` | 412 × 2 read-aloud progress; the same band the reader's bottom bar sits under |
@@ -177,10 +178,12 @@ One number per frame: the integer is the screen, and a state of that screen take
 | 18 | Book detail — unread | `18 · Book detail · unread` |
 | 18.1 | Book detail — in progress | `18.1 · Book detail · in progress` |
 | 18.2 | Book detail — finished | `18.2 · Book detail · finished` |
-| 19 | Reader — scroll | `19 · Reader — scroll` |
-| 20 | Contents — chapters, bookmarks, track | `20 · Contents` |
-| 21 | Display — swatches, type, reading | `21 · Display` |
-| 22 | Voice — engine, voice, speed, pitch | `22 · Voice` |
+| 19 | Reader — scroll | `19 · Reader · scroll` |
+| 20 | Reader — contents, chapters | `20 · Reader · contents · chapters` |
+| 20.1 | Reader — contents, bookmarks | `20.1 · Reader · contents · bookmarks` |
+| 21 | Reader — display | `21 · Reader · display` |
+| 21.1 | Reader — display, scrolled | `21.1 · Reader · display · scrolled` |
+| 22 | Reader — voice | `22 · Reader · voice` |
 | 23 | Read aloud settings — engine, voice, speed, pitch | `23 · Read aloud settings` |
 | 24 | Voice downloads — four states | `24 · Voice downloads` |
 | 25 | Selection — bar, dictionary sheet | `25 · Selection`, `25.1 · Dictionary` |
@@ -192,6 +195,7 @@ One number per frame: the integer is the screen, and a state of that screen take
 | 30.1 | Import — importing | `30.1 · Import · importing` |
 | 30.2 | Import — finished | `30.2 · Import · finished` |
 | 30.3 | Import — stopped | `30.3 · Import · stopped` |
+| 31 | Series — Hainish Cycle | `31 · Series · Hainish Cycle` |
 
 ## Library
 
@@ -248,7 +252,7 @@ mid-import.
 ## Library · search
 
 Opens as a sheet over the library, from the magnifier. The library header stays visible above it, dimmed
-by the scrim; the sheet starts under the header at y 96, radius 16 at the top, with its handle.
+by the scrim; the sheet starts under the header at y 96, with its handle.
 
 **Contents**
 
@@ -258,11 +262,11 @@ by the scrim; the sheet starts under the header at y 96, radius 16 at the top, w
 - Results grouped by type in the order Books, Series, Shelves, Tags — a group appears only when it has a
   match. `BOOKS` and the rest are SectionLabels; the matched fragment is UI Strong inside otherwise
   regular text.
-  - A book row is 72 dp: 40 × 56 cover, title over author, reading percent at the right, 1 dp Rule
-    inset 24.
-  - A collection row is 64 dp: label and count, 1 dp Rule inset 24. Series and shelves count books;
+  - A book row is 72 dp: 40 × 56 cover, title over author, reading percent at the right, full-width
+    1 dp Rule.
+  - A collection row is 64 dp: label and count, full-width 1 dp Rule. Series and shelves count books;
     tags count the books carrying the tag.
-- Rows are whole targets and open on tap.
+- Rows are whole targets and open on tap; a Series row opens `31 · Series · Hainish Cycle`.
 
 **States**
 
@@ -272,6 +276,26 @@ by the scrim; the sheet starts under the header at y 96, radius 16 at the top, w
 - *No matches* — `No matches.` one line under the field, at the content inset.
 
 **Copy** — `Title, author, series, tag` · `No matches.`
+
+## Series
+
+Opened by a Series search result. A full screen, not a sheet: the back bar carries the series name, then
+the series' place in the library and its books in series order.
+
+**Contents**
+
+- One-line top bar with back and `Hainish Cycle`.
+- `2 BOOKS · URSULA K. LE GUIN` in a SectionLabel under the bar.
+- Book rows, 72 dp, in series order: cover, title, author, reading percent, full-width 1 dp Rule.
+- Tapping a book opens its detail; back returns to search.
+
+**States**
+
+- *Series with books* — the drawn state; two Hainish books at 42%.
+- *Gapped series* — missing indices keep their order; only declared books list.
+- *Missing cover* — the row's cover placeholder, as everywhere.
+
+**Copy** — `Hainish Cycle` · `2 BOOKS · URSULA K. LE GUIN`
 
 ## State dropdown
 
@@ -304,7 +328,7 @@ here — it lives in Settings → Library.
   that segment and sits on the bottom edge of the row, flush with the divider — the bottom tab bar's
   rule, inverted. The active label is ink, the others muted.
 - **One row design for Shelves, Tags and Sort**, so the three tabs feel like one control:
-  - a 64 dp row, 1 dp Rule inset 24, label at the left in Inter 14/20 weight 600 ink;
+  - a 64 dp row, full-width 1 dp Rule, label at the left in Inter 14/20 weight 600 ink;
   - an optional count in Inter 10 muted, 6 after the label — never pushed to the right;
   - a 20 dp tick icon at the right edge, present only when the row is active or selected;
   - the trailing `New shelf` / `New tag` row uses the same height and rule, with a 20 dp plus glyph
@@ -471,34 +495,45 @@ bookmarks.
 
 ## Contents
 
+A bottom sheet opened from the reader's contents control. The handle and a two-tab control sit at the
+top; `CHAPTERS` and `BOOKMARKS` are equal segments, the active label ink with a 3 dp ink indicator on
+that segment's bottom edge and a 1 dp divider across the sheet.
+
 **Contents**
 
-- Progress track at the top: thumb at the current position, a tick per chapter, the chapter named under
-  the thumb while dragging. Releasing jumps; the sheet stays open so the next chapter is one tap away.
-- Chapter list, nested by heading level, the current chapter marked.
-- Bookmarks: snippet, chapter, percent, date; tap to jump, long-press to delete. `Add bookmark` marks
-  the current sentence. Bookmarks are made and browsed here; the chrome has no bookmark action.
+- The sheet opens with the handle and the tabs; the tab row stays put.
+- **Chapters tab** — the current chapter and percent (`CH. 4 · THE NINETEENTH DAY`, `42%`), then the
+  progress track (thumb at the current position, a tick per chapter boundary; dragging names the
+  chapter under the thumb and releasing jumps, with the sheet staying open), then the table of contents
+  nested by heading level, the current chapter in ink with a tick. Tap a chapter to jump.
+- **Bookmarks tab** — snippet, chapter, percent and date; tap to jump, long-press to delete.
+  `Add bookmark` marks the current sentence. Bookmarks are made and browsed here; the chrome has no
+  bookmark action.
 
 **States**
 
 - *Scrubbing* — the chapter follows the thumb; the page does not move until release.
 - *No chapters* — a single `Start` entry, or the book's headings when it has them.
 - *No bookmarks* — `No bookmarks yet.` with the add action still present.
-- *Many chapters* — the list scrolls under the pinned track; the current chapter is in view on open.
+- *Many chapters* — the chapters list scrolls under the pinned tabs and track; the current chapter is
+  in view on open.
 
 **Copy** — `Contents` · `Add bookmark` · `No bookmarks yet.`
 
 ## Display
 
-A 700 dp sheet — about three quarters — so the page above stays visible and updates live.
+A 718 dp sheet — about three quarters — opened from the reader's display control, so the page above
+stays visible and updates live. The sheet scrolls; `21.1` is the scrolled state.
 
 **Contents**
 
-- Theme swatches: Light, Sepia, Night, Black, Custom.
-- `Use my typography` (switch), then `Font`, `Size`, `Line height` (values), `Hyphenation` and
-  `Bionic reading` (switches), and `Keep screen on` (switch).
-- `More typography` (chevron) — margins, alignment, letter and word spacing, in a sub-sheet. The sheet
-  stays at 60% so the page above remains visible; only the essentials live on it.
+- `THEME` label over the swatches: Light, Sepia, Night, Black, Custom.
+- `TYPE` label, then `Use my typography` (switch), `Font` (value), `Size` and `Line height` (− / value
+  / + steppers).
+- `TYPOGRAPHY` label, then `Margins` (stepper), `Alignment` (Left / Justify segmented choice),
+  `Letter spacing` and `Word spacing` (steppers).
+- `TEXT` label, then `Hyphenation` and `Bionic reading` (switches).
+- `READING` label, then `Keep screen on` (switch).
 
 **States**
 
@@ -506,21 +541,22 @@ A 700 dp sheet — about three quarters — so the page above stays visible and 
 - *Publisher CSS on* — font and line-height read as inactive under `Using the book's styling`; colours
   and size still apply.
 - *Custom theme* — three colour fields appear under the swatches.
+- *Scrolled* — the sheet is longer than the screen; `21.1` shows the TEXT and READING tail under the
+  same handle.
 - *Any change* — applies immediately behind the sheet; no confirm, no apply.
 
-**Copy** — `Use my typography` · `Using the book's styling` · `Bionic reading` · `Keep screen on` ·
-`More typography`
+**Copy** — `Use my typography` · `Using the book's styling` · `Bionic reading` · `Keep screen on`
 
 ## Voice
 
-Quick controls, opened from the play bar. Choosing the engine and setting defaults is **Read aloud
-settings**, not this sheet.
+Quick controls, opened from the play bar in the reader. Choosing the engine and setting defaults is
+**Read aloud settings**, not this sheet.
 
 **Contents**
 
 - Engine line at the top in Micro — the current engine's name, tapping it opens Read aloud settings.
 - Current voice as a selected `VoiceRow` with a `Sample` text action.
-- Speed: `SpeedStepper` with the value, plus `0.75 1 1.25 1.5 2`.
+- Speed: `SpeedSlider` with the `1.4×` value, stops `0.75 1 1.25 1.5 2`.
 - Pitch, only when the engine supports it — absent, not disabled, when it does not.
 - `Download voices` row at the bottom with total space used.
 
@@ -550,8 +586,8 @@ or from a missing-voice prompt.
   row shows the name, and where the engine reports them, gender and variant — `English (UK) · Female ·
   1`. A quality label appears when the engine exposes one. Selecting a row applies immediately; `Sample`
   speaks a fixed sentence.
-- **Speed** — 0.5× to 3.0×, continuous, with `0.75 1 1.25 1.5 2` as shortcuts. Stored per engine, so
-  switching engines does not carry an impossible value.
+- **Speed** — `SpeedSlider`, 0.5× to 3.0× continuous, with `0.75 1 1.25 1.5 2` as stops. Stored per
+  engine, so switching engines does not carry an impossible value.
 - **Pitch** — 0.5 to 2.0, shown only when the engine supports it.
 - **Voices** — a row into Voice downloads with total space used.
 
@@ -617,9 +653,9 @@ or from a missing-voice prompt.
   - Ground one step deeper than Paper — PaperSunk in light and sepia, near-black in night and black.
   - Type at full-strength Ink, never InkMuted, for the current sentence.
   - Highlight stronger than the page's: 34% light and sepia, 40% night and black.
-  - Context — peek lines, chapter hairline — at 55% ink.
-- No chrome, no bars, no page edges. A hairline row at the top carries the chapter in Micro and an
-  `Exit` glyph with a 48 dp target.
+  - Context — peek lines and the top-bar chapter line — at 55% ink.
+- The reader top bar is the only chrome: back, the book title over the full chapter line, then percent
+  over time left. No bottom bar, no page edges.
 - Sentence frame 364 × 132, sentence at 32/44, centred, three lines maximum. Word frame 364 × 88, one
   word at 40/48, anchor never moves.
 - The spoken word carries the focus tint with full-strength ink; the rest of the sentence stays at
