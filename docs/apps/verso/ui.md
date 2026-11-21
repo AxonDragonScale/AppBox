@@ -20,15 +20,18 @@ in four batches: library (`Button`, `FilterChip`, `TabBar`, `ContinueCard`, `Boo
 `SettingsRow`, `StatBlock`, `Sheet`, `EmptyState`), and the `SegmentedChoice`, `Stepper`, `Switch`,
 `ThemeSwatch` controls. Variants stack inside each set.
 
-**Screens** carries fifteen built states — the reader chrome, the Library with its text scope, state
-dropdown and Filter sheet, Stats, and Settings with its sub-page. Sheets, focus mode and the book detail
-screen are specified here and drawn next.
+**Screens** carries the built states — the reader chrome with its contents and display sheets, the
+Library with its search, text scope, state dropdown and Filter sheet, Stats, Settings with its sub-page,
+book detail in three states, and the four import states. The remaining reader screens, focus mode and
+dialogs are specified here and drawn next.
 
 The screens are **composed from instances** of those masters: header, filter row, sheet tabs, sheet
 rows, tiles, list rows, continue card, stat blocks, settings rows, reader chrome and tab bar. Editing a
-master changes every screen that uses it. Four structures are deliberately literal frames, because they
+master changes every screen that uses it. Five structures are deliberately literal frames, because they
 are one-offs and a master would only add indirection: the Stats bar chart, the state-dropdown popover,
-the empty-state body, and the dimmed library behind each sheet's scrim.
+the empty-state body, the dimmed library behind each sheet's scrim, and the search sheet with its field
+and result rows. The search rows are literal because the matched fragment is a text run, not an
+instance's single style.
 
 Instance copy is **edited on the instance**, never in the master: a master text edit overwrites every
 instance's own words, and instance overrides are written with `set_text` (not `update_node`, which does
@@ -101,7 +104,7 @@ hairline 1 dp; touch target 48 dp; icons 24 dp.
 - Reader: top bar 56, page 753, play bar 48, ribbon 2, bottom bar 56.
 - Reader text column 328 dp, centred, with 32 dp gutters that double as the chrome tap band.
 - Chrome: top bar 56 dp, bottom bar 56 dp with the 2 dp ribbon as its own band above it, pinned play
-  bar 48 dp, sheets up to 60% height, scrim ink 40%.
+  bar 48 dp, sheets up to 700 dp on the 915 frame, scrim ink 40%.
 - Status and navigation bars are transparent; the icon colour follows the current theme.
 - Wide screens: text column capped at 560 dp and centred; library grid gains columns, nothing else.
 - Grid: 3 columns at 412, 10 dp gutter, cover 3:4, title 12 sp under the cover — three reads as a
@@ -168,21 +171,23 @@ One number per frame: the integer is the screen, and a state of that screen take
 | 14 | State dropdown — multi-select | `14 · Library · state dropdown` |
 | 15 | Filter sheet — Tags tab | `15 · Library · filter sheet · tags` |
 | 16 | Filter sheet — Sort tab | `16 · Library · filter sheet · sort` |
-| 17 | Library — search | to draw |
+| 17 | Library — search | `17 · Library · search` |
+| 17.1 | Library — search results | `17.1 · Library · search · results` |
+| 17.2 | Library — search, no matches | `17.2 · Library · search · no matches` |
 | 18 | Book detail — unread | `18 · Book detail · unread` |
 | 18.1 | Book detail — in progress | `18.1 · Book detail · in progress` |
 | 18.2 | Book detail — finished | `18.2 · Book detail · finished` |
-| 19 | Reader — scroll | to draw |
-| 20 | Contents | to draw |
-| 21 | Display | to draw |
-| 22 | Voice | to draw |
-| 23 | Read aloud settings | to draw |
-| 24 | Voice downloads | to draw |
-| 25 | Selection and dictionary | to draw |
-| 26 | Focus — sentence · word · peek | to draw |
-| 27 | End of book | to draw |
-| 28 | About | to draw |
-| 29 | Dialogs | to draw |
+| 19 | Reader — scroll | `19 · Reader — scroll` |
+| 20 | Contents — chapters, bookmarks, track | `20 · Contents` |
+| 21 | Display — swatches, type, reading | `21 · Display` |
+| 22 | Voice — engine, voice, speed, pitch | `22 · Voice` |
+| 23 | Read aloud settings — engine, voice, speed, pitch | `23 · Read aloud settings` |
+| 24 | Voice downloads — four states | `24 · Voice downloads` |
+| 25 | Selection — bar, dictionary sheet | `25 · Selection`, `25.1 · Dictionary` |
+| 26 | Focus — sentence, word, peek | `26 · Focus · sentence`, `26.1 · word`, `26.2 · peek` |
+| 27 | End of book — panel | `27 · End of book` |
+| 28 | About — version, licences | `28 · About` |
+| 29 | Dialogs — delete, conflict, no engine | `29 · Dialog · delete`, `29.1 · Dialog · import conflict`, `29.2 · Dialog · no engine` |
 | 30 | Import — preparing | `30 · Import · preparing` |
 | 30.1 | Import — importing | `30.1 · Import · importing` |
 | 30.2 | Import — finished | `30.2 · Import · finished` |
@@ -242,18 +247,29 @@ mid-import.
 
 ## Library · search
 
-Opens as a sheet over the library, from the magnifier.
+Opens as a sheet over the library, from the magnifier. The library header stays visible above it, dimmed
+by the scrim; the sheet starts under the header at y 96, radius 16 at the top, with its handle.
 
 **Contents**
 
-- Field pinned at the top, square, 1 dp Rule, placeholder `Title, author, series, tag`.
-- Results grouped: Books, Series, Shelves, Tags; the matched fragment in UI Strong.
+- Field pinned at the top: 364 × 48, square, 1 dp Rule, Paper ground on the sheet, a 24 dp search glyph
+  at the left, placeholder `Title, author, series, tag`. Once a query exists, a 48 dp clear target sits
+  at the right.
+- Results grouped by type in the order Books, Series, Shelves, Tags — a group appears only when it has a
+  match. `BOOKS` and the rest are SectionLabels; the matched fragment is UI Strong inside otherwise
+  regular text.
+  - A book row is 72 dp: 40 × 56 cover, title over author, reading percent at the right, 1 dp Rule
+    inset 24.
+  - A collection row is 64 dp: label and count, 1 dp Rule inset 24. Series and shelves count books;
+    tags count the books carrying the tag.
+- Rows are whole targets and open on tap.
 
 **States**
 
-- *Empty query* — nothing but the field; no recents, no suggestions.
-- *Results* — grouped rows; tap opens.
-- *No matches* — `No matches.` one line.
+- *Empty query* — the sheet is otherwise blank; no recents, no suggestions.
+- *Results* — only the groups that match. The drawn sample is `le`: Books (`The Left Hand of Darkness`,
+  `The Dispossessed`) and Series (`Hainish Cycle`), with `Le` / `le` strong.
+- *No matches* — `No matches.` one line under the field, at the content inset.
 
 **Copy** — `Title, author, series, tag` · `No matches.`
 
@@ -474,24 +490,26 @@ bookmarks.
 
 ## Display
 
-A 60% height sheet, so the page above stays visible and updates live.
+A 700 dp sheet — about three quarters — so the page above stays visible and updates live.
 
 **Contents**
 
 - Theme swatches: Light, Sepia, Night, Black, Custom.
-- `Use my typography`, then font, size, line height, margins, alignment, hyphenation, letter and word
-  spacing.
-- `Bionic reading`, `Keep screen on`.
+- `Use my typography` (switch), then `Font`, `Size`, `Line height` (values), `Hyphenation` and
+  `Bionic reading` (switches), and `Keep screen on` (switch).
+- `More typography` (chevron) — margins, alignment, letter and word spacing, in a sub-sheet. The sheet
+  stays at 60% so the page above remains visible; only the essentials live on it.
 
 **States**
 
 - *Default* — publisher styling on, theme Light.
-- *Publisher CSS on* — font and margin controls read as inactive under `Using the book's styling`;
-  colours and size still apply.
+- *Publisher CSS on* — font and line-height read as inactive under `Using the book's styling`; colours
+  and size still apply.
 - *Custom theme* — three colour fields appear under the swatches.
 - *Any change* — applies immediately behind the sheet; no confirm, no apply.
 
-**Copy** — `Use my typography` · `Using the book's styling` · `Bionic reading` · `Keep screen on`
+**Copy** — `Use my typography` · `Using the book's styling` · `Bionic reading` · `Keep screen on` ·
+`More typography`
 
 ## Voice
 

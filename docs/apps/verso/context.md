@@ -27,9 +27,10 @@ A local-first reading app built around read-aloud, a low-eye-movement focus mode
   type-safe routes in `Route`, and a three-segment tab bar over Library, Stats and Settings.
 - **Theme**: the palette (`paper`, `paperSunk`, `ink`, `inkMuted`, `rule`, `highlight`, `selection`),
   the type scale and the spacing tokens from the UI doc. Square everywhere; sheets alone are rounded.
-- **Design board**: `apps/verso/verso.fig` — Foundations complete, a four-batch component kit, and
-  twenty-three built screens: the reader chrome, Library (empty, grid, list, loading, scope and filter
-  states), Stats, Settings, book detail in three states, and the four import states.
+- **Design board**: `apps/verso/verso.fig` — Foundations complete, a four-batch component kit, and the
+  built screens: the reader chrome with its contents and display sheets, Library (empty, grid, list,
+  loading, search in three states, scope and filter states), Stats, Settings, book detail in three
+  states, and the four import states.
 - **Library**: the empty state only — header, formats line, `Import books` / `Import a folder`,
   `Books stay on this device.` Both actions are unwired.
 - **Stats / Settings**: honest placeholders, no rows, no fake data.
