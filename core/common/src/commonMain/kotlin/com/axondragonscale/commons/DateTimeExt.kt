@@ -7,6 +7,12 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
+import kotlin.jvm.JvmName
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeFormat
+import kotlinx.datetime.format.alternativeParsing
+import kotlinx.datetime.format.char
+import kotlinx.datetime.format.optional
 import kotlinx.datetime.minus
 import kotlinx.datetime.number
 import kotlinx.datetime.plus
@@ -176,6 +182,19 @@ fun LocalDateTime.toEpochMillis() =
 
 // region Instant Extensions
 
+// The three overloads erase to one JVM signature; the names below keep them distinct.
+@JvmName("formatWithLocalDateTime")
+fun Instant.format(format: DateTimeFormat<LocalDateTime>, tz: TimeZone = TIMEZONE): String =
+    toLocalDateTime(tz).format(format)
+
+@JvmName("formatWithLocalDate")
+fun Instant.format(format: DateTimeFormat<LocalDate>, tz: TimeZone = TIMEZONE): String =
+    toLocalDateTime(tz).date.format(format)
+
+@JvmName("formatWithLocalTime")
+fun Instant.format(format: DateTimeFormat<LocalTime>, tz: TimeZone = TIMEZONE): String =
+    toLocalDateTime(tz).time.format(format)
+
 /**
  * Formats an [Instant] as "Jan 5, 2025 at 9:30 AM" in the given [tz].
  */
@@ -197,5 +216,27 @@ fun Instant.formatTime(tz: TimeZone = TIMEZONE): String =
 /** The wall clock for these epoch [milliseconds] in the given [tz]. */
 fun Long.toLocalDateTime(tz: TimeZone = TIMEZONE): LocalDateTime =
     Instant.fromEpochMilliseconds(this).toLocalDateTime(tz)
+
+// endregion
+
+// region Formats
+
+val LocalDateTime.Formats.ISO_WITH_MILLIS get() = ISO_DATE_TIME_WITH_MILLIS
+private val ISO_DATE_TIME_WITH_MILLIS = LocalDateTime.Format {
+    date(LocalDate.Formats.ISO)
+    char(' ')
+    time(LocalTime.Formats.ISO_WITH_MILLIS)
+}
+
+val LocalTime.Formats.ISO_WITH_MILLIS get() = ISO_TIME_WITH_MILLIS
+private val ISO_TIME_WITH_MILLIS = LocalTime.Format {
+    hour()
+    char(':')
+    minute()
+    char(':')
+    second()
+    char('.')
+    secondFraction(1, 9)
+}
 
 // endregion
