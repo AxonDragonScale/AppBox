@@ -231,7 +231,7 @@ Settings** and a **Permissions** list — and, on Android, two viewers:
   and cache, and an empty database list, since Devinator has no Room database.
 
 Devinator declares no log permission and no route of its own for either viewer, and passes no
-`customTools`: its developer-facing state is Home and Tweaks, not a debug menu.
+`tools`: its developer-facing state is Home and Tweaks, not a debug menu.
 
 ### Endpoint discovery (best effort)
 

@@ -24,8 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.axondragonscale.logviewer.model.LogRecord
-import com.axondragonscale.logviewer.ui.logRowTime
-import com.axondragonscale.logviewer.ui.style.LocalLogStyle
+import com.axondragonscale.logviewer.model.logTime
+import com.axondragonscale.logviewer.ui.style.LogStyle
 import com.axondragonscale.logviewer.ui.style.colors
 
 /** Created by Ronak Harkhani on 11/22/26 */
@@ -64,9 +64,8 @@ private fun LogEntryRow(
     wrap: Boolean,
     onClick: () -> Unit,
 ) {
-    val style = LocalLogStyle.current
     val colors = entry.level.colors()
-    val trace = entry.message.lineSequence().drop(1).toList()
+    val trace = entry.traceLines
 
     Column(
         modifier = Modifier
@@ -82,13 +81,13 @@ private fun LogEntryRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = entry.time.logRowTime(),
-                style = style.mono,
+                text = entry.time.logTime(),
+                style = LogStyle.mono,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = entry.level.letter.toString(),
-                style = style.mono.copy(fontWeight = FontWeight.SemiBold),
+                style = LogStyle.mono.copy(fontWeight = FontWeight.SemiBold),
                 color = colors.glyph,
             )
             Text(
@@ -102,7 +101,7 @@ private fun LogEntryRow(
         }
         Text(
             text = entry.firstLine,
-            style = style.mono,
+            style = LogStyle.mono,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = if (wrap) Int.MAX_VALUE else 1,
             overflow = TextOverflow.Ellipsis,
@@ -113,12 +112,12 @@ private fun LogEntryRow(
                     .padding(top = 4.dp)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(style.traceSurface)
+                    .background(LogStyle.traceSurface)
                     .padding(8.dp),
             ) {
                 LogTrace(
                     lines = trace,
-                    style = style.mono,
+                    style = LogStyle.mono,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = if (wrap) 12 else 6,
                 )

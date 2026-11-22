@@ -52,7 +52,7 @@ private fun QRQanvasDevTools(
         modifier = modifier,
         title = "QRQanvas Dev Tools",
         subtitle = "Debug utilities for QRQanvas",
-        customToolsBuilder = {
+        tools = {
             section("App Info", Icons.Rounded.Storage)
             info("Version", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             info("Package", BuildConfig.APPLICATION_ID)
@@ -63,7 +63,6 @@ private fun QRQanvasDevTools(
                 title = "Add Test QR Codes",
                 subtitle = "Add one QR code of each content type (8 total)",
                 onClick = onAddTestData,
-                completionAlert = "Test QR codes added!",
             )
             action(
                 icon = Icons.Default.Delete,
@@ -71,7 +70,6 @@ private fun QRQanvasDevTools(
                 subtitle = "Remove all QR codes from the database",
                 destructive = true,
                 onClick = onDeleteAll,
-                completionAlert = "All QR codes deleted!",
             )
         },
     )

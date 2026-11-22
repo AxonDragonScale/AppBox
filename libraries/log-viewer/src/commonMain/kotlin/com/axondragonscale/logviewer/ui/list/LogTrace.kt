@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -18,11 +17,10 @@ internal fun LogTrace(
     lines: List<String>,
     style: TextStyle,
     color: Color,
-    modifier: Modifier = Modifier,
     firstLineColor: Color? = null,
     maxLines: Int = Int.MAX_VALUE,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         lines.take(maxLines).forEachIndexed { index, line ->
             Text(
                 text = line,

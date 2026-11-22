@@ -17,23 +17,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.axondragonscale.logviewer.model.LogLevel
+import com.axondragonscale.logviewer.source.LogQuery
+import com.axondragonscale.logviewer.ui.LogUiEvent
 
 /** Created by Ronak Harkhani on 11/22/26 */
 
 @Composable
 internal fun LogFilterBar(
-    query: String,
-    levels: Set<LogLevel>,
-    tags: Set<String>,
-    excludedTags: Set<String>,
-    packages: Set<String>,
-    excludedPackages: Set<String>,
-    onQueryChange: (String) -> Unit,
-    onToggleLevel: (LogLevel, Boolean) -> Unit,
-    onAllLevels: () -> Unit,
-    onRemoveTag: (String) -> Unit,
-    onRemovePackage: (String) -> Unit,
+    query: LogQuery,
+    onEvent: (LogUiEvent) -> Unit,
     onOpenFilters: () -> Unit,
 ) {
     Row(
@@ -45,8 +37,8 @@ internal fun LogFilterBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LogSearchField(
-            value = query,
-            onValueChange = onQueryChange,
+            value = query.text,
+            onValueChange = { onEvent(LogUiEvent.SetText(it)) },
             modifier = Modifier
                 .weight(1f)
                 .height(40.dp),
@@ -70,9 +62,9 @@ internal fun LogFilterBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LogLevelMenu(
-            levels = levels,
-            onToggle = onToggleLevel,
-            onAllLevels = onAllLevels,
+            levels = query.levels,
+            onToggle = { level, enabled -> onEvent(LogUiEvent.SetLevel(level, enabled)) },
+            onAllLevels = { onEvent(LogUiEvent.SelectAllLevels) },
         )
         Row(
             modifier = Modifier
@@ -82,17 +74,11 @@ internal fun LogFilterBar(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            tags.forEach { tag ->
-                LogTagChip(label = tag, exclude = false, onRemove = { onRemoveTag(tag) })
-            }
-            excludedTags.forEach { tag ->
-                LogTagChip(label = tag, exclude = true, onRemove = { onRemoveTag(tag) })
-            }
-            packages.forEach { name ->
-                LogTagChip(label = "pkg:$name", exclude = false, onRemove = { onRemovePackage(name) })
-            }
-            excludedPackages.forEach { name ->
-                LogTagChip(label = "pkg:$name", exclude = true, onRemove = { onRemovePackage(name) })
+            query.rules.forEach { rule ->
+                RuleChip(
+                    rule = rule,
+                    onRemove = { onEvent(LogUiEvent.RemoveRule(rule.facet, rule.value)) },
+                )
             }
         }
     }

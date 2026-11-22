@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.axondragonscale.logviewer.model.LogLevel
 import com.axondragonscale.logviewer.ui.LogBackHandler
-import com.axondragonscale.logviewer.ui.style.LocalLogStyle
+import com.axondragonscale.logviewer.ui.style.LogStyle
 import com.axondragonscale.logviewer.ui.style.colors
 
 /** Created by Ronak Harkhani on 11/22/26 */
@@ -115,7 +115,7 @@ internal fun SheetHeader(title: String, onClose: () -> Unit) {
         Text(
             text = title,
             modifier = Modifier.weight(1f),
-            style = LocalLogStyle.current.sectionTitle,
+            style = LogStyle.sectionTitle,
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
@@ -144,7 +144,6 @@ internal fun SheetTitleRow(onClose: () -> Unit, content: @Composable RowScope.()
 
 @Composable
 internal fun LevelBadge(level: LogLevel, modifier: Modifier = Modifier) {
-    val style = LocalLogStyle.current
     val colors = level.colors()
     Box(
         modifier = modifier
@@ -155,7 +154,7 @@ internal fun LevelBadge(level: LogLevel, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = level.letter.toString(),
-            style = style.mono.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+            style = LogStyle.mono.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
             color = colors.glyph,
         )
     }

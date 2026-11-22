@@ -37,9 +37,10 @@ internal object DevLogStore {
     @Volatile
     private var dao: DevLogDao? = null
 
+    /** True once a host called [install], so the Logs entry follows the install, not the database. */
     val isInstalled: Boolean get() = started
 
-    /** The store as the shared log viewer expects it; reads stay empty until the database is open. */
+    /** The store as the shared log viewer expects it; a reader opened before the database is ready says so in its notice. */
     fun source(): LogSource = StoredLogSource { dao }
 
     /**

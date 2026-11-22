@@ -104,11 +104,11 @@ libraries/storage-viewer/src/main/java/com/axondragonscale/storageviewer/
 └── ui/                           # screens, sheets, list rows, chrome, style
 ```
 
-`:core:devtools` has the Android-only **Open Storage** built-in, mirroring the logcat host seam:
-`isStorageViewerAvailable` / `DevToolsStorageHost` in `commonMain`, a `StorageViewer` dialog in
-`androidMain` with a `StorageDevToolsScreen(onBack)` navigation variant, and no-op actuals on JVM
-and iOS. The library is an `androidMain` dependency only, so it never reaches the common
-classpath. See [Core Modules](../../core/context.md).
+`:core:devtools` has the Android-only **Open Storage** built-in, as one entry in its
+`devToolsHosts` list (the same list that carries **Open Logcat** and **Open Logs**): the row, its
+availability and the `StorageViewer` dialog are defined together in `androidMain`. The library is an
+`androidMain` dependency only, so it never reaches the common classpath. See
+[Core Modules](../../core/context.md).
 
 ## Building
 

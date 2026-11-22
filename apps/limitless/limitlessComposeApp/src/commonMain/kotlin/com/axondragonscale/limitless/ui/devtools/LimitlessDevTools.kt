@@ -24,19 +24,16 @@ fun LimitlessDevTools(
         modifier = modifier,
         title = "Limitless Dev Tools",
         subtitle = "Debug utilities for Limitless",
-        customToolsBuilder = {
-            // App Info Section
+        tools = {
             section("App Info", Icons.Rounded.Storage)
             info("Version", "${AppInfo.versionName} (${AppInfo.versionCode})")
             info("Package", AppInfo.packageName)
 
-            // Test Data Section
             section("Test Data", Icons.Rounded.Science)
             action(
                 title = "Seed Sample Data",
                 subtitle = "Create 7 habits with different records",
                 icon = Icons.Rounded.Dataset,
-                completionAlert = "Sample data seeded successfully",
                 onClick = { seeder.seed() },
             )
             action(
@@ -44,7 +41,6 @@ fun LimitlessDevTools(
                 subtitle = "Delete all habits and their records",
                 icon = Icons.Rounded.DeleteSweep,
                 destructive = true,
-                completionAlert = "All habits cleared",
                 onClick = { seeder.clearAll() },
             )
         }

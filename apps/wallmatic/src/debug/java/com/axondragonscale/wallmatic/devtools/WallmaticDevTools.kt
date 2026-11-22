@@ -61,7 +61,7 @@ fun WallmaticDevTools(
         modifier = modifier,
         title = "Wallmatic Dev Tools",
         subtitle = "Debug utilities for Wallmatic",
-        customToolsBuilder = {
+        tools = {
             section("App Info", Icons.Rounded.Storage)
             info("Version", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             info("Package", BuildConfig.APPLICATION_ID)

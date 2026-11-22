@@ -45,13 +45,12 @@ internal fun LogTopBar(
     paused: Boolean,
     pendingCount: Int,
     wrap: Boolean,
-    canShare: Boolean,
     canClear: Boolean,
     onBack: (() -> Unit)?,
     onTogglePause: () -> Unit,
     onJumpToNewest: () -> Unit,
     onToggleWrap: (Boolean) -> Unit,
-    onShare: () -> Unit,
+    onShare: (() -> Unit)?,
     onClear: () -> Unit,
 ) {
     var overflow by remember { mutableStateOf(false) }
@@ -134,9 +133,9 @@ internal fun LogTopBar(
                         },
                         onClick = { onToggleWrap(!wrap) },
                     )
-                    if (canShare) {
+                    if (onShare != null) {
                         DropdownMenuItem(
-                            text = { Text("Export visible") },
+                            text = { Text("Share logs") },
                             leadingIcon = {
                                 Icon(Icons.Filled.Share, contentDescription = null)
                             },

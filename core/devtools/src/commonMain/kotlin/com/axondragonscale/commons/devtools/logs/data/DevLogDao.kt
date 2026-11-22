@@ -13,8 +13,7 @@ internal interface DevLogDao {
 
     /**
      * Keyset paging on [beforeId]: records arriving mid-scroll cannot shift the window. The first
-     * page passes [Long.MAX_VALUE]. [filterTags] is 0 when no tag filter applies, because SQLite has
-     * no valid empty `IN ()`.
+     * page passes [Long.MAX_VALUE].
      */
     @Query(
         """
@@ -22,8 +21,8 @@ internal interface DevLogDao {
         WHERE id < :beforeId
           AND priority IN (:priorities)
           AND (:query = '' OR tag LIKE '%' || :query || '%' OR message LIKE '%' || :query || '%')
-          AND (:filterTags = 0 OR tag IN (:tags))
-          AND (:filterExcluded = 0 OR tag NOT IN (:excludedTags))
+          AND (:includeTags = 0 OR tag IN (:tags))
+          AND (:excludeTags = 0 OR tag NOT IN (:excludedTags))
         ORDER BY id DESC
         LIMIT :limit
         """
@@ -32,9 +31,9 @@ internal interface DevLogDao {
         beforeId: Long,
         priorities: List<String>,
         query: String,
-        filterTags: Int,
+        includeTags: Boolean,
         tags: List<String>,
-        filterExcluded: Int,
+        excludeTags: Boolean,
         excludedTags: List<String>,
         limit: Int,
     ): List<DevLogEntity>

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
@@ -30,11 +29,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.axondragonscale.logviewer.source.LogFacet
 import com.axondragonscale.logviewer.ui.filter.FilterSectionHeader
-import com.axondragonscale.logviewer.ui.style.LocalLogStyle
+import com.axondragonscale.logviewer.ui.filter.LogTextField
+import com.axondragonscale.logviewer.ui.filter.noun
+import com.axondragonscale.logviewer.ui.filter.placeholder
+import com.axondragonscale.logviewer.ui.style.LogStyle
 import com.axondragonscale.logviewer.ui.style.hairlineColor
 
 /** Created by Ronak Harkhani on 11/22/26 */
@@ -42,12 +45,10 @@ import com.axondragonscale.logviewer.ui.style.hairlineColor
 /** Tall enough for five rows, short enough to leave the field and footer on screen. */
 private val RuleListMaxHeight = 240.dp
 
-internal enum class RuleKind { TAG, PACKAGE }
+/** The rule the filter sheet is about to add: which facet, and on which side of the filter. */
+internal data class RuleDraft(val facet: LogFacet, val include: Boolean) {
 
-/** The rule the filter sheet is about to add: which kind, and on which side of the filter. */
-internal data class RuleDraft(val kind: RuleKind, val include: Boolean) {
-    val label: String get() = if (kind == RuleKind.TAG) "tag" else "package"
-    val title: String get() = if (include) "Include $label" else "Exclude $label"
+    val title: String get() = if (include) "Include ${facet.noun}" else "Exclude ${facet.noun}"
 }
 
 /**
@@ -61,17 +62,16 @@ internal fun RuleSheet(
     onDismiss: () -> Unit,
     onAdd: (String) -> Unit,
 ) {
-    var query by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf(TextFieldValue("")) }
     val accent = if (draft.include) {
         MaterialTheme.colorScheme.primary
     } else {
-        LocalLogStyle.current.warn
+        LogStyle.warn
     }
-    val term = query.trim()
+    val term = query.text.trim()
     val matches = remember(suggestions, term) {
         if (term.isEmpty()) suggestions else suggestions.filter { it.contains(term, ignoreCase = true) }
     }
-    val placeholder = if (draft.kind == RuleKind.TAG) "Tag name" else "Package name"
 
     LogBottomSheet(onDismiss = onDismiss, spacing = 12.dp, scrollable = false) {
         SheetHeader(title = draft.title, onClose = onDismiss)
@@ -79,14 +79,14 @@ internal fun RuleSheet(
         RuleField(
             value = query,
             onValueChange = { query = it },
-            placeholder = placeholder,
+            placeholder = draft.facet.placeholder,
             accent = accent,
             include = draft.include,
         )
 
         if (suggestions.isEmpty()) {
             Text(
-                text = "No ${draft.label}s to suggest yet. Type one below.",
+                text = "No ${draft.facet.noun}s left to suggest. Type one below.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -137,15 +137,15 @@ internal fun RuleSheet(
                 .fillMaxWidth()
                 .height(52.dp),
         ) {
-            Text(text = "Add ${draft.label}", style = MaterialTheme.typography.titleSmall)
+            Text(text = "Add ${draft.facet.noun}", style = MaterialTheme.typography.titleSmall)
         }
     }
 }
 
 @Composable
 private fun RuleField(
-    value: String,
-    onValueChange: (String) -> Unit,
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
     placeholder: String,
     accent: Color,
     include: Boolean,
@@ -166,23 +166,11 @@ private fun RuleField(
             modifier = Modifier.size(16.dp),
             tint = accent,
         )
-        BasicTextField(
+        LogTextField(
             value = value,
             onValueChange = onValueChange,
+            placeholder = placeholder,
             modifier = Modifier.weight(1f),
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            decorationBox = { inner ->
-                if (value.isEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                inner()
-            },
         )
     }
 }
@@ -206,7 +194,7 @@ private fun RuleRow(
         Text(
             text = value,
             modifier = Modifier.weight(1f),
-            style = LocalLogStyle.current.mono,
+            style = LogStyle.mono,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

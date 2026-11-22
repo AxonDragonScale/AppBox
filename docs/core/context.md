@@ -81,7 +81,7 @@ Compose via `api(libs.bundles.compose.mp)`).
 ```kotlin
 DevToolsScreen(
     title = "My App Dev Tools",
-    customToolsBuilder = {
+    tools = {
         section("App Tools", Icons.Rounded.Build)
         action("Sync Data") { syncManager.sync() }
         toggle("Fast Mode", isFastMode) { setFastMode(it) }
@@ -94,6 +94,20 @@ Built-ins on Android: Kill App, Clear App Data, Open App Settings, Permissions, 
 Open Storage. JVM/iOS expose Kill App only. The module is KMP because jest/limitless call it from
 `commonMain`.
 
+```text
+core/devtools/src/commonMain/.../devtools/
+├── DevToolsScreen.kt    the public screen (entry point apps import)
+├── model/               DevTool, DevToolsBuilder + buildDevTools
+├── ui/                  theme, surface, system bars, the item renderers, theme previews
+├── builtin/             DevToolsBuiltInContent (expect; per-platform actuals)
+├── host/                DevToolsHost + `devToolsHosts` and its window (expect)
+└── logs/                the dev log store (data/) and its viewer screen (ui/)
+```
+
+One `DevToolsHost` entry carries a viewer's row (title, subtitle, icon), its `available` check and
+its screen, so adding a viewer is one entry per platform rather than a section condition, an item,
+an availability flag, a host composable and a no-op actual.
+
 The screen renders inside `DevToolsTheme`, so a debug tool looks the same in every app: fixed dark
 neutral palette, mint primary, default Material type and shapes — the host's theme, dynamic colour
 and light/dark choice never reach it.
@@ -101,26 +115,23 @@ and light/dark choice never reach it.
 The theme lives in this module: `DevToolsTheme`, the `DevToolsColorScheme` behind it, and
 `DevToolsSystemBars()` (which flips the window's system-bar icons to their light appearance, resolving
 the dialog's window or the activity's, and is a no-op on JVM and iOS). Neither viewer library wraps
-itself in the theme any more, so the Android hosts here — `DevToolsLogcatHost`,
-`DevToolsStorageHost`, `LogcatDevToolsScreen`, `StorageDevToolsScreen` — are the single place it is
-applied to them.
+itself in the theme any more; `DevToolsSurface` (theme + bar appearance + background) is the single
+place it is applied to them.
 
-The logcat entry is Android-only: tapping **Open Logcat** presents the shared `LogViewer` over
-`LogcatSource` as a full-screen dialog (back gesture and the viewer's own back arrow both dismiss
-it). Without `READ_LOGS`, which Android 17 grants only over ADB, the dialog shows the command that
-grants it and re-checks when the app returns. `isLogcatAvailable` / `DevToolsLogcatHost` are the expect/actual seam;
-the JVM and iOS actuals are no-ops. A host that wants it as a navigation destination instead can call
-`LogcatDevToolsScreen(onBack = …)` and add its own route.
+The logcat entry is Android-only: tapping **Open Logcat** presents `LogcatScreen` — the shared
+`LogViewer` over `LogcatSource`, permission gate included — as a full-screen dialog (back gesture
+and the viewer's own back arrow both dismiss it). Without `READ_LOGS`, which Android 17 grants only
+over ADB, the screen shows the command that grants it and re-checks when the app returns. A host
+that wants the console as a navigation destination calls `LogcatScreen` from
+`:libraries:log-viewer` directly.
 
 The storage entry sits beside it in the same Diagnostics block and works the same way: **Open
 Storage** presents `StorageViewer` as a full-screen dialog over the app's own databases,
-DataStore/SharedPreferences stores and files. `isStorageViewerAvailable` /
-`DevToolsStorageHost` are its expect/actual seam, with no-ops on JVM and iOS; the
+DataStore/SharedPreferences stores and files; the
 [storage viewer library](../libraries/storage-viewer/context.md) holds the reader itself, so the
 library stays off the common classpath. The dialog keeps its own `ViewModelStore`, cleared on close,
 with its state saved into the host's `SavedStateRegistry` so an activity recreation or process death
-keeps the viewer's depth. The module's `StorageDevToolsScreen(onBack = …)` is the same viewer as a
-navigation destination.
+keeps the viewer's depth.
 
 **Open Logs** reads the dev-only log store, which only exists after the host installs the module:
 
@@ -134,11 +145,9 @@ later is a line inside it rather than a second call in every app.
 
 The store is a Room database (`dev_logs.db`) holding every `Logger` record. The reader and the store
 are shared; only the database location and the container differ per platform. Newest first,
-filterable by level and by tag or message, the full message on tap, share, and clear.
-`isDevLogsAvailable` reports whether the store was installed, so an app that never calls
-`installDevTools` simply has no Logs entry. `DevToolsDevLogsHost` is the container seam: a dialog
-on Android, a full-screen overlay on JVM and iOS. See [Logging](logging.md) for the schema, the
-batched writer and the retention rule.
+filterable by level and by tag or message, the full message on tap, share, and clear. A host that
+never calls `installDevTools` has no Logs entry, because `DevLogStore.isInstalled` follows the
+install call. See [Logging](logging.md) for the schema, the batched writer and the retention rule.
 
 ### Dev tools in release
 

@@ -27,29 +27,33 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.axondragonscale.logviewer.ui.style.LocalLogStyle
+import com.axondragonscale.logviewer.source.LogRule
+import com.axondragonscale.logviewer.ui.style.LogStyle
 import com.axondragonscale.logviewer.ui.style.hairlineColor
 
 /** Created by Ronak Harkhani on 11/22/26 */
 
-/** One applied tag filter; an exclusion reads "-tag" on the warning surface. */
+/** One applied rule; the chip removes it. */
 @Composable
-internal fun LogTagChip(label: String, exclude: Boolean, onRemove: () -> Unit) {
-    val style = LocalLogStyle.current
-    val content = if (exclude) style.warn else MaterialTheme.colorScheme.onSurface
+internal fun RuleChip(
+    rule: LogRule,
+    onRemove: () -> Unit,
+) {
+    val exclude = !rule.include
+    val content = if (exclude) LogStyle.warn else MaterialTheme.colorScheme.onSurface
     Row(
         modifier = Modifier
             .height(32.dp)
             .clip(RoundedCornerShape(999.dp))
-            .background(if (exclude) style.warnSurface else MaterialTheme.colorScheme.surfaceContainerHigh)
+            .background(if (exclude) LogStyle.warnSurface else MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(role = Role.Button, onClickLabel = "Remove filter", onClick = onRemove)
             .padding(horizontal = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = if (exclude) "-$label" else label,
-            style = style.mono,
+            text = if (exclude) "-${rule.chipLabel}" else rule.chipLabel,
+            style = LogStyle.mono,
             color = content,
         )
         Icon(
@@ -92,7 +96,6 @@ internal fun IncludeExcludeButtons(
     onInclude: () -> Unit,
     onExclude: () -> Unit,
 ) {
-    val style = LocalLogStyle.current
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         RuleButton(
             label = "Include",
@@ -103,7 +106,7 @@ internal fun IncludeExcludeButtons(
         RuleButton(
             label = "Exclude",
             icon = Icons.Filled.Remove,
-            tint = style.warn,
+            tint = LogStyle.warn,
             onClick = onExclude,
         )
     }
@@ -134,7 +137,7 @@ private fun RuleButton(
         )
         Text(
             text = label,
-            style = LocalLogStyle.current.action.copy(fontSize = 12.sp),
+            style = LogStyle.action.copy(fontSize = 12.sp),
             color = tint,
         )
     }

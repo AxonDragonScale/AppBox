@@ -48,8 +48,9 @@ fun LogViewer(
     onCopy: ((String) -> Unit)? = null,
 ) {
     val viewModel: LogViewModel = viewModel(
-        // One ViewModel per source type, so the Logs and Logcat dialogs never share one.
-        key = "log-viewer:${source::class.simpleName}",
+        // Keyed by the source's own key, so two sources never share a viewer. A host whose source
+        // dies with the screen scopes the store to the screen too (`LogcatScreen` does).
+        key = "log-viewer:${source.key}",
         factory = LogViewModel.factory(source),
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -58,10 +59,10 @@ fun LogViewer(
     val scope = rememberCoroutineScope()
 
     var shown by remember { mutableStateOf(emptyList<LogRecord>()) }
+    var lastFeed by remember { mutableStateOf(emptyList<LogRecord>()) }
     var newCount by remember { mutableIntStateOf(0) }
     var paused by remember { mutableStateOf(false) }
     var pendingCount by remember { mutableIntStateOf(0) }
-    var pending by remember { mutableStateOf(emptyList<LogRecord>()) }
     var wrap by remember { mutableStateOf(false) }
     val pausedNow by rememberUpdatedState(paused)
 
@@ -70,56 +71,38 @@ fun LogViewer(
     DisposableEffect(viewModel) { onDispose { viewModel.stop() } }
 
     // A filter change is a new view: follow the newest again.
-    LaunchedEffect(
-        state.levels,
-        state.text,
-        state.tags,
-        state.excludedTags,
-        state.packages,
-        state.excludedPackages,
-    ) {
+    LaunchedEffect(state.query) {
         paused = false
         pendingCount = 0
-        pending = emptyList()
     }
 
     fun apply(incoming: List<LogRecord>) {
-        val atTop = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        // Reverse layout: index 0 is the newest row, so this means the user is following the tail.
+        val atNewest = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
         val offset = listState.firstVisibleItemScrollOffset
         val anchorKey = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key
         val previous = shown
-
-        val sameList = incoming.size == previous.size &&
-            incoming.firstOrNull()?.id == previous.firstOrNull()?.id &&
-            incoming.lastOrNull()?.id == previous.lastOrNull()?.id
-        val prepended = previous.isNotEmpty() &&
-            incoming.size > previous.size &&
-            incoming.lastOrNull()?.id == previous.lastOrNull()?.id
-        val appended = previous.isNotEmpty() &&
-            incoming.size > previous.size &&
-            incoming.firstOrNull()?.id == previous.firstOrNull()?.id
-
         shown = incoming
 
+        val headMovedTo = newRowsAbove(previous, incoming)
+
         when {
-            sameList -> Unit
-
-            prepended && atTop && !listState.isScrollInProgress -> {
-                listState.requestScrollToItem(0)
+            headMovedTo < 0 -> {
                 newCount = 0
+                listState.requestScrollToItem(0)
             }
 
-            prepended -> {
-                newCount += (incoming.size - previous.size).coerceAtLeast(0)
-                val index = anchorKey?.let { key -> incoming.indexOfFirst { it.id.value == key } } ?: -1
-                if (index >= 0) listState.requestScrollToItem(index, offset)
-            }
+            headMovedTo == 0 -> if (atNewest) newCount = 0
 
-            appended -> Unit
+            atNewest && !listState.isScrollInProgress -> {
+                newCount = 0
+                listState.requestScrollToItem(0)
+            }
 
             else -> {
-                newCount = 0
-                listState.requestScrollToItem(0)
+                newCount += headMovedTo
+                val index = anchorKey?.let { key -> incoming.indexOfFirst { it.id.value == key } } ?: -1
+                if (index >= 0) listState.requestScrollToItem(index, offset)
             }
         }
     }
@@ -129,11 +112,15 @@ fun LogViewer(
     LaunchedEffect(viewModel) {
         viewModel.entries.collect { incoming ->
             if (pausedNow) {
-                if (incoming.size > shown.size) pendingCount += incoming.size - shown.size
-                pending = incoming
+                // Each delivery is counted against the previous one, so a bounded source that drops
+                // its tail still counts; -1 means the whole list turned over (a clear, or more rows
+                // than the buffer holds between two flushes).
+                val arrivals = if (lastFeed.isEmpty()) incoming.size else newRowsAbove(lastFeed, incoming)
+                pendingCount = if (arrivals >= 0) pendingCount + arrivals else incoming.size
             } else {
                 apply(incoming)
             }
+            lastFeed = incoming
         }
     }
 
@@ -146,10 +133,10 @@ fun LogViewer(
         }
     }
 
-    val resume = {
+    fun resume() {
         paused = false
-        if (pending.isNotEmpty()) apply(pending)
-        pending = emptyList()
+        // The last delivery, not a separate buffer: an empty one (a clear) must still reach the list.
+        apply(lastFeed)
         pendingCount = 0
     }
 
@@ -165,7 +152,6 @@ fun LogViewer(
         wrap = wrap,
         snackbarHostState = snackbarHostState,
         onEvent = viewModel::onEvent,
-        onLoadOlder = { viewModel.onEvent(LogUiEvent.LoadOlder) },
         onTogglePause = {
             if (paused) resume() else paused = true
         },
@@ -179,4 +165,14 @@ fun LogViewer(
         onShare = onShare,
         onCopy = onCopy,
     )
+}
+
+/**
+ * How many records arrived above the previous newest row; -1 when the two lists share no head, which
+ * means the query produced something else entirely. Size and the tail are unreliable — a bounded
+ * source drops its oldest row on every arrival once it is full.
+ */
+private fun newRowsAbove(previous: List<LogRecord>, incoming: List<LogRecord>): Int {
+    val previousHead = previous.firstOrNull()?.id ?: return -1
+    return incoming.indexOfFirst { it.id == previousHead }
 }

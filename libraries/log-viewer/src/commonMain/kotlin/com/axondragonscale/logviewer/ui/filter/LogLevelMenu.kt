@@ -35,7 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.axondragonscale.logviewer.model.LogLevel
-import com.axondragonscale.logviewer.ui.style.LocalLogStyle
+import com.axondragonscale.logviewer.ui.style.LogStyle
 import com.axondragonscale.logviewer.ui.style.colors
 import com.axondragonscale.logviewer.ui.style.hairlineColor
 
@@ -49,7 +49,6 @@ internal fun LogLevelMenu(
     onAllLevels: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val style = LocalLogStyle.current
     val label = if (levels.size == LogLevel.entries.size) "All levels" else "${levels.size} levels"
 
     Box {
@@ -65,7 +64,7 @@ internal fun LogLevelMenu(
         ) {
             Text(
                 text = label,
-                style = style.action.copy(fontSize = 12.sp),
+                style = LogStyle.action.copy(fontSize = 12.sp),
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Icon(
@@ -109,7 +108,7 @@ internal fun LogLevelMenu(
                     ) {
                         Text(
                             text = level.letter.toString(),
-                            style = style.mono.copy(fontWeight = FontWeight.SemiBold),
+                            style = LogStyle.mono.copy(fontWeight = FontWeight.SemiBold),
                             color = level.colors().glyph,
                         )
                         Text(
@@ -148,7 +147,7 @@ internal fun LogLevelMenu(
                 ) {
                     Text(
                         text = "All levels",
-                        style = style.action.copy(fontSize = 12.sp),
+                        style = LogStyle.action.copy(fontSize = 12.sp),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }

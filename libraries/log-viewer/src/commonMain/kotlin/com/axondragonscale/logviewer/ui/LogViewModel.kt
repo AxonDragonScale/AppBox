@@ -6,8 +6,12 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.axondragonscale.logviewer.model.LogLevel
 import com.axondragonscale.logviewer.model.LogRecord
+import com.axondragonscale.logviewer.model.toLogLine
 import com.axondragonscale.logviewer.source.LogCapabilities
+import com.axondragonscale.logviewer.source.LogFacet
+import com.axondragonscale.logviewer.source.LogFacets
 import com.axondragonscale.logviewer.source.LogQuery
+import com.axondragonscale.logviewer.source.LogRule
 import com.axondragonscale.logviewer.source.LogSource
 import com.axondragonscale.logviewer.source.LogStream
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -28,35 +33,18 @@ private const val TEXT_DEBOUNCE_MS = 300L
 
 internal data class LogUiState(
     val capabilities: LogCapabilities,
-    val levels: Set<LogLevel> = LogLevel.entries.toSet(),
-    val text: String = "",
-    val tags: Set<String> = emptySet(),
-    val excludedTags: Set<String> = emptySet(),
-    val packages: Set<String> = emptySet(),
-    val excludedPackages: Set<String> = emptySet(),
-    val availableTags: List<String> = emptyList(),
+    val query: LogQuery = LogQuery(),
+    val facets: LogFacets = LogFacets(),
     val hasOlder: Boolean = false,
     val hasLoaded: Boolean = false,
     val notice: String? = null,
-) {
-    val isFiltered: Boolean
-        get() = levels.size < LogLevel.entries.size ||
-            text.isNotBlank() ||
-            tags.isNotEmpty() ||
-            excludedTags.isNotEmpty() ||
-            packages.isNotEmpty() ||
-            excludedPackages.isNotEmpty()
-}
+)
 
 internal sealed interface LogUiEvent {
     data class SetText(val text: String) : LogUiEvent
     data class SetLevel(val level: LogLevel, val enabled: Boolean) : LogUiEvent
-    data class IncludeTag(val tag: String) : LogUiEvent
-    data class ExcludeTag(val tag: String) : LogUiEvent
-    data class RemoveTag(val tag: String) : LogUiEvent
-    data class IncludePackage(val packageName: String) : LogUiEvent
-    data class ExcludePackage(val packageName: String) : LogUiEvent
-    data class RemovePackage(val packageName: String) : LogUiEvent
+    data class AddRule(val facet: LogFacet, val value: String, val include: Boolean) : LogUiEvent
+    data class RemoveRule(val facet: LogFacet, val value: String) : LogUiEvent
     data object SelectAllLevels : LogUiEvent
     data object LoadOlder : LogUiEvent
     data object Clear : LogUiEvent
@@ -68,7 +56,11 @@ internal sealed interface LogUiEffect {
     data class Notify(val message: String) : LogUiEffect
 }
 
+private data class StreamStatus(val loaded: Boolean, val older: Boolean, val notice: String?)
+
 internal class LogViewModel(private val source: LogSource) : ViewModel() {
+
+    private val capabilities = source.capabilities
 
     /**
      * Kept apart from [uiState] on purpose: the screen reads its scroll position before this list
@@ -77,7 +69,7 @@ internal class LogViewModel(private val source: LogSource) : ViewModel() {
     private val _entries = MutableStateFlow<List<LogRecord>>(emptyList())
     val entries: StateFlow<List<LogRecord>> = _entries.asStateFlow()
 
-    private val _uiState = MutableStateFlow(LogUiState(capabilities = source.capabilities))
+    private val _uiState = MutableStateFlow(LogUiState(capabilities = capabilities))
     val uiState: StateFlow<LogUiState> = _uiState.asStateFlow()
 
     private val effectChannel = Channel<LogUiEffect>()
@@ -86,20 +78,15 @@ internal class LogViewModel(private val source: LogSource) : ViewModel() {
     private var stream: LogStream? = null
     private var streamJob: Job? = null
     private var textJob: Job? = null
-    private var loadingOlder = false
     private var started = false
-
-    init {
-        viewModelScope.launch {
-            val tags = runCatching { source.tags() }.getOrDefault(emptyList())
-            _uiState.update { it.copy(availableTags = tags) }
-        }
-    }
 
     /** Called when the viewer enters composition; a dialog that closes releases the source. */
     fun start() {
         if (started) return
         started = true
+        viewModelScope.launch {
+            _uiState.update { it.copy(facets = source.facets()) }
+        }
         restart()
     }
 
@@ -111,12 +98,12 @@ internal class LogViewModel(private val source: LogSource) : ViewModel() {
         stream?.close()
         stream = null
         _entries.value = emptyList()
-        _uiState.update { it.copy(hasLoaded = false, hasOlder = false) }
+        _uiState.update { it.copy(hasLoaded = false, hasOlder = false, notice = null) }
     }
 
     fun onEvent(event: LogUiEvent): Any = when (event) {
         is LogUiEvent.SetText -> {
-            _uiState.update { it.copy(text = event.text) }
+            _uiState.update { it.copy(query = it.query.copy(text = event.text)) }
             textJob?.cancel()
             textJob = viewModelScope.launch {
                 delay(TEXT_DEBOUNCE_MS)
@@ -126,58 +113,30 @@ internal class LogViewModel(private val source: LogSource) : ViewModel() {
 
         is LogUiEvent.SetLevel -> {
             _uiState.update {
-                val levels = if (event.enabled) it.levels + event.level else it.levels - event.level
-                it.copy(levels = levels)
+                val levels = if (event.enabled) it.query.levels + event.level else it.query.levels - event.level
+                it.copy(query = it.query.copy(levels = levels))
             }
             restart()
         }
 
-        is LogUiEvent.IncludeTag -> {
+        is LogUiEvent.AddRule -> {
             _uiState.update {
-                it.copy(tags = it.tags + event.tag, excludedTags = it.excludedTags - event.tag)
+                it.copy(query = it.query.withRule(LogRule(event.facet, event.value, event.include)))
             }
             restart()
         }
 
-        is LogUiEvent.ExcludeTag -> {
-            _uiState.update {
-                it.copy(excludedTags = it.excludedTags + event.tag, tags = it.tags - event.tag)
-            }
-            restart()
-        }
-
-        is LogUiEvent.RemoveTag -> {
-            _uiState.update { it.copy(tags = it.tags - event.tag, excludedTags = it.excludedTags - event.tag) }
-            restart()
-        }
-
-        is LogUiEvent.IncludePackage -> {
-            _uiState.update {
-                it.copy(packages = it.packages + event.packageName, excludedPackages = it.excludedPackages - event.packageName)
-            }
-            restart()
-        }
-
-        is LogUiEvent.ExcludePackage -> {
-            _uiState.update {
-                it.copy(excludedPackages = it.excludedPackages + event.packageName, packages = it.packages - event.packageName)
-            }
-            restart()
-        }
-
-        is LogUiEvent.RemovePackage -> {
-            _uiState.update {
-                it.copy(packages = it.packages - event.packageName, excludedPackages = it.excludedPackages - event.packageName)
-            }
+        is LogUiEvent.RemoveRule -> {
+            _uiState.update { it.copy(query = it.query.withoutRule(event.facet, event.value)) }
             restart()
         }
 
         LogUiEvent.SelectAllLevels -> {
-            _uiState.update { it.copy(levels = LogLevel.entries.toSet()) }
+            _uiState.update { it.copy(query = it.query.copy(levels = LogLevel.entries.toSet())) }
             restart()
         }
 
-        LogUiEvent.LoadOlder -> loadOlder()
+        LogUiEvent.LoadOlder -> viewModelScope.launch { stream?.loadOlder() }
         LogUiEvent.Clear -> clear()
         LogUiEvent.Share -> share()
     }
@@ -189,46 +148,35 @@ internal class LogViewModel(private val source: LogSource) : ViewModel() {
         stream?.close()
 
         _entries.value = emptyList()
-        _uiState.update { it.copy(hasOlder = false, hasLoaded = false) }
+        _uiState.update { it.copy(hasOlder = false, hasLoaded = false, notice = null) }
 
-        val query = LogQuery(
-            levels = _uiState.value.levels,
-            text = _uiState.value.text,
-            tags = _uiState.value.tags,
-            excludedTags = _uiState.value.excludedTags,
-            packages = _uiState.value.packages,
-            excludedPackages = _uiState.value.excludedPackages,
-        )
-        val next = source.open(query)
+        val next = source.open(_uiState.value.query)
         stream = next
         streamJob = viewModelScope.launch {
             launch {
                 next.entries.collect { rows -> _entries.value = rows }
             }
             launch {
-                next.isLoaded.collect { loaded -> _uiState.update { it.copy(hasLoaded = loaded) } }
-            }
-            launch {
-                next.hasOlder.collect { older -> _uiState.update { it.copy(hasOlder = older) } }
-            }
-            next.notice?.let { notices ->
-                launch {
-                    notices.collect { notice -> _uiState.update { it.copy(notice = notice) } }
-                }
+                combine(
+                    next.isLoaded,
+                    next.hasOlder,
+                    next.notice,
+                ) { loaded, older, notice -> StreamStatus(loaded, older && capabilities.history, notice) }
+                    .collect { status ->
+                        _uiState.update {
+                            it.copy(
+                                hasLoaded = status.loaded,
+                                hasOlder = status.older,
+                                notice = status.notice,
+                            )
+                        }
+                    }
             }
         }
     }
 
-    private fun loadOlder() = viewModelScope.launch {
-        val current = stream ?: return@launch
-        if (loadingOlder || !_uiState.value.hasOlder) return@launch
-        loadingOlder = true
-        runCatching { current.loadOlder() }
-        loadingOlder = false
-    }
-
     private fun clear() = viewModelScope.launch {
-        runCatching { stream?.clear() }
+        stream?.clear()
         effectChannel.send(LogUiEffect.Notify("Logs cleared"))
     }
 

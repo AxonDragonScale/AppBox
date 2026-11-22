@@ -1,10 +1,10 @@
 package com.axondragonscale.commons.devtools
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +15,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PowerSettingsNew
-import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,188 +27,91 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.axondragonscale.commons.devtools.builtin.DevToolsBuiltInContent
+import com.axondragonscale.commons.devtools.host.DevToolsHostWindow
+import com.axondragonscale.commons.devtools.host.devToolsHosts
+import com.axondragonscale.commons.devtools.model.DevTool
+import com.axondragonscale.commons.devtools.model.DevToolsBuilder
+import com.axondragonscale.commons.devtools.model.buildDevTools
+import com.axondragonscale.commons.devtools.ui.DevToolItem
+import com.axondragonscale.commons.devtools.ui.DevToolsSurface
 
 /**
- * Platform-specific built-in dev tool content (Kill App, Clear Data, App Settings, Permissions).
- * Each platform provides its own actual implementation.
- */
-@Composable
-expect fun DevToolsBuiltInContent()
-
-/**
- * A reusable developer tools screen that provides common debugging utilities
- * and supports custom tools provided by the app.
- *
- * Built-in platform tools are rendered via [DevToolsBuiltInContent].
- *
- * @param modifier Modifier for the screen
- * @param title Title displayed at the top of the screen
- * @param subtitle Optional subtitle displayed below the title
- * @param customTools List of custom DevTools to display after built-in tools
- * @param extraContent Optional composable content to display at the end
+ * The developer tools screen: the platform's built-in tools, the viewers it can host, then [tools].
  */
 @Composable
 fun DevToolsScreen(
     modifier: Modifier = Modifier,
     title: String = "Developer Tools",
     subtitle: String? = "Debug utilities and settings",
-    customTools: List<DevTool> = emptyList(),
-    extraContent: @Composable (() -> Unit)? = null,
+    tools: DevToolsBuilder.() -> Unit = {},
 ) {
-    DevToolsTheme {
-        DevToolsSystemBars()
-        DevToolsContent(
-            modifier = modifier,
-            title = title,
-            subtitle = subtitle,
-            customTools = customTools,
-            extraContent = extraContent,
-        )
-    }
-}
+    val hosts = devToolsHosts.filter { it.available() }
+    var openHost by rememberSaveable { mutableStateOf<String?>(null) }
 
-@Composable
-private fun DevToolsContent(
-    modifier: Modifier = Modifier,
-    title: String,
-    subtitle: String?,
-    customTools: List<DevTool>,
-    extraContent: @Composable (() -> Unit)?,
-) {
-    val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
-    var showLogcat by rememberSaveable { mutableStateOf(false) }
-    var showLogs by rememberSaveable { mutableStateOf(false) }
-    var showStorage by rememberSaveable { mutableStateOf(false) }
+    DevToolsSurface {
+        Box(modifier = modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 20.dp,
+                    end = 20.dp,
+                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                    bottom = 24.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item {
+                    DevToolsHeader(title = title, subtitle = subtitle)
+                }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = statusBarPadding.calculateTopPadding() + 16.dp,
-                bottom = 24.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // Header
-            item {
-                DevToolsHeader(
-                    title = title,
-                    subtitle = subtitle,
-                )
-            }
-
-            // App Actions section header
-            item {
-                DevToolItem(
-                    tool = DevTool.Section(
-                        title = "App Actions",
-                        icon = Icons.Rounded.PowerSettingsNew,
-                    )
-                )
-            }
-
-            // Platform-specific built-in tools
-            item {
-                DevToolsBuiltInContent()
-            }
-
-            // Diagnostics, where the platform has any viewer
-            if (isDevLogsAvailable || isLogcatAvailable || isStorageViewerAvailable) {
                 item {
                     DevToolItem(
                         tool = DevTool.Section(
-                            title = "Diagnostics",
-                            icon = Icons.Rounded.Terminal,
+                            title = "App Actions",
+                            icon = Icons.Rounded.PowerSettingsNew,
                         )
                     )
                 }
-            }
 
-            // Persisted logs survive logcat rolling over and the app restarting
-            if (isDevLogsAvailable) {
                 item {
-                    DevToolItem(
-                        tool = DevTool.Action(
-                            title = "Open Logs",
-                            subtitle = "Read the logs kept on this device",
-                            icon = Icons.Rounded.History,
-                            onClick = { showLogs = true },
-                        )
-                    )
+                    DevToolsBuiltInContent()
                 }
-            }
 
-            // Log viewer, where the platform has one
-            if (isLogcatAvailable) {
-                item {
-                    DevToolItem(
-                        tool = DevTool.Action(
-                            title = "Open Logcat",
-                            subtitle = "Read this app's log records",
-                            icon = Icons.Rounded.Terminal,
-                            onClick = { showLogcat = true },
+                if (hosts.isNotEmpty()) {
+                    item {
+                        DevToolItem(
+                            tool = DevTool.Section(
+                                title = "Diagnostics",
+                                icon = Icons.Rounded.Terminal,
+                            )
                         )
-                    )
-                }
-            }
-
-            // Storage viewer, where the platform has one
-            if (isStorageViewerAvailable) {
-                item {
-                    DevToolItem(
-                        tool = DevTool.Action(
-                            title = "Open Storage",
-                            subtitle = "Inspect databases, preferences and files",
-                            icon = Icons.Rounded.Storage,
-                            onClick = { showStorage = true },
+                    }
+                    items(hosts, key = { it.id }) { host ->
+                        DevToolItem(
+                            tool = DevTool.Action(
+                                title = host.title,
+                                subtitle = host.subtitle,
+                                icon = host.icon,
+                                onClick = { openHost = host.id },
+                            )
                         )
-                    )
+                    }
                 }
-            }
 
-            // Custom Tools
-            if (customTools.isNotEmpty()) {
-                items(customTools) { tool ->
+                items(buildDevTools(tools)) { tool ->
                     DevToolItem(tool = tool)
                 }
             }
 
-            // Extra Content
-            if (extraContent != null) {
-                item {
-                    Column {
-                        extraContent()
-                    }
-                }
-            }
+            DevToolsHostWindow(
+                host = hosts.firstOrNull { it.id == openHost },
+                onClose = { openHost = null },
+            )
         }
-
-        DevToolsLogcatHost(
-            visible = showLogcat,
-            onDismiss = { showLogcat = false },
-        )
-
-        DevToolsDevLogsHost(
-            visible = showLogs,
-            onDismiss = { showLogs = false },
-        )
-
-        DevToolsStorageHost(
-            visible = showStorage,
-            onDismiss = { showStorage = false },
-        )
     }
 }
 
-/**
- * Header component for the DevTools screen.
- */
 @Composable
 private fun DevToolsHeader(
     title: String,
@@ -228,9 +129,7 @@ private fun DevToolsHeader(
             color = MaterialTheme.colorScheme.onSurface,
         )
         if (subtitle != null) {
-            androidx.compose.foundation.layout.Spacer(
-                modifier = Modifier.height(4.dp)
-            )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
@@ -238,35 +137,4 @@ private fun DevToolsHeader(
             )
         }
     }
-}
-
-/**
- * Convenience function to create a DevToolsScreen with tools defined using the builder DSL.
- *
- * Usage:
- * ```
- * DevToolsScreen(
- *     customToolsBuilder = {
- *         section("Database", Icons.Rounded.Storage)
- *         action("Clear Cache") { clearCache() }
- *         toggle("Debug Mode", isDebug) { setDebug(it) }
- *     }
- * )
- * ```
- */
-@Composable
-fun DevToolsScreen(
-    modifier: Modifier = Modifier,
-    title: String = "Developer Tools",
-    subtitle: String? = "Debug utilities and settings",
-    customToolsBuilder: DevToolsBuilder.() -> Unit,
-    extraContent: @Composable (() -> Unit)? = null,
-) {
-    DevToolsScreen(
-        modifier = modifier,
-        title = title,
-        subtitle = subtitle,
-        customTools = buildDevTools(customToolsBuilder),
-        extraContent = extraContent,
-    )
 }

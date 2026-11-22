@@ -10,15 +10,28 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * A source over a fixed list, for previews and hosts that already hold their records. It filters in
  * memory, pages from the list, and has nothing to clear.
+ *
+ * Capabilities default to what the records themselves carry, so a source built from records with
+ * package names does not also have to declare them.
  */
 class InMemoryLogSource(
     records: List<LogRecord>,
-    override val capabilities: LogCapabilities = LogCapabilities(),
+    override val capabilities: LogCapabilities = LogCapabilities(
+        history = true,
+        pid = records.any { it.meta.pid != null },
+        tid = records.any { it.meta.tid != null },
+        packageName = records.any { it.meta.packageName != null },
+        sessions = records.any { it.meta.session != null },
+    ),
+    /** Give each of two such sources a distinct key, or their viewers share one ViewModel. */
+    override val key: String = "in-memory",
 ) : LogSource {
 
-    private val all = records.sortedByDescending { it.id.value }
+    private val all = records.sortedByDescending { it.time }
 
-    override fun open(query: LogQuery): LogStream = Stream(all.filter { it.matches(query) })
+    override suspend fun facets(): LogFacets = LogFacets().withRecords(all)
+
+    override fun open(query: LogQuery): LogStream = Stream(all.filter(query::matches))
 
     private class Stream(private val filtered: List<LogRecord>) : LogStream {
 
@@ -51,15 +64,4 @@ class InMemoryLogSource(
     private companion object {
         const val PAGE = 200
     }
-}
-
-internal fun LogRecord.matches(query: LogQuery): Boolean {
-    val packageName = meta.packageName
-    return level in query.levels &&
-        tag !in query.excludedTags &&
-        packageName !in query.excludedPackages &&
-        (query.text.isBlank() || tag.contains(query.text, ignoreCase = true) ||
-            message.contains(query.text, ignoreCase = true)) &&
-        (query.tags.isEmpty() || tag in query.tags) &&
-        (query.packages.isEmpty() || packageName in query.packages)
 }

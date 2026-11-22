@@ -19,8 +19,7 @@ fun JestDevTools(
         modifier = modifier,
         title = "Jest Dev Tools",
         subtitle = "Debug utilities for Jest",
-        customToolsBuilder = {
-            // App Info Section
+        tools = {
             section("App Info", Icons.Rounded.Storage)
             info("Version", "${AppInfo.versionName} (${AppInfo.versionCode})")
             info("Package", AppInfo.packageName)

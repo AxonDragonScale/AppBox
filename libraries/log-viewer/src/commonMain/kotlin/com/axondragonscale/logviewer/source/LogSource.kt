@@ -1,7 +1,9 @@
 package com.axondragonscale.logviewer.source
 
 import com.axondragonscale.logviewer.model.LogRecord
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 
 /** Created by Ronak Harkhani on 11/22/26 */
 
@@ -16,8 +18,14 @@ interface LogSource {
 
     val capabilities: LogCapabilities
 
-    /** Tags this source can filter by; empty when it cannot enumerate them. */
-    suspend fun tags(): List<String> = emptyList()
+    /**
+     * Identifies this source's stream among the ones a screen opens. Two sources of the same class
+     * that must not share a viewer (two InMemoryLogSources, say) need their own key.
+     */
+    val key: String get() = this::class.simpleName.orEmpty()
+
+    /** Values this source can enumerate for its filter pickers; empty when it cannot. */
+    suspend fun facets(): LogFacets = LogFacets()
 
     fun open(query: LogQuery): LogStream
 }
@@ -28,7 +36,10 @@ interface LogSource {
  */
 interface LogStream : AutoCloseable {
 
-    /** Newest first. Prepends carry live records; the tail grows with older pages. */
+    /**
+     * Newest first. Prepends carry live records; the tail grows with older pages. A bounded source
+     * may drop the oldest row, so the tail is not stable — ids are.
+     */
     val entries: StateFlow<List<LogRecord>>
 
     /** False until the first page has been read, so the screen can say "reading", not "empty". */
@@ -37,7 +48,7 @@ interface LogStream : AutoCloseable {
     val hasOlder: StateFlow<Boolean>
 
     /** A one-line explanation when the source cannot deliver, e.g. denied log access. */
-    val notice: StateFlow<String?>? get() = null
+    val notice: Flow<String?> get() = flowOf(null)
 
     /** Appends the page older than the current tail. A no-op when [hasOlder] is false. */
     suspend fun loadOlder()

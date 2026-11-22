@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.FilterAltOff
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,148 +33,123 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.axondragonscale.logviewer.model.LogRecord
+import com.axondragonscale.logviewer.model.logTime
 import com.axondragonscale.logviewer.source.LogCapabilities
-import com.axondragonscale.logviewer.ui.logFullTime
-import com.axondragonscale.logviewer.ui.style.LocalLogStyle
+import com.axondragonscale.logviewer.source.LogFacet
+import com.axondragonscale.logviewer.ui.LogUiEvent
+import com.axondragonscale.logviewer.ui.list.LogTrace
+import com.axondragonscale.logviewer.ui.style.LogStyle
 
 /** Created by Ronak Harkhani on 11/22/26 */
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun LogEntrySheet(
     record: LogRecord,
     capabilities: LogCapabilities,
+    onEvent: (LogUiEvent) -> Unit,
     onDismiss: () -> Unit,
     onCopy: ((String) -> Unit)?,
     onShare: ((String) -> Unit)?,
-    onIncludeTag: (String) -> Unit,
-    onExcludeTag: (String) -> Unit,
 ) {
+    val trace = record.traceLines
+    val messageStyle = LogStyle.mono.copy(lineHeight = 17.sp)
+
     LogBottomSheet(onDismiss = onDismiss, spacing = 10.dp) {
-        LogEntrySheetContent(
-            record = record,
-            capabilities = capabilities,
-            onClose = onDismiss,
-            onCopy = onCopy,
-            onShare = onShare,
-            onIncludeTag = onIncludeTag,
-            onExcludeTag = onExcludeTag,
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun LogEntrySheetContent(
-    record: LogRecord,
-    capabilities: LogCapabilities,
-    onClose: () -> Unit,
-    onCopy: ((String) -> Unit)?,
-    onShare: ((String) -> Unit)?,
-    onIncludeTag: (String) -> Unit,
-    onExcludeTag: (String) -> Unit,
-) {
-    val style = LocalLogStyle.current
-    val trace = record.message.lineSequence().drop(1).toList()
-    val messageStyle = style.mono.copy(lineHeight = 17.sp)
-
-    SheetTitleRow(onClose) {
-        LevelBadge(level = record.level)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = record.tag,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = record.time.logFullTime(),
-                style = style.mono,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = record.firstLine,
-                style = messageStyle,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            trace.forEachIndexed { index, line ->
+        SheetTitleRow(onDismiss) {
+            LevelBadge(level = record.level)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
                 Text(
-                    text = line,
-                    style = messageStyle,
-                    color = if (index == 0) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    text = record.tag,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = record.time.logTime(),
+                    style = LogStyle.mono,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-    }
 
-    MetaPills(record = record, capabilities = capabilities)
-
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        if (onCopy != null) {
-            SheetAction(
-                label = "Copy",
-                icon = Icons.Filled.ContentCopy,
-                tint = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                onClick = { onCopy(record.message) },
-            )
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = record.firstLine,
+                    style = messageStyle,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                LogTrace(
+                    lines = trace,
+                    style = messageStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    firstLineColor = MaterialTheme.colorScheme.error,
+                )
+            }
         }
-        SheetAction(
-            label = "Include",
-            icon = Icons.Filled.FilterAlt,
-            tint = MaterialTheme.colorScheme.onSurface,
-            onClick = {
-                onIncludeTag(record.tag)
-                onClose()
-            },
-        )
-        SheetAction(
-            label = "Exclude",
-            icon = Icons.Filled.FilterAltOff,
-            tint = style.warn,
-            onClick = {
-                onExcludeTag(record.tag)
-                onClose()
-            },
-        )
-        if (onShare != null) {
+
+        MetaPills(record = record, capabilities = capabilities)
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (onCopy != null) {
+                SheetAction(
+                    label = "Copy",
+                    icon = Icons.Filled.ContentCopy,
+                    tint = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    onClick = { onCopy(record.message) },
+                )
+            }
             SheetAction(
-                label = "Share",
-                icon = Icons.Filled.Share,
+                label = "Include",
+                icon = Icons.Filled.FilterAlt,
                 tint = MaterialTheme.colorScheme.onSurface,
-                onClick = { onShare(record.message) },
+                onClick = {
+                    onEvent(LogUiEvent.AddRule(LogFacet.TAG, record.tag, include = true))
+                    onDismiss()
+                },
             )
+            SheetAction(
+                label = "Exclude",
+                icon = Icons.Filled.FilterAltOff,
+                tint = LogStyle.warn,
+                onClick = {
+                    onEvent(LogUiEvent.AddRule(LogFacet.TAG, record.tag, include = false))
+                    onDismiss()
+                },
+            )
+            if (onShare != null) {
+                SheetAction(
+                    label = "Share",
+                    icon = Icons.Filled.Share,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    onClick = { onShare(record.message) },
+                )
+            }
         }
-    }
 
-    Text(
-        text = "Include adds this tag to the filters. Exclude drops every line with it.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+        Text(
+            text = "Include adds this tag to the filters. Exclude drops every line with it.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -204,7 +179,7 @@ private fun MetaPills(record: LogRecord, capabilities: LogCapabilities) {
             ) {
                 Text(
                     text = pill,
-                    style = LocalLogStyle.current.mono,
+                    style = LogStyle.mono,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -239,7 +214,7 @@ private fun SheetAction(
         )
         Text(
             text = label,
-            style = LocalLogStyle.current.action.copy(fontSize = 12.sp, fontWeight = fontWeight),
+            style = LogStyle.action.copy(fontSize = 12.sp, fontWeight = fontWeight),
             color = tint,
         )
     }

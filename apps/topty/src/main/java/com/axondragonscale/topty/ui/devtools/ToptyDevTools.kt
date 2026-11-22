@@ -56,8 +56,7 @@ private fun ToptyDevTools(
         modifier = modifier,
         title = "Topty Dev Tools",
         subtitle = "Debug utilities for Topty",
-        customToolsBuilder = {
-            // App Info Section
+        tools = {
             section("App Info", Icons.Rounded.Storage)
             info("Version", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             info("Package", BuildConfig.APPLICATION_ID)
@@ -69,14 +68,12 @@ private fun ToptyDevTools(
                 subtitle = "Show onboarding again on next launch",
                 destructive = true,
                 onClick = onResetOnboarding,
-                completionAlert = "Onboarding reset! Restart the app to see it."
             )
             action(
                 icon = Icons.Default.Add,
                 title = "Add Test Tokens",
                 subtitle = "Add 10 diverse tokens for testing",
                 onClick = onAddTestData,
-                completionAlert = "Test tokens added! Check your token list."
             )
             action(
                 icon = Icons.Default.Delete,
@@ -84,7 +81,6 @@ private fun ToptyDevTools(
                 subtitle = "Remove all tokens from the database",
                 destructive = true,
                 onClick = onDeleteAllTokens,
-                completionAlert = "All tokens deleted! Your token list is now empty."
             )
         }
     )

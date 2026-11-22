@@ -14,9 +14,12 @@ import com.axondragonscale.logviewer.model.LogLevel
 import com.axondragonscale.logviewer.model.LogMeta
 import com.axondragonscale.logviewer.model.LogRecord
 import com.axondragonscale.logviewer.source.LogCapabilities
+import com.axondragonscale.logviewer.source.LogFacet
+import com.axondragonscale.logviewer.source.LogFacets
+import com.axondragonscale.logviewer.source.LogQuery
+import com.axondragonscale.logviewer.source.LogRule
 import com.axondragonscale.logviewer.ui.sheets.LogFilterSheet
 import com.axondragonscale.logviewer.ui.sheets.RuleDraft
-import com.axondragonscale.logviewer.ui.sheets.RuleKind
 import com.axondragonscale.logviewer.ui.sheets.RuleSheet
 import kotlin.time.Instant
 
@@ -70,24 +73,27 @@ private val PreviewRecords = listOf(
 )
 
 @Composable
-private fun PreviewScreen(records: List<LogRecord>, dark: Boolean) {
+private fun PreviewScreen(
+    records: List<LogRecord> = PreviewRecords,
+    dark: Boolean = true,
+    paused: Boolean = false,
+    pendingCount: Int = 0,
+) {
     MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
         LogScreen(
             state = LogUiState(
                 capabilities = PreviewCapabilities,
                 hasLoaded = true,
-                availableTags = listOf("UpdateCoordinator", "WallpaperCycler", "AlbumSyncer"),
             ),
             entries = records,
             listState = rememberLazyListState(),
             title = "Logcat",
             caption = "all buffers",
-            paused = false,
-            pendingCount = 0,
+            paused = paused,
+            pendingCount = pendingCount,
             wrap = false,
             snackbarHostState = remember { SnackbarHostState() },
             onEvent = {},
-            onLoadOlder = {},
             onTogglePause = {},
             onToggleWrap = {},
             onJumpToNewest = {},
@@ -100,41 +106,19 @@ private fun PreviewScreen(records: List<LogRecord>, dark: Boolean) {
 
 @Preview(showBackground = true, uiMode = AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
-private fun LogScreenDarkPreview() = PreviewScreen(PreviewRecords, dark = true)
+private fun LogScreenDarkPreview() = PreviewScreen()
 
 @Preview(showBackground = true, uiMode = AndroidUiModes.UI_MODE_NIGHT_NO)
 @Composable
-private fun LogScreenLightPreview() = PreviewScreen(PreviewRecords, dark = false)
+private fun LogScreenLightPreview() = PreviewScreen(dark = false)
 
 @Preview(showBackground = true, uiMode = AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
-private fun LogScreenEmptyPreview() = PreviewScreen(emptyList(), dark = true)
+private fun LogScreenEmptyPreview() = PreviewScreen(records = emptyList())
 
 @Preview(showBackground = true, uiMode = AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
-private fun LogScreenPausedPreview() {
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        LogScreen(
-            state = LogUiState(capabilities = PreviewCapabilities, hasLoaded = true),
-            entries = PreviewRecords,
-            listState = rememberLazyListState(),
-            title = "Logcat",
-            caption = "all buffers",
-            paused = true,
-            pendingCount = 7,
-            wrap = false,
-            snackbarHostState = remember { SnackbarHostState() },
-            onEvent = {},
-            onLoadOlder = {},
-            onTogglePause = {},
-            onToggleWrap = {},
-            onJumpToNewest = {},
-            onBack = {},
-            onShare = {},
-            onCopy = {},
-        )
-    }
-}
+private fun LogScreenPausedPreview() = PreviewScreen(paused = true, pendingCount = 7)
 
 @Preview(showBackground = true, uiMode = AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
@@ -143,19 +127,20 @@ private fun LogFilterSheetPreview() {
         LogFilterSheet(
             state = LogUiState(
                 capabilities = PreviewCapabilities,
-                tags = setOf("WallpaperCycler"),
-                excludedTags = setOf("Choreographer"),
-                excludedPackages = setOf("com.example.app"),
+                query = LogQuery(
+                    rules = listOf(
+                        LogRule(LogFacet.TAG, "WallpaperCycler", include = true),
+                        LogRule(LogFacet.TAG, "Choreographer", include = false),
+                        LogRule(LogFacet.PACKAGE, "com.example.app", include = false),
+                    ),
+                ),
             ),
-            availableTags = listOf("AlbumSyncer", "UpdateCoordinator", "WallpaperCycler"),
-            availablePackages = listOf("com.example.app", "com.example.sync"),
+            facets = LogFacets(
+                tags = listOf("AlbumSyncer", "UpdateCoordinator", "WallpaperCycler"),
+                packages = listOf("com.example.app", "com.example.sync"),
+            ),
             lineCount = 128,
-            onIncludeTag = {},
-            onExcludeTag = {},
-            onRemoveTag = {},
-            onIncludePackage = {},
-            onExcludePackage = {},
-            onRemovePackage = {},
+            onEvent = {},
             onDismiss = {},
         )
     }
@@ -166,7 +151,7 @@ private fun LogFilterSheetPreview() {
 private fun RuleSheetPreview() {
     MaterialTheme(colorScheme = darkColorScheme()) {
         RuleSheet(
-            draft = RuleDraft(RuleKind.TAG, include = true),
+            draft = RuleDraft(LogFacet.TAG, include = true),
             suggestions = listOf(
                 "AlbumSyncer",
                 "Choreographer",

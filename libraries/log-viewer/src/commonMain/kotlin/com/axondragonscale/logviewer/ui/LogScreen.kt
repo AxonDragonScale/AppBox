@@ -48,7 +48,6 @@ internal fun LogScreen(
     wrap: Boolean,
     snackbarHostState: SnackbarHostState,
     onEvent: (LogUiEvent) -> Unit,
-    onLoadOlder: () -> Unit,
     onTogglePause: () -> Unit,
     onToggleWrap: (Boolean) -> Unit,
     onJumpToNewest: () -> Unit,
@@ -60,9 +59,9 @@ internal fun LogScreen(
     var filtersOpen by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
-            modifier = modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
@@ -72,13 +71,12 @@ internal fun LogScreen(
                     paused = paused,
                     pendingCount = pendingCount,
                     wrap = wrap,
-                    canShare = onShare != null,
+                    onShare = if (onShare == null) null else ({ onEvent(LogUiEvent.Share) }),
                     canClear = state.capabilities.clear,
                     onBack = onBack,
                     onTogglePause = onTogglePause,
                     onJumpToNewest = onJumpToNewest,
                     onToggleWrap = onToggleWrap,
-                    onShare = { onEvent(LogUiEvent.Share) },
                     onClear = { confirmClear = true },
                 )
             },
@@ -89,17 +87,8 @@ internal fun LogScreen(
                     .fillMaxSize(),
             ) {
                 LogFilterBar(
-                    query = state.text,
-                    levels = state.levels,
-                    tags = state.tags,
-                    excludedTags = state.excludedTags,
-                    packages = state.packages,
-                    excludedPackages = state.excludedPackages,
-                    onQueryChange = { onEvent(LogUiEvent.SetText(it)) },
-                    onToggleLevel = { level, enabled -> onEvent(LogUiEvent.SetLevel(level, enabled)) },
-                    onAllLevels = { onEvent(LogUiEvent.SelectAllLevels) },
-                    onRemoveTag = { onEvent(LogUiEvent.RemoveTag(it)) },
-                    onRemovePackage = { onEvent(LogUiEvent.RemovePackage(it)) },
+                    query = state.query,
+                    onEvent = onEvent,
                     onOpenFilters = { filtersOpen = true },
                 )
 
@@ -124,7 +113,7 @@ internal fun LogScreen(
                             modifier = Modifier.align(Alignment.Center),
                         )
 
-                        entries.isEmpty() && state.isFiltered -> LogEmptyState(
+                        entries.isEmpty() && state.query.isFiltered -> LogEmptyState(
                             title = "No entries match the filter",
                             body = "Loosen a level, a tag or the search text.",
                             modifier = Modifier.align(Alignment.Center),
@@ -146,7 +135,7 @@ internal fun LogScreen(
                             hasOlder = state.hasOlder,
                             wrap = wrap,
                             onSelect = { selected = it },
-                            onLoadOlder = onLoadOlder,
+                            onLoadOlder = { onEvent(LogUiEvent.LoadOlder) },
                         )
                     }
                 }
@@ -157,34 +146,23 @@ internal fun LogScreen(
             LogEntrySheet(
                 record = record,
                 capabilities = state.capabilities,
+                onEvent = onEvent,
                 onDismiss = { selected = null },
                 onCopy = onCopy,
                 onShare = onShare,
-                onIncludeTag = { onEvent(LogUiEvent.IncludeTag(it)) },
-                onExcludeTag = { onEvent(LogUiEvent.ExcludeTag(it)) },
             )
         }
 
         if (filtersOpen) {
             LogFilterSheet(
                 state = state,
-                availableTags = remember(entries, state.availableTags) {
-                    (state.availableTags + entries.map { it.tag }).distinct().sorted()
-                },
-                availablePackages = remember(entries) {
-                    entries.mapNotNull { it.meta.packageName }.distinct().sorted()
-                },
+                // A picker snapshot: re-deriving 5,000 tags on every live flush would cost the frame.
+                facets = remember { state.facets.withRecords(entries) },
                 lineCount = entries.size,
-                onIncludeTag = { onEvent(LogUiEvent.IncludeTag(it)) },
-                onExcludeTag = { onEvent(LogUiEvent.ExcludeTag(it)) },
-                onRemoveTag = { onEvent(LogUiEvent.RemoveTag(it)) },
-                onIncludePackage = { onEvent(LogUiEvent.IncludePackage(it)) },
-                onExcludePackage = { onEvent(LogUiEvent.ExcludePackage(it)) },
-                onRemovePackage = { onEvent(LogUiEvent.RemovePackage(it)) },
+                onEvent = onEvent,
                 onDismiss = { filtersOpen = false },
             )
         }
-
     }
 
     if (confirmClear) {
