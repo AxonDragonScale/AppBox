@@ -16,13 +16,13 @@ what it uses. This file is kept as the entry point for the shared core modules.
 
 | Module | Type | Contents | Depends on |
 |---|---|---|---|
-| [`:core:common`](common/context.md) | KMP, no Compose | Logger, `Result`, `CommonJson`, `DateTimeExt`, pure `Flow.collect()`/`combine`, `AppInfo` | coroutines, serialization-json, datetime |
+| [`:core:common`](common/context.md) | KMP, no Compose | Logger with pluggable `LogSink`s, `Result`, `CommonJson`, `DateTimeExt`, pure `Flow.collect()`/`combine`, `AppInfo` | coroutines, serialization-json, datetime |
 | `:core:android` | Android library | `ContextExt` (notifications, settings, clear data), `PermissionExt` | `:core:common`, androidx-core-ktx |
 | `:core:ui` | KMP + Compose | Dropdown, StatCard, charts, date/time pickers, `ModifierExt`, `ComposeUtils`, `UIMode` (`icon`, `isDarkTheme`), `collectWithLifecycle` | `:core:common`, Compose MP, lifecycle-compose |
-| `:core:devtools` | KMP + Compose | `DevToolsScreen`, `DevTool`, builder DSL, `DevToolsTheme` (+ `DevToolsColorScheme`, `DevToolsSystemBars`); Android built-ins (kill app, clear data, permissions, logcat, storage) | `:core:android` (androidMain), `:libraries:logcat-viewer` and `:libraries:storage-viewer` (androidMain) |
+| `:core:devtools` | KMP + Compose | `DevToolsScreen`, `DevTool`, builder DSL, `DevToolsTheme` (+ `DevToolsColorScheme`, `DevToolsSystemBars`); Android built-ins (kill app, clear data, permissions, logcat, logs, storage) and the dev-only log store | `:core:android` (androidMain), `:libraries:log-viewer`, `:libraries:storage-viewer` (androidMain), Room |
 | `:core:datastore` | KMP | `createPreferencesDataStore`, `pref`, `enumPref`, `serializedPref`, `nullablePref` | datastore-preferences, coroutines, serialization-json, `:core:common` |
 | `:core:room` | KMP | Room `TypeConverter`s + `createDatabase` | room-runtime, kotlinx-datetime, sqlite-bundled |
-| `:core:network` | KMP | `createHttpClient`, `NetworkModule` (provides `Json` + `HttpClient`); OkHttp/Chucker on Android | ktor, `:core:common`, koin-core |
+| `:core:network` | KMP | `createHttpClient`, `NetworkModule` (provides `Json` + `HttpClient`); OkHttp + Chucker on Android, where a non-dev build type gets the no-op artifact | ktor, `:core:common`, koin-core |
 | `:libraries:qr` | Android library | `QRGenerator` (ZXing) | androidx-core-ktx, zxing |
 
 ## Dependency Direction
@@ -34,7 +34,7 @@ what it uses. This file is kept as the entry point for the shared core modules.
                                                             ↑
    :core:devtools ───────────────────────────────────────────┘
         ↓ (androidMain)
- :libraries:logcat-viewer  :libraries:storage-viewer
+ :libraries:log-viewer  :libraries:storage-viewer
 ```
 
 No core module depends on an app, and no core module depends on `:core:devtools`. The dev-tools
@@ -105,11 +105,12 @@ itself in the theme any more, so the Android hosts here — `DevToolsLogcatHost`
 `DevToolsStorageHost`, `LogcatDevToolsScreen`, `StorageDevToolsScreen` — are the single place it is
 applied to them.
 
-The log viewer entry is Android-only and needs no host wiring: tapping **Open Logcat** presents
-`LogcatViewer` as a full-screen dialog (back gesture and the viewer's own back arrow both dismiss
-it). `isLogcatAvailable` / `DevToolsLogcatHost` are the expect/actual seam; the JVM and iOS actuals
-are no-ops. A host that wants it as a navigation destination instead can call
-`LogcatDevToolsScreen(onBack = …)` and add its own route — Devinator does exactly that.
+The logcat entry is Android-only: tapping **Open Logcat** presents the shared `LogViewer` over
+`LogcatSource` as a full-screen dialog (back gesture and the viewer's own back arrow both dismiss
+it). Without `READ_LOGS`, which Android 17 grants only over ADB, the dialog shows the command that
+grants it and re-checks when the app returns. `isLogcatAvailable` / `DevToolsLogcatHost` are the expect/actual seam;
+the JVM and iOS actuals are no-ops. A host that wants it as a navigation destination instead can call
+`LogcatDevToolsScreen(onBack = …)` and add its own route.
 
 The storage entry sits beside it in the same Diagnostics block and works the same way: **Open
 Storage** presents `StorageViewer` as a full-screen dialog over the app's own databases,
@@ -120,6 +121,43 @@ library stays off the common classpath. The dialog keeps its own `ViewModelStore
 with its state saved into the host's `SavedStateRegistry` so an activity recreation or process death
 keeps the viewer's depth. The module's `StorageDevToolsScreen(onBack = …)` is the same viewer as a
 navigation destination.
+
+**Open Logs** reads the dev-only log store, which only exists after the host installs the module:
+
+```kotlin
+// Application.onCreate, before the first log worth keeping
+installDevTools(context)   // Android; `installDevTools()` on JVM and iOS
+```
+
+`installDevTools` is the module's one install call: today it opens the log store, and a tool added
+later is a line inside it rather than a second call in every app.
+
+The store is a Room database (`dev_logs.db`) holding every `Logger` record. The reader and the store
+are shared; only the database location and the container differ per platform. Newest first,
+filterable by level and by tag or message, the full message on tap, share, and clear.
+`isDevLogsAvailable` reports whether the store was installed, so an app that never calls
+`installDevTools` simply has no Logs entry. `DevToolsDevLogsHost` is the container seam: a dialog
+on Android, a full-screen overlay on JVM and iOS. See [Logging](logging.md) for the schema, the
+batched writer and the retention rule.
+
+### Dev tools in release
+
+Every app module can declare which build types keep dev tools:
+
+```kotlin
+appBox {
+    devBuildTypes = setOf("debug")     // "stage" too, when it exists
+    devDependencies(projects.core.devtools)
+}
+```
+
+The convention plugin publishes `BuildConfig.DEV_TOOLS` for the chosen types, adds the dependencies
+to those variants only, and swaps Chucker for its no-op artifact everywhere else. An app keeps the
+build-type-specific parts in `src/<buildType>/` — a real install call and screen in `debug`, no-ops
+in `release` — and leaves its nav route declared once in the shared nav graph. The route then
+renders nothing in a release build, which cannot reach it: the entry point stays behind
+`BuildConfig.DEV_TOOLS`, and no devtools class is on the classpath at all. See
+[Build System](../build-system.md#dev-tools-and-chucker).
 
 ## DataStore — `:core:datastore`
 

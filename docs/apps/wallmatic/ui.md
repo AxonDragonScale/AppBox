@@ -306,7 +306,7 @@ differs from what shipped.
 - The album badge and the album page top bar tell the truth about targets: an album active on both
   screens carries `BOTH` / `ACTIVE · BOTH`, and with Mirror on an album active on Home also reads
   `BOTH`, because Lock follows Home.
-- Settings adds a `Dev Tools` row after About in debug builds only; the design has no debug entry.
+- Settings adds a `Dev Tools` row after About in dev builds only (`BuildConfig.DEV_TOOLS`); the design has no debug entry.
 - `CREATE` in the New album dialog is disabled and dimmed until the field has text; the frames have no
   disabled state.
 - Folder has no empty frame; it uses the `EmptyState` master as an outlined card rather than a

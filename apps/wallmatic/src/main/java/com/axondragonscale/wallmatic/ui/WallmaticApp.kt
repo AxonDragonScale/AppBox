@@ -9,10 +9,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.axondragonscale.wallmatic.devtools.WallmaticDevTools
 import com.axondragonscale.wallmatic.ui.album.Album
 import com.axondragonscale.wallmatic.ui.bottombar.Tab
 import com.axondragonscale.wallmatic.ui.dashboard.Dashboard
-import com.axondragonscale.wallmatic.ui.devtools.WallmaticDevTools
 import com.axondragonscale.wallmatic.ui.folder.Folder
 import com.axondragonscale.wallmatic.ui.wallpaper.Wallpaper
 

@@ -55,6 +55,9 @@ com.axondragonscale.wallmatic/
 │       ├── Album.kt                  # Album entity
 │       ├── Folder.kt                 # Folder entity (owns its album)
 │       └── Wallpaper.kt              # Wallpaper entity (owns album, optional folder, crop)
+├── devtools/                         # Dev Tools entry points (`src/debug`; no-ops in `src/release`)
+│   ├── DevTools.kt                   # `installDevTools`: forwards to `:core:devtools`
+│   └── WallmaticDevTools.kt          # The Wallmatic Dev Tools screen
 ├── di/
 │   └── WallmaticModule.kt            # Koin dependency injection module
 ├── model/
@@ -76,7 +79,6 @@ com.axondragonscale.wallmatic/
 │   ├── bottombar/                    # Tab definitions
 │   ├── component/                    # Paper/ink component kit (see ui.md)
 │   ├── dashboard/                    # Main dashboard with tabs
-│   ├── devtools/                     # Wallmatic-specific Dev Tools section
 │   ├── folder/                       # Folder detail screen
 │   ├── home/                         # Home tab (current wallpaper)
 │   ├── library/                      # Library (album list) screen
@@ -378,7 +380,7 @@ For full details on scheduling, workers, tiles, and the update lifecycle, see [B
 
 ## Dependencies
 
-- **Local Modules**: `:core:common`, `:core:ui`, `:core:devtools`, `:core:datastore`, `:core:room`
+- **Local Modules**: `:core:common`, `:core:ui`, `:core:devtools` (debug builds only), `:core:datastore`, `:core:room`
 - **AndroidX**: Compose BOM + Material3, Navigation Compose, Room, Proto + Preferences DataStore, DocumentFile, WorkManager
 - **Koin**: DI (with `koin-androidx-workmanager` for worker injection)
 - **Coil**: Image loading

@@ -223,9 +223,9 @@ a fixed dark scheme, so Devinator's own theme choice and dynamic colour never re
 The shared screen supplies the platform built-ins — **Kill App**, **Clear App Data**, **Open App
 Settings** and a **Permissions** list — and, on Android, two viewers:
 
-- **Logcat** — **Open Logcat**. `:libraries:logcat-viewer` reading this process's own log records,
+- **Logcat** — **Open Logcat**. `:libraries:log-viewer` over `LogcatSource`, reading this process's own log records,
   opened as a dialog inside `DevToolsTheme`. The stream, filters and saved views are described in
-  [the viewer's context](../../libraries/logcat-viewer/context.md).
+  [the viewer's context](../../libraries/log-viewer/context.md).
 - **Storage** — **Open Storage**. `:libraries:storage-viewer` over this app's own files:
   `devinator_prefs.preferences_pb` (the Preferences DataStore in `files/datastore/`), the app's files
   and cache, and an empty database list, since Devinator has no Room database.

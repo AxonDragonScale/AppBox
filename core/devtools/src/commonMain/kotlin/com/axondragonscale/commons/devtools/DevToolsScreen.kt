@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Terminal
@@ -78,6 +79,7 @@ private fun DevToolsContent(
 ) {
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     var showLogcat by rememberSaveable { mutableStateOf(false) }
+    var showLogs by rememberSaveable { mutableStateOf(false) }
     var showStorage by rememberSaveable { mutableStateOf(false) }
 
     Box(
@@ -118,8 +120,8 @@ private fun DevToolsContent(
                 DevToolsBuiltInContent()
             }
 
-            // Log viewer, where the platform has one
-            if (isLogcatAvailable) {
+            // Diagnostics, where the platform has any viewer
+            if (isDevLogsAvailable || isLogcatAvailable || isStorageViewerAvailable) {
                 item {
                     DevToolItem(
                         tool = DevTool.Section(
@@ -128,6 +130,24 @@ private fun DevToolsContent(
                         )
                     )
                 }
+            }
+
+            // Persisted logs survive logcat rolling over and the app restarting
+            if (isDevLogsAvailable) {
+                item {
+                    DevToolItem(
+                        tool = DevTool.Action(
+                            title = "Open Logs",
+                            subtitle = "Read the logs kept on this device",
+                            icon = Icons.Rounded.History,
+                            onClick = { showLogs = true },
+                        )
+                    )
+                }
+            }
+
+            // Log viewer, where the platform has one
+            if (isLogcatAvailable) {
                 item {
                     DevToolItem(
                         tool = DevTool.Action(
@@ -174,6 +194,11 @@ private fun DevToolsContent(
         DevToolsLogcatHost(
             visible = showLogcat,
             onDismiss = { showLogcat = false },
+        )
+
+        DevToolsDevLogsHost(
+            visible = showLogs,
+            onDismiss = { showLogs = false },
         )
 
         DevToolsStorageHost(

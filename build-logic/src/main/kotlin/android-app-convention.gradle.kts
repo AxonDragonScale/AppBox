@@ -1,7 +1,18 @@
+import com.android.build.api.variant.BuildConfigField
+import extensions.AppBoxExtension
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+val appBox = extensions.create("appBox", AppBoxExtension::class.java, project)
+
+// Substitution works on the whole graph, including a library module's own Chucker dependency.
+val libsCatalog = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
+fun catalogModule(alias: String): String =
+    libsCatalog.findLibrary(alias).get().get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }
 
 android {
     compileSdk = 37
@@ -51,5 +62,35 @@ extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtensi
     jvmToolchain(21)
     compilerOptions {
         freeCompilerArgs.addAll(AppBoxCompilerArgs.optIns)
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val hasDevTools = variant.buildType in appBox.devBuildTypes
+        variant.buildConfigFields?.put(
+            "DEV_TOOLS",
+            BuildConfigField("boolean", hasDevTools.toString(), "Keep dev tools, persisted logs and Chucker"),
+        )
+
+        // A single-variant library cannot pick a variant for its own Chucker dependency, so the
+        // app swaps the artifact for every build type that is not a dev build.
+        if (!hasDevTools) {
+            configurations
+                .matching { it.name.startsWith(variant.name) }
+                .configureEach {
+                    resolutionStrategy.dependencySubstitution {
+                        substitute(module(catalogModule("chucker")))
+                            .using(module(catalogModule("chucker-noop")))
+                    }
+                }
+        }
+    }
+}
+
+afterEvaluate {
+    appBox.devBuildTypes.forEach { buildType ->
+        appBox.requireBuildType(buildType)
+        appBox.dependencyNotations().forEach { dependencies.add("${buildType}Implementation", it) }
     }
 }

@@ -179,7 +179,7 @@ fun LocalDateTime.toEpochMillis() =
 /**
  * Formats an [Instant] as "Jan 5, 2025 at 9:30 AM" in the given [tz].
  */
-fun Instant.formatDateTime(tz: TimeZone = TimeZone.currentSystemDefault()): String {
+fun Instant.formatDateTime(tz: TimeZone = TIMEZONE): String {
     val dt = toLocalDateTime(tz)
     return "${dt.date.formatShort()} at ${dt.time.formatAmPm()}"
 }
@@ -187,7 +187,15 @@ fun Instant.formatDateTime(tz: TimeZone = TimeZone.currentSystemDefault()): Stri
 /**
  * Formats an [Instant] as "9:30 AM" in the given [tz].
  */
-fun Instant.formatTime(tz: TimeZone = TimeZone.currentSystemDefault()): String =
+fun Instant.formatTime(tz: TimeZone = TIMEZONE): String =
     toLocalDateTime(tz).time.formatAmPm()
+
+// endregion
+
+// region Epoch Milliseconds
+
+/** The wall clock for these epoch [milliseconds] in the given [tz]. */
+fun Long.toLocalDateTime(tz: TimeZone = TIMEZONE): LocalDateTime =
+    Instant.fromEpochMilliseconds(this).toLocalDateTime(tz)
 
 // endregion

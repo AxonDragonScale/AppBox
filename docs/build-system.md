@@ -24,6 +24,7 @@ Applied to Android application modules (including the thin shells of Compose Mul
 - `compileOptions` targeting JVM 21
 - BuildConfig generation enabled
 - Compose features enabled
+- An `appBox { }` extension (see [Dev tools and Chucker](#dev-tools-and-chucker))
 
 ### `android-library-convention.gradle.kts`
 
@@ -32,7 +33,7 @@ Applied to Android-only library modules via `alias(libs.plugins.android.library.
 - Android Library plugin (built-in Kotlin)
 - Common SDK versions and compile options (same as `android-app-convention`)
 
-It is Android-only (not KMP). Used by `:core:android`, `:libraries:qr` and `:libraries:logcat-viewer`.
+It is Android-only (not KMP). Used by `:core:android`, `:libraries:qr` and `:libraries:storage-viewer`.
 
 ### `kmp-library-convention.gradle.kts`
 
@@ -79,6 +80,32 @@ Applied by the **root project only** (`alias(libs.plugins.compiler.args.conventi
 ### Shared compiler flags
 
 Defined once in `AppBoxCompilerArgs.optIns` (`build-logic/src/main/kotlin/AppBoxCompilerArgs.kt`); add new opt-ins there, never in a module build file. Android modules get them from the `android-*` convention plugins, KMP modules from `compiler-args-convention`.
+
+## Dev tools and Chucker
+
+`android-app-convention` registers an `appBox { }` extension (`extensions/AppBoxExtension.kt` in
+build-logic). The app decides which build types carry dev tools; the convention does the rest:
+
+```kotlin
+appBox {
+    devBuildTypes = setOf("debug")     // default; add "stage" or a flavour's build type here
+    devDependencies(projects.core.devtools)
+}
+```
+
+From `devBuildTypes` the plugin derives, per variant:
+
+- `BuildConfig.DEV_TOOLS` — `true` for those build types only. Gate debug entry points (a settings
+  row, a route) on this, not on `BuildConfig.DEBUG`: a `stage` build type is not `DEBUG`.
+- Dev-only dependencies, added to `<buildType>Implementation` — so `:core:devtools` is absent from
+  the classpath, the APK, and the compile of every other build type. Pair it with
+  `src/<buildType>/` source sets that provide the real wiring in dev builds and a no-op elsewhere.
+- Chucker substitution — every variant outside the set resolves
+  `com.github.chuckerteam.chucker:library` to `library-no-op`. This happens in the app's resolution,
+  so it also covers a single-variant library like `:core:network` that declares Chucker itself.
+
+KMP modules have no build types, so nothing in `:core:*` can read the build type; the decision stays
+in the app module and reaches them through the classpath.
 
 ## Version Catalog
 

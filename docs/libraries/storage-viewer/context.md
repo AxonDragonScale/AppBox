@@ -121,6 +121,6 @@ classpath. See [Core Modules](../../core/context.md).
 - [Main Context](../../context.md) — project overview, module index
 - [Design](./design.md) — screens, states, components, tokens and copy
 - [Core Modules](../../core/context.md) — devtools and its built-ins
-- [Logcat Viewer](../logcat-viewer/context.md) — the sibling viewer library
+- [Log Viewer](../log-viewer/context.md) — the sibling viewer library
 - [Coding Conventions](../../coding-conventions.md)
 - [Build System](../../build-system.md)

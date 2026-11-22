@@ -208,7 +208,7 @@ private fun Settings(
             },
         )
 
-        if (BuildConfig.DEBUG) {
+        if (BuildConfig.DEV_TOOLS) {
             HorizontalRule()
 
             SettingsRow(

@@ -1,5 +1,7 @@
 package com.axondragonscale.commons
 
+import kotlin.concurrent.Volatile
+
 /**
  * Created by Ronak Harkhani on 23 January 2026.
  */
@@ -11,9 +13,31 @@ object Logger {
     var isLoggingEnabled = true
 
     /**
-     * Use this to force println-based logs instead of platform log APIs.
+     * Replaced as a whole on [addSink], so a log call iterates without locking. Registration happens
+     * once at startup, which makes the lost update of two concurrent adds a non-issue.
      */
-    var usePrintlnLogs = false
+    @Volatile
+    private var extraSinks: Array<LogSink> = emptyArray()
+
+    /** Sends every record to [sink] as well as to the platform logger. Safe to call once, early. */
+    fun addSink(sink: LogSink) {
+        extraSinks += sink
+    }
+
+    fun removeSink(sink: LogSink) {
+        extraSinks = extraSinks.filterNot { it === sink }.toTypedArray()
+    }
+
+    internal fun dispatchToSinks(priority: LogPriority, tag: String, message: String) {
+        for (sink in extraSinks) {
+            runCatching { sink.log(priority, tag, message) }
+        }
+    }
+}
+
+/** A destination for log records besides the platform logger, such as a database. */
+fun interface LogSink {
+    fun log(priority: LogPriority, tag: String, message: String)
 }
 
 fun Any.logD(msg: MsgProvider) = this.log(LogPriority.DEBUG, msg)
@@ -32,9 +56,10 @@ fun Any.log(e: ThrowableProvider) = this.log(LogPriority.ERROR) {
 
 private fun Any.log(priority: LogPriority, msg: MsgProvider) {
     if (!Logger.isLoggingEnabled) return
+    val tag = this.getTag()
     val message = msg()
-    if (Logger.usePrintlnLogs) println("#${this.getTag()}: $message")
-    else dispatchLog(priority, this.getTag(), message)
+    dispatchLog(priority, tag, message)
+    Logger.dispatchToSinks(priority, tag, message)
 }
 
 internal fun Any.getTag() = when {

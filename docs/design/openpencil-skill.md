@@ -354,7 +354,7 @@ MCP calls give up at ~20 s on the client, but the app usually finishes the work.
   (copy in the spec is literal — do not paraphrase it in the design). When the design and the app
   disagree, the `.fig` is fixed first, then `ui.md`, then the code.
 - A publishable library that ships UI keeps its own file beside the module —
-  `libraries/logcat-viewer/logcat-viewer.fig` — with the same three pages. When a board moves out of
+  `libraries/log-viewer/log-viewer.fig` — with the same three pages. When a board moves out of
   an app, **copy the file and prune it** rather than redrawing the screens: the copy keeps the
   variables, the bindings and the node ids, and the source keeps everything else.
 - A library Foundations stack replaces the app icon panel with the panel that defines it: for the

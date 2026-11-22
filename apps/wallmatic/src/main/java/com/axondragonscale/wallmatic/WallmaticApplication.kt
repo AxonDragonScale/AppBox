@@ -1,6 +1,7 @@
 package com.axondragonscale.wallmatic
 
 import android.app.Application
+import com.axondragonscale.wallmatic.devtools.installDevTools
 import com.axondragonscale.wallmatic.di.WallmaticModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -14,6 +15,7 @@ class WallmaticApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        installDevTools(this)
         initKoin()
     }
 

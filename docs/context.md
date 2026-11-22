@@ -96,13 +96,14 @@ Check here before writing a helper — the shared one usually exists.
 |---|---|
 | [core/context](./core/context.md) | `:core:android`, `:core:ui`, `:core:devtools`, `:core:datastore`, `:core:room`, `:core:network`, `:libraries:qr` — contents and dependency direction |
 | [core/common/context](./core/common/context.md) | `:core:common` — Logger, `Result`, `CommonJson`, `DateTimeExt`, Flow helpers, `AppInfo` |
+| [core/logging](./core/logging.md) | Logger sinks, the dev-only Room log store, what it records and how to read it |
 
 ### Libraries
 
 | Doc | What's inside |
 |---|---|
 | [libraries/tlv/context](./libraries/tlv/context.md) | `:libraries:tlv` — BER-TLV codec, KMP, independently published |
-| [libraries/logcat-viewer/context](./libraries/logcat-viewer/context.md) | `:libraries:logcat-viewer` — in-app log viewer with a host-supplied source; built into DevTools on Android |
+| [libraries/log-viewer/context](./libraries/log-viewer/context.md) | `:libraries:log-viewer` — KMP Compose log console over a `LogSource`; `LogcatSource` on Android, the dev log store everywhere |
 | [libraries/storage-viewer/context](./libraries/storage-viewer/context.md) | `:libraries:storage-viewer` — in-app database, DataStore, SharedPreferences and files viewer; built into DevTools on Android |
 | [libraries/storage-viewer/design](./libraries/storage-viewer/design.md) | The board behind `:libraries:storage-viewer`: three-segment home, 29 screens and 5 sheet overlays, state coverage, component and token vocabulary, copy rules, and the files surface. |
 

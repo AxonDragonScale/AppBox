@@ -1,21 +1,69 @@
 package com.axondragonscale.commons.devtools
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import com.axondragonscale.logcatviewer.LogcatViewer
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.axondragonscale.logviewer.LogViewer
+import com.axondragonscale.logviewer.LogcatSource
 
+/**
+ * True when the platform can show the in-app log viewer. Only Android hosts it.
+ */
 actual val isLogcatAvailable: Boolean = true
+
+private fun Context.canReadLogs(): Boolean =
+    ContextCompat.checkSelfPermission(this, Manifest.permission.READ_LOGS) == PackageManager.PERMISSION_GRANTED
+
+@Composable
+private fun LogcatContents(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit,
+) {
+    val context = LocalContext.current
+    var granted by remember { mutableStateOf(context.canReadLogs()) }
+    val source = remember(context) { LogcatSource(context.applicationContext) }
+    // The reader owns a process; it goes away with the screen that opened it.
+    DisposableEffect(source) { onDispose { source.close() } }
+
+    // The grant arrives over adb while the app is away: re-check whenever the user comes back.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = context.canReadLogs() }
+
+    if (granted) {
+        LogViewer(
+            source = source,
+            modifier = modifier,
+            caption = "all buffers",
+            title = "Logcat",
+            onBack = onBack,
+            onShare = { shareLogs(context, it) },
+            onCopy = { copyLog(context, it) },
+        )
+    } else {
+        LogAccessGate(
+            appLabel = context.applicationInfo.loadLabel(context.packageManager).toString(),
+            packageName = context.packageName,
+            onBack = onBack,
+            onCheckAgain = { granted = context.canReadLogs() },
+            onCopyCommand = { copyLog(context, it) },
+        )
+    }
+}
 
 /**
  * The viewer as a plain screen, for a host that wants it as a navigation destination instead of
@@ -28,7 +76,7 @@ fun LogcatDevToolsScreen(
 ) {
     DevToolsTheme {
         DevToolsSystemBars()
-        LogcatViewer(modifier = modifier, onBack = onBack)
+        LogcatContents(modifier = modifier.fillMaxSize(), onBack = onBack)
     }
 }
 
@@ -39,11 +87,7 @@ fun LogcatDevToolsScreen(
 @Composable
 actual fun DevToolsLogcatHost(visible: Boolean, onDismiss: () -> Unit) {
     if (!visible) return
-    // The dialog is not a nav destination, so it needs its own store to clear the viewer on close.
-    val owner = remember { DialogViewModelStoreOwner() }
-    DisposableEffect(owner) {
-        onDispose { owner.viewModelStore.clear() }
-    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -51,20 +95,14 @@ actual fun DevToolsLogcatHost(visible: Boolean, onDismiss: () -> Unit) {
             decorFitsSystemWindows = false,
         ),
     ) {
-        CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
-            DevToolsTheme {
-                DevToolsSystemBars()
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    LogcatViewer(onBack = onDismiss)
-                }
+        DevToolsTheme {
+            DevToolsSystemBars()
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
+            ) {
+                LogcatContents(modifier = Modifier.fillMaxSize(), onBack = onDismiss)
             }
         }
     }
-}
-
-private class DialogViewModelStoreOwner : ViewModelStoreOwner {
-    override val viewModelStore = ViewModelStore()
 }

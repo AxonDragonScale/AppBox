@@ -48,10 +48,20 @@ this.logD { "Debug message from ${this::class.simpleName}" }
 
 // Levels: logD, logI, logW, logE, logV, logA, plus log for a Throwable
 Logger.isLoggingEnabled = true  // Disable all logging
-Logger.usePrintlnLogs = false   // Force println output on all platforms
 ```
 
 Android dispatches to `android.util.Log`; JVM/iOS dispatch to `println`.
+
+Every record also reaches each registered `LogSink`, so a database or a file can keep history beside
+the platform log:
+
+```kotlin
+Logger.addSink(mySink)     // fun interface: log(priority, tag, message)
+Logger.removeSink(mySink)
+```
+
+Sinks are called on the logging thread and one that throws is ignored. `:core:common` holds only the
+seam; the dev-only Room store lives in `:core:devtools` — see [Logging](../logging.md).
 
 ### Result — `Result.kt`
 
@@ -151,7 +161,8 @@ module.
 `kotlinx.datetime` extensions used by the apps: `today()`, `startOfWeek`, `endOfWeek`,
 `startOfMonth`, `endOfMonth`, `formatShort()`, `formatMonthYear()`, `daysInMonth()`,
 `daysBetween()`, `formatAmPm()`, `now()`, `toEpochMillis()`, `formatDateTime()`, `formatTime()`,
-plus `Month.abbreviated/displayName`, `DayOfWeek.abbreviated/letter` and `hourLabel()`.
+`Long.toLocalDateTime()` (epoch millis in the device's zone), plus `Month.abbreviated/displayName`,
+`DayOfWeek.abbreviated/letter` and `hourLabel()`.
 
 ### Flow — `FlowExt.kt`
 
