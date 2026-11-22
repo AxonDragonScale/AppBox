@@ -41,7 +41,6 @@ kotlin {
 
             // Ktor
             implementation(libs.ktor.client.okhttp)
-            implementation(libs.chucker)
 
             // Coroutines
             implementation(libs.kotlinx.coroutines.android)
